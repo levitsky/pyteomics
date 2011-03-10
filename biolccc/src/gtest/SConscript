@@ -1,0 +1,10 @@
+import os
+
+Import('env')
+
+libgtest_static = env.StaticLibrary(
+    target = '#'+os.path.join('lib', 'static',
+        env['PLATFORM'], env['BUILDTYPE'],'libgtest'),
+    source = Glob('*.cc'))
+
+Return('libgtest_static')

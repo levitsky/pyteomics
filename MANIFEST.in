@@ -1,0 +1,4 @@
+include biolccc/include/*
+include VERSION
+include README
+include requirements.txt

@@ -1,0 +1,12 @@
+import os 
+
+Import('env')
+
+local_env = env.Clone()
+local_env.Append(LIBS=['biolccc', 'gtest', 'pthread'])
+tests_app = local_env.Program(
+    target = '#'+os.path.join('bin',
+        local_env['PLATFORM'], local_env['BUILDTYPE'], 'tests'),
+    source = 'tests.cpp')
+
+Return('tests_app')

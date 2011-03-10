@@ -1,0 +1,17 @@
+import os 
+
+Import('env')
+
+local_env = env.Clone()
+local_env.Append(LIBS=['BioLCCC',])
+output = [] 
+for example in Glob('./*.cpp'):
+    example_name = str(example)[:-4]
+    output.append(example_name)
+    vars()[example_name] = local_env.Program(
+        target = '#'+os.path.join(
+            'bin', local_env['PLATFORM'], local_env['BUILDTYPE'], 'examples',
+            example_name),
+        source = example)
+
+Return(output)
