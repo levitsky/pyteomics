@@ -56,7 +56,7 @@ def get_custom_node(source, xpath, namespaces={'d':xmlns}):
     return tree.xpath(xpath, namespaces=namespaces)
     
 def psm_from_query(query):
-    """Analyze an Element object with spectrum query and generate a
+    """Analyze an Element object with a spectrum query and generate a
     dictionary with a peptide spectrum match.    
     """
 
@@ -123,9 +123,9 @@ def psm_from_query(query):
 
     return psm
     
-def psm_list(source):
-    """Parse source and return a list of peptide-spectrum matches from
-    the ``source``.
+def iter_psm(source):
+    """Parse source and iterate through a list of peptide-spectrum
+    matches from the ``source``.
 
     Arguments:
     source -- any of the following:    
@@ -140,13 +140,11 @@ def psm_list(source):
     parser = etree.XMLParser(remove_comments=True, ns_clean=True) 
     tree = etree.parse(source, parser=parser)
 
-    PSMs = []
     for spectrum_query in tree.xpath(
         '/d:msms_pipeline_analysis/d:msms_run_summary/d:spectrum_query',
         namespaces = {'d': xmlns}):
         
-        PSMs.append(psm_from_query(spectrum_query))
-    return PSMs
+        yield psm_from_query(spectrum_query)
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.
