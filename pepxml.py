@@ -23,7 +23,7 @@ xmlns = 'http://regis-web.systemsbiology.net/pepXML'
 def peptide_length(psm):
     return len(psm['peptide'])
 
-def get_custom_node(source, xpath, namespaces={'d':xmlns}):
+def get_node(source, xpath, namespaces={'d':xmlns}):
     """Retrieves arbitrary nodes from a pepxml file by their xpath.
 
     Arguments: 
@@ -43,8 +43,8 @@ def get_custom_node(source, xpath, namespaces={'d':xmlns}):
     namespace has a key 'd'.
     
     Example:
-    pepxml.get_custom_node('/d:msms_pipeline_analysis/d:msms_run_summary[0]'
-                           '/d:search_summary/d:aminoacid_modification')
+    pepxml.get_node('/d:msms_pipeline_analysis/d:msms_run_summary[0]'
+                    '/d:search_summary/d:aminoacid_modification')
 
     Returns:
     a list of lxml.Element objects.

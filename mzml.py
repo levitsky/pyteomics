@@ -21,6 +21,37 @@ float_keys = [
 # Default namespace of mzML.
 xmlns = 'http://psi.hupo.org/ms/mzml'
 
+def get_node(source, xpath, namespaces={'d':xmlns}):
+    """Retrieves arbitrary nodes from an mzml file by their xpath.
+
+    Arguments: 
+
+    source -- any of the following:    
+              - a file name/path
+              - a file object
+              - a file-like object
+              - a URL using the HTTP or FTP protocol
+
+    xpath -- a string with XPath to required objects. Usually, mzml
+    has a default namespace 'http://psi.hupo.org/ms/mzml' which should
+    be prepended to every nodename.
+
+    namespaces -- a dictionary of namespaces. The default pepxml
+    namespace has a key 'd'.
+    
+    Example:
+    mzml.get_node('/d:indexedmzML/d:mzML/d:run/d:spectrumList/d:spectrum')
+
+    Returns:
+    a list of lxml.Element objects.
+    """
+
+    parser = etree.XMLParser(remove_comments=True, ns_clean=True)
+    tree = etree.parse(source, parser=parser)
+    
+    return tree.xpath(xpath, namespaces=namespaces)
+
+
 def fill_params(output_dict, element, xpath, namespaces={'d':xmlns}):
     """Obtain subelements of given element with xpath and read their
     children cvParam and userParam to given dictionary.

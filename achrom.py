@@ -1,8 +1,6 @@
 import operator
 import numpy
-
-standard_amino_acids = ['Q','W','E','R','T','Y','I','P','A','S',
-                        'D','F','G','H','K','L','C','V','N','M']
+from modx import std_chem_groups, peptide_length, get_aminoacid_composition
 
 def linear_regression(x, y, a=None, b=None):
     """Calculates coefficients of a linear regression y = a * x + b.
@@ -32,98 +30,25 @@ def linear_regression(x, y, a=None, b=None):
 
     return (a, b, r, stderr)
 
-def parse_peptide(peptide,               
-                  amino_acids=standard_amino_acids):
-    """Parse a peptide string into a list of amino acids.
-    Uses the modX notation.
-
-    Keyword arguments:
-    peptide -- a peptide sequence
-    amino_acids -- a list of all possible amino acids (default 20 standard
-                   amino acids).
-
-    >>> parse_peptide('PEPTIDE')
-    ['P', 'E', 'P', 'T', 'I', 'D', 'E']
-    >>> parse_peptide('TEpSToxM', standard_amino_acids + ['pS', 'oxM'])
-    ['T', 'E', 'pS', 'T', 'oxM']
-    """
-    i = 0
-    aa_list = []
-    while i<len(peptide):
-        amino_acid_found = False
-        for aa in amino_acids:
-            if peptide.startswith(aa, i):
-                aa_list.append(aa)
-                amino_acid_found = True
-                break
-        if not amino_acid_found:
-            raise Exception(
-                'Unknown amino acid in peptide %s at position %d: %s' % (
-                    peptide, i+1, peptide[i:]))
-            return []
-        i = i + len(aa_list[-1])
-    return aa_list
-
-def get_aminoacid_composition(peptide,
-                              amino_acids=standard_amino_acids,
-                              term_RCs = False):
-    """Calculate amino acid composition of a peptide.
-
-    Keyword arguments:
-    peptide -- a peptide sequence
-    amino_acids -- a list of all possible amino acids (default 20 standard
-                   amino acids).
-    term_RCs -- if True than terminal amino acids are treated as being modified
-                with 'ntermX'/'ctermX' modifications. False by default.
-
-    Returns a dictionary of amino acid content.
-    >>> get_aminoacid_composition('PEPTIDE')
-    {'I': 1.0, 'P': 2.0, 'E': 2.0, 'T': 1.0, 'D': 1.0}
-    >>> get_aminoacid_composition('PEPTDE', term_RCs=True)
-    {'ctermE': 1.0, 'E': 1.0, 'D': 1.0, 'P': 1.0, 'T': 1.0, 'ntermP': 1.0}
-    >>> get_aminoacid_composition('PEPpTIDE',\
-                                  amino_acids=standard_amino_acids+['pT'])
-    {'I': 1.0, 'P': 2.0, 'E': 2.0, 'D': 1.0, 'pT': 1.0}
-    """
-    parsed_peptide = parse_peptide(peptide, amino_acids)
-    if not parsed_peptide:
-        return {}
-
-    # Process core amino acids.
-    aa_dict = {}
-    for i in range(1,len(parsed_peptide)-1):
-        aa = parsed_peptide[i]
-        aa_dict[aa] = aa_dict.get(aa, 0.0) + 1.0
-
-    # Process terminal amino acids.
-    if term_RCs:
-        aa_dict['nterm' + parsed_peptide[0]] = 1.0
-        if len(parsed_peptide) > 1:
-            aa_dict['cterm' + parsed_peptide[-1]] = 1.0
-    else:
-        aa_dict[parsed_peptide[0]] = aa_dict.get(parsed_peptide[0], 0.0) + 1.0
-        if len(parsed_peptide) > 1:
-            aa_dict[parsed_peptide[-1]] = (
-                aa_dict.get(parsed_peptide[-1], 0.0) + 1.0)
-        
-    return aa_dict
-
 def get_RCs(peptides, RTs, length_correction_factor = -0.21,
-            amino_acids = standard_amino_acids,
-            term_RCs = False):
+            chem_groups = std_chem_groups,
+            term_aa = False):
     """Calculate the retention coefficients of amino acids given
     retention time of a peptide sample.
 
     Keyword arguments:
 
-    peptides -- a list of peptide sequences
-    RTs -- a list of retention times of the peptides
+    peptides -- a list of peptide sequences;
+    RTs -- a list of retention times of the peptides;    
     length_correction_factor -- a multiplier before ln(L) term in the
-                                equation for the retention time of a peptide
-    amino_acids -- a list of all possible amino acids (default 20 standard
-                   amino acids).
-    term_RCs -- if True than terminal amino acids are treated as being modified
-                with 'ntermX'/'ctermX' modifications. False by default.
+                                equation for the retention time of a
+                                peptide;                                
+    chem_groups -- a list of all possible amino acids and terminal
+                   groups (default 20 standard amino acids, N-terminal
+                   NH2- and C-terminal -OH);                   
+    term_aa -- if True than terminal amino acids are treated as being
+                modified with 'ntermX'/'ctermX' modifications. False
+                by default.
 
     Return a dictionary RC_dict containing the calculated retention
     coefficients.
@@ -143,20 +68,23 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
     """
 
     # Make a list of all amino acids present in the sample.
-    peptide_dicts = [get_aminoacid_composition(peptide, amino_acids, term_RCs) 
-                     for peptide in peptides]
+    peptide_dicts = [
+        get_aminoacid_composition(peptide, chem_groups, False, term_aa) 
+        for peptide in peptides]
 
     detected_amino_acids = set([aa for peptide_dict in peptide_dicts
                                 for aa in peptide_dict])
 
     # Determine retention coeffitients using multidimensional fitting.
     composition_array = numpy.array([
-        [peptide_dicts[i].get(aa, 0.0) * (1.0 + 
-         length_correction_factor * numpy.log(sum(peptide_dicts[i].values())))
+        [peptide_dicts[i].get(aa, 0.0) 
+         * (1.0 + length_correction_factor
+            * numpy.log(peptide_length(peptide_dicts[i])))
            for aa in detected_amino_acids] + [1.0]
         for i in range(len(peptides))])
     
-    RCs, res, rank, s = numpy.linalg.lstsq(composition_array, numpy.array(RTs))
+    RCs, res, rank, s = numpy.linalg.lstsq(composition_array,
+                                           numpy.array(RTs))
     RC_dict = {}
     RC_dict['aa'] = dict(
         zip(list(detected_amino_acids),
@@ -167,16 +95,21 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
     return RC_dict
 
 def get_RCs_vary_lcf(peptides, RTs,
-                amino_acids = standard_amino_acids,
-                term_RCs = False,
+                chem_groups = std_chem_groups,
+                term_aa = False,
                 min_lcf = -1.0,
                 max_lcf = 1.0):
     """Finds best combination of a length correction factor and
     retention coefficients for given peptide sample.
     Keyword arguments:
 
-    peptides -- a list of peptide sequences
-    RTs -- a list of retention times of the peptides
+    peptides -- a list of peptide sequences;
+    RTs -- a list of retention times of the peptides;
+    chem_groups -- a list of all possible amino acids and terminal
+                   groups (default 20 standard amino acids, N-terminal
+                   NH2- and C-terminal -OH);
+    min_lcf -- the minimal value of the length correction factor;
+    max_lcf -- the maximal value of the length correction factor.
 
     Return a dictionary RC_dict containing the calculated retention
     coefficients.
@@ -197,9 +130,10 @@ def get_RCs_vary_lcf(peptides, RTs,
     
     step = (max_lcf - min_lcf) / 10.0
     while step > 0.1:
-        lcf_range = numpy.arange(min_lcf, max_lcf, (max_lcf - min_lcf) / 10.0)
+        lcf_range = numpy.arange(min_lcf, max_lcf,
+                                 (max_lcf - min_lcf) / 10.0)
         for lcf in lcf_range:
-            RC_dict = get_RCs(peptides, RTs, lcf, amino_acids, term_RCs)
+            RC_dict = get_RCs(peptides, RTs, lcf, chem_groups, term_aa)
             regression_coeffs = linear_regression(
                 RTs, 
                 [calculate_RT(peptide, RC_dict) for peptide in peptides])
@@ -223,25 +157,31 @@ def calculate_RT(peptide, RC_dict):
     >>> RT = calculate_RT('AA', {'aa':{'A':1.1},'lcf':0.0,'const':0.1})
     >>> abs(RT - 2.3) < 1e-6      # Float comparison
     True
+    >>> RT = calculate_RT('AAA', {'aa': {'ntermA':1.0, 'A':1.1, 'ctermA':1.2},\
+                                  'lcf':0.0,\
+                                  'const':0.1})
+    >>> abs(RT - 3.4) < 1e-6      # Float comparison
+    True
     """
     
     amino_acids = [aa for aa in RC_dict['aa']
-                   if not (aa.startswith('cterm') or aa.startswith('nterm'))] 
+                   if not (aa.startswith('cterm') or aa.startswith('nterm'))]
 
     # Check if there are retention coefficients for terminal amino acids.
-    term_RCs = False
+    term_aa = False
     for aa in RC_dict['aa']:
         if aa.startswith('nterm') or aa.startswith('cterm'):
-            term_RCs = True
+            term_aa = True
             break
 
     # Calculate retention time.
-    peptide_dict = get_aminoacid_composition(peptide, amino_acids, term_RCs)
+    peptide_dict = get_aminoacid_composition(peptide, amino_acids, 
+                                             False, term_aa)
     length_correction_term = (
-        1.0 + RC_dict['lcf'] * numpy.log(sum(peptide_dict.values())))
+        1.0 + RC_dict['lcf'] * numpy.log(peptide_length(peptide_dict)))
     RT = reduce(operator.add, 
                 [peptide_dict[aa] * length_correction_term * RC_dict['aa'][aa]
-                 for aa in peptide_dict], 
+                 for aa in peptide_dict],
                 0.0)
     RT += RC_dict['const']
 
