@@ -1,6 +1,10 @@
-import itertools
+# Licensed under the MIT license:
+# http://www.opensource.org/licenses/mit-license.php
+
 # The FASTA format description can be found at
 # http://www.ncbi.nlm.nih.gov/blast/fasta.shtml 
+
+import itertools
 
 def read_fasta(fasta_file, ignore_comments = True):
     """Read a FASTA file and return entries iteratively.

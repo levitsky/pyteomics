@@ -1,3 +1,6 @@
+# Licensed under the MIT license:
+# http://www.opensource.org/licenses/mit-license.php 
+
 import operator
 import numpy
 from modx import std_chem_groups, peptide_length, get_aminoacid_composition

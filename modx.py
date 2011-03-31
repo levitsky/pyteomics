@@ -1,3 +1,6 @@
+# Licensed under the MIT license:
+# http://www.opensource.org/licenses/mit-license.php 
+
 import re
 from collections import deque
 from itertools import imap, chain

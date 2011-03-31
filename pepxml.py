@@ -1,3 +1,6 @@
+# Licensed under the MIT license:
+# http://www.opensource.org/licenses/mit-license.php 
+
 from lxml import etree
 
 # A list of the spectrum_query attributes which contain float values.

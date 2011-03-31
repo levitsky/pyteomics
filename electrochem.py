@@ -1,3 +1,6 @@
+# Licensed under the MIT license:
+# http://www.opensource.org/licenses/mit-license.php 
+
 from modx import get_aminoacid_composition
 
 def charge(sequence, pH, data=data_lehniger):
