@@ -1,3 +1,7 @@
+import re
+from collections import deque
+from itertools import imap, chain
+
 std_amino_acids = ['Q','W','E','R','T','Y','I','P','A','S',
                    'D','F','G','H','K','L','C','V','N','M']
 std_nterm = 'H-'
@@ -165,6 +169,67 @@ def get_aminoacid_composition(sequence,
         aa_dict[aa] = aa_dict.get(aa, 0.0) + 1.0
         
     return aa_dict
+
+def cleave(sequence, rule, missed_cleavages=0):
+    """Cleaves a polypeptide sequence using a given rule.
+
+    Keyword arguments:
+    sequence -- a polypeptide sequence;
+    rule -- a string with regular expression describing the C-terminal
+            site of cleavage.
+    missed_cleavages -- the maximal number of allowed missed cleavages.
+
+    Return a list of unique (!) peptides.
+    """
+    peptides = set()
+    cleavage_sites = deque([0], maxlen=missed_cleavages+2)
+    for i in chain(imap(lambda x: x.end(), re.finditer(rule, sequence)),
+                   [None]):
+        cleavage_sites.append(i)
+        for i in range(1, len(cleavage_sites)):
+            peptides.add(sequence[cleavage_sites[0]:cleavage_sites[i]])
+    return list(peptides)
+
+expasy_rules = {
+    'arg-c':         'R',
+    'asp-n':         '\w(?=D)',
+    'bnps-skatole' : 'W',
+    'caspase 1':     '(?<=[FWYL]\w[HAT])D(?=[^PEDQKR])',
+    'caspase 2':     '(?<=DVA)D(?=[^PEDQKR])',
+    'caspase 3':     '(?<=DMQ)D(?=[^PEDQKR])',
+    'caspase 4':     '(?<=LEV)D(?=[^PEDQKR])',
+    'caspase 5':     '(?<=[LW]EH)D',
+    'caspase 6':     '(?<=VE[HI])D(?=[^PEDQKR])',
+    'caspase 7':     '(?<=DEV)D(?=[^PEDQKR])',
+    'caspase 8':     '(?<=[IL]ET)D(?=[^PEDQKR])',
+    'caspase 9':     '(?<=LEH)D',
+    'caspase 10':    '(?<=IEA)D',
+    'chymotrypsin low specificity' : '([FY](?=[^P]))|(W(?=[^MP]))',
+    'chymotrypsin high specificity':
+        '([FLY](?=[^P]))|(W(?=[^MP]))|(M(?=[^PY]))|(H(?=[^DMPW]))',
+    'clostripain':   'R',
+    'cnbr':          'M',
+    'enterokinase':  '(?<=[DN][DN][DN])K',
+    'factor xa':     '(?<=[AFGILTVM][DE]G)R',
+    'formic acid':   'D',
+    'glutamyl endopeptidase': 'E',
+    'granzyme b':    '(?<=IEP)D',
+    'hydroxylamine': 'N(?=G)',
+    'iodosobezoic acid': 'W',
+    'lysc':          'K',
+    'ntcb':          '\w(?=C)',
+    'pepsin ph1.3':  '((?<=[^HKR][^P])[^R](?=[FLWY][^P]))|'
+                     '((?<=[^HKR][^P])[FLWY](?=\w[^P]))',
+    'pepsin ph2.0':  '((?<=[^HKR][^P])[^R](?=[FL][^P]))|'
+                     '((?<=[^HKR][^P])[FL](?=\w[^P]))',
+    'proline endopeptidase': '(?<=[HKR])P(?=[^P])',
+    'proteinase k':  '[AEFILTVWY]',
+    'staphylococcal peptidase i': '(?<=[^E])E',
+    'thermolysin':   '[^DE](?=[AFILMV])',
+    'thrombin':      '((?<=G)R(?=G))|'
+                     '((?<=[AFGILTVM][AFGILTVWA]P)R(?=[^DE][^DE]))',
+    'trypsin':       '([KR](?=[^P]))|((?<=W)K(?=P))|((?<=M)R(?=P))'
+    }
 
 if __name__ == "__main__":
     import doctest

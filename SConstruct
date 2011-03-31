@@ -101,16 +101,19 @@ env.AddPostAction(
                      'post_swig.py'),
         os.path.join(Dir('#.').abspath, 'biolccc', 'src', 
                      'bindings', 'post_swig.py')))
+
 env.AddPostAction(
    pyteomics, 
    'python ' + os.path.join('build', platform.name, env['BUILDTYPE'],
                             'bindings', 'post_swig.py') + ' ' + version)
+
 env.AddPostAction(
    pyteomics, 
    Copy(os.path.join(Dir('#.').abspath, 'biolccc', 'src', 
                      'bindings', 'biolccc.py'),
         os.path.join('build', platform.name, env['BUILDTYPE'], 'bindings',
                      'biolccc.py')))
+
 env.AddPostAction(
    pyteomics, 
    Copy(os.path.join(Dir('#.').abspath, 'biolccc', 'src',
@@ -134,6 +137,7 @@ Depends(pyteomics, Glob(os.path.join('biolccc', 'src', 'core', '*.cpp')))
 Depends(pyteomics, os.path.join('biolccc', 'src', 'bindings', 'post_swig.py'))
 Depends(pyteomics, os.path.join('biolccc', 'src', 'bindings', '__init__.py'))
 Depends(pyteomics, 'setup.py')
+Depends(pyteomics, Glob('*.py'))
 Depends(pyteomics, 'MANIFEST.in')
 # Copying the documentation to the build dir.
 Depends(pyteomics, 'VERSION')
