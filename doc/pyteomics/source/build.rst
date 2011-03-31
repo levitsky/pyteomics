@@ -1,6 +1,0 @@
-============
-Installation
-============
-
-.. include:: ../../../INSTALL
-
