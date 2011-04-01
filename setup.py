@@ -5,8 +5,8 @@ setup.py file for pyteomics
 '''
 
 from distutils.core import setup
-import os.path
-import glob
+
+version = open('VERSION').readline().strip()
 
 setup(
     name = 'pyteomics',
