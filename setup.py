@@ -16,6 +16,7 @@ setup(
     author           = 'Anton Goloborodko',
     author_email     = 'goloborodko.anton@gmail.com',
     url              = 'http://pyteomics.theorchromo.ru',
+    packages         = ['pyteomics',],
     classifiers      = ['Intended Audience :: Science/Research',
                         'Programming Language :: Python :: 2',
                         'Topic :: Education',

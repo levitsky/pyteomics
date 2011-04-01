@@ -1,5 +1,4 @@
-include biolccc/include/*
-include modx.py, fasta.py, mzml.py, pepxml.py, electrochem.py, achrom.py
+include *.py
 include VERSION
 include README
 include requirements.txt
