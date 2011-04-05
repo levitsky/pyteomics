@@ -31,7 +31,7 @@ def read_fasta(fasta_file, ignore_comments = True):
         
         if is_comment:
             # If it is a continuing comment
-            if len(accumulated_strings) = 1 and not ignore_comments:
+            if len(accumulated_strings) == 1 and not ignore_comments:
                 accumulated_strings[0] += stripped_string[1:]
             else:
                 description = accumulated_strings[0]
