@@ -3,7 +3,7 @@
 
 import operator
 import numpy
-from modx import std_chem_groups, peptide_length, amino_acid_composition
+from parser import std_chem_groups, peptide_length, amino_acid_composition
 
 def linear_regression(x, y, a=None, b=None):
     """Calculates coefficients of a linear regression y = a * x + b.

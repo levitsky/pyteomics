@@ -4,7 +4,7 @@
 import math
 import numpy
 
-import modx
+import parser
 
 # This set of data was downloaded from the NIST website:
 # http://www.nist.gov/pml/data/comp.cfm
@@ -96,8 +96,8 @@ class Composition(dict):
     
     def _from_sequence(self, sequence, amino_acid_comp=STD_AMINO_ACID_COMP):
         self.clear()
-        parsed_sequence = modx.parse_sequence(sequence,
-                                              show_standard_term_groups=True)
+        parsed_sequence = parser.parse_sequence(sequence,
+                                                show_standard_term_groups=True)
         self._from_parsed_sequence(parsed_sequence)
 
     def _from_formula(self, formula, mass_data=NIST_MASS):

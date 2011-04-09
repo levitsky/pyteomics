@@ -1,7 +1,10 @@
+"""
+
+"""
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license.php 
 
-from modx import amino_acid_composition
+from parser import amino_acid_composition
 
 def charge(sequence, pH, **kwargs):
     """Calculate charge of a polypeptide in given pH of list of pHs using

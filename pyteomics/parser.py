@@ -1,4 +1,7 @@
 """
+parser - a simple modX-based peptide sequence parser
+====================================================
+
 modX is a simple extension of the `IUPAC one-letter peptide sequence
 representation <http://www.chem.qmul.ac.uk/iupac/AminoAcid/A2021.html>`_.
 
