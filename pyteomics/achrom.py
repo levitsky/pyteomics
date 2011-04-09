@@ -3,7 +3,7 @@
 
 import operator
 import numpy
-from parser import std_chem_groups, peptide_length, amino_acid_composition
+from parser import std_labels, peptide_length, amino_acid_composition
 
 def linear_regression(x, y, a=None, b=None):
     """Calculates coefficients of a linear regression y = a * x + b.
@@ -34,7 +34,7 @@ def linear_regression(x, y, a=None, b=None):
     return (a, b, r, stderr)
 
 def get_RCs(peptides, RTs, length_correction_factor = -0.21,
-            chem_groups = std_chem_groups,
+            labels = std_labels,
             term_aa = False):
     """Calculate the retention coefficients of amino acids given
     retention time of a peptide sample.
@@ -45,7 +45,7 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
     RTs -- a list of retention times of the peptides;
     length_correction_factor -- a multiplier before ln(L) term in the
     equation for the retention time of a peptide;
-    chem_groups -- a list of all possible amino acids and terminal
+    labels -- a list of all possible amino acids and terminal
     groups (default 20 standard amino acids, N-terminal NH2- and
     C-terminal -OH);                   
     term_aa -- if True than terminal amino acids are treated as being
@@ -70,7 +70,7 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
 
     # Make a list of all amino acids present in the sample.
     peptide_dicts = [
-        amino_acid_composition(peptide, False, term_aa, chem_groups=chem_groups)
+        amino_acid_composition(peptide, False, term_aa, labels=labels)
         for peptide in peptides]
 
     detected_amino_acids = set([aa for peptide_dict in peptide_dicts
@@ -96,7 +96,7 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
     return RC_dict
 
 def get_RCs_vary_lcf(peptides, RTs,
-                chem_groups = std_chem_groups,
+                labels = std_labels,
                 term_aa = False,
                 min_lcf = -1.0,
                 max_lcf = 1.0):
@@ -106,7 +106,7 @@ def get_RCs_vary_lcf(peptides, RTs,
 
     peptides -- a list of peptide sequences;
     RTs -- a list of retention times of the peptides;    
-    chem_groups -- a list of all possible amino acids and terminal
+    labels -- a list of all possible amino acids and terminal
     groups (default 20 standard amino acids, N-terminal NH2- and
     C-terminal -OH);                   
     min_lcf -- the minimal value of the length correction factor;
@@ -134,7 +134,7 @@ def get_RCs_vary_lcf(peptides, RTs,
         lcf_range = numpy.arange(min_lcf, max_lcf,
                                  (max_lcf - min_lcf) / 10.0)
         for lcf in lcf_range:
-            RC_dict = get_RCs(peptides, RTs, lcf, chem_groups, term_aa)
+            RC_dict = get_RCs(peptides, RTs, lcf, labels, term_aa)
             regression_coeffs = linear_regression(
                 RTs, 
                 [calculate_RT(peptide, RC_dict) for peptide in peptides])
@@ -177,7 +177,7 @@ def calculate_RT(peptide, RC_dict):
 
     # Calculate retention time.
     peptide_dict = amino_acid_composition(peptide, False, term_aa,
-                                          chem_groups=amino_acids)
+                                          labels=amino_acids)
     length_correction_term = (
         1.0 + RC_dict['lcf'] * numpy.log(peptide_length(peptide_dict)))
     RT = reduce(operator.add, 

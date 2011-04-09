@@ -32,9 +32,10 @@ sys.path.insert(0, pyteomics_path)
 extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               'sphinx.ext.doctest',
-              'sphinxcontrib.autorun',
+              'numpydoc',
               'matplotlib.sphinxext.ipython_console_highlighting',
-              'matplotlib.sphinxext.ipython_directive']
+              'matplotlib.sphinxext.ipython_directive',
+              'matplotlib.sphinxext.mathmpl']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

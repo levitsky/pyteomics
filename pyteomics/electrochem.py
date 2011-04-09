@@ -1,10 +1,40 @@
 """
+electrochem - calculate charge and pI of a polypeptide
+======================================================
+
+The theory behind this module is based on the Henderson-Hasselbalch
+equation and was thoroughly described in a number of sources [#Aronson]_,
+[#Moore]_.
+
+Briefly, the formula is the following:
+
+.. math::
+
+   Q_{peptide} = \Sigma{\\frac{Q_i}{1+10^{Q_i(pH-pK_i)}}},
+
+where the sum is taken over all ionizable groups of a polypeptide, and
+:math:`Q_i` is -1 and +1 for acidic and basic functional groups,
+respectively.
+
+**Computation:**
+
+
+.. [#Aronson] John N Aronson, The Henderson-Hasselbalch equation
+   revisited.  Biochemical Education, vol. 11, issue 2, pp. 68, April
+   1983.  `link <http://dx.doi.org/10.1016/0307-4412(83)90046-8>`_
+
+.. [#Moore] Dexter S Moore, Amino acid and peptide net charges: A
+   simple calculational procedure. Biochemical Education, vol. 13,
+   issue 1, pp. 10-12, January 1986.  `link
+   <http://dx.doi.org/10.1016/0307-4412(85)90114-1>`_
+
+-------------------------------------------------------------------------------
 
 """
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license.php 
 
-from parser import amino_acid_composition
+import parser
 
 def charge(sequence, pH, **kwargs):
     """Calculate charge of a polypeptide in given pH of list of pHs using
@@ -20,8 +50,8 @@ def charge(sequence, pH, **kwargs):
     data = kwargs.get('data', data_lehniger)
     
     amino_acids = data.keys()
-    peptide_dict = amino_acid_composition(sequence, True, False,
-                                          labels=amino_acids)
+    peptide_dict = parser.amino_acid_composition(sequence, True, False,
+                                                 labels=amino_acids)
 
     # Processing the case what pH is a single float.
     pH_list = pH if isinstance(pH, list) else [pH,]
@@ -39,23 +69,26 @@ def charge(sequence, pH, **kwargs):
     
     return charge_list[0] if len(charge_list) == 1 else charge_list
 
-def pI(sequence, min_pI=0.0, max_pI=14.0, precision_pI=0.01, **kwargs):
+def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
     """Calculate isoelectric point of a polypeptide using a given set
     of amino acids' electrochemical properties.
 
-    Keyword arguments:
-    sequence -- a polypeptide sequence;
-    data -- a set of pK of amino acids' charged groups;
-    min_pI -- a minimal allowable pI;
-    max_pI -- a maximal allowable pI;
-    precision_pI -- a precision of the calculated pI.
+    Parameters
+    ----------
+    sequence : str
+    pI_range: tuple of float
+    data : dict, optional
+        a set of pK of amino acids' charged groups;
 
-    Return a value of pI.
     """
+    #     Blahblah
+    # precision_pI -- a precision of the calculated pI.
+
+    # Return a value of pI.
+
     data = kwargs.get('data', data_lehniger)
 
-    left_x = min_pI
-    right_x = max_pI
+    left_x, right_x = pI_range
     left_y = charge(sequence, left_x, data)
     right_y = charge(sequence, right_x, data)
 

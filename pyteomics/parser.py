@@ -1,6 +1,6 @@
 """
-parser - a simple modX-based peptide sequence parser
-====================================================
+parser - operations on modX peptide sequences
+=============================================
 
 modX is a simple extension of the `IUPAC one-letter peptide sequence
 representation <http://www.chem.qmul.ac.uk/iupac/AminoAcid/A2021.html>`_.
@@ -63,7 +63,7 @@ Therefore, the valid examples of peptide sequences in modX are: "GAGA",
 .. ipython::
    :suppress:
 
-   In [1]: import pyteomics.modx; from pprint import pprint
+   In [1]: import pyteomics.parser; from pprint import pprint
 
 -------------------------------------------------------------------------------
 
@@ -337,7 +337,7 @@ at Expasy.
 
 .. ipython::
    
-   In [2]: pprint(pyteomics.modx.expasy_rules)
+   In [2]: pprint(pyteomics.parser.expasy_rules)
 """
 
 if __name__ == "__main__":
