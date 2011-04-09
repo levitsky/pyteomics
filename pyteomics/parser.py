@@ -98,15 +98,19 @@ def is_term_mod(label):
 def peptide_length(sequence, **kwargs):
     """Calculate the number of amino acid residues in a polypeptide
     written in modX notation.
-    
-    :param sequence: a string with a polypeptide sequence, a list with
-                     a parsed sequence or a dict of amino acid
-                     composition;
 
-    :keyword labels: a list of allowed labels for amino acids and terminal
-                     modifications (default is the 20 standard amino acids,
-                     N-terminal H- and C-terminal -OH);
+    Parameters
+    ----------
+    sequence : str or list or dict    
+        A string with a polypeptide sequence, a list with a parsed
+        sequence or a dict of amino acid composition.
+    labels : list, optional
+        A list of allowed labels for amino acids and terminal
+        modifications (default is the 20 standard amino acids,
+        N-terminal H- and C-terminal -OH).
 
+    Examples
+    --------
     >>> peptide_length('PEPTIDE')
     7
     >>> peptide_length('H-PEPTIDE-OH')
@@ -138,18 +142,25 @@ def parse_sequence(sequence,
     """Parse a sequence string written in modX notation into a list of
     amino acid residues and terminal modifications. 
 
-    :param sequence: a polypeptide sequence;
+    Parameters
+    ----------
+    sequence : str
+        The sequence of a polypeptide.
+    show_unmodified_termini : bool    
+        If True then the unmodified N- and C-terminus are explicitly shown in
+        the returned list.
+    labels : list, optional
+        A list of allowed labels for amino acids and terminal modifications
+        (default is the 20 standard amino acids, N-terminal H- and C-terminal
+        -OH).
 
-    :param show_unmodified_termini: if True then the unmodified N- and
-                                    C-terminus are explicitly shown in
-                                    the returned list.
+    Returns
+    -------
+    out : list
+        List of labels of terminal modifications and amino acid residues.
 
-    :keyword labels: a list of allowed labels for amino acids and terminal
-                     modifications (default is the 20 standard amino acids,
-                     N-terminal H- and C-terminal -OH);
-                          
-    :return: a list of labels for terminal modifications and a.a. residues
-
+    Examples
+    --------
     >>> parse_sequence('PEPTIDE')
     ['P', 'E', 'P', 'T', 'I', 'D', 'E']
     >>> parse_sequence('H-PEPTIDE')
@@ -211,21 +222,28 @@ def amino_acid_composition(sequence,
                            **kwargs):
     """Calculate amino acid composition of a polypeptide.
 
-    :param sequence: a polypeptide sequence;
+    Parameters
+    ----------
+    sequence : str
+        The sequence of a polypeptide.
+    show_unmodified_termini : bool    
+        If True then the unmodified N- and C-terminus are explicitly shown in
+        the returned list.
+    term_aa : bool
+        If True then the terminal amino acid residues are artificially
+        modified with "nterm" or "cterm" modification.     
+    labels : list, optional
+        A list of allowed labels for amino acids and terminal modifications
+        (default is the 20 standard amino acids, N-terminal H- and C-terminal
+        -OH).
 
-    :param show_unmodified_termini: if True then the unmodified N- and
-                                    C-terminus are explicitly shown in
-                                    the returned dictionary.
+    Returns
+    -------
+    out : dict
+        a dictionary of amino acid content.
 
-    :param term_aa: if True then the terminal amino acid residues are
-                    artificially modified with "nterm" or "cterm" modification.
-
-    :keyword labels: a list of allowed labels for amino acids and terminal
-                     modifications (default is the 20 standard amino acids,
-                     N-terminal H- and C-terminal -OH);
-    
-    :return: a dictionary of amino acid content.
-    
+    Examples
+    --------
     >>> amino_acid_composition('PEPTIDE')
     {'I': 1.0, 'P': 2.0, 'E': 2.0, 'T': 1.0, 'D': 1.0}
     >>> amino_acid_composition('PEPTDE', term_aa=True)
@@ -262,17 +280,23 @@ def amino_acid_composition(sequence,
 def cleave(sequence, rule, missed_cleavages=0):
     """Cleaves a polypeptide sequence using a given rule.
     
-    Keyword arguments:
+    Parameters
+    ----------
+    sequence : str
+        The sequence of a polypeptide.
+    rule : str    
+        A string with a regular expression describing the C-terminal site of
+        cleavage.    
+    missed_cleavages : int
+        The maximal number of allowed missed cleavages.
 
-    :param sequence: a polypeptide sequence;
+    Returns
+    -------
+    out : list
+        A list of unique (!) peptides.
 
-    :param rule: a string with a regular expression describing the
-                 C-terminal site of cleavage.
-    
-    :param missed_cleavages: the maximal number of allowed missed cleavages.
-    
-    :return: a list of unique (!) peptides.
-
+    Examples
+    --------
     >>> cleave('AKAKBK', expasy_rules['trypsin'], 0)
     ['AK', 'BK']
     >>> cleave('AKAKBKCK', expasy_rules['trypsin'], 2)

@@ -1,1 +1,4 @@
-The project uses the following 
+The project uses the following sphinx extensions:
+- matplotlib
+- `numpydoc 
+   <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt)>`_

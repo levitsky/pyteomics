@@ -314,6 +314,10 @@ td {
     vertical-align: top;
 }
 
+th.field-name {
+    white-space: nowrap;
+}
+
 tt {
     background-color: #e2e2e2;
     font-size: 1.0em;
