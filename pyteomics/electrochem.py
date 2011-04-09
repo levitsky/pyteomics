@@ -1,9 +1,9 @@
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license.php 
 
-from modx import get_aminoacid_composition
+from modx import amino_acid_composition
 
-def charge(sequence, pH, data=data_lehniger):
+def charge(sequence, pH, **kwargs):
     """Calculate charge of a polypeptide in given pH of list of pHs using
     a given list of amino acid electrochemical properties.
 
@@ -14,8 +14,11 @@ def charge(sequence, pH, data=data_lehniger):
 
     Return a single value of charge or a list of charges.
     """
+    data = kwargs.get('data', data_lehniger)
+    
     amino_acids = data.keys()
-    peptide_dict = get_aminoacid_composition(sequence, amino_acids, True, False)
+    peptide_dict = amino_acid_composition(sequence, True, False,
+                                          labels=amino_acids)
 
     # Processing the case what pH is a single float.
     pH_list = pH if isinstance(pH, list) else [pH,]
@@ -33,8 +36,7 @@ def charge(sequence, pH, data=data_lehniger):
     
     return charge_list[0] if len(charge_list) == 1 else charge_list
 
-def pI(sequence, data=data_lehniger, 
-       min_pI=0.0, max_pI=14.0, precision_pI=0.01 ):
+def pI(sequence, min_pI=0.0, max_pI=14.0, precision_pI=0.01, **kwargs):
     """Calculate isoelectric point of a polypeptide using a given set
     of amino acids' electrochemical properties.
 
@@ -47,6 +49,7 @@ def pI(sequence, data=data_lehniger,
 
     Return a value of pI.
     """
+    data = kwargs.get('data', data_lehniger)
 
     left_x = min_pI
     right_x = max_pI
