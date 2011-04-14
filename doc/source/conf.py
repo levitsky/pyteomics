@@ -33,9 +33,9 @@ extensions = [
               'sphinx.ext.autodoc',
               'sphinx.ext.viewcode',
               'sphinx.ext.doctest',
-              'matplotlib.sphinxext.ipython_console_highlighting',
-              'matplotlib.sphinxext.ipython_directive',
-              'matplotlib.sphinxext.mathmpl',
+              'matplotlib_sphinxext.ipython_console_highlighting',
+              'matplotlib_sphinxext.ipython_directive',
+              'matplotlib_sphinxext.mathmpl',
               'numpydoc',
              ]
 

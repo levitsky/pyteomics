@@ -32,7 +32,20 @@ In this formulation, it is clear that additive model give the same results for
 any two peptides that have different sequences but the same amino acid
 composition. In other words, **additive model is not sequence-specific**.
 
-However, the additive model has
+The additive model has two advantages over all other models of chromatography
+- it is easy to understand and use. The rule behind the additive model is as
+simple as it could be: each amino acid shifts retention time by a fixed value,
+depending only on its structure. This rule allows a geometrical
+interpretation. Each peptide may be represented by a point in 21-dimensional
+space, with first 20 coordinates equal to the amounts of corresponding amino
+acid residues in the peptide and 21-st coordinate equal to RT. The additive
+model assumes that a line may be drawed through these points. Of course, this
+assumption is valid only partially, and most points would not lie on the
+line. But the line would describe the main trend and could be used to estimate
+retention time for peptides with known amino acid composition.
+
+This best fit line is described by retention coefficients and :math:`RT_0`. We
+find these coefficients by *calibration*. 
 
 Several attempts were made in order to improve the accuracy of prediction by
 the additive model (for a review of the field we suggest to read [#Baczek]_
@@ -59,9 +72,7 @@ and vectorized form of this equation would be:
     
     RT = (1 + m\,ln(N)) \, \overline{RC} \cdot \overline{aa} + RT_0
 
-    
-
-
+The problem of 
 
 References
 ----------
