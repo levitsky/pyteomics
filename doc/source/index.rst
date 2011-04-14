@@ -9,13 +9,9 @@ Welcome to pyteomics's documentation!
 Contents:
 
 .. toctree::    
-   :maxdepth: 2
+   :maxdepth: 1
 
    ./parser
-   ./mass
-   ./fasta
-   ./mzml
-   ./pepxml
    ./electrochem
    ./achrom
 

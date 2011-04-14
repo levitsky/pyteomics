@@ -1,37 +1,114 @@
+"""
+achrom - additive model of polypeptide chromatography
+=====================================================
+
+Summary
+-------
+
+The additive model of polypeptide chromatography or the model of
+retention coefficients was the earliest attempt to describe the dependence of
+retention time of a polypeptide in liquid chromatography on its sequence
+[#Meek]_, [#Guo1]_. In this model, each amino acid is assigned a number or
+a *retention coefficient* (RC) describing its retention properties. The
+retention time (RT) during a gradient elution is then calculated as:
+
+.. math::
+
+    RT = \sum_{i=1}^{i=N}{RC_i} + RT_0,
+
+which is a sum of retention coefficients of all amino acid residues in a
+polypeptide. This equation can also be expressed in the terms of linear algebra:
+
+.. math::
+    
+    RT = \overline{aa} \cdot \overline{RC} + RT_0,
+    
+where :math:`\overline{aa}` is a vector of amino acid composition,
+i.e. :math:`\overline{aa}_i` is the number of amino acid residues of i-th type
+in a polypeptide; :math:`\overline{RC}` is a vector of respective retention
+coefficients.
+
+In this formulation, it is clear that additive model give the same results for
+any two peptides that have different sequences but the same amino acid
+composition. In other words, **additive model is not sequence-specific**.
+
+However, the additive model has
+
+Several attempts were made in order to improve the accuracy of prediction by
+the additive model (for a review of the field we suggest to read [#Baczek]_
+and [#Babushok]_). The two implemented in this module are the logarithmic
+length correction term described in [#MantLogLen]_ and additional sets of
+retention coefficients for terminal amino acid residues [#Tripet]_.
+
+Logarithmic length correction
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This enhancement was firstly described in [#MantLogLen]_. Briefly, it was
+found that the equation better describing the dependency of RT on peptide
+sequence has the following form:
+
+.. math::
+
+    RT = \sum_{i=1}^{i=N}{RC_i} + m\,ln(N) \sum_{i=1}^{i=N}{RC_i} + RT_0
+
+We would call the second term :math:`m\,ln(N) \sum_{i=1}^{i=N}{RC_i}` *the
+length correction term* and m - *the length correction factor*. The simplified
+and vectorized form of this equation would be:
+
+.. math::
+    
+    RT = (1 + m\,ln(N)) \, \overline{RC} \cdot \overline{aa} + RT_0
+
+    
+
+
+
+References
+----------
+
+.. [#Meek] Meek, J. L. Prediction of peptide retention times in high-pressure
+   liquid chromatography on the basis of amino acid composition. PNAS, 1980,
+   77 (3), 1632-1636.
+   `Link <http://www.ncbi.nlm.nih.gov/pubmed/6929513>`_
+
+.. [#Guo1] Guo, D.; Mant, C. T.; Taneja, A. K.; Parker, J. M. R.; Rodges, R. S.
+   Prediction of peptide retention times in reversed-phase high-performance
+   liquid chromatography I. Determination of retention coefficients of amino
+   acid residues of model synthetic peptides. Journal of Chromatography A,
+   1986, 359, 499-518.
+   `Link. <http://dx.doi.org/10.1016/0021-9673(86)80102-9>`_
+   
+.. [#Baczek] Baczek, T.; Kaliszan, R. Predictions of peptides' retention times
+   in reversed-phase liquid chromatography as a new supportive tool to improve
+   protein identification in proteomics. Proteomics, 2009, 9 (4), 835-47.
+   `Link. <http://dx.doi.org/10.1002/pmic.200800544>`_
+
+.. [#Babushok] Babushok, V. I.; Zenkevich, I. G. Retention Characteristics of
+   Peptides in RP-LC: Peptide Retention Prediction. Chromatographia, 2010, 72
+   (9-10), 781-797.
+   `Link. <http://dx.doi.org/10.1365/s10337-010-1721-8>`_
+   
+.. [#MantLogLen] Mant, C. T.; Zhou, N. E.; Hodges, R. S. Correlation of
+   protein retention times in reversed-phase chromatography with polypeptide
+   chain length and hydrophobicity. Journal of Chromatography A, 1989, 476,
+   363-375. `Link. <http://dx.doi.org/10.1016/S0021-9673(01)93882-8>`_
+
+.. [#Tripet] Tripet, B.; Cepeniene, D.; Kovacs, J. M.; Mant, C. T.; Krokhin,
+   O. V.; Hodges, R. S. Requirements for prediction of peptide retention time
+   in reversed-phase high-performance liquid chromatography:
+   hydrophilicity/hydrophobicity of side-chains at the N- and C-termini of
+   peptides are dramatically affected by the end-groups and location. Journal
+   of chromatography A, 2007, 1141 (2), 212-25.
+   `Link. <http://dx.doi.org/10.1016/j.chroma.2006.12.024>`_
+
+"""
+
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license.php 
 
 import operator
 import numpy
 from parser import std_labels, peptide_length, amino_acid_composition
-
-def linear_regression(x, y, a=None, b=None):
-    """Calculates coefficients of a linear regression y = a * x + b.
-
-    Keyword agruments:
-    x, y -- 1-D arrays of input data
-    a -- if not None then the slope coefficient is fixed and equals a
-    b -- if not None then the free term is fixed and equals b
-    
-    Returns:
-    (a, b, r, stderr), where:
-    a -- slope coefficient 
-    b -- free term 
-    r -- Peason correlation coefficient
-    stderr -- standard deviation
-    """
-
-    if (a!=None and b==None):
-        b = numpy.mean([y[i] - a * x[i] for i in range(len(x))])
-    elif (a!=None and b!= None):
-        pass
-    else:
-        a, b = numpy.polyfit(x, y, 1)
-
-    r = numpy.corrcoef(x, y)[0, 1]
-    stderr = numpy.std([y[i] - a * x[i] - b for i in range(len(x))])
-
-    return (a, b, r, stderr)
 
 def get_RCs(peptides, RTs, length_correction_factor = -0.21,
             labels = std_labels,

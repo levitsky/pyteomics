@@ -25,7 +25,8 @@ carboxyl group may not be shown explicitly.
 Therefore, the valid examples of peptide sequences in modX are: "GAGA",
 "H-PEPTIDE", "TEST-NH2".
 
-**Operations on polypeptide sequences:**
+Operations on polypeptide sequences:
+------------------------------------
 
   :py:func:`parse_sequence` - convert a sequence string into a list of
   amino acid residues
@@ -36,7 +37,8 @@ Therefore, the valid examples of peptide sequences in modX are: "GAGA",
   :py:func:`cleave` - cleave a polypeptide using a given rule of
   enzymatic digestion
 
-**Auxiliary commands:**
+Auxiliary commands:
+-------------------
 
   :py:func:`peptide_length` - calculate the number of amino acid
   residues in a polypeptide
@@ -44,7 +46,8 @@ Therefore, the valid examples of peptide sequences in modX are: "GAGA",
   :py:func:`is_term_mod` - check if supplied code corresponds to a
   terminal modification
 
-**Data:**
+Data:
+-----
 
   :py:data:`std_amino_acids` - a list of the 20 standard amino acid IUPAC codes.
   
@@ -75,6 +78,7 @@ Therefore, the valid examples of peptide sequences in modX are: "GAGA",
 import re
 from collections import deque
 from itertools import imap, chain
+from auxiliary import PyteomicsError
 
 std_amino_acids = ['Q','W','E','R','T','Y','I','P','A','S',
                    'D','F','G','H','K','L','C','V','N','M']
@@ -101,13 +105,13 @@ def peptide_length(sequence, **kwargs):
 
     Parameters
     ----------
-    sequence : str or list or dict    
-        A string with a polypeptide sequence, a list with a parsed
-        sequence or a dict of amino acid composition.
-    labels : list, optional
-        A list of allowed labels for amino acids and terminal
-        modifications (default is the 20 standard amino acids,
-        N-terminal H- and C-terminal -OH).
+    sequence : str or list or dict
+        A string with a polypeptide sequence, a list with a parsed sequence or
+        a dict of amino acid composition.        
+    labels : list, optional    
+        A list of allowed labels for amino acids and terminal modifications
+        (default is `std_labels`, the 20 standard amino acids, N-terminal H-
+        and C-terminal -OH).
 
     Examples
     --------
@@ -133,7 +137,7 @@ def peptide_length(sequence, **kwargs):
         return sum([amount for aa, amount in sequence.items() 
                     if not is_term_mod(aa)])
 
-    raise Exception('Unsupported type of a sequence.')
+    raise PyteomicsError('Unsupported type of a sequence.')
     return None
 
 def parse_sequence(sequence,               
@@ -203,7 +207,7 @@ def parse_sequence(sequence,
                 amino_acid_found = True
                 break
         if not amino_acid_found:
-            raise Exception(
+            raise PyteomicsError(
                 'Unknown amino acid in sequence %s at position %d: %s' % (
                     backbone_sequence, i+1, backbone_sequence[i:]))
             return []
@@ -224,8 +228,8 @@ def amino_acid_composition(sequence,
 
     Parameters
     ----------
-    sequence : str
-        The sequence of a polypeptide.
+    sequence : str or list
+        The sequence of a polypeptide or a list with a parsed sequence.
     show_unmodified_termini : bool    
         If True then the unmodified N- and C-terminus are explicitly shown in
         the returned list.
@@ -239,8 +243,9 @@ def amino_acid_composition(sequence,
 
     Returns
     -------
-    out : dict
-        a dictionary of amino acid content.
+    out : dict or None
+        a dictionary of amino acid content. Returns None if `sequence` is not
+        of supported type.
 
     Examples
     --------
@@ -254,10 +259,13 @@ def amino_acid_composition(sequence,
     """
     labels = kwargs.get('labels', std_labels)
 
-    parsed_sequence = parse_sequence(sequence, show_unmodified_termini,
-                                     labels=labels)
-    if not parsed_sequence:
-        return {}
+    if isinstance(sequence, basestring):
+        parsed_sequence = parse_sequence(sequence, show_unmodified_termini,
+                                         labels=labels)
+    elif isinstance(sequence, list):
+        parsed_sequence = sequence
+    else:
+        raise PyteomicsError('Unsupported type of a sequence.')
 
     aa_dict = {}
 
