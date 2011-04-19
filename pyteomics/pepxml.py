@@ -66,8 +66,12 @@ def psm_from_query(query):
     # A psm stores the properties of the spectrum query...
     psm = dict(query.attrib)
     # ... and the best hit from peptide database.
-    psm.update(query.xpath('d:search_result/d:search_hit[@hit_rank=\'1\']',
-                           namespaces={'d':xmlns})[0].attrib)
+    search_hit_elements = query.xpath(
+        'd:search_result/d:search_hit[@hit_rank=\'1\']',
+        namespaces={'d':xmlns})
+    if not search_hit_elements:
+        return {}
+    psm.update(search_hit_elements[0].attrib)
 
     # Use non-modified sequence of a peptide as a modified one if
     # there are no modifications.

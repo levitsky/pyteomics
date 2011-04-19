@@ -17,16 +17,17 @@ retention time (RT) during a gradient elution is then calculated as:
     RT = \sum_{i=1}^{i=N}{RC_i} + RT_0,
 
 which is a sum of retention coefficients of all amino acid residues in a
-polypeptide. This equation can also be expressed in the terms of linear algebra:
+polypeptide. This equation can also be expressed in the terms of linear
+algebra:
 
 .. math::
     
     RT = \overline{aa} \cdot \overline{RC} + RT_0,
     
-where :math:`\overline{aa}` is a vector of amino acid composition,
-i.e. :math:`\overline{aa}_i` is the number of amino acid residues of i-th type
-in a polypeptide; :math:`\overline{RC}` is a vector of respective retention
-coefficients.
+where :math:`\\overline{aa}` is a vector of amino acid composition,
+i.e. :math:`\\overline{aa}_i` is the number of amino acid residues of i-th
+type in a polypeptide; :math:`\overline{RC}` is a vector of respective
+retention coefficients.
 
 In this formulation, it is clear that additive model give the same results for
 any two peptides that have different sequences but the same amino acid
@@ -34,18 +35,21 @@ composition. In other words, **additive model is not sequence-specific**.
 
 The additive model has two advantages over all other models of chromatography
 - it is easy to understand and use. The rule behind the additive model is as
-simple as it could be: each amino acid shifts retention time by a fixed value,
-depending only on its structure. This rule allows a geometrical
+simple as it could be: **each amino acid residue shifts retention time by a
+fixed value, depending only on its type**. This rule allows geometrical
 interpretation. Each peptide may be represented by a point in 21-dimensional
 space, with first 20 coordinates equal to the amounts of corresponding amino
 acid residues in the peptide and 21-st coordinate equal to RT. The additive
-model assumes that a line may be drawed through these points. Of course, this
+model assumes that a line may be drawn through these points. Of course, this
 assumption is valid only partially, and most points would not lie on the
 line. But the line would describe the main trend and could be used to estimate
 retention time for peptides with known amino acid composition.
 
-This best fit line is described by retention coefficients and :math:`RT_0`. We
-find these coefficients by *calibration*. 
+This best fit line is described by retention coefficients and :math:`RT_0`.
+The procedure of finding these coefficients called *calibration*. There is `an
+analytical solution to calibration of linear models
+<http://en.wikipedia.org/wiki/Linear_regression>`_, which makes them
+especially useful in real applications.
 
 Several attempts were made in order to improve the accuracy of prediction by
 the additive model (for a review of the field we suggest to read [#Baczek]_
@@ -57,8 +61,8 @@ Logarithmic length correction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This enhancement was firstly described in [#MantLogLen]_. Briefly, it was
-found that the equation better describing the dependency of RT on peptide
-sequence has the following form:
+found that the following equation better describes the dependency of RT on a
+peptide sequence:
 
 .. math::
 
@@ -72,7 +76,15 @@ and vectorized form of this equation would be:
     
     RT = (1 + m\,ln(N)) \, \overline{RC} \cdot \overline{aa} + RT_0
 
-The problem of 
+This equation may be reduced to a linear form and solved by the standard
+methods.
+
+Terminal retention coefficients
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Another significant improvement may be obtained through introduction of
+separate sets of retention coefficients for terminal amino acid residues
+[#Tripet]. 
 
 References
 ----------
@@ -82,11 +94,11 @@ References
    77 (3), 1632-1636.
    `Link <http://www.ncbi.nlm.nih.gov/pubmed/6929513>`_
 
-.. [#Guo1] Guo, D.; Mant, C. T.; Taneja, A. K.; Parker, J. M. R.; Rodges, R. S.
-   Prediction of peptide retention times in reversed-phase high-performance
-   liquid chromatography I. Determination of retention coefficients of amino
-   acid residues of model synthetic peptides. Journal of Chromatography A,
-   1986, 359, 499-518.
+.. [#Guo1] Guo, D.; Mant, C. T.; Taneja, A. K.; Parker, J. M. R.; Hodges,
+   R. S.  Prediction of peptide retention times in reversed-phase
+   high-performance liquid chromatography I. Determination of retention
+   coefficients of amino acid residues of model synthetic peptides. Journal of
+   Chromatography A, 1986, 359, 499-518.
    `Link. <http://dx.doi.org/10.1016/0021-9673(86)80102-9>`_
    
 .. [#Baczek] Baczek, T.; Kaliszan, R. Predictions of peptides' retention times
@@ -268,10 +280,14 @@ def calculate_RT(peptide, RC_dict):
                                           labels=amino_acids)
     length_correction_term = (
         1.0 + RC_dict['lcf'] * numpy.log(peptide_length(peptide_dict)))
-    RT = reduce(operator.add, 
-                [peptide_dict[aa] * length_correction_term * RC_dict['aa'][aa]
-                 for aa in peptide_dict],
-                0.0)
+    RT = 0.0
+    for aa in peptide_dict:
+        if (aa not in RC_dict['aa'] and
+            (aa.startswith('nterm') or aa.startswith('cterm'))):
+            RT += peptide_dict[aa] * RC_dict['aa'][aa[5:]]
+        else:
+            RT += peptide_dict[aa] * RC_dict['aa'][aa]
+    RT *= length_correction_term
     RT += RC_dict['const']
 
     return RT
