@@ -17,7 +17,7 @@ form of 'modX', i.e.:
 The valid examples of modX amino acid labels are: 'G', 'pS', 'oxM'. This rule
 allows to combine read- and parseability.
 
-Besides the sequence of amino acid residues, modX has a rule to specif
+Besides the sequence of amino acid residues, modX has a rule to specify
 terminal modifications of a polypeptide. Such a label should start or
 end with a hyphen. The default N-terminal amine group and C-terminal
 carboxyl group may not be shown explicitly.
@@ -151,7 +151,7 @@ def parse_sequence(sequence,
     sequence : str
         The sequence of a polypeptide.
     show_unmodified_termini : bool    
-        If True then the unmodified N- and C-terminus are explicitly shown in
+        If True then the unmodified N- and C-termini are explicitly shown in
         the returned list.
     labels : list, optional
         A list of allowed labels for amino acids and terminal modifications
@@ -296,7 +296,7 @@ def cleave(sequence, rule, missed_cleavages=0):
         A string with a regular expression describing the C-terminal site of
         cleavage.    
     missed_cleavages : int
-        The maximal number of allowed missed cleavages.
+        The maximum number of allowed missed cleavages.
 
     Returns
     -------

@@ -5,18 +5,19 @@ achrom - additive model of polypeptide chromatography
 Summary
 -------
 
-The additive model of polypeptide chromatography or the model of
-retention coefficients was the earliest attempt to describe the dependence of
-retention time of a polypeptide in liquid chromatography on its sequence
-[#Meek]_, [#Guo1]_. In this model, each amino acid is assigned a number or
-a *retention coefficient* (RC) describing its retention properties. The
-retention time (RT) during a gradient elution is then calculated as:
+The additive model of polypeptide chromatography, or the model of
+retention coefficients, was the earliest attempt to describe the dependence
+between the retention time of a polypeptide in liquid chromatography and its
+sequence [#Meek]_, [#Guo1]_. In this model, each amino acid is assigned
+a number, or a *retention coefficient* (RC), describing its retention
+properties. The retention time (RT) during a gradient elution is then
+calculated as:
 
 .. math::
 
     RT = \sum_{i=1}^{i=N}{RC_i} + RT_0,
 
-which is a sum of retention coefficients of all amino acid residues in a
+which is the sum of retention coefficients of all amino acid residues in a
 polypeptide. This equation can also be expressed in the terms of linear
 algebra:
 
@@ -24,45 +25,44 @@ algebra:
     
     RT = \overline{aa} \cdot \overline{RC} + RT_0,
     
-where :math:`\\overline{aa}` is a vector of amino acid composition,
-i.e. :math:`\\overline{aa}_i` is the number of amino acid residues of i-th
-type in a polypeptide; :math:`\overline{RC}` is a vector of respective
-retention coefficients.
+where :math:`\\overline{aa}` is a vector that represents the amino acid
+composition, i.e. :math:`\\overline{aa}_i` is the number of amino acid
+residues of i-th type in a polypeptide; :math:`\overline{RC}` is a vector
+of respective retention coefficients.
 
-In this formulation, it is clear that additive model give the same results for
+In this formulation, it is clear that additive model gives the same results for
 any two peptides that have different sequences but the same amino acid
 composition. In other words, **additive model is not sequence-specific**.
 
 The additive model has two advantages over all other models of chromatography
-- it is easy to understand and use. The rule behind the additive model is as
+- it is easy to understand and to use. The rule behind the additive model is as
 simple as it could be: **each amino acid residue shifts retention time by a
 fixed value, depending only on its type**. This rule allows geometrical
 interpretation. Each peptide may be represented by a point in 21-dimensional
-space, with first 20 coordinates equal to the amounts of corresponding amino
-acid residues in the peptide and 21-st coordinate equal to RT. The additive
-model assumes that a line may be drawn through these points. Of course, this
-assumption is valid only partially, and most points would not lie on the
-line. But the line would describe the main trend and could be used to estimate
-retention time for peptides with known amino acid composition.
+space, with the first 20 coordinates equal to the amounts of corresponding amino
+acid residues in the peptide and the 21-st coordinate equal to RT. The additive
+model assumes that all such points lie on a straight line. Of course, this
+assumption is rough, but the line would describe the main trend and could be used
+to estimate retention time for peptides with known amino acid composition.
 
 This best fit line is described by retention coefficients and :math:`RT_0`.
-The procedure of finding these coefficients called *calibration*. There is `an
+The evaluation of these coefficients is called *calibration*. There is `an
 analytical solution to calibration of linear models
 <http://en.wikipedia.org/wiki/Linear_regression>`_, which makes them
 especially useful in real applications.
 
-Several attempts were made in order to improve the accuracy of prediction by
-the additive model (for a review of the field we suggest to read [#Baczek]_
-and [#Babushok]_). The two implemented in this module are the logarithmic
-length correction term described in [#MantLogLen]_ and additional sets of
-retention coefficients for terminal amino acid residues [#Tripet]_.
+Several attempts have been made in order to improve the accuracy of prediction
+by the additive model (for a review of the field we suggest to read [#Baczek]_
+and [#Babushok]_). The two approaches implemented in this module are the
+logarithmic length correction term described in [#MantLogLen]_ and additional
+sets of retention coefficients for terminal amino acid residues [#Tripet]_.
 
 Logarithmic length correction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This enhancement was firstly described in [#MantLogLen]_. Briefly, it was
-found that the following equation better describes the dependency of RT on a
-peptide sequence:
+found that the following equation describes the dependency of RT on a
+peptide sequence better than the linear one:
 
 .. math::
 
@@ -76,7 +76,7 @@ and vectorized form of this equation would be:
     
     RT = (1 + m\,ln(N)) \, \overline{RC} \cdot \overline{aa} + RT_0
 
-This equation may be reduced to a linear form and solved by the standard
+This equation may be reduced to linear form and solved by the standard
 methods.
 
 Terminal retention coefficients

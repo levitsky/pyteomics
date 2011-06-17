@@ -9,20 +9,20 @@ The theory behind this module is based on the Henderson-Hasselbalch
 equation and was thoroughly described in a number of sources [#Aronson]_,
 [#Moore]_.
 
-Briefly, the formula for charge of a polypeptide in given pH is the following:
+Briefly, the formula for the charge of a polypeptide in given pH is the following:
 
 .. math::
 
    Q_{peptide} = \sum{\\frac{Q_i}{1+10^{Q_i(pH-pK_i)}}},
 
-where the sum is taken over all ionizable groups of a polypeptide, and
+where the sum is taken over all ionizable groups of the polypeptide, and
 :math:`Q_i` is -1 and +1 for acidic and basic functional groups,
 respectively.
 
 Main functions:
 ---------------
 
-  :py:func:`charge` - calculate charge of a polypeptide
+  :py:func:`charge` - calculate the charge of a polypeptide
   
   :py:func:`pI` - calculate the isoelectric point of a polypeptide
 
@@ -78,7 +78,7 @@ import parser
 from auxiliary import PyteomicsError
 
 def charge(sequence, pH, **kwargs):
-    """Calculate charge of a polypeptide in given pH of list of pHs using
+    """Calculate the charge of a polypeptide in given pH or list of pHs using
     a given list of amino acid electrochemical properties.
 
     .. warning::
@@ -96,14 +96,14 @@ def charge(sequence, pH, **kwargs):
         pH or list of pHs for which the charge is calculated.
     pK : dict {str: [(float, int),]}, optional
         A set of pK of amino acids' ionizable groups. It is a dict, where keys
-        are amino acids' labels and the values are lists of tuples (pK,
+        are amino acid labels and the values are lists of tuples (pK,
         charge_in_ionized_state), a tuple per ionizable group. The default
         value is `pK_lehninger`.
 
     Returns
     -------
     out : float or list of floats or None    
-        A single value of charge or a list of charges. Returns None is
+        A single value of charge or a list of charges. Returns None if
         `sequence` is not of supported type.
     """
 
@@ -169,7 +169,7 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
         The precision of the calculated pI. Default is 0.01.
     pK : dict {str: [(float, int),]}, optional
         A set of pK of amino acids' ionizable groups. It is a dict, where keys
-        are amino acids' labels and the values are lists of tuples (pK,
+        are amino acid labels and the values are lists of tuples (pK,
         charge_in_ionized_state), a tuple per ionizable group. The default
         value is `pK_lehninger`.
         

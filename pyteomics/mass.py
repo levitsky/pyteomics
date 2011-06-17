@@ -67,11 +67,11 @@ STD_AMINO_ACID_COMP = {}
 
 class Composition(dict):
     '''A Composition object stores a chemical composition of a
-    substance. Basically it is a dict object, which keys are the names
-    of chemical elements and values contains integer number of
+    substance. Basically, it is a dict object, where keys are names
+    of chemical elements and values contain integer numbers of
     corresponding atoms in a substance.
 
-    The main difference from a dict it that Composition objects allows
+    The main difference from a dict it that Composition objects allow
     adding and subtraction.
     '''
         
@@ -207,7 +207,7 @@ def calculate_mass(**kwargs):
     calculated for a polypeptide with standard terminal groups (NH2-
     and -OH).
 
-    An input may be supplied with any of these keyword arguments:
+    The input may be supplied with any of these keyword arguments:
     sequence -- a polypeptide sequence string;
     parsed_sequence -- a list of amino acids and terminal groups;
     formula -- a string with a chemical formula;
@@ -216,17 +216,17 @@ def calculate_mass(**kwargs):
     Other keyword arguments:
     average -- if True then the average mass is calculated;
     ion_type -- if specified, then the polypeptide is considered to be
-                in a form of corresponding ion. Do not forget to
+                in the form of corresponding ion. Do not forget to
                 specify the charge state!                
     charge -- if not 0 then m/z is calculated: the mass is increased
-              by the corresponding number of proton mass and divided
+              by the corresponding number of proton masses and divided
               by z.
 
-    mass_data -- a dict with mass data (default NIST_MASS);
+    mass_data -- a dict with mass data (default is NIST_MASS);
     amino_acid_comp -- a dict with the elemental composition of amino
-                        acid residues (default STD_AMINO_ACID_COMP);
+                        acid residues (default is STD_AMINO_ACID_COMP);
     ion_comp -- a dict with elemental composition of ion losses
-                 (default STD_ION_COMP).
+                 (default is STD_ION_COMP).
     
     Returns a float with the mass of the polypeptide.
     '''
