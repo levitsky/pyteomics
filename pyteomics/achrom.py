@@ -131,6 +131,7 @@ References
 
 import operator
 import numpy
+import auxiliary
 from parser import std_labels, peptide_length, amino_acid_composition
 
 def get_RCs(peptides, RTs, length_correction_factor = -0.21,
@@ -176,22 +177,68 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
     detected_amino_acids = set([aa for peptide_dict in peptide_dicts
                                 for aa in peptide_dict])
 
-    # Determine retention coeffitients using multidimensional fitting.
-    composition_array = numpy.array([
+    # Determine retention coeffitients using multidimensional linear
+    # regression. 
+    composition_array = [
         [peptide_dicts[i].get(aa, 0.0) 
          * (1.0 + length_correction_factor
             * numpy.log(peptide_length(peptide_dicts[i])))
-           for aa in detected_amino_acids] + [1.0]
-        for i in range(len(peptides))])
-    
-    RCs, res, rank, s = numpy.linalg.lstsq(composition_array,
+           for aa in detected_amino_acids]
+        + [1.0] # Add free term to each peptide.
+        for i in range(len(peptides))]
+
+    # Add normalizing conditions for terminal retention coefficients. The
+    # condition we are using here is quite arbitrary. It implies that the sum
+    # of N- or C-terminal RCs minus the sum of corresponding internal RCs must
+    # be equal zero.
+    if term_aa:
+        for term_label in ['nterm', 'cterm']:
+            normalizing_peptide = []
+            for aa in detected_amino_acids:
+                if aa.startswith(term_label):
+                    normalizing_peptide.append(1.0)
+                elif (term_label+aa) in detected_amino_acids:
+                    normalizing_peptide.append(-1.0)
+                else:
+                    normalizing_peptide.append(0.0)
+            normalizing_peptide.append(0.0)
+            composition_array.append(normalizing_peptide)
+            RTs.append(0.0)
+
+    # Use least square linear regression.
+    RCs, res, rank, s = numpy.linalg.lstsq(numpy.array(composition_array),
                                            numpy.array(RTs))
+
+    # Form output.
     RC_dict = {}
     RC_dict['aa'] = dict(
         zip(list(detected_amino_acids),
-            RCs[:len(detected_amino_acids)]))
+            RCs[:len(detected_amino_acids)]))        
     RC_dict['const'] = RCs[len(detected_amino_acids)]
     RC_dict['lcf'] = length_correction_factor
+
+    # Find remaining terminal RCs.
+    if term_aa:
+        for term_label in ['nterm', 'cterm']:
+            # Check if there are terminal RCs remaining undefined.
+            undefined_term_RCs = [aa for aa in RC_dict['aa']
+                                if not aa[1:].startswith('term')
+                                and term_label + aa not in RC_dict['aa']]
+            if not undefined_term_RCs:
+                continue
+
+            # Find a linear relationship between internal and terminal RCs.
+            defined_term_RCs = [aa for aa in RC_dict['aa']
+                              if not aa[1:].startswith('term')
+                              and term_label + aa in RC_dict['aa']]
+            
+            a, b, r, stderr = auxiliary.linear_regression(
+                [RC_dict['aa'][aa] for aa in defined_term_RCs],
+                [RC_dict['aa'][term_label+aa] for aa in defined_term_RCs])
+
+            # Define missing terminal RCs using this linear equation.
+            for aa in undefined_term_RCs:
+                RC_dict['aa'][term_label + aa] = a * RC_dict['aa'][aa] + b
 
     return RC_dict
 
@@ -282,10 +329,10 @@ def calculate_RT(peptide, RC_dict):
         1.0 + RC_dict['lcf'] * numpy.log(peptide_length(peptide_dict)))
     RT = 0.0
     for aa in peptide_dict:
-        if (aa not in RC_dict['aa'] and
-            (aa.startswith('nterm') or aa.startswith('cterm'))):
-            RT += peptide_dict[aa] * RC_dict['aa'][aa[5:]]
-        else:
+        # if (aa not in RC_dict['aa'] and
+        #     (aa.startswith('nterm') or aa.startswith('cterm'))):
+        #     RT += peptide_dict[aa] * RC_dict['aa'][aa[5:]]
+        # else:
             RT += peptide_dict[aa] * RC_dict['aa'][aa]
     RT *= length_correction_term
     RT += RC_dict['const']
