@@ -5,6 +5,85 @@ achrom - additive model of polypeptide chromatography
 Summary
 -------
 
+The additive model of polypeptide chromatography, or achrom is the most basic
+model for peptide retention time prediction. The main equation behind
+achrom has the following form:
+
+.. math::
+
+    RT = (1.0 + m\,ln(N)) \sum_{i=1}^{i=N}{RC_i} + RT_0
+
+Here, :math:`RC_i` is the retention coefficient of i-th amino acid
+residue in a peptide, N is the total number of amino acid residues and
+:math:`RT_0` is a constant retention time shift.
+
+In order to use achrom, you need to find a set of retention
+coeffcients using a training set of peptide retention times, which is
+*to calibrate* it.
+
+Calibration:
+------------
+
+  :py:func:`get_RCs` - find a set of retention coefficients using a
+  given set of peptides with known retention times and a fixed value of
+  length correction factor..
+
+  :py:func:`get_RCs_vary_lcf` - find the best length correction factor
+  and a set of retention coefficients for a given peptide sample.
+
+Retention time calculation:
+---------------------------
+
+  :py:func:`calculate_RT` - calculate retention time of a peptide
+  using a given set of retention coefficients.
+
+Data:
+-----
+
+  :py:data:`RCs_guo_ph2_0` - a set of retention coefficients (RCs)
+  from [#Guo1]_. Conditions: Synchropak RP-P C18 column (250 x 4.1 mm
+  I.D.), gradient (A = 0.1% aq. TFA, pH 2.0; B = 0.1% TFA in acetonitrile) at
+  1% B/min, flow rate 1 ml/min, 26 centigrades.
+
+  :py:data:`RCs_guo_ph7_0` - a set of retention coefficients (RCs)
+  from [#Guo1]_. Conditions: Synchropak RP-P C18 column (250 x 4.1 mm
+  I.D.), gradient (A = aq. 10 mM (NH4)2HPO4 - 0.1 M NaClO4, pH 7.0; B
+  = 0.1 M NaClO4 in 60% aq. acetonitrile) at 1.67% B/min, flow rate 1
+  ml/min, 26 centigrades.
+  
+  :py:data:`RCs_meek_ph2_1` - a set of RCs from [#Meek]_. Conditions: Bio-Rad
+  "ODS" column, gradient (A = 0.1 M NaClO4, 0.1% phosphoric acid in
+  water; B = 0.1 M NaClO4, 0.1% phosphoric acid in 60%
+  aq. acetonitrile) at 1.25% B/min, room temperature.
+  
+  :py:data:`RCs_meek_ph7_4` - a set of RCs from [#Meek]_. Conditions: Bio-Rad
+  "ODS" column, gradient (A = 0.1 M NaClO4, 5 mM phosphate buffer in
+  water; B = 0.1 M NaClO4, 5 mM phosphate buffer in 60%
+  aq. acetonitrile) at 1.25% B/min, room temperature.
+  
+  :py:data:`RCs_browne_tfa` - a set of RCs found in
+  [#Browne]_. Conditions: Waters mjuBondapak C18 column, gradient (A =
+  0.1% aq. TFA, B = 0.1% TFA in acetonitrile) at 0.33% B/min, flow
+  rate 1.5 ml/min.
+  
+  :py:data:`RCs_browne_hfba` - a set of RCs found in
+  [#Browne]_. Conditions: Waters mjuBondapak C18 column, gradient (A =
+  0.13% aq. HFBA, B = 0.13% HFBA in acetonitrile) at 0.33% B/min, flow
+  rate 1.5 ml/min.
+  
+  :py:data:`RCs_palmblad` - a set of RCs from
+  [#Palmblad]_. Conditions: a fused silica column (80-100 x 0.200 mm
+  I.D.) packed in-house with C18 ODS-AQ; solvent A = 0.5% aq. HAc,
+  B = 0.5% HAc in acetonitrile.
+  
+  :py:data:`RCs_yoshida` - a set of RCs from [#Yoshida]_. Conditions:
+  TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A = 0.1% TFA
+  in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at 0.6%
+  water/min, flow rate 1.0 ml/min, 40 centigrades.
+
+Theory
+------
+
 The additive model of polypeptide chromatography or the model of
 retention coefficients was the earliest attempt to describe the dependence of
 retention time of a polypeptide in liquid chromatography on its sequence
@@ -84,7 +163,7 @@ Terminal retention coefficients
 
 Another significant improvement may be obtained through introduction of
 separate sets of retention coefficients for terminal amino acid residues
-[#Tripet]. 
+[#Tripet]_. 
 
 References
 ----------
@@ -124,6 +203,24 @@ References
    of chromatography A, 2007, 1141 (2), 212-25.
    `Link. <http://dx.doi.org/10.1016/j.chroma.2006.12.024>`_
 
+.. [#Browne] Browne, C. A.; Bennett, H. P. J.; Solomon, S. The
+   isolation of peptides by high-performance liquid chromatography
+   using predicted elution positions. Analytical Biochemistry, 1982,
+   124 (1), 201-208.
+
+.. [#Palmblad] Palmblad, M.; Ramstrom, M.; Markides, K. E.; Hakansson,
+   P.; Bergquist, J. Prediction of Chromatographic Retention and
+   Protein Identification in Liquid Chromatography/Mass
+   Spectrometry. Analytical Chemistry, 2002, 74 (22), 5826-5830.
+
+.. [#Yoshida] Yoshida, T. Calculation of peptide retention
+   coefficients in normal-phase liquid chromatography. Journal of
+   Chromatography A, 1998, 808 (1-2), 105-112.
+   
+.. ipython::
+   :suppress:
+
+   In [1]: import pyteomics.parser; from pprint import pprint
 """
 
 # Licensed under the MIT license:
@@ -135,39 +232,54 @@ import auxiliary
 from parser import std_labels, peptide_length, amino_acid_composition
 
 def get_RCs(peptides, RTs, length_correction_factor = -0.21,
-            labels = std_labels,
-            term_aa = False):
-    """Calculate the retention coefficients of amino acids given
-    retention time of a peptide sample.
+            term_aa = False, **kwargs):
+    """Calculate the retention coefficients of amino acids using
+    retention times of a peptide sample and a fixed value of length
+    correction factor.
 
-    Keyword arguments:
+    Parameters
+    ----------
+    sequence : list of str
+        List of peptide sequences.
+    RTs: list of float
+        List of corresponding retention times.
+    length_correction_factor : float, optional
+        A multiplier before ln(L) term in the equation for the retention
+        time of a peptide. Set to -0.21 by default.
+    term_aa : bool, optional
+        If True than terminal amino acids are treated as being
+        modified with 'ntermX'/'ctermX' modifications. False by default.
+    labels : list of str, optional
+        List of all possible amino acids and terminal groups
+        (default 20 standard amino acids, N-terminal NH2- and
+        C-terminal -OH);
 
-    peptides -- a list of peptide sequences;
-    RTs -- a list of retention times of the peptides;
-    length_correction_factor -- a multiplier before ln(L) term in the
-    equation for the retention time of a peptide;
-    labels -- a list of all possible amino acids and terminal
-    groups (default 20 standard amino acids, N-terminal NH2- and
-    C-terminal -OH);                   
-    term_aa -- if True than terminal amino acids are treated as being
-    modified with 'ntermX'/'ctermX' modifications. False by default.
+    Returns
+    -------
+    RC_dict : dict
+        Dictionary with the calculated retention coefficients.
+        
+        - RC_dict['aa'] -- amino acid retention coefficients.
+        
+        - RC_dict['const'] -- constant retention time shift.
+        
+        - RC_dict['lcf'] -- length correction factor.
 
-    Return a dictionary RC_dict containing the calculated retention
-    coefficients.
-    RC_dict['aa'] -- the retention coeffitients of amino acids
-    RC_dict['const'] -- value of the constant term 
-    RC_dict['lcf'] -- the length correction factor
-
-    >>> RCs = get_RCs(['A','AA'], [1.0, 2.0], 0.0, ['A'])
+    Examples
+    --------
+    >>> RCs = get_RCs(['A','AA'], [1.0, 2.0], 0.0, labels=['A'])
     >>> RCs['const'] = round(RCs['const'], 4) # Rounding for comparison
     >>> RCs == {'aa': {'A': 1.0}, 'lcf': 0.0, 'const': 0.0}
     True
-    >>> RCs = get_RCs(['A','AA','B'], [1.0, 2.0, 2.0], 0.0, ['A','B'])
+    >>> RCs = get_RCs(['A','AA','B'], [1.0, 2.0, 2.0], 0.0, labels=['A','B'])
     >>> RCs['aa']['A'] = round(RCs['aa']['A'], 4)
     >>> RCs['aa']['B'] = round(RCs['aa']['B'], 4)
+    >>> RCs['const'] = round(RCs['const'], 4)
     >>> RCs == {'aa':{'A': 1.0, 'B': 2.0},'const': 0.0, 'lcf': 0.0}
     True
     """
+
+    labels = kwargs.get('labels', std_labels)
 
     # Make a list of all amino acids present in the sample.
     peptide_dicts = [
@@ -177,7 +289,7 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
     detected_amino_acids = set([aa for peptide_dict in peptide_dicts
                                 for aa in peptide_dict])
 
-    # Determine retention coeffitients using multidimensional linear
+    # Determine retention coefficients using multidimensional linear
     # regression. 
     composition_array = [
         [peptide_dicts[i].get(aa, 0.0) 
@@ -208,6 +320,10 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
     # Use least square linear regression.
     RCs, res, rank, s = numpy.linalg.lstsq(numpy.array(composition_array),
                                            numpy.array(RTs))
+
+    if term_aa:
+        for term_label in ['nterm', 'cterm']:
+            RTs.pop()
 
     # Form output.
     RC_dict = {}
@@ -243,46 +359,62 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
     return RC_dict
 
 def get_RCs_vary_lcf(peptides, RTs,
-                labels = std_labels,
                 term_aa = False,
-                min_lcf = -1.0,
-                max_lcf = 1.0):
-    """Finds best combination of a length correction factor and
-    retention coefficients for given peptide sample.
-    Keyword arguments:
+                lcf_range = (-1.0, 1.0),
+                **kwargs):
+    """Finds the best combination of a length correction factor and
+    retention coefficients for a given peptide sample.
 
-    peptides -- a list of peptide sequences;
-    RTs -- a list of retention times of the peptides;    
-    labels -- a list of all possible amino acids and terminal
-    groups (default 20 standard amino acids, N-terminal NH2- and
-    C-terminal -OH);                   
-    min_lcf -- the minimal value of the length correction factor;
-    max_lcf -- the maximal value of the length correction factor.
+    Parameters
+    ----------
+    sequence : list of str
+        List of peptide sequences.
+    RTs : list of float
+        List of corresponding retention times.
+    term_aa : bool, optional
+        If True than terminal amino acids are treated as being
+        modified with 'ntermX'/'ctermX' modifications. False by default.
+    lcf_range : 2-tuple of float, optional
+        Range of possible values of the length correction factor.
+    labels : list of str
+        List of labels for all possible amino acids and terminal groups
+        (default 20 standard amino acids, N-terminal NH2- and
+        C-terminal -OH).
 
-    Return a dictionary RC_dict containing the calculated retention
-    coefficients.
-    RC_dict['aa'] -- the retention coeffitients of amino acids
-    RC_dict['const'] -- value of the constant term 
-    RC_dict['lcf'] -- the length correction factor
+    Returns
+    -------
+    RC_dict : dict
+        Dictionary with the calculated retention coefficients.
+        
+        - RC_dict['aa'] -- amino acid retention coefficients.
+        
+        - RC_dict['const'] -- constant retention time shift.
+        
+        - RC_dict['lcf'] -- length correction factor.
 
-    >>> RC_dict = get_RCs_vary_lcf(['A', 'AA', 'AAA'], [1.0, 2.0, 3.0], ['A'])
+    >>> RC_dict = get_RCs_vary_lcf(['A', 'AA', 'AAA'], \
+        [1.0, 2.0, 3.0], \
+        labels=['A'])
     >>> RC_dict['aa']['A'] = round(RC_dict['aa']['A'], 4)
     >>> RC_dict['lcf'] = round(RC_dict['lcf'], 4)
     >>> RC_dict['const'] = round(RC_dict['const'], 4)
     >>> RC_dict == {'aa': {'A': 1.0}, 'lcf': 0.0, 'const': 0.0}
     True
     """
+    labels = kwargs.get('labels', std_labels)
 
     best_r = -1.1
     best_RC_dict = {}
-    
+
+    min_lcf = lcf_range[0]
+    max_lcf = lcf_range[1]
     step = (max_lcf - min_lcf) / 10.0
     while step > 0.1:
-        lcf_range = numpy.arange(min_lcf, max_lcf,
-                                 (max_lcf - min_lcf) / 10.0)
-        for lcf in lcf_range:
-            RC_dict = get_RCs(peptides, RTs, lcf, labels, term_aa)
-            regression_coeffs = linear_regression(
+        lcf_grid = numpy.arange(min_lcf, max_lcf,
+                                (max_lcf - min_lcf) / 10.0)
+        for lcf in lcf_grid:
+            RC_dict = get_RCs(peptides, RTs, lcf, term_aa, labels=labels)
+            regression_coeffs = auxiliary.linear_regression(
                 RTs, 
                 [calculate_RT(peptide, RC_dict) for peptide in peptides])
             if regression_coeffs[2] > best_r:
@@ -295,19 +427,30 @@ def get_RCs_vary_lcf(peptides, RTs,
     return best_RC_dict
 
 def calculate_RT(peptide, RC_dict):
-    """Calculate retention time of a peptide using a predetermined set
+    """Calculate retention time of a peptide using a given set
     of retention coefficients.
 
-    Keyword arguments:
-    peptide -- a peptide sequence
-    RC_dict -- a set of retention coefficients.
+    Parameters
+    ----------
+    peptide : str
+        A peptide sequence.
+    RC_dict :
+        A set of retention coefficients, length correction factor and
+        a fixed retention time shift.
 
+    Returns
+    -------
+    RT : float
+        Calculated retention time.
+
+    Examples
+    --------
     >>> RT = calculate_RT('AA', {'aa':{'A':1.1},'lcf':0.0,'const':0.1})
     >>> abs(RT - 2.3) < 1e-6      # Float comparison
     True
     >>> RT = calculate_RT('AAA', {'aa': {'ntermA':1.0, 'A':1.1, 'ctermA':1.2},\
-                                  'lcf':0.0,\
-                                  'const':0.1})
+        'lcf':0.0,\
+        'const':0.1})
     >>> abs(RT - 3.4) < 1e-6      # Float comparison
     True
     """
@@ -339,52 +482,82 @@ def calculate_RT(peptide, RC_dict):
 
     return RT
 
-RCs_guo_ph2_0= {'aa':{'K': -2.1,
-                      'G': -0.2,
-                      'L':  8.1,
-                      'A':  2.0,
-                      'C':  2.6,
-                      'E':  1.1,
-                      'D':  0.2,
-                      'F':  8.1,
-                      'I':  7.4,
-                      'H': -2.1,
-                      'M':  5.5,
-                      'N': -0.6,
-                      'Q':  0.0,
-                      'P':  2.0,
-                      'S': -0.2,
-                      'R': -0.6,
-                      'T':  0.6,
-                      'W':  8.8,
-                      'V':  5.0,
-                      'Y':  4.5},
-                'lcf': 0.0,
-                'const': 0.0}
+RCs_guo_ph2_0 = {'aa':{'K': -2.1,
+                       'G': -0.2,
+                       'L':  8.1,
+                       'A':  2.0,
+                       'C':  2.6,
+                       'E':  1.1,
+                       'D':  0.2,
+                       'F':  8.1,
+                       'I':  7.4,
+                       'H': -2.1,
+                       'M':  5.5,
+                       'N': -0.6,
+                       'Q':  0.0,
+                       'P':  2.0,
+                       'S': -0.2,
+                       'R': -0.6,
+                       'T':  0.6,
+                       'W':  8.8,
+                       'V':  5.0,
+                       'Y':  4.5},
+                 'lcf': 0.0,
+                 'const': 0.0}
+"""A set of retention coefficients from Guo, D.; Mant, C. T.; Taneja,
+A. K.; Parker, J. M. R.; Hodges, R. S.  Prediction of peptide
+retention times in reversed-phase high-performance liquid
+chromatography I. Determination of retention coefficients of amino
+acid residues of model synthetic peptides. Journal of Chromatography
+A, 1986, 359, 499-518.
 
+Conditions: Synchropak RP-P C18 column (250 x 4.1 mm I.D.), gradient
+(A = 0.1% aq. TFA, pH 2.0; B = 0.1% TFA in acetonitrile) at 1% B/min,
+flow rate 1 ml/min, 26 centigrades.
 
-RCs_guo_ph7_0= {'aa':{'K': -0.2,
-                      'G': -0.2,
-                      'L':  9.0,
-                      'A':  2.2,
-                      'C':  2.6,
-                      'E': -1.3,
-                      'D': -2.6,
-                      'F':  9.0,
-                      'I':  8.3,
-                      'H':  2.2,
-                      'M':  6.0,
-                      'N': -0.8,
-                      'Q':  0.0,
-                      'P':  2.2,
-                      'S': -0.5,
-                      'R':  0.9,
-                      'T':  0.3,
-                      'W':  9.5,
-                      'V':  5.7,
-                      'Y':  4.6},
-                'lcf': 0.0,
-                'const': 0.0}
+.. ipython::
+   
+   In [2]: pprint(pyteomics.achrom.RCs_guo_ph2_0)
+"""
+
+RCs_guo_ph7_0 = {'aa':{'K': -0.2,
+                       'G': -0.2,
+                       'L':  9.0,
+                       'A':  2.2,
+                       'C':  2.6,
+                       'E': -1.3,
+                       'D': -2.6,
+                       'F':  9.0,
+                       'I':  8.3,
+                       'H':  2.2,
+                       'M':  6.0,
+                       'N': -0.8,
+                       'Q':  0.0,
+                       'P':  2.2,
+                       'S': -0.5,
+                       'R':  0.9,
+                       'T':  0.3,
+                       'W':  9.5,
+                       'V':  5.7,
+                       'Y':  4.6},
+                 'lcf': 0.0,
+                 'const': 0.0}
+"""A set of retention coefficients from Guo, D.; Mant, C. T.; Taneja,
+A. K.; Parker, J. M. R.; Hodges, R. S.  Prediction of peptide
+retention times in reversed-phase high-performance liquid
+chromatography I. Determination of retention coefficients of amino
+acid residues of model synthetic peptides. Journal of Chromatography
+A, 1986, 359, 499-518.
+
+Conditions: Synchropak RP-P C18 column (250 x 4.1 mm I.D.), gradient
+(A = aq. 10 mM (NH4)2HPO4 - 0.1 M NaClO4, pH 7.0; B = 0.1 M NaClO4 in
+60% aq. acetonitrile) at 1.67% B/min, flow rate 1 ml/min, 26
+centigrades.
+
+.. ipython::
+   
+   In [2]: pprint(pyteomics.achrom.RCs_guo_ph7_0)
+"""
 
 RCs_meek_ph2_1 = {'aa':{'K': -3.2,
                         'G': -0.5,
@@ -408,6 +581,19 @@ RCs_meek_ph2_1 = {'aa':{'K': -3.2,
                         'Y':  8.2},
                   'lcf': 0.0,
                   'const': 0.0}
+"""A set of retention coefficients determined in Meek,
+J. L. Prediction of peptide retention times in high-pressure liquid
+chromatography on the basis of amino acid composition. PNAS, 1980, 77
+(3), 1632-1636.
+
+Conditions: Bio-Rad "ODS" column, gradient (A = 0.1 M NaClO4,
+0.1% phosphoric acid in water; B = 0.1 M NaClO4, 0.1% phosphoric acid
+in 60% aq. acetonitrile) at 1.25% B/min, room temperature.
+
+.. ipython::
+   
+   In [2]: pprint(pyteomics.achrom.RCs_meek_ph2_1)
+"""
 
 RCs_meek_ph7_4 = {'aa':{'K':  0.1,
                         'G':  0.0,
@@ -431,6 +617,19 @@ RCs_meek_ph7_4 = {'aa':{'K':  0.1,
                         'Y':  6.1},
                   'lcf': 0.0,
                   'const': 0.0}
+"""A set of retention coefficients determined in Meek,
+J. L. Prediction of peptide retention times in high-pressure liquid
+chromatography on the basis of amino acid composition. PNAS, 1980, 77
+(3), 1632-1636.
+
+Conditions: Bio-Rad "ODS" column, gradient (A = 0.1 M NaClO4,
+5 mM phosphate buffer in water; B = 0.1 M NaClO4, 5 mM phosphate buffer
+in 60% aq. acetonitrile) at 1.25% B/min, room temperature.
+
+.. ipython::
+   
+   In [2]: pprint(pyteomics.achrom.RCs_meek_ph7_4)
+"""
 
 RCs_browne_tfa = {'aa':{'K': -3.7,
                         'G': -1.2,
@@ -457,6 +656,18 @@ RCs_browne_tfa = {'aa':{'K': -3.7,
                         'pY': 3.5},
                   'lcf': 0.0,
                   'const': 0.0}
+"""A set of retention coefficients determined in Browne, C. A.;
+Bennett, H. P. J.; Solomon, S. The isolation of peptides by
+high-performance liquid chromatography using predicted elution
+positions. Analytical Biochemistry, 1982, 124 (1), 201-208.
+
+Conditions: Waters mjuBondapak C18 column, gradient (A = 0.1% aq. TFA,
+B = 0.1% TFA in acetonitrile) at 0.33% B/min, flow rate 1.5 ml/min.
+
+.. ipython::
+   
+   In [2]: pprint(pyteomics.achrom.RCs_browne_tfa)
+"""
 
 RCs_browne_hfba = {'aa':{'K': -2.5,
                          'G': -2.3,
@@ -483,6 +694,18 @@ RCs_browne_hfba = {'aa':{'K': -2.5,
                          'pY':-0.3},
                    'lcf': 0.0,
                    'const': 0.0}
+"""A set of retention coefficients determined in Browne, C. A.;
+Bennett, H. P. J.; Solomon, S. The isolation of peptides by
+high-performance liquid chromatography using predicted elution
+positions. Analytical Biochemistry, 1982, 124 (1), 201-208.
+
+Conditions: Waters mjuBondapak C18 column, gradient (A = 0.13% aq. HFBA,
+B = 0.13% HFBA in acetonitrile) at 0.33% B/min, flow rate 1.5 ml/min.
+
+.. ipython::
+   
+   In [2]: pprint(pyteomics.achrom.RCs_browne_hfba)
+"""
 
 RCs_palmblad = {'aa':{'K': -0.66,
                       'G': -0.29,
@@ -506,6 +729,20 @@ RCs_palmblad = {'aa':{'K': -0.66,
                       'Y':  2.78},
                 'lcf': 0.0,
                 'const': 0.0}
+"""A set of retention coefficients determined in Palmblad, M.;
+Ramstrom, M.; Markides, K. E.; Hakansson, P.; Bergquist, J. Prediction
+of Chromatographic Retention and Protein Identification in Liquid
+Chromatography/Mass Spectrometry. Analytical Chemistry, 2002, 74 (22),
+5826-5830.
+
+Conditions: a fused silica column (80-100 x 0.200 mm I.D.) packed
+in-house with C18 ODS-AQ; solvent A = 0.5% aq. HAc, B = 0.5% HAc in
+acetonitrile.
+
+.. ipython::
+   
+   In [2]: pprint(pyteomics.achrom.RCs_palmblad)
+"""
 
 RCs_yoshida = {'aa':{'K':  2.77,
                      'G': -0.16,
@@ -529,6 +766,19 @@ RCs_yoshida = {'aa':{'K':  2.77,
                      'Y': -0.11},
                'lcf': 0.0,
                'const': 0.0}
+"""A set of retention coefficients determined in Yoshida,
+T. Calculation of peptide retention coefficients in normal-phase
+liquid chromatography. Journal of Chromatography A, 1998, 808 (1-2),
+105-112.
+
+Conditions: TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A =
+0.1% TFA in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at
+0.6% water/min, flow rate 1.0 ml/min, 40 centigrades.
+
+.. ipython::
+   
+   In [2]: pprint(pyteomics.achrom.RCs_yoshida)
+"""
 
 if __name__ == "__main__":
     import doctest
