@@ -1,3 +1,10 @@
+"""
+fasta
+======
+
+fast
+"""
+
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license.php
 
@@ -9,10 +16,12 @@ import itertools
 def read_fasta(fasta_file, ignore_comments = True):
     """Read a FASTA file and return entries iteratively.
 
-    Keyword arguments:
-    fasta_file -- a file object with a fasta database.
-    ignore_comments -- if True then ignore the second and following lines
-                       of description.
+    Parameters
+    ----------
+    fasta_file : str
+        A file object with a fasta database.
+    ignore_comments : bool, optional
+        If True then ignore the second and following lines of description.
 
     Yield a tuple (description, sequence).
     """
