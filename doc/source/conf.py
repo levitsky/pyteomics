@@ -31,6 +31,7 @@ sys.path.insert(0, pyteomics_path)
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = [
               'sphinx.ext.autodoc',
+              'sphinx.ext.autosummary',
               'sphinx.ext.viewcode',
               'sphinx.ext.doctest',
               'matplotlib_sphinxext.ipython_console_highlighting',

@@ -12,8 +12,11 @@ Contents:
    :maxdepth: 1
 
    ./parser
-   ./electrochem
+   ./mass
    ./achrom
+   ./electrochem
+
+   ./fasta
 
 
 * :ref:`genindex`
