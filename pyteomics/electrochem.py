@@ -134,7 +134,7 @@ def charge(sequence, pH, **kwargs):
     # Process the case when pH is a single float.
     pH_list = pH if isinstance(pH, list) else [pH,]
 
-    # Calculate charge for each value of pH.
+    # Calculate the charge for each value of pH.
     charge_list = []
     for pH_value in pH_list:
         charge = 0
@@ -149,7 +149,7 @@ def charge(sequence, pH, **kwargs):
     return charge_list[0] if len(charge_list) == 1 else charge_list
 
 def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
-    """Calculate isoelectric point of a polypeptide using a given set
+    """Calculate the isoelectric point of a polypeptide using a given set
     of amino acids' electrochemical properties.
 
     .. warning::
