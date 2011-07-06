@@ -17,9 +17,9 @@ Mass calculations
 -----------------
 
   :py:func:`calculate_mass` - a general routine for mass / m/z
-  calculation. Can calculate mass by a polypeptide sequence, chemical
+  calculation. Can calculate mass for a polypeptide sequence, chemical
   formula or elemental composition. Supplied with an ion type and
-  charge, the function would calculate m/z.
+  charge, the function can calculate m/z.
   
   :py:func:`fast_mass` - a less powerful but much faster function for
   polypeptide mass calculation.
@@ -141,11 +141,11 @@ amino acid residues and standard H- and -OH terminal groups.
 class Composition(dict):
     """
     A Composition object stores a chemical composition of a
-    substance. Basically it is a dict object, which keys are the names
-    of chemical elements and values contains integer number of
-    corresponding atoms in a substance.
+    substance. Basically it is a dict object, in which keys are the names
+    of chemical elements and each value contains an integer number of
+    atoms of the corresponding element in a substance.
 
-    The main improvement over dict it that Composition objects allows
+    The main improvement over dict it that Composition objects allow
     adding and subtraction.
     """
         
@@ -207,11 +207,11 @@ class Composition(dict):
     def __init__(self, *args, **kwargs):
         """
         A Composition object stores a chemical composition of a
-        substance. Basically it is a dict object, which keys are the names
-        of chemical elements and values contains integer number of
+        substance. Basically it is a dict object, in which keys are the names
+        of chemical elements and values contain integer numbers of
         corresponding atoms in a substance.
         
-        The main improvement over dict it that Composition objects allows
+        The main improvement over dict it that Composition objects allow
         adding and subtraction.
 
         A Composition object can be initialized with one of the
@@ -457,7 +457,7 @@ def factorial_stirling(n):
     return math.sqrt(2 * math.pi / n) * (n / math.e) ** float(n)
 
 def factorial_s3(n):
-    # Calculates factorial using Stieltjes' third-order approximation.
+    # Calculate factorial using Stieltjes' third-order approximation.
     # http://www.luschny.de/math/factorial/approx/SimpleCases.html
     # The accuracy is ~1e-7 even for n=2. 
     
@@ -472,7 +472,7 @@ def binomial_dist(k, n, p):
     return binomial_coeff(n, k) * (p ** k) * (1.0 - p) ** (n - k)
 
 def isotopic_composition_abundance(**kwargs):
-    """Calculate the relative abundance of given isotopic composition
+    """Calculate the relative abundance of a given isotopic composition
     of a molecule.
     
     Parameters

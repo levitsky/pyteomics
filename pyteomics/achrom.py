@@ -17,16 +17,16 @@ Here, :math:`RC_i` is the retention coefficient of i-th amino acid
 residue in a peptide, N is the total number of amino acid residues and
 :math:`RT_0` is a constant retention time shift.
 
-In order to use achrom, you need to find a set of retention
-coeffcients using a training set of peptide retention times, which is
-*to calibrate* it.
+In order to use achrom, one needs to find the retention
+coeffcients, using experimentally determined retention times for a training set
+of peptide retention times, i.e. to *calibrate* the model.
 
 Calibration:
 ------------
 
   :py:func:`get_RCs` - find a set of retention coefficients using a
   given set of peptides with known retention times and a fixed value of
-  length correction factor..
+  length correction factor.
 
   :py:func:`get_RCs_vary_lcf` - find the best length correction factor
   and a set of retention coefficients for a given peptide sample.
@@ -34,7 +34,7 @@ Calibration:
 Retention time calculation:
 ---------------------------
 
-  :py:func:`calculate_RT` - calculate retention time of a peptide
+  :py:func:`calculate_RT` - calculate the retention time of a peptide
   using a given set of retention coefficients.
 
 Data:
@@ -84,10 +84,10 @@ Data:
 Theory
 ------
 
-The additive model of polypeptide chromatography or the model of
+The additive model of polypeptide chromatography, or the model of
 retention coefficients was the earliest attempt to describe the dependence of
 retention time of a polypeptide in liquid chromatography on its sequence
-[#Meek]_, [#Guo1]_. In this model, each amino acid is assigned a number or
+[#Meek]_, [#Guo1]_. In this model, each amino acid is assigned a number, or
 a *retention coefficient* (RC) describing its retention properties. The
 retention time (RT) during a gradient elution is then calculated as:
 
@@ -96,7 +96,7 @@ retention time (RT) during a gradient elution is then calculated as:
     RT = \sum_{i=1}^{i=N}{RC_i} + RT_0,
 
 which is a sum of retention coefficients of all amino acid residues in a
-polypeptide. This equation can also be expressed in the terms of linear
+polypeptide. This equation can also be expressed in terms of linear
 algebra:
 
 .. math::
@@ -108,8 +108,8 @@ i.e. :math:`\\overline{aa}_i` is the number of amino acid residues of i-th
 type in a polypeptide; :math:`\overline{RC}` is a vector of respective
 retention coefficients.
 
-In this formulation, it is clear that additive model give the same results for
-any two peptides that have different sequences but the same amino acid
+In this formulation, it is clear that additive model gives the same results for
+any two peptides with different sequences but the same amino acid
 composition. In other words, **additive model is not sequence-specific**.
 
 The additive model has two advantages over all other models of chromatography
@@ -125,7 +125,7 @@ line. But the line would describe the main trend and could be used to estimate
 retention time for peptides with known amino acid composition.
 
 This best fit line is described by retention coefficients and :math:`RT_0`.
-The procedure of finding these coefficients called *calibration*. There is `an
+The procedure of finding these coefficients is called *calibration*. There is `an
 analytical solution to calibration of linear models
 <http://en.wikipedia.org/wiki/Linear_regression>`_, which makes them
 especially useful in real applications.
@@ -140,7 +140,7 @@ Logarithmic length correction
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This enhancement was firstly described in [#MantLogLen]_. Briefly, it was
-found that the following equation better describes the dependency of RT on a
+found that the following equation better describes the dependence of RT on the
 peptide sequence:
 
 .. math::
@@ -247,11 +247,11 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
         A multiplier before ln(L) term in the equation for the retention
         time of a peptide. Set to -0.21 by default.
     term_aa : bool, optional
-        If True than terminal amino acids are treated as being
+        If True, terminal amino acids are treated as being
         modified with 'ntermX'/'ctermX' modifications. False by default.
     labels : list of str, optional
         List of all possible amino acids and terminal groups
-        (default 20 standard amino acids, N-terminal NH2- and
+        (default: 20 standard amino acids, N-terminal NH2- and
         C-terminal -OH);
 
     Returns
@@ -302,7 +302,7 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
     # Add normalizing conditions for terminal retention coefficients. The
     # condition we are using here is quite arbitrary. It implies that the sum
     # of N- or C-terminal RCs minus the sum of corresponding internal RCs must
-    # be equal zero.
+    # be equal to zero.
     if term_aa:
         for term_label in ['nterm', 'cterm']:
             normalizing_peptide = []
@@ -362,7 +362,7 @@ def get_RCs_vary_lcf(peptides, RTs,
                 term_aa = False,
                 lcf_range = (-1.0, 1.0),
                 **kwargs):
-    """Finds the best combination of a length correction factor and
+    """Find the best combination of a length correction factor and
     retention coefficients for a given peptide sample.
 
     Parameters
@@ -372,13 +372,13 @@ def get_RCs_vary_lcf(peptides, RTs,
     RTs : list of float
         List of corresponding retention times.
     term_aa : bool, optional
-        If True than terminal amino acids are treated as being
+        If True, terminal amino acids are treated as being
         modified with 'ntermX'/'ctermX' modifications. False by default.
     lcf_range : 2-tuple of float, optional
         Range of possible values of the length correction factor.
     labels : list of str
         List of labels for all possible amino acids and terminal groups
-        (default 20 standard amino acids, N-terminal NH2- and
+        (default: 20 standard amino acids, N-terminal NH2- and
         C-terminal -OH).
 
     Returns
@@ -427,7 +427,7 @@ def get_RCs_vary_lcf(peptides, RTs,
     return best_RC_dict
 
 def calculate_RT(peptide, RC_dict):
-    """Calculate retention time of a peptide using a given set
+    """Calculate the retention time of a peptide using a given set
     of retention coefficients.
 
     Parameters
