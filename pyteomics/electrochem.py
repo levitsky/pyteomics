@@ -5,6 +5,9 @@ electrochem - electrochemical properties of polypeptides
 Summary
 -------
 
+This module is used to calculate the
+electrochemical properties of polypeptide molecules.
+
 The theory behind this module is based on the Henderson-Hasselbalch
 equation and was thoroughly described in a number of sources [#Aronson]_,
 [#Moore]_.
