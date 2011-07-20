@@ -131,7 +131,7 @@ def psm_from_query(query):
     return psm
     
 def iter_psm(source):
-    """Parse source and iterate through a list of peptide-spectrum
+    """Parse source and iterate through the list of peptide-spectrum
     matches from the ``source``.
 
     Arguments:

@@ -11,6 +11,7 @@ substance in various formats but all of them would be reduced to the
 :py:func:`Composition <Composition.__init__>` object describing its
 chemical composition.
 
+
 Classes
 -------
 
@@ -21,7 +22,7 @@ Mass calculations
 -----------------
 
   :py:func:`calculate_mass` - a general routine for mass / m/z
-  calculation. Can calculate mass by a polypeptide sequence, chemical
+  calculation. Can calculate mass for a polypeptide sequence, chemical
   formula or elemental composition. Supplied with an ion type and
   charge, the function would calculate m/z.
   
@@ -66,7 +67,6 @@ Data
 import math
 import numpy
 import parser
-from auxiliary import PyteomicsError
 
 nist_mass = {
     'H': {1: (1.0078250320710, 0.99988570),
@@ -103,8 +103,8 @@ nist_mass = {
 A dict with the exact element masses downloaded from the NIST website:
 http://www.nist.gov/pml/data/comp.cfm . For each element, an entry
 contains the masses and relative abundances of several abundant
-isotopes and a separate default entry with a zero key and the data for
-the most abundant isotope.
+isotopes and a separate default entry with zero key containing the data 
+for the most abundant isotope.
 
 .. ipython::
    
@@ -146,11 +146,11 @@ amino acid residues and standard H- and -OH terminal groups.
 class Composition(dict):
     """
     A Composition object stores a chemical composition of a
-    substance. Basically it is a dict object, which keys are the names
-    of chemical elements and values contains integer number of
-    corresponding atoms in a substance.
+    substance. Basically it is a dict object, in which keys are the names
+    of chemical elements and each value contains an integer number of
+    atoms of the corresponding element in a substance.
 
-    The main improvement over dict it that Composition objects allows
+    The main improvement over dict it that Composition objects allow
     adding and subtraction.
     """
         
@@ -180,7 +180,6 @@ class Composition(dict):
             labels=aa_comp.keys(),
             show_unmodified_termini=True)
         self._from_parsed_sequence(parsed_sequence, aa_comp)
-
     def _from_formula(self, formula, mass_data=nist_mass):
         prev_chem_symbol_start = len(formula)
         i = len(formula) - 1
@@ -218,7 +217,6 @@ class Composition(dict):
                         prev_chem_symbol_start = i + 1
                         element_found = True
                         break
-                    
                 if not element_found:
                     raise PyteomicsError(
                         'Unknown chemical element in the formula: %s' %formula)
@@ -229,12 +227,12 @@ class Composition(dict):
     def __init__(self, *args, **kwargs):
         """
         A Composition object stores a chemical composition of a
-        substance. Basically it is a dict object, which keys are the names
-        of chemical elements and values contains integer number of
+        substance. Basically it is a dict object, in which keys are the names
+        of chemical elements and values contain integer numbers of
         corresponding atoms in a substance.
         
-        The main improvement over dict it that Composition objects allows
-        adding and subtraction.
+        The main improvement over dict is that Composition objects allow
+        addition and subtraction.
 
         A Composition object can be initialized with one of the
         following arguments: formula, sequence or parsed_sequence.
@@ -257,15 +255,13 @@ class Composition(dict):
 
         if 'sequence' in kwargs:
             aa_comp = kwargs.get('aa_comp',
-                                 std_aa_comp)
+                                         std_aa_comp)
             self._from_sequence(kwargs['sequence'], aa_comp)
-            
         elif 'parsed_sequence' in kwargs:
             aa_comp = kwargs.get('aa_comp',
-                                 std_aa_comp)
+                                         std_aa_comp)
             self._from_parsed_sequence(kwargs['parsed_sequence'],
                                        aa_comp)
-            
         elif 'formula' in kwargs:
             mass_data = kwargs.get('mass_data', nist_mass)
             self._from_formula(kwargs['formula'], mass_data)
@@ -401,6 +397,7 @@ def calculate_mass(**kwargs):
         charge = kwargs.get('charge')
         composition['H+'] = charge
 
+
     # Calculate mass.
     mass = 0.0
     for element in composition:
@@ -498,7 +495,7 @@ def factorial_stirling(n):
     return math.sqrt(2 * math.pi / n) * (n / math.e) ** float(n)
 
 def factorial_s3(n):
-    # Calculates factorial using Stieltjes' third-order approximation.
+    # Calculate factorial using Stieltjes' third-order approximation.
     # http://www.luschny.de/math/factorial/approx/SimpleCases.html
     # The accuracy is ~1e-7 even for n=2. 
     
@@ -514,7 +511,7 @@ def binomial_dist(k, n, p):
 
 def isotopic_composition_abundance(**kwargs):
     """Calculate the relative abundance of a given isotopic composition
-    of a molecule. 
+    of a molecule.
     
     Parameters
     ----------
@@ -547,8 +544,8 @@ def isotopic_composition_abundance(**kwargs):
         # contains a default isotope or newly added isotope is default
         # then raise an exception.
         if ((element_name in isotopic_composition)
-            and (not isotope_num
-                 or 0 in isotopic_composition[element_name])):
+        and (not isotope_num
+         or 0 in isotopic_composition[element_name])):
             raise PyteomicsError(
                 'Please specify the isotopic numbers of all atoms of '
                 '%s or do not specify them at all.' % element_name)
