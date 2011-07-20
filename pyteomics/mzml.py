@@ -56,8 +56,8 @@ def get_node(source, xpath, namespaces={'d':xmlns}):
 
 
 def fill_params(output_dict, element, xpath, namespaces={'d':xmlns}):
-    """Obtain subelements of given element with xpath and read their
-    children cvParam and userParam to given dictionary.
+    """Obtain subelements of the given element with xpath and read their
+    children cvParam and userParam to the given dictionary.
 
     Keyword arguments:
     output_dict -- a dict to fill with params;
