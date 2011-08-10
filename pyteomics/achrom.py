@@ -376,7 +376,7 @@ def get_RCs_vary_lcf(peptides, RTs,
         modified with 'ntermX'/'ctermX' modifications. False by default.
     lcf_range : 2-tuple of float, optional
         Range of possible values of the length correction factor.
-    labels : list of str
+    labels : list of str, optional
         List of labels for all possible amino acids and terminal groups
         (default 20 standard amino acids, N-terminal NH2- and
         C-terminal -OH).
