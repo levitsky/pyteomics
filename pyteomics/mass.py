@@ -67,12 +67,13 @@ Data
 import math
 import numpy
 import parser
+from auxiliary import PyteomicsError
 
 nist_mass = {
     'H': {1: (1.0078250320710, 0.99988570),
           2: (2.01410177784, 0.00011570),
           3: (3.016049277725, 0.0),
-          0: (1.0078250320710, 0.99988570)},
+          0: (1.0078250320710, 1.0)},
     
     'H+': {1: (1.00727646677, 1.0),
            0: (1.00727646677, 1.0)},
@@ -82,29 +83,29 @@ nist_mass = {
     'C': {12: (12.0000000, 0.98938),
           13: (13.0033548378, 0.01078),
           14: (14.0032419894, 0.0),
-          0: (12.0000000, 0.98938)},
+          0: (12.0000000, 1.0)},
 
     'N': {14: (14.00307400486, 0.9963620),
           15: (15.00010889827, 0.0036420),
-          0: (14.00307400486, 0.9963620)},
+          0: (14.00307400486, 1.0)},
 
     'O': {16: (15.9949146195616, 0.9975716),
           17: (16.9991317012, 0.000381),
           18: (17.99916107, 0.0020514),
-          0: (15.9949146195616, 0.9975716)},
+          0: (15.9949146195616, 1.0)},
     
     'S': {32: (31.9720710015, 0.949926),
           33: (32.9714587615, 0.00752),
           34: (33.9678669012, 0.042524),
           36: (35.9670807620, 0.00011),
-          0: (31.9720710015, 0.949926)},
+          0: (31.9720710015, 1.0)},
     }
 """
 A dict with the exact element masses downloaded from the NIST website:
-http://www.nist.gov/pml/data/comp.cfm . For each element, an entry
-contains the masses and relative abundances of several abundant
-isotopes and a separate default entry with zero key containing the data 
-for the most abundant isotope.
+http://www.nist.gov/pml/data/comp.cfm . There are entries for each
+element containing the masses and relative abundances of several
+abundant isotopes and a separate entry for undefined isotope with zero
+key, mass of the most abundant isotope and 1.0 abundance.
 
 .. ipython::
    
@@ -113,7 +114,10 @@ for the most abundant isotope.
 
 def _make_isotope_string(element_name, isotope_num):
     """Form a string label for an isotope."""
-    return '%s[%d]' % element_name, isotope_num
+    if isotope_num == 0:
+        return element_name
+    else:
+        return '%s[%d]' % (element_name, isotope_num)
 
 def _parse_isotope_string(label):
     """Parse an string with an isotope label and return the element name and
@@ -146,8 +150,8 @@ amino acid residues and standard H- and -OH terminal groups.
 class Composition(dict):
     """
     A Composition object stores a chemical composition of a
-    substance. Basically it is a dict object, in which keys are the names
-    of chemical elements and each value contains an integer number of
+    substance. Basically it is a dict object, with the names
+    of chemical elements as keys and values equal to an integer number of
     atoms of the corresponding element in a substance.
 
     The main improvement over dict it that Composition objects allow
@@ -166,8 +170,7 @@ class Composition(dict):
             result[elem] = result.get(elem, 0) - cnt
         return result
     
-    def _from_parsed_sequence(self, parsed_sequence,
-                              aa_comp=std_aa_comp):
+    def _from_parsed_sequence(self, parsed_sequence, aa_comp=std_aa_comp):
         self.clear()
         for aa in parsed_sequence:
             for elem, cnt in aa_comp[aa].items():
@@ -180,11 +183,20 @@ class Composition(dict):
             labels=aa_comp.keys(),
             show_unmodified_termini=True)
         self._from_parsed_sequence(parsed_sequence, aa_comp)
+        
     def _from_formula(self, formula, mass_data=nist_mass):
+        # Parsing a formula backwards.
         prev_chem_symbol_start = len(formula)
         i = len(formula) - 1
+        
         while i >= 0:
-            if not (formula[i].isdigit() or formula[i] == '-') :
+            # Read backwards until a non-number character is met.
+            if (formula[i].isdigit() or formula[i] == '-'):
+                i -= 1
+                continue
+            
+            else:
+                # If the number of atoms is omitted than it is 1.
                 if i+1 == prev_chem_symbol_start:
                     num_atoms = 1
                 else:
@@ -193,7 +205,8 @@ class Composition(dict):
                     except ValueError:
                         raise PyteomicsError(
                             'Badly-formed number of atoms: %s' % formula)
-                    
+
+                # Read isotope number if specified else it is undefined (=0).
                 if formula[i] == ']':
                     bra_pos = formula.rfind('[', 0, i)
                     if bra_pos == -1:
@@ -206,23 +219,24 @@ class Composition(dict):
                             'Badly-formed isotope number: %s' % formula)
                     i = bra_pos - 1
                 else:
-                    isotope_num = None
-                    
-                element_found = False        
-                for chem_element in mass_data:
-                    if formula.endswith(chem_element, 0, i+1):
-                        self[chem_element] = (
-                            self.get(chem_element, 0) + num_atoms)
-                        i -= len(chem_element)
+                    isotope_num = 0
+
+                # Match the element name to the mass_data.
+                element_found = False
+                for element_name in mass_data:
+                    if formula.endswith(element_name, 0, i+1):
+                        isotope_string = _make_isotope_string(
+                            element_name, isotope_num)
+                        self[isotope_string] = (
+                            self.get(isotope_string, 0) + num_atoms)
+                        i -= len(element_name)
                         prev_chem_symbol_start = i + 1
                         element_found = True
                         break
+                    
                 if not element_found:
                     raise PyteomicsError(
                         'Unknown chemical element in the formula: %s' %formula)
-            else:
-                i -= 1
-                continue
 
     def __init__(self, *args, **kwargs):
         """
@@ -252,25 +266,36 @@ class Composition(dict):
             A dict with the masses of the chemical elements (the default
             value is nist_mass). It is used for formulae parsing only. 
         """
-
-        if 'sequence' in kwargs:
-            aa_comp = kwargs.get('aa_comp',
-                                         std_aa_comp)
+        if len(args) == 0 and len(kwargs) == 0:
+            pass
+        elif 'sequence' in kwargs:
+            aa_comp = kwargs.get('aa_comp', std_aa_comp)
             self._from_sequence(kwargs['sequence'], aa_comp)
+            
         elif 'parsed_sequence' in kwargs:
-            aa_comp = kwargs.get('aa_comp',
-                                         std_aa_comp)
-            self._from_parsed_sequence(kwargs['parsed_sequence'],
-                                       aa_comp)
+            aa_comp = kwargs.get('aa_comp', std_aa_comp)
+            self._from_parsed_sequence(kwargs['parsed_sequence'], aa_comp)
+            
         elif 'formula' in kwargs:
             mass_data = kwargs.get('mass_data', nist_mass)
             self._from_formula(kwargs['formula'], mass_data)
             
-        elif isinstance(args[0], dict):            
-            self.update(args[0])
+        elif isinstance(args[0], dict):
+            mass_data = kwargs.get('mass_data', nist_mass)
+            for isotope_string, num_atoms in args[0].iteritems():
+                element_name, isotope_num = _parse_isotope_string(
+                    isotope_string)
+
+                if element_name in mass_data:
+                    # Remove explicitly undefined isotopes (e.g. X[0]).
+                    self[_make_isotope_string(element_name, isotope_num)] = (
+                        num_atoms)                    
+                else:
+                    raise PyteomicsError('Unknown chemical element: %s' %
+                                         (element_name,))
             
         else:
-            raise PyteomicsError('A Composition object must be specified by'
+            raise PyteomicsError('A Composition object must be specified by '
                                  'a sequence, parsed sequence, formula or '
                                  'a dict')
     
@@ -353,7 +378,8 @@ def calculate_mass(**kwargs):
     composition : Composition, optional
         A Composition object with the elemental composition of a substance.
     average : bool, optional
-        If True then the average mass is calculated.
+        If True then the average mass is calculated. Note that mass is not
+        averaged for elements with specified isotopes.
     ion_type : str, optional
         If specified, then the polypeptide is considered to be in a form
         of the corresponding ion. Do not forget to specify the charge state!
@@ -386,6 +412,7 @@ def calculate_mass(**kwargs):
     if 'ion_type' in kwargs:
         composition += ion_comp[kwargs['ion_type']]
 
+    # Get charge.
     charge = 0
     if 'H+' in composition:
         charge = composition['H+']
@@ -397,19 +424,20 @@ def calculate_mass(**kwargs):
         charge = kwargs.get('charge')
         composition['H+'] = charge
 
-
     # Calculate mass.
     mass = 0.0
-    for element in composition:
-        element_name, isotope_num = _parse_isotope_string(element)
-        if kwargs.get('average', False):
+    for isotope_string in composition:
+        element_name, isotope_num = _parse_isotope_string(isotope_string)
+        # Calculate average mass if required and the isotope number is
+        # not specified.
+        if (not isotope_num) and kwargs.get('average', False):
             for isotope_num in mass_data[element_name]:
-                if isotope_num:
+                if isotope_num != 0:
                     mass += (composition[element_name]
                              * mass_data[element_name][isotope_num][0]
                              * mass_data[element_name][isotope_num][1])
         else:
-            mass += (composition[element]
+            mass += (composition[isotope_string]
                      * mass_data[element_name][isotope_num][0])
 
     # Calculate m/z if required.
@@ -440,7 +468,7 @@ def most_probable_isotopic_composition(**kwargs):
         A Composition object with the elemental composition of a substance.
     elements_with_isotopes : list of str
         A list of elements to be considered in isotopic distribution
-        (by default, every element has isotopic distribution).
+        (by default, every element has a isotopic distribution).
     aa_comp : dict, optional
         A dict with the elemental composition of the amino acids (the
         default value is std_aa_comp).
@@ -462,32 +490,36 @@ def most_probable_isotopic_composition(**kwargs):
                    else Composition(**kwargs))
 
     # Removing isotopes from the composition.
-    for element in composition:
-        element_name, isotope_num = _parse_isotope_string(element)
+    for isotope_string in composition:
+        element_name, isotope_num = _parse_isotope_string(isotope_string)
         if isotope_num:
             composition[element_name] = (composition.get(element_name, 0)
-                                         + composition.pop(element))
+                                         + composition.pop(isotope_string))
 
     mass_data = kwargs.get('mass_data', nist_mass)
     elements_with_isotopes = kwargs.get('elements_with_isotopes', None)
     isotopic_composition = Composition()
     
-    for element in composition:
-        if not elements_with_isotopes or element in elements_with_isotopes:
+    for element_name in composition:
+        if (not elements_with_isotopes
+        or (element_name in elements_with_isotopes)):
             # Take the two most abundant isotopes.
             first_iso, second_iso = sorted(
                 [(i[0], i[1][1])
-                 for i in mass_data[element].iteritems() if i[0]])[:2]
+                 for i in mass_data[element_name].iteritems() if i[0]])[:2]
             
             # Write the number of isotopes of the most abundant type.
-            first_iso_str = _make_isotope_string(element, first_iso[0])
+            first_iso_str = _make_isotope_string(element_name, first_iso[0])
             isotopic_composition[first_iso_str] = math.floor(
-                (composition[element] + 1) * first_iso[1])
+                (composition[element_name] + 1) * first_iso[1])
 
             # Write the number of the second isotopes.
-            second_iso_str = _make_isotope_string(element, second_iso[0])
+            second_iso_str = _make_isotope_string(element_name, second_iso[0])
             isotopic_composition[second_iso_str] = (
-                composition[element] - isotopic_composition[first_iso_str])
+                composition[element_name]
+                - isotopic_composition[first_iso_str])
+        else:
+            isotopic_composition[element_name] = composition[element_name]
 
     return isotopic_composition
 
@@ -544,8 +576,8 @@ def isotopic_composition_abundance(**kwargs):
         # contains a default isotope or newly added isotope is default
         # then raise an exception.
         if ((element_name in isotopic_composition)
-        and (not isotope_num
-         or 0 in isotopic_composition[element_name])):
+             and (isotope_num == 0
+                  or 0 in isotopic_composition[element_name])):
             raise PyteomicsError(
                 'Please specify the isotopic numbers of all atoms of '
                 '%s or do not specify them at all.' % element_name)
