@@ -4,6 +4,29 @@ import mass, auxiliary
 
 class MassTest(unittest.TestCase):
     def setUp(self):
+        self.mass_data = {
+            'A' : {0: (1.0, 1.0),
+                   1: (1.0, 0.5),
+                   2: (2.0, 0.5)},
+            'B' : {0: (2.0, 1.0),
+                   2: (2.0, 0.5),
+                   3: (3.0, 0.5)},
+            'C' : {0: (3.0, 1.0),
+                   3: (3.0, 0.5),
+                   4: (4.0, 0.5)},
+            'D' : {0: (4.0, 1.0),
+                   4: (4.0, 0.5),
+                   5: (5.0, 0.5)},
+            'E' : {0: (5.0, 1.0),
+                   5: (5.0, 0.5),
+                   6: (6.0, 0.5)},
+            'F' : {0: (6.0, 1.0),
+                   6: (6.0, 0.7),
+                   7: (7.0, 0.3)},
+            'H+': {0: (5.0, 1.0),
+                   5: (5.0, 1.0)},
+            }
+        
         self.mass_H = mass.nist_mass['H'][0][0]
         self.mass_O = mass.nist_mass['O'][0][0]
         self.test_aa_mass = {'X':1.0, 'Y':2.0, 'Z':3.0}
@@ -11,38 +34,22 @@ class MassTest(unittest.TestCase):
             ''.join([random.choice('XYZ') for i in range(20)])
             for i in range(10)]
 
-        self.aa_comp = {'X':   mass.Composition({'A':1}),
-                        'Y':   mass.Composition({'B':1}),
-                        'Z':   mass.Composition({'C':1}),
-                        'H-':  mass.Composition({'D':1}),
-                        '-OH': mass.Composition({'E':1}),
+        self.aa_comp = {'X':   mass.Composition({'A':1},
+                                                mass_data=self.mass_data),
+                        'Y':   mass.Composition({'B':1},
+                                                mass_data=self.mass_data),
+                        'Z':   mass.Composition({'C':1},
+                                                mass_data=self.mass_data),
+                        'H-':  mass.Composition({'D':1},
+                                                mass_data=self.mass_data),
+                        '-OH': mass.Composition({'E':1},
+                                                mass_data=self.mass_data),
                         }
 
         self.ion_comp = {'M': mass.Composition({}),
-                         'a': mass.Composition({'A':-1})}
+                         'a': mass.Composition({'A':-1},
+                                               mass_data=self.mass_data)}
         
-        self.mass_data = {
-            'A' : {0: (1.0, 0.5),
-                   1: (1.0, 0.5),
-                   2: (2.0, 0.5)},
-            'B' : {0: (2.0, 0.5),
-                   2: (2.0, 0.5),
-                   3: (3.0, 0.5)},
-            'C' : {0: (3.0, 0.5),
-                   3: (3.0, 0.5),
-                   4: (4.0, 0.5)},
-            'D' : {0: (4.0, 0.5),
-                   4: (4.0, 0.5),
-                   5: (5.0, 0.5)},
-            'E' : {0: (5.0, 0.5),
-                   5: (5.0, 0.5),
-                   6: (6.0, 0.5)},
-            'F' : {0: (6.0, 0.7),
-                   5: (6.0, 0.7),
-                   6: (7.0, 0.3)},
-            'H+': {0: (5.0, 1.0),
-                   5: (5.0, 1.0)},
-            }
 
     def test_fast_mass(self):
         for pep in self.random_peptides:
@@ -55,7 +62,8 @@ class MassTest(unittest.TestCase):
     def test_Composition(self):
         # Test Composition from a dict.
         self.assertEqual(
-            mass.Composition({atom:1 for atom in 'ABCDE'}),
+            mass.Composition({atom:1 for atom in 'ABCDE'},
+                             mass_data=self.mass_data),
             {atom:1 for atom in 'ABCDE'})
 
         # Test Composition from a formula.
@@ -146,6 +154,29 @@ class MassTest(unittest.TestCase):
                    'charge': charge,
                    'mass_data': self.mass_data})
 
+    def test_most_probable_isotopic_composition(self):
+        self.assertEqual(
+            mass.most_probable_isotopic_composition(
+                formula='F',
+                mass_data=self.mass_data),
+            mass.Composition({'F[6]': 1.0, 'F[7]': 0.0},
+                             mass_data=self.mass_data))
+        
+        self.assertEqual(
+            mass.most_probable_isotopic_composition(
+                formula='F10',
+                mass_data=self.mass_data),
+            mass.Composition({'F[6]': 7.0, 'F[7]': 3.0},
+                             mass_data=self.mass_data))
+
+        self.assertEqual(
+            mass.most_probable_isotopic_composition(
+                formula='A20F10',
+                elements_with_isotopes = ['F'],
+                mass_data=self.mass_data),
+            mass.Composition({'A': 20.0, 'F[6]': 7.0, 'F[7]': 3.0},
+                             mass_data=self.mass_data))
+                        
     def test_isotopic_composition_abundance(self):
         for peplen in range(1,10):
             self.assertEqual(
@@ -163,8 +194,7 @@ class MassTest(unittest.TestCase):
                     formula='A[1]F[6]' * peplen,
                     mass_data=self.mass_data),
                 (self.mass_data['A'][1][1]
-                 * self.mass_data['F'][6][1] ) ** peplen )
-
+                 * self.mass_data['F'][6][1] ) ** peplen)
 
                                             
 if __name__ == '__main__':
