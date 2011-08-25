@@ -1,5 +1,5 @@
 import unittest
-from electrochem import charge, pI
+from pyteomics.electrochem import charge, pI
 
 class ElectrochemTest(unittest.TestCase):
     def setUp(self):
