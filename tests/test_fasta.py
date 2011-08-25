@@ -1,11 +1,11 @@
 import tempfile
 import unittest
-from fasta import read_fasta
+from pyteomics.fasta import read_fasta
 
 class FastaTest(unittest.TestCase):
     def setUp(self):
-        fasta_file = tempfile.TemporaryFile()
-        fasta_file.writeline-('''
+        self.fasta_file = tempfile.TemporaryFile()
+        self.fasta_file.write('''
             ;test sequence
             ;test sequence 2
             TEST
@@ -18,7 +18,7 @@ class FastaTest(unittest.TestCase):
             ''')
 
     def test_simple_read(self):
-        fasta_entries = [i for i in read_fasta(fasta_file)]
+        fasta_entries = [i for i in read_fasta(self.fasta_file)]
         self.assertEqual(fasta_entries,
                          [('a test sequencea test sequence 2', 'TEST'),
                           ('a test sequence 3', 'TEST'),

@@ -1,6 +1,6 @@
 import unittest
 import random
-import mass, auxiliary
+from pyteomics import mass, auxiliary
 
 class MassTest(unittest.TestCase):
     def setUp(self):
