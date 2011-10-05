@@ -2,7 +2,8 @@
 fasta
 ======
 
-fast
+FASTA is a simple file format for protein sequence databases. More information
+can be found at http://www.ncbi.nlm.nih.gov/blast/fasta.shtml.
 """
 
 # Licensed under the MIT license:
@@ -18,17 +19,20 @@ def read_fasta(fasta_file, ignore_comments = True):
 
     Parameters
     ----------
-    fasta_file : str
-        A file object with a fasta database.
+    fasta_file : str or file
+        A file object (or file name) with a FASTA database.
     ignore_comments : bool, optional
-        If True then ignore the second and following lines of description.
+        If True then ignore the second and subsequent lines of description.
 
     Yield a tuple (description, sequence).
     """
     accumulated_strings = []
-
+    if type(fasta_file) == str:
+        source = open(fasta_file)
+    else:
+        source = fasta_file
     # Iterate through '>' after the file is over to retrieve the last entry.
-    for string in itertools.chain(fasta_file, '>'):
+    for string in itertools.chain(source, '>'):
         stripped_string = string.strip()
 
         # Skip empty lines.
@@ -37,12 +41,17 @@ def read_fasta(fasta_file, ignore_comments = True):
         
         is_comment = (stripped_string.startswith('>')
                       or stripped_string.startswith(';'))
-        
         if is_comment:
             # If it is a continuing comment
-            if len(accumulated_strings) == 1 and not ignore_comments:
-                accumulated_strings[0] += stripped_string[1:]
+            if len(accumulated_strings) == 1:
+                if not ignore_comments:
+                    accumulated_strings[0] += (' '+stripped_string[1:])
+#               print 'if:', stripped_string
+                else:
+                    continue
+
             elif accumulated_strings:
+#               print 'elif:', stripped_string
                 description = accumulated_strings[0]
                 sequence = ''.join(accumulated_strings[1:])
 
@@ -51,6 +60,11 @@ def read_fasta(fasta_file, ignore_comments = True):
                     sequence = sequence[:-1]
                 yield (description, sequence)
                 accumulated_strings = [stripped_string[1:], ]
+            else:
+#               print 'else:', stripped_string
+                # accumulated_strings is empty; we're probably reading
+                # the very first line of the file
+                accumulated_strings.append(stripped_string[1:])
         else:
             accumulated_strings.append(stripped_string)
 
