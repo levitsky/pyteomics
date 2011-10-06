@@ -46,12 +46,10 @@ def read_fasta(fasta_file, ignore_comments = True):
             if len(accumulated_strings) == 1:
                 if not ignore_comments:
                     accumulated_strings[0] += (' '+stripped_string[1:])
-#               print 'if:', stripped_string
                 else:
                     continue
 
             elif accumulated_strings:
-#               print 'elif:', stripped_string
                 description = accumulated_strings[0]
                 sequence = ''.join(accumulated_strings[1:])
 
@@ -61,7 +59,6 @@ def read_fasta(fasta_file, ignore_comments = True):
                 yield (description, sequence)
                 accumulated_strings = [stripped_string[1:], ]
             else:
-#               print 'else:', stripped_string
                 # accumulated_strings is empty; we're probably reading
                 # the very first line of the file
                 accumulated_strings.append(stripped_string[1:])
