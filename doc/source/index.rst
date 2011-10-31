@@ -18,7 +18,6 @@ Contents:
 
    ./fasta
 
-
 * :ref:`genindex`
 * :ref:`search`
 
