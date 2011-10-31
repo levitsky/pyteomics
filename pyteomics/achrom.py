@@ -11,11 +11,14 @@ achrom has the following form:
 
 .. math::
 
-    RT = (1.0 + m\,ln(N)) \sum_{i=1}^{i=N}{RC_i} + RT_0
+    RT = (1 + m\,ln N) \sum_{i=1}^{i=N}{RC_i n_i} + RT_0
 
-Here, :math:`RC_i` is the retention coefficient of i-th amino acid
-residue in a peptide, N is the total number of amino acid residues and
-:math:`RT_0` is a constant retention time shift.
+
+Here, :math:`RC_i` is the retention coefficient of the amino acid
+residues of the i-th type, :math:`n_i` corresponds to the number of amino acid
+residues of type :math:`i` in the peptide sequence, N is the total number of
+different *types* of amino acid residues present,
+and :math:`RT_0` is a constant retention time shift.
 
 In order to use achrom, one needs to find the retention
 coeffcients, using experimentally determined retention times for a training set
@@ -93,7 +96,7 @@ retention time (RT) during a gradient elution is then calculated as:
 
 .. math::
 
-    RT = \sum_{i=1}^{i=N}{RC_i} + RT_0,
+    RT = \sum_{i=1}^{i=N}{RC_i \cdot n_i} + RT_0,
 
 which is a sum of retention coefficients of all amino acid residues in a
 polypeptide. This equation can also be expressed in terms of linear
@@ -145,15 +148,15 @@ peptide sequence:
 
 .. math::
 
-    RT = \sum_{i=1}^{i=N}{RC_i} + m\,ln(N) \sum_{i=1}^{i=N}{RC_i} + RT_0
+    RT = \sum_{i=1}^{i=N}{RC_i} + m\,ln N \sum_{i=1}^{i=N}{RC_i} + RT_0
 
-We would call the second term :math:`m\,ln(N) \sum_{i=1}^{i=N}{RC_i}` *the
+We would call the second term :math:`m\,ln N \sum_{i=1}^{i=N}{RC_i}` *the
 length correction term* and m - *the length correction factor*. The simplified
 and vectorized form of this equation would be:
 
 .. math::
     
-    RT = (1 + m\,ln(N)) \, \overline{RC} \cdot \overline{aa} + RT_0
+    RT = (1 + m\,ln N) \, \overline{RC} \cdot \overline{aa} + RT_0
 
 This equation may be reduced to a linear form and solved by the standard
 methods.
@@ -380,6 +383,8 @@ def get_RCs_vary_lcf(peptides, RTs,
         List of labels for all possible amino acids and terminal groups
         (default: 20 standard amino acids, N-terminal NH2- and
         C-terminal -OH).
+    lcf_accuracy : float, optional
+        The accuracy of the length correction factor calculation.
 
     Returns
     -------
@@ -392,6 +397,8 @@ def get_RCs_vary_lcf(peptides, RTs,
         
         - RC_dict['lcf'] -- length correction factor.
 
+    Examples
+    --------
     >>> RC_dict = get_RCs_vary_lcf(['A', 'AA', 'AAA'], \
         [1.0, 2.0, 3.0], \
         labels=['A'])
@@ -405,11 +412,12 @@ def get_RCs_vary_lcf(peptides, RTs,
 
     best_r = -1.1
     best_RC_dict = {}
+    lcf_accuracy = kwargs.get('lcf_accuracy', 0.1)
 
     min_lcf = lcf_range[0]
     max_lcf = lcf_range[1]
     step = (max_lcf - min_lcf) / 10.0
-    while step > 0.1:
+    while step > lcf_accuracy:
         lcf_grid = numpy.arange(min_lcf, max_lcf,
                                 (max_lcf - min_lcf) / 10.0)
         for lcf in lcf_grid:
