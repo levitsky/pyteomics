@@ -35,17 +35,24 @@ class FastaTest(unittest.TestCase):
         sequence = 'ABCDEF123'
         self.assertEqual(decoy_sequence(sequence, 'reverse'),
                 sequence[::-1])
-    def test_read_and_write_fasta(self):
+    def test_read_and_write_fasta_short(self):
         self.fasta_file.seek(0)
         new_fasta_file = tempfile.TemporaryFile()
         write_fasta(read_fasta(self.fasta_file), new_fasta_file, False)
         new_fasta_file.seek(0)
-        self.assertEqual(self.fasta_file.read(),
-                new_fasta_file.read())
+        new_entries = [i for i in read_fasta(new_fasta_file)]
         self.fasta_file.seek(0)
-
-
-
+        self.assertEqual(new_entries, self.fasta_entries)
+        new_fasta_file.close()
+    def test_read_and_write_fasta_long(self):
+        self.fasta_file.seek(0)
+        new_fasta_file = tempfile.TemporaryFile()
+        write_fasta(read_fasta(self.fasta_file, False), new_fasta_file, False)
+        new_fasta_file.seek(0)
+        new_entries = [i for i in read_fasta(new_fasta_file)]
+        self.fasta_file.seek(0)
+        self.assertEqual(new_entries, self.fasta_entries_long)
+        new_fasta_file.close()
 
 if __name__ == '__main__':
     unittest.main()
