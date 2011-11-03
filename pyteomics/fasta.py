@@ -16,7 +16,7 @@ import itertools
 import sys
 from auxiliary import PyteomicsError
 
-def read_fasta(fasta_file, ignore_comments=True):
+def read_fasta(fasta_file, ignore_comments=False):
     """Read a FASTA file and return entries iteratively.
 
     Parameters
@@ -25,6 +25,7 @@ def read_fasta(fasta_file, ignore_comments=True):
         A file object (or file name) with a FASTA database.
     ignore_comments : bool, optional
         If True then ignore the second and subsequent lines of description.
+        Default is False.
 
     Yield a tuple (description, sequence).
     """
@@ -121,11 +122,11 @@ def write_fasta(entries, output=None, close=True):
         output_file.write('>' + protein[0] + '\n')
         # write the sequence; it should be interrupted with \n every 70 characters
         output_file.write(''.join([('%s\n' % protein[1][i:i+70])
-            for i in range(0, len(protein[1]), 70)]))
+            for i in range(0, len(protein[1]), 70)]) + '\n')
     if close and output: output_file.close()
     return output_file
 
-def decoy_db(source, output=sys.stdout, mode='reverse', prefix='DECOY_', decoy_only=False):
+def decoy_db(source, output=sys.stdout, mode='reverse', prefix='DECOY_', decoy_only=False, close=True):
     """Read the FASTA entries from 'source'. The file written to 'output' will
     contain the entries from 'source' and the modified sequences.
     
@@ -152,7 +153,14 @@ def decoy_db(source, output=sys.stdout, mode='reverse', prefix='DECOY_', decoy_o
     decoy_only : bool, optional
         If set to True, only the decoy entries will be written to 'output'.
         If False, the entries from 'source' will be written as well.
-
+    close : bool, optional
+        If True, the target file will be closed in the end (default).
+        Set to False, if you need to perform I/O operations with the file
+        from your Python script after it's created.
+    
+    Returns
+    -------
+    output_file : a file object with the created file
     """
     if type(source) == file:
         source_file = source
@@ -171,13 +179,14 @@ def decoy_db(source, output=sys.stdout, mode='reverse', prefix='DECOY_', decoy_o
         'output' must be file or str, not %s""" % type(source))
 
     if not decoy_only:
-        write_fasta(read_fasta(source), output_file, False)
+        write_fasta(read_fasta(source_file, False), output_file, False)
 
     # return to the beginning of the source file to read again
     source_file.seek(0)
 
     decoy_entries = [(prefix + protein[0],
         decoy_sequence(protein[1], mode))
-        for protein in read_fasta(source_file)]
+        for protein in read_fasta(source_file, False)]
 
-    write_fasta(decoy_entries, output_file)
+    write_fasta(decoy_entries, output_file, close=close)
+    return output_file
