@@ -16,7 +16,7 @@ import itertools
 import sys
 from auxiliary import PyteomicsError
 
-def read_fasta(fasta_file, ignore_comments = True):
+def read_fasta(fasta_file, ignore_comments=True):
     """Read a FASTA file and return entries iteratively.
 
     Parameters
@@ -177,7 +177,7 @@ def decoy_db(source, output=sys.stdout, mode='reverse', prefix='DECOY_', decoy_o
     source_file.seek(0)
 
     decoy_entries = [(prefix + protein[0],
-        modify_sequence(protein[1], mode))
+        decoy_sequence(protein[1], mode))
         for protein in read_fasta(source_file)]
 
     write_fasta(decoy_entries, output_file)
