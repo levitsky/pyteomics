@@ -141,7 +141,7 @@ def iter_psm(source):
               - a file-like object
               - a URL using the HTTP or FTP protocol
 
-    Returns: a list of PSM dicts.
+    Returns: a generator which yields PSM dicts one by one.
     """
 
     parser = etree.XMLParser(remove_comments=True, ns_clean=True) 
