@@ -14,6 +14,7 @@ can be found at http://www.ncbi.nlm.nih.gov/blast/fasta.shtml.
 
 import itertools
 import sys
+import random
 from auxiliary import PyteomicsError
 
 def read_fasta(fasta_file, ignore_comments=False):
@@ -77,7 +78,7 @@ def decoy_sequence(sequence, mode):
     sequence : str
         The initial sequence string.
     mode : str
-        Type of modification. Supported values are: 'reverse'.
+        Type of modification. Supported values are: 'reverse', 'random'.
 
     Returns
     -------
@@ -86,6 +87,10 @@ def decoy_sequence(sequence, mode):
     """
     if mode == 'reverse':
         modified_sequence = sequence[::-1]
+    elif mode == 'random':
+        modified_sequence = list(sequence)
+        random.shuffle(modified_sequence)
+        modified_sequence = ''.join(modified_sequence)
     return modified_sequence
 
 def write_fasta(entries, output=None, close=True):
@@ -126,12 +131,14 @@ def write_fasta(entries, output=None, close=True):
     if close and output: output_file.close()
     return output_file
 
-def decoy_db(source, output=sys.stdout, mode='reverse', prefix='DECOY_', decoy_only=False, close=True):
+def decoy_db(source, output=sys.stdout, mode='reverse', prefix='DECOY_',
+        decoy_only=False, close=True):
     """Read the FASTA entries from 'source'. The file written to 'output' will
     contain the entries from 'source' and the modified sequences.
     
-    Currently, the only supported type of modification is simple reversion.
-    The protein description will be prepended with 'prefix' for modified
+    Supported types of modification are dictated by the
+    :py:func:`decoy_sequence` function. Currently, it's 'random' and 'reverse'.
+    The protein descriptions will be prepended with 'prefix' for modified
     sequences.
 
     If 'output' is a path, a file will be open for appending, so no information
