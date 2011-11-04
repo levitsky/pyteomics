@@ -124,7 +124,7 @@ def write_fasta(entries, output=None, close=True):
     
     for protein in entries:
         # write the description
-        output_file.write('>' + protein[0] + '\n')
+        output_file.write('>' + protein[0].replace('\n', '\n;') + '\n')
         # write the sequence; it should be interrupted with \n every 70 characters
         output_file.write(''.join([('%s\n' % protein[1][i:i+70])
             for i in range(0, len(protein[1]), 70)]) + '\n')
