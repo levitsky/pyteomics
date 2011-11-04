@@ -1,6 +1,6 @@
 import unittest
 import random
-from pyteomics import mass, auxiliary
+from pyteomics import mass, auxiliary, parser
 
 class MassTest(unittest.TestCase):
     def setUp(self):
@@ -153,6 +153,15 @@ class MassTest(unittest.TestCase):
                    'ion_type': 'M', 
                    'charge': charge,
                    'mass_data': self.mass_data})
+
+        # Sanity check.
+        for pep in self.random_peptides:
+            self.assertEqual(mass.calculate_mass(
+                sequence=pep, aa_comp=self.aa_comp, mass_data=self.mass_data),
+                mass.calculate_mass(
+                    parsed_sequence=parser.parse_sequence(
+                        pep, labels=['X', 'Y', 'Z']),
+                    aa_comp=self.aa_comp, mass_data=self.mass_data))
 
     def test_most_probable_isotopic_composition(self):
         self.assertEqual(
