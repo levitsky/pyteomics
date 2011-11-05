@@ -131,7 +131,7 @@ def write_fasta(entries, output=None, close=True):
     if close and output: output_file.close()
     return output_file
 
-def decoy_db(source, output=sys.stdout, mode='reverse', prefix='DECOY_',
+def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
         decoy_only=False, close=True):
     """Read the FASTA entries from 'source'. The file written to 'output' will
     contain the entries from 'source' and the modified sequences.
@@ -141,8 +141,11 @@ def decoy_db(source, output=sys.stdout, mode='reverse', prefix='DECOY_',
     The protein descriptions will be prepended with 'prefix' for modified
     sequences.
 
-    If 'output' is a path, a file will be open for appending, so no information
-    will be lost if the file exists.
+    If 'output' is a path, the file will be open for appending, so no information
+    will be lost if the file exists. Although, the user should be careful when
+    providing open file streams as 'source' and 'output'. The reading and writing
+    will start from the current position in the files, which is where the last I/O
+    operation finished. One can use the :py:func:`file.seek` method to change it.
 
     Parameters
     ----------
@@ -181,9 +184,11 @@ def decoy_db(source, output=sys.stdout, mode='reverse', prefix='DECOY_',
         output_file = output
     elif type(output) == str:
         output_file = open(output, 'a')
+    elif output == None:
+        output_file = sys.stdout
     else:
         raise PyteomicsError("""Wrong argument type:
-        'output' must be file or str, not %s""" % type(source))
+        'output' must be file or None, not %s""" % type(source))
 
     if not decoy_only:
         write_fasta(read_fasta(source_file, False), output_file, False)
@@ -195,5 +200,5 @@ def decoy_db(source, output=sys.stdout, mode='reverse', prefix='DECOY_',
         decoy_sequence(protein[1], mode))
         for protein in read_fasta(source_file, False)]
 
-    write_fasta(decoy_entries, output_file, close=close)
+    write_fasta(decoy_entries, output_file, close=(close if output else False))
     return output_file
