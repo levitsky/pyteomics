@@ -11,5 +11,11 @@ class ParserTest(unittest.TestCase):
         for seq in self.simple_sequences:
             self.assertEqual(seq, ''.join(parse_sequence(seq, labels=uppercase)))
 
+    def test_amino_acid_composition_simple(self):
+        for seq in self.simple_sequences:
+            comp = amino_acid_composition(seq, labels=uppercase)
+            for aa in set(seq):
+                self.assertEqual(seq.count(aa), comp[aa])
+
 if __name__ == '__main__':
     unittest.main()
