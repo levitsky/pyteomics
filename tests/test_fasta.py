@@ -26,15 +26,18 @@ class FastaTest(unittest.TestCase):
                          [('test sequence test sequence 2', 'TEST'),
                           ('test sequence 3', 'TEST'),
                           ('test sequence 4', 'TEST')])
+
     def test_simple_read_short_comments(self):
         self.assertEqual(self.fasta_entries_short,
                          [('test sequence', 'TEST'),
                           ('test sequence 3', 'TEST'),
                           ('test sequence 4', 'TEST')])
+
     def test_decoy_sequence_reverse(self):
         sequence = 'ABCDEF123'
         self.assertEqual(decoy_sequence(sequence, 'reverse'),
                 sequence[::-1])
+
     def test_read_and_write_fasta_short(self):
         self.fasta_file.seek(0)
         new_fasta_file = tempfile.TemporaryFile()
@@ -44,6 +47,7 @@ class FastaTest(unittest.TestCase):
         self.fasta_file.seek(0)
         self.assertEqual(new_entries, self.fasta_entries_short)
         new_fasta_file.close()
+
     def test_read_and_write_fasta_long(self):
         self.fasta_file.seek(0)
         new_fasta_file = tempfile.TemporaryFile()
@@ -53,6 +57,7 @@ class FastaTest(unittest.TestCase):
         self.fasta_file.seek(0)
         self.assertEqual(new_entries, self.fasta_entries_long)
         new_fasta_file.close()
+        
     def test_decoy_db(self):
         self.fasta_file.seek(0)
         decdb = tempfile.TemporaryFile()
