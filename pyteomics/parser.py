@@ -151,7 +151,7 @@ def parse_sequence(sequence,
     sequence : str
         The sequence of a polypeptide.
     show_unmodified_termini : bool    
-        If True then the unmodified N- and C-terminus are explicitly shown in
+        If True then the unmodified N- and C-termini are explicitly shown in
         the returned list.
     labels : list, optional
         A list of allowed labels for amino acids and terminal modifications
