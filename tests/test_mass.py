@@ -46,7 +46,8 @@ class MassTest(unittest.TestCase):
                                                 mass_data=self.mass_data),
                         }
 
-        self.ion_comp = {'M': mass.Composition({}),
+        self.ion_comp = {'M': mass.Composition({},
+                                               mass_data=self.mass_data),
                          'a': mass.Composition({'A':-1},
                                                mass_data=self.mass_data)}
         
@@ -157,11 +158,13 @@ class MassTest(unittest.TestCase):
         # Sanity check.
         for pep in self.random_peptides:
             self.assertEqual(mass.calculate_mass(
-                sequence=pep, aa_comp=self.aa_comp, mass_data=self.mass_data),
+                sequence=pep, aa_comp=self.aa_comp, mass_data=self.mass_data,
+                ion_comp=self.ion_comp),
                 mass.calculate_mass(
                     parsed_sequence=parser.parse_sequence(
-                        pep, labels=['X', 'Y', 'Z']),
-                    aa_comp=self.aa_comp, mass_data=self.mass_data))
+                        pep, labels=['X', 'Y', 'Z'], show_unmodified_termini=True),
+                    aa_comp=self.aa_comp, mass_data=self.mass_data,
+                    ion_comp=self.ion_comp))
 
     def test_most_probable_isotopic_composition(self):
         self.assertEqual(
