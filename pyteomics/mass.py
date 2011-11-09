@@ -251,6 +251,11 @@ class Composition(dict):
         A Composition object can be initialized with one of the
         following arguments: formula, sequence or parsed_sequence.
          
+        .. warning::
+         
+            Be cafeful when supplying a list with a parsed sequence. It must be
+            obtained with enabled `show_unmodified_termini` option.
+        
         Parameters
         ----------
         formula : str, optional
@@ -367,6 +372,11 @@ def calculate_mass(**kwargs):
     calculated for a polypeptide with standard terminal groups (NH2-
     and -OH).
 
+    .. warning::
+
+        Be cafeful when supplying a list with a parsed sequence. It must be
+        obtained with enabled `show_unmodified_termini` option.
+
     Parameters
     ----------
     formula : str, optional
@@ -420,8 +430,8 @@ def calculate_mass(**kwargs):
         if charge:
             raise PyteomicsError(
                 'Charge is specified both by the number of protons and '
-                '\'charge\' in kwargs: %s' % (str(kwargs),))
-        charge = kwargs.get('charge')
+                '\'charge\' in kwargs: %s' % str(kwargs))
+        charge = kwargs['charge']
         composition['H+'] = charge
 
     # Calculate mass.
@@ -431,11 +441,11 @@ def calculate_mass(**kwargs):
         # Calculate average mass if required and the isotope number is
         # not specified.
         if (not isotope_num) and kwargs.get('average', False):
-            for isotope_num in mass_data[element_name]:
-                if isotope_num != 0:
+            for isotope in mass_data[element_name]:
+                if isotope != 0:
                     mass += (composition[element_name]
-                             * mass_data[element_name][isotope_num][0]
-                             * mass_data[element_name][isotope_num][1])
+                             * mass_data[element_name][isotope][0]
+                             * mass_data[element_name][isotope][1])
         else:
             mass += (composition[isotope_string]
                      * mass_data[element_name][isotope_num][0])
