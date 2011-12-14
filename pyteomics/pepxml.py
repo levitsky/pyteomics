@@ -102,7 +102,7 @@ def psm_from_query(query):
                                   namespaces={'d':xmlns}):
         psm['peptideprophet'] = float(subelement.attrib['probability'])
     for subelement in query.xpath('d:search_result/d:search_hit/'
-                                  'd:altenative_protein',
+                                  'd:alternative_protein',
                                   namespaces={'d':xmlns}):
         proteins.append(subelement.attrib)
     for subelement in query.xpath('d:search_result/d:search_hit/'
