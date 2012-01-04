@@ -1,9 +1,38 @@
+"""
+mzml - reader for mass spectrometry data in mzML format
+=======================================================
+
+Summary
+-------
+
+mzML is a standard rich XML-format for raw mass spectrometry data storage.
+Please refer to http://www.psidev.info/index.php?q=node/257 for the detailed 
+specification of the format and the structure of mzML files.
+
+This module provides minimalistic infrastructure for access to data stored in
+mzML files. The most important function is py:func:`iter_spectrum`, which 
+reads spectra and related information as saves them into human-readable dicts.
+The rest of data can be obtained via a combination of py:func:`get_node` and
+py:func:`read_params` functions. These functions rely of the terminology of 
+the underlying lxml library (http://lxml.de/). 
+
+Data access
+-----------
+
+  py:func:`iter_spectrum` - iterate through spectra in mzML file. Data from a
+  single spectrum are converted to a human-readable dict. Spectra themselves are 
+  stored under 'm/z array' and 'intensity array' keys.
+
+  py:func:`get_node` - get arbitrary nodes of mzML file by their xpath.
+
+  py:func:`read_params` - read children cvParams and userParams into a dict.
+
+"""
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license.php 
 
-import array
+import numpy
 import zlib
-import base64
 
 from lxml import etree
 
@@ -21,141 +50,180 @@ float_keys = [
     'ms level'
     ]
 
-# Default namespace of mzML.
+# Default mzML namespace.
 xmlns = 'http://psi.hupo.org/ms/mzml'
+
+def _insert_default_ns(xpath, ns_key = 'd'):
+    """Inserts the key for the default namespace before each node name.
+    Does not modify a nodename if it already has a namespace.
+
+    Parameters
+    ----------
+    xpath : str
+        An original XPath
+    ns_key : str
+        A key for the default namespace.
+
+    Returns
+    -------
+    out : str
+        A modified XPath.
+    """
+    return '/'.join(
+        [(ns_key + ':' + node if (node and node.count(':') == 0) else node)
+         for node in xpath.split('/')])
 
 def get_node(source, xpath, namespaces={'d':xmlns}):
     """Retrieves arbitrary nodes from an mzml file by their xpath.
+    Each node in the xpath is assigned to the default namespace 
+    'http://psi.hupo.org/ms/mzml' unless specified else.
 
-    Arguments: 
-
-    source -- any of the following:    
-              - a file name/path
-              - a file object
-              - a file-like object
-              - a URL using the HTTP or FTP protocol
-
-    xpath -- a string with XPath to required objects. Usually, mzml
-    has a default namespace 'http://psi.hupo.org/ms/mzml' which should
-    be prepended to every nodename.
-
-    namespaces -- a dictionary of namespaces. The default pepxml
-    namespace has a key 'd'.
+    Parameters
+    ----------
+    source : str or file
+        A path or an URL to a target mzML file or the file object itself.
+    xpath : str
+        An XPath to target nodes. 
+    namespaces : dict, optional
+        A dictionary of namespaces. The default mzML namespace has a key 'd'.
     
-    Example:
-    mzml.get_node('/d:indexedmzML/d:mzML/d:run/d:spectrumList/d:spectrum')
+    Returns
+    -------
+    out : list of lxml.Element 
+        List of target nodes.
 
-    Returns:
-    a list of lxml.Element objects.
+    Examples
+    --------
+    >> get_node('/indexedmzML/mzML/run/spectrumList/spectrum')
+
     """
-
     parser = etree.XMLParser(remove_comments=True, ns_clean=True)
     tree = etree.parse(source, parser=parser)
+
+    xpath_w_namespace = _insert_default_ns(xpath)
+
+    return tree.xpath(xpath_w_namespace, namespaces=namespaces)
+
+def _decode_base64_data_array(source, dtype, is_compressed):
+    """Read a base64-encoded binary array.
     
-    return tree.xpath(xpath, namespaces=namespaces)
+    Parameters
+    ----------
+    source : str 
+        A binary array encoded with base64.
+    dtype : str
+        The type of the array in numpy dtype notation.
+    is_compressed : bool
+        If True then the array will be decompressed with zlib.
 
-
-def fill_params(output_dict, element, xpath, namespaces={'d':xmlns}):
-    """Obtain subelements of the given element with xpath and read their
-    children cvParam and userParam to the given dictionary.
-
-    Keyword arguments:
-    output_dict -- a dict to fill with params;
-    element     -- a parent element;
-    xpath       -- an xpath of subelements relative to the parent element;
-    namespaces  -- a dict of namespace abbreviations used in the xpath.
+    Returns
+    -------
+    out : numpy.array
     """
 
+    decoded_source = source.decode('base64')
+    if is_compressed:
+        decoded_source = zlib.decompress(decoded_source)
+    output = numpy.frombuffer(decoded_source, dtype=dtype)
+    return output
+
+def read_params(element, xpath, namespaces):
+    """
+    Obtain children nodes of a given node by their xpath and read their
+    children cvParam and userParam.
+
+    Parameters
+    ----------
+    element : lxml.Element
+        A parent element.
+    xpath : str
+        An XPath of children nodes relative to the parent element.
+    namespaces : dict
+        A dictionary of namespaces. The default mzML namespace has a key 'd'.
+
+    Returns
+    -------
+    out : dict
+    """
+
+    output = {}
     for subelement in element.xpath(xpath, namespaces=namespaces):
         for param_element in subelement.xpath('d:cvParam | d:userParam',
                                               namespaces=namespaces):
-            output_dict[param_element.attrib['name']] = (
+            output[param_element.attrib['name']] = (
                 param_element.attrib['value'])
 
-def decode_base64_data_array(source, type_code, is_compressed):
-    """Read a base64-coded binary array.
-    
-    Arguments:
-    source -- a string with a base64-coded binary array.
-
-    type_code -- a type code. Allowable values:
-              'l' - signed long, 4 bytes
-              'L' - unsigned long, 4 bytes
-              'f' - float, 4 bytes
-              'd' - double, 4 bytes
-
-    is_compressed -- if True then the byte array will be decompressed
-                     with zlib
-
-    Return: a python array
-    """
-    if type_code not in ['l', 'L', 'f', 'd']:
-        print 'Unexpected type of a variable'
-        return []
-    
-    decoded_source = base64.decodestring(source)
-    if is_compressed:
-        decoded_source = zlib.decompress(decoded_source)
-    output = array.array(type_code)
-    output.fromstring(decoded_source)
     return output
 
-def spectrum_from_element(element):
-    """Analyze an Element object with a spectrum and generate a
-    dictionary with its description.
+def _spectrum_from_element(element, namespaces):
+    """Analyze a spectrum Element object and generate a dictionary with its 
+    properties.
+
+    Parameters
+    ----------
+    element : lxml.Element
+        A parent element with a spectrum.
+    namespaces : dict
+        A dictionary of namespaces. The default mzML namespace has a key 'd'.
+
+    Returns
+    -------
+    out : dict
     """
 
     spectrum = {}
     spectrum.update(element.attrib)    
-    fill_params(spectrum, element, 'self::*')
+    spectrum.update(read_params(element, 'self::*', namespaces=namespaces))
 
     # Read the scan list.
-    fill_params(spectrum, element, 'd:scanList')
+    spectrum.update(
+        read_params(element, 'd:scanList', namespaces=namespaces))
     spectrum['scanList'] = []
-    for scan_elem in element.xpath('d:scanList/d:scan',
-                              namespaces={'d':xmlns}):
-        scan = {}
-        fill_params(scan, scan_elem, 'self::*')
+    for scan_elem in element.xpath('d:scanList/d:scan', namespaces=namespaces):
+        scan = read_params(scan_elem, 'self::*', namespaces=namespaces)
         scan['scanWindowList'] = []
         for scan_window_elem in scan_elem.xpath('d:scanWindowList/'
                                                 'd:scanWindow',
-                                                namespaces={'d':xmlns}):
-            scan_window = {}
-            fill_params(scan_window, scan_window_elem, 'self::*') 
+                                                namespaces=namespaces):
+            scan_window = read_params(
+                scan_window_elem, 'self::*', namespaces=namespaces) 
             scan['scanWindowList'].append(scan_window)
         spectrum['scanList'].append(scan)                    
 
     # Read the list of precursors.
     spectrum['precursorList'] = []
     for precursor_elem in element.xpath('d:precursorList/d:precursor',
-                                        namespaces={'d':xmlns}):
+                                        namespaces=namespaces):
         precursor = {}
         precursor.update(precursor_elem.attrib)
-        fill_params(precursor, precursor_elem, 'self::*')
-        fill_params(precursor, precursor_elem, 'd:isolationWindow')
-        fill_params(precursor, precursor_elem, 'd:activation')
+        precursor.update(
+            read_params(precursor_elem, 'self::*', namespaces=namespaces))
+        precursor.update(
+            read_params(precursor_elem, 'd:isolationWindow',
+                         namespaces=namespaces))
+        precursor.update(
+            read_params(precursor_elem, 'd:activation', namespaces=namespaces))
 
         # Read the list of selected ions for given precursor.
         precursor['selectedIonList'] = []
         for selectedIon_elem in precursor_elem.xpath('d:selectedIonList/'
                                                      'd:selectedIon',
-                                                     namespaces={'d':xmlns}):
-            selectedIon = {}
-            fill_params(selectedIon, selectedIon_elem, 'self::*')
+                                                     namespaces=namespaces):
+            selectedIon = read_params(
+                selectedIon_elem, 'self::*', namespaces=namespaces)
             precursor['selectedIonList'].append(selectedIon)        
         spectrum['precursorList'].append(precursor)
 
     # Read binary arrays with m/zs and intensities.
     for array_element in element.xpath(
-        'd:binaryDataArrayList/d:binaryDataArray',
-        namespaces={'d':xmlns}): 
+        'd:binaryDataArrayList/d:binaryDataArray', namespaces=namespaces): 
         
         # Define the contents of the array.
         array_type = None
         for cvParam in array_element.xpath(
             'd:cvParam[@name=\'m/z array\'] | '
             'd:cvParam[@name=\'intensity array\']',
-            namespaces={'d':xmlns}):
+            namespaces=namespaces):
             
             array_type = cvParam.attrib['name']
 
@@ -164,7 +232,7 @@ def spectrum_from_element(element):
         for cvParam in array_element.xpath(
             'd:cvParam[@name=\'64-bit float\'] | '
             'd:cvParam[@name=\'32-bit float\']',
-            namespaces={'d':xmlns}):
+            namespaces=namespaces):
             
             type_code = {'32-bit float': 'f',
                          '64-bit float': 'd'
@@ -173,12 +241,11 @@ def spectrum_from_element(element):
         # Decode, decompress and read the array.
         is_compressed = bool(
             array_element.xpath('d:cvParam[@name=\'zlib compression\']',
-                                namespaces={'d':xmlns}))
+                                namespaces=namespaces))
         
         if array_element.attrib['encodedLength'] != '0':
-            spectrum[array_type] = decode_base64_data_array(
-                array_element.xpath('d:binary/text()',
-                                    namespaces={'d':xmlns})[0],
+            spectrum[array_type] = _decode_base64_data_array(
+                array_element.xpath('d:binary/text()', namespaces=namespaces)[0],
                 type_code,
                 is_compressed)
         else:
@@ -192,24 +259,25 @@ def spectrum_from_element(element):
     return spectrum
 
 def iter_spectrum(source):
-    """Parse source and iterate through a list of peptide-spectrum
-    matches from the ``source``.
+    """Parse source and iterate through spectra in the ``source``.
 
-    Arguments:
-    source -- any of the following:    
-              - a file name/path
-              - a file object
-              - a file-like object
-              - a URL using the HTTP or FTP protocol
+    Parameters
+    ----------
+    source : str or file
+        A path or an URL to a target mzML file or the file object itself.
 
-    Returns: a generator which yields PSM dicts one by one.
+    Returns
+    -------
+    out : iterator
+       An iterator over the dicts with spectra properties.
     """
 
     parser = etree.XMLParser(remove_comments=True, ns_clean=True)
     tree = etree.parse(source, parser=parser)
+    namespaces = {'d': xmlns}
 
     for spectrum_element in tree.xpath(
-        '/d:indexedmzML/d:mzML/d:run/d:spectrumList/d:spectrum',
-        namespaces = {'d': xmlns}):
+        _insert_default_ns('/indexedmzML/mzML/run/spectrumList/spectrum'),
+        namespaces=namespaces):
         
-        yield spectrum_from_element(spectrum_element)
+        yield _spectrum_from_element(spectrum_element, namespaces=namespaces)
