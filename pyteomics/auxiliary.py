@@ -1,10 +1,17 @@
 import numpy
 
 class PyteomicsError(Exception):
-    def __init__(self, value):
-        self.value = value
+    """Exception raised for errors in Pyteomics library.
+
+    Attributes:
+        msg  -- explanation of the error
+    """
+
+    def __init__(self, msg):
+        self.msg = msg
+        
     def __str__(self):
-        return repr(self.value)
+        return "Pyteomics error, message: %s" % (repr(self.msg),)
 
 def linear_regression(x, y, a=None, b=None):
     """Calculate coefficients of a linear regression y = a * x + b.
