@@ -8,13 +8,13 @@ matplotlib.
 Data plotting
 -------------
 
-  py:func:`plot_line` - plot a line.
+  :py:func:`plot_line` - plot a line.
 
-  py:func:`scatter_trend` - plot a scatter plot with a regression line.
+  :py:func:`scatter_trend` - plot a scatter plot with a regression line.
 
-  py:func:`plot_function_3d` - plot a 3D graph of a function of two variables.
+  :py:func:`plot_function_3d` - plot a 3D graph of a function of two variables.
 
-  py:func:`plot_function_contour` - plot a contour graph of a function of 
+  :py:func:`plot_function_contour` - plot a contour graph of a function of 
   two variables.
 
 See also
@@ -23,6 +23,8 @@ See also
   - `Matplotlib cookbook <http://www.scipy.org/Cookbook/Matplotlib/>`_
   - `Matplotlib tutorial 
     <http://matplotlib.sourceforge.net/mpl_toolkits/mplot3d/tutorial.html>`_
+
+-------------------------------------------------------------------------------
 
 """
 # Licensed under the MIT license:

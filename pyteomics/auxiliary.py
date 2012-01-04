@@ -5,12 +5,14 @@ auxiliary - common functions and objects
 Math
 ----
 
-  py:func:`linear_regression` - a wrapper for numpy linear regression
+  :py:func:`linear_regression` - a wrapper for numpy linear regression
 
 Project infrastructure
 ----------------------
 
-  py:exception:`PyteomicsError` - a pyteomics-specific exception
+  :py:exception:`PyteomicsError` - a pyteomics-specific exception
+
+-------------------------------------------------------------------------------
 
 """
 # Licensed under the MIT license:
@@ -38,9 +40,9 @@ def linear_regression(x, y, a=None, b=None):
     Parameters
     ----------
     x, y : array_like of float
-    a : float
+    a : float, optional
         If specified then the slope coefficient is fixed and equals a.
-    b : float        
+    b : float, optional        
         If specified then the free term is fixed and equals b.
     
     Returns

@@ -1,9 +1,26 @@
 """
-fasta
-======
+fasta - manipulations with FASTA databases 
+==========================================
 
-FASTA is a simple file format for protein sequence databases. More information
-can be found at http://www.ncbi.nlm.nih.gov/blast/fasta.shtml.
+FASTA is a simple file format for protein sequence databases. Please refer to
+`the NCBI website <http://www.ncbi.nlm.nih.gov/blast/fasta.shtml>`_
+for the most detailed information on the format.
+
+Data manipulation
+-----------------
+
+  :py:func:`read_fasta` - iterate through entries in a FASTA database
+
+  :py:func:`write_fasta` - write entries to a FASTA database
+
+Decoy database generation
+-------------------------
+
+  :py:func:`decoy_sequence` - generate a decoy sequence from a given sequence
+
+  :py:func:`decoy_db` - generate a decoy database from a given FASTA database
+
+-------------------------------------------------------------------------------
 """
 
 # Licensed under the MIT license:
@@ -69,33 +86,9 @@ def read_fasta(fasta_file, ignore_comments=False):
         else:
             accumulated_strings.append(stripped_string)
 
-def decoy_sequence(sequence, mode):
-    """
-    Modify a sequence string (used for decoy database generation).
-
-    Parameters
-    ----------
-    sequence : str
-        The initial sequence string.
-    mode : str
-        Type of modification. Supported values are: 'reverse', 'random'.
-
-    Returns
-    -------
-    modified_sequence : str
-        The modified sequence.
-    """
-    if mode == 'reverse':
-        modified_sequence = sequence[::-1]
-    elif mode == 'random':
-        modified_sequence = list(sequence)
-        random.shuffle(modified_sequence)
-        modified_sequence = ''.join(modified_sequence)
-    return modified_sequence
-
 def write_fasta(entries, output=None, close=True):
     """
-    Create a FASTA file with 'entries'.
+    Create a FASTA file with ``entries``.
 
     Parameters
     ----------
@@ -131,16 +124,34 @@ def write_fasta(entries, output=None, close=True):
     if close and output: output_file.close()
     return output_file
 
-def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
-        decoy_only=False, close=True):
-    """Read the FASTA entries from 'source'. The file written to 'output' will
-    contain the entries from 'source' and the modified sequences.
-    
-    Supported types of modification are dictated by the
-    :py:func:`decoy_sequence` function. Currently, it's 'random' and 'reverse'.
-    The protein descriptions will be prepended with 'prefix' for modified
-    sequences.
+def decoy_sequence(sequence, mode):
+    """
+    Create a decoy sequence out of a given sequence string.
 
+    Parameters
+    ----------
+    sequence : str
+        The initial sequence string.
+    mode : {'reverse', 'shuffle'}
+        Type of decoy sequence. 
+
+    Returns
+    -------
+    modified_sequence : str
+        The modified sequence.
+    """
+    if mode == 'reverse':
+        modified_sequence = sequence[::-1]
+    elif mode == 'shuffle':
+        modified_sequence = list(sequence)
+        random.shuffle(modified_sequence)
+        modified_sequence = ''.join(modified_sequence)
+    return modified_sequence
+
+def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
+             decoy_only=False, close=True):
+    """Generate a decoy database out of a given ``source``.
+    
     If 'output' is a path, the file will be open for appending, so no information
     will be lost if the file exists. Although, the user should be careful when
     providing open file streams as 'source' and 'output'. The reading and writing
@@ -150,27 +161,28 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
     Parameters
     ----------
     source : file-like object or str
-        A file with (or the filename of) a FASTA database
+        A path to a FASTA database or a file object itself.
     output : file-like object or str, optional
-        A file open for writing or a path to write to.
-        If not specified, the results will be printed to standard output.
-    mode : str, optional
-        Algorithm of decoy sequence generation. Only 'reverse' is supported
-        for now.
+        A path to an output database or a file open for writing.
+        If not specified, the results go to the standard output.
+    mode : {'reverse', 'shuffle'}, optional
+        Algorithm of decoy sequence generation. 'reverse' by default.
     prefix : str, optional
-        A prefix that will prepend the protein descriptions for decoy entries.
-        The default value is 'DECOY_'
+        A prefix to the protein descriptions of decoy entries. The default 
+        value is "DECOY\_"
     decoy_only : bool, optional
         If set to True, only the decoy entries will be written to 'output'.
         If False, the entries from 'source' will be written as well.
+        False by default.
     close : bool, optional
         If True, the target file will be closed in the end (default).
         Set to False, if you need to perform I/O operations with the file
-        from your Python script after it's created.
+        from your Python script after it's created. True by default.
     
     Returns
     -------
-    output_file : a file object with the created file
+    output_file : file
+        A file object with the created file.
     """
     if type(source) == file:
         source_file = source
