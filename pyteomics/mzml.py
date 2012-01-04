@@ -19,13 +19,15 @@ the underlying `lxml library <http://lxml.de/>`_.
 Data access
 -----------
 
-  py:func:`iter_spectrum` - iterate through spectra in mzML file. Data from a
+  :py:func:`iter_spectrum` - iterate through spectra in mzML file. Data from a
   single spectrum are converted to a human-readable dict. Spectra themselves are 
   stored under 'm/z array' and 'intensity array' keys.
 
-  py:func:`get_node` - get arbitrary nodes of mzML file by their xpath.
+  :py:func:`get_node` - get arbitrary nodes of mzML file by their xpath.
 
-  py:func:`read_params` - read children cvParams and userParams into a dict.
+  :py:func:`read_params` - read children cvParams and userParams into a dict.
+
+-------------------------------------------------------------------------------
 
 """
 # Licensed under the MIT license:

@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to pyteomics's documentation!
-=====================================
+Welcome to pyteomics documentation!
+===================================
 
 Contents:
 
@@ -17,6 +17,11 @@ Contents:
    ./electrochem
 
    ./fasta
+   ./mzml
+   ./pepxml
+
+   ./auxiliary
+   ./pylab_aux
 
 * :ref:`genindex`
 * :ref:`search`

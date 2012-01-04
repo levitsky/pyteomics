@@ -104,11 +104,11 @@ algebra:
 
 .. math::
     
-    RT = \overline{aa} \cdot \overline{RC} + RT_0,
+    RT = \\bar{aa} \cdot \\bar{RC} + RT_0,
     
-where :math:`\\overline{aa}` is a vector of amino acid composition,
-i.e. :math:`\\overline{aa}_i` is the number of amino acid residues of i-th
-type in a polypeptide; :math:`\overline{RC}` is a vector of respective
+where :math:`\\bar{aa}` is a vector of amino acid composition,
+i.e. :math:`\\bar{aa}_i` is the number of amino acid residues of i-th
+type in a polypeptide; :math:`\\bar{RC}` is a vector of respective
 retention coefficients.
 
 In this formulation, it is clear that additive model gives the same results for
@@ -156,7 +156,7 @@ and vectorized form of this equation would be:
 
 .. math::
     
-    RT = (1 + m\,ln N) \, \overline{RC} \cdot \overline{aa} + RT_0
+    RT = (1 + m\,ln N) \, \\bar{RC} \cdot \\bar{aa} + RT_0
 
 This equation may be reduced to a linear form and solved by the standard
 methods.
@@ -171,40 +171,42 @@ separate sets of retention coefficients for terminal amino acid residues
 References
 ----------
 
-.. [#Meek] Meek, J. L. Prediction of peptide retention times in high-pressure
-   liquid chromatography on the basis of amino acid composition. PNAS, 1980,
-   77 (3), 1632-1636.
-   `Link <http://www.ncbi.nlm.nih.gov/pubmed/6929513>`_
+.. [#Meek] Meek, J. L. `Prediction of peptide retention times in high-pressure
+   liquid chromatography on the basis of amino acid composition. 
+   <http://www.ncbi.nlm.nih.gov/pubmed/6929513>`_
+   PNAS, 1980, 77 (3), 1632-1636.
 
 .. [#Guo1] Guo, D.; Mant, C. T.; Taneja, A. K.; Parker, J. M. R.; Hodges,
-   R. S.  Prediction of peptide retention times in reversed-phase
+   R. S.  `Prediction of peptide retention times in reversed-phase
    high-performance liquid chromatography I. Determination of retention
-   coefficients of amino acid residues of model synthetic peptides. Journal of
-   Chromatography A, 1986, 359, 499-518.
-   `Link. <http://dx.doi.org/10.1016/0021-9673(86)80102-9>`_
+   coefficients of amino acid residues of model synthetic peptides. 
+   <http://dx.doi.org/10.1016/0021-9673(86)80102-9>`_
+   Journal of Chromatography A, 1986, 359, 499-518.
    
-.. [#Baczek] Baczek, T.; Kaliszan, R. Predictions of peptides' retention times
+.. [#Baczek] Baczek, T.; Kaliszan, R. `Predictions of peptides' retention times
    in reversed-phase liquid chromatography as a new supportive tool to improve
-   protein identification in proteomics. Proteomics, 2009, 9 (4), 835-47.
-   `Link. <http://dx.doi.org/10.1002/pmic.200800544>`_
+   protein identification in proteomics. 
+   <http://dx.doi.org/10.1002/pmic.200800544>`_
+   Proteomics, 2009, 9 (4), 835-47.
 
-.. [#Babushok] Babushok, V. I.; Zenkevich, I. G. Retention Characteristics of
-   Peptides in RP-LC: Peptide Retention Prediction. Chromatographia, 2010, 72
-   (9-10), 781-797.
-   `Link. <http://dx.doi.org/10.1365/s10337-010-1721-8>`_
+.. [#Babushok] Babushok, V. I.; Zenkevich, I. G. `Retention Characteristics of
+   Peptides in RP-LC: Peptide Retention Prediction.
+   <http://dx.doi.org/10.1365/s10337-010-1721-8>`_
+   Chromatographia, 2010, 72 (9-10), 781-797.
    
-.. [#MantLogLen] Mant, C. T.; Zhou, N. E.; Hodges, R. S. Correlation of
+.. [#MantLogLen] Mant, C. T.; Zhou, N. E.; Hodges, R. S. `Correlation of
    protein retention times in reversed-phase chromatography with polypeptide
-   chain length and hydrophobicity. Journal of Chromatography A, 1989, 476,
-   363-375. `Link. <http://dx.doi.org/10.1016/S0021-9673(01)93882-8>`_
+   chain length and hydrophobicity. 
+   <http://dx.doi.org/10.1016/S0021-9673(01)93882-8>`_
+   Journal of Chromatography A, 1989, 476, 363-375.
 
 .. [#Tripet] Tripet, B.; Cepeniene, D.; Kovacs, J. M.; Mant, C. T.; Krokhin,
-   O. V.; Hodges, R. S. Requirements for prediction of peptide retention time
+   O. V.; Hodges, R. S. `Requirements for prediction of peptide retention time
    in reversed-phase high-performance liquid chromatography:
    hydrophilicity/hydrophobicity of side-chains at the N- and C-termini of
-   peptides are dramatically affected by the end-groups and location. Journal
-   of chromatography A, 2007, 1141 (2), 212-25.
-   `Link. <http://dx.doi.org/10.1016/j.chroma.2006.12.024>`_
+   peptides are dramatically affected by the end-groups and location.
+   <http://dx.doi.org/10.1016/j.chroma.2006.12.024>`_
+   Journal of chromatography A, 2007, 1141 (2), 212-25.
 
 .. [#Browne] Browne, C. A.; Bennett, H. P. J.; Solomon, S. The
    isolation of peptides by high-performance liquid chromatography
