@@ -14,7 +14,7 @@ mzML files. The most important function is py:func:`iter_spectrum`, which
 reads spectra and related information as saves them into human-readable dicts.
 The rest of data can be obtained via a combination of py:func:`get_node` and
 py:func:`read_params` functions. These functions rely of the terminology of 
-the underlying lxml library (http://lxml.de/). 
+the underlying `lxml library <http://lxml.de/>`_. 
 
 Data access
 -----------
@@ -85,7 +85,7 @@ def get_node(source, xpath, namespaces={'d':xmlns}):
     xpath : str
         An XPath to target nodes. 
     namespaces : dict, optional
-        A dictionary of namespaces. The default mzML namespace has a key 'd'.
+        A dictionary of namespaces. The default namespace key is 'd'.
     
     Returns
     -------
@@ -139,7 +139,7 @@ def read_params(element, xpath, namespaces):
     xpath : str
         An XPath of children nodes relative to the parent element.
     namespaces : dict
-        A dictionary of namespaces. The default mzML namespace has a key 'd'.
+        A dictionary of namespaces. The default namespace key is 'd'.
 
     Returns
     -------
@@ -164,7 +164,7 @@ def _spectrum_from_element(element, namespaces):
     element : lxml.Element
         A parent element with a spectrum.
     namespaces : dict
-        A dictionary of namespaces. The default mzML namespace has a key 'd'.
+        A dictionary of namespaces. The default namespace key is 'd'.
 
     Returns
     -------
@@ -259,7 +259,7 @@ def _spectrum_from_element(element, namespaces):
     return spectrum
 
 def iter_spectrum(source):
-    """Parse source and iterate through spectra in the ``source``.
+    """Parse ``source`` and iterate through spectra.
 
     Parameters
     ----------

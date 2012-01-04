@@ -1,3 +1,35 @@
+"""
+pepxml - reader for peptide-spectrum matches in pep.XML format
+==============================================================
+
+Summary
+-------
+
+`pep.XML <http://tools.proteomecenter.org/wiki/index.php?title=Formats:pepXML>`_
+was the first widely accepted format for proteomics search engines' output. 
+Even though it is to be replaced by a community standard
+`mzIdentML <http://www.psidev.info/index.php?q=node/454>`_, it is still used
+commonly.
+
+This module provides minimalistic infrastructure for access to data stored in
+pep.XML files. The most important function is py:func:`iter_psm`, which 
+reads peptide-spectum matches and related information as saves them into 
+human-readable dicts. The rest of data can be obtained via py:func:`get_node` 
+function. This functions relies of the terminology of the underlying 
+`lxml library <http://lxml.de/>`_.
+
+Data access
+-----------
+
+  py:func:`iter_psm` - iterate through peptide-spectrum matches in a pep.XML 
+  file. Data from a single PSM are converted to a human-readable dict. 
+
+  py:func:`get_node` - get arbitrary nodes of pep.XML file by their xpath.
+
+  py:func:`roc_curve` - get a receiver-operator curve (min peptideprophet
+  probability is a sample vs. false discovery rate) of peptideprophet analysis.
+
+"""
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license.php 
 
@@ -23,44 +55,73 @@ float_keys = [
 # Default namespace of pepXML.
 xmlns = 'http://regis-web.systemsbiology.net/pepXML'
 
-def peptide_length(psm):
+def _peptide_length(psm):
     return len(psm['peptide'])
+
+def _insert_default_ns(xpath, ns_key = 'd'):
+    """Inserts the key for the default namespace before each node name.
+    Does not modify a nodename if it already has a namespace.
+
+    Parameters
+    ----------
+    xpath : str
+        An original XPath
+    ns_key : str
+        A key for the default namespace.
+
+    Returns
+    -------
+    out : str
+        A modified XPath.
+    """
+    return '/'.join(
+        [(ns_key + ':' + node if (node and node.count(':') == 0) else node)
+         for node in xpath.split('/')])
 
 def get_node(source, xpath, namespaces={'d':xmlns}):
     """Retrieves arbitrary nodes from a pepxml file by their xpath.
+    Each node in the xpath is assigned to the default namespace 
+    'http://regis-web.systemsbiology.net/pepXML' unless specified else.
 
-    Arguments: 
-
-    source -- any of the following:    
-              - a file name/path
-              - a file object
-              - a file-like object
-              - a URL using the HTTP or FTP protocol
-
-    xpath -- a string with XPath to required objects. Usually, pepXML
-    has a default namespace
-    'http://regis-web.systemsbiology.net/pepXML' which should be
-    prepended to every nodename.
-
-    namespaces -- a dictionary of namespaces. The default pepxml
-    namespace has a key 'd'.
+    Parameters
+    ----------
+    source : str or file
+        A path or an URL to a target pepXML file or the file object itself.
+    xpath : str
+        An XPath to target nodes. 
+    namespaces : dict, optional
+        A dictionary of namespaces. The default namespace key is 'd'.
     
-    Example:
-    pepxml.get_node('/d:msms_pipeline_analysis/d:msms_run_summary[0]'
-                    '/d:search_summary/d:aminoacid_modification')
+    Returns
+    -------
+    out : list of lxml.Element 
+        List of target nodes.
 
-    Returns:
-    a list of lxml.Element objects.
+    Examples
+    --------
+    >> get_node('/msms_pipeline_analysis/msms_run_summary[0]'
+                '/search_summary/aminoacid_modification')
+
     """
-
     parser = etree.XMLParser(remove_comments=True, ns_clean=True)
     tree = etree.parse(source, parser=parser)
+
+    xpath_w_namespace = _insert_default_ns(xpath)
+
+    return tree.xpath(xpath_w_namespace, namespaces=namespaces)
     
-    return tree.xpath(xpath, namespaces=namespaces)
-    
-def psm_from_query(query):
-    """Analyze an Element object with a spectrum query and generate a
-    dictionary with a peptide spectrum match.    
+def _psm_from_query(query, namespaces={'d':xmlns}):
+    """Analyze a spectrum query Element object and generate a dictionary with 
+    its properties.
+
+    Parameters
+    ----------
+    element : lxml.Element
+        A parent element with a spectrum query.
+
+    Returns
+    -------
+    out : dict
     """
 
     # A psm stores the properties of the spectrum query...
@@ -68,7 +129,7 @@ def psm_from_query(query):
     # ... and the best hit from peptide database.
     search_hit_elements = query.xpath(
         'd:search_result/d:search_hit[@hit_rank=\'1\']',
-        namespaces={'d':xmlns})
+        namespaces=namespaces)
     if not search_hit_elements:
         return {}
     psm.update(search_hit_elements[0].attrib)
@@ -95,19 +156,19 @@ def psm_from_query(query):
     modifications = []
     for subelement in query.xpath('d:search_result/d:search_hit/'
                                   'd:search_score', 
-                                  namespaces={'d':xmlns}):
+                                  namespaces=namespaces):
         psm[subelement.attrib['name']] = float(subelement.attrib['value'])
     for subelement in query.xpath('d:search_result/d:search_hit/'
                                   'd:analysis_result/d:peptideprophet_result',
-                                  namespaces={'d':xmlns}):
+                                  namespaces=namespaces):
         psm['peptideprophet'] = float(subelement.attrib['probability'])
     for subelement in query.xpath('d:search_result/d:search_hit/'
                                   'd:alternative_protein',
-                                  namespaces={'d':xmlns}):
+                                  namespaces=namespaces):
         proteins.append(subelement.attrib)
     for subelement in query.xpath('d:search_result/d:search_hit/'
                                   'd:modification_info',
-                                  namespaces={'d':xmlns}):
+                                  namespaces=namespaces):
         psm['modified_peptide'] = subelement.attrib.get('modified_peptide',
                                                         '')
         if 'mod_nterm_mass' in subelement.attrib:
@@ -116,10 +177,10 @@ def psm_from_query(query):
                  'mass': float(subelement.attrib['mod_nterm_mass'])})
         if 'mod_cterm_mass' in subelement.attrib:
             modifications.append(
-                {'position' : peptide_length(psm) + 1,
+                {'position' : _peptide_length(psm) + 1,
                  'mass': float(subelement.attrib['mod_cterm_mass'])})
         for mod_element in subelement.xpath('d:mod_aminoacid_mass',
-                                            namespaces={'d':xmlns}):
+                                            namespaces=namespaces):
             modification = dict(mod_element.attrib)
             modification['position'] = int(modification['position'])
             modification['mass'] = float(modification['mass'])
@@ -131,17 +192,17 @@ def psm_from_query(query):
     return psm
     
 def iter_psm(source):
-    """Parse source and iterate through the list of peptide-spectrum
-    matches from the ``source``.
+    """Parse ``source`` and iterate through peptide-spectrum matches.
 
-    Arguments:
-    source -- any of the following:    
-              - a file name/path
-              - a file object
-              - a file-like object
-              - a URL using the HTTP or FTP protocol
+    Parameters
+    ----------
+    source : str or file
+        A path or an URL to a target pepXML file or the file object itself.
 
-    Returns: a generator which yields PSM dicts one by one.
+    Returns
+    -------
+    out : iterator
+       An iterator over the dicts with PSM properties.
     """
 
     parser = etree.XMLParser(remove_comments=True, ns_clean=True) 
@@ -151,19 +212,20 @@ def iter_psm(source):
         '/d:msms_pipeline_analysis/d:msms_run_summary/d:spectrum_query',
         namespaces = {'d': xmlns}):
         
-        yield psm_from_query(spectrum_query)
+        yield _psm_from_query(spectrum_query)
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.
 
-    Arguments:
-    source -- any of the following:    
-              - a file name/path
-              - a file object
-              - a file-like object
-              - a URL using the HTTP or FTP protocol
+    Parameters
+    ----------
+    source : str or file
+        A path or an URL to a target pepXML file or the file object itself.
 
-    Returns: a list of ROC points, sorted by ascending min prob.
+    Returns
+    -------
+    out : list
+        A list of ROC points, sorted by ascending min prob.
     """
 
     parser = etree.XMLParser(remove_comments=True, ns_clean=True) 
@@ -183,5 +245,3 @@ def roc_curve(source):
 
     return sorted(roc_curve, key=lambda x: x['min_prob'])
     
-if __name__ == "__main__":
-    pass

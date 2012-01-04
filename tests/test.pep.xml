@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet type="text/xsl" href="/regis/data2/search/johnk/Dataset_Paper/mix3/4700/interact-pps_sl20060731_18mix_25ul_r1_1154456409.xsl"?>
+<msms_pipeline_analysis date="2006-10-04T10:05:13" xmlns="http://regis-web.systemsbiology.net/pepXML" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://regis-web.systemsbiology.net/pepXML /tools/bin/TPP/tpp/schema/pepXML_v18.xsd" summary_xml="/regis/data2/search/johnk/Dataset_Paper/mix3/4700/interact-pps_sl20060731_18mix_25ul_r1_1154456409.xml">
+  <analysis_summary analysis="database_refresh" time="2006-10-04T10:05:14" />
+  <analysis_summary analysis="peptideprophet" time="2006-10-04T10:05:13">
+    <peptideprophet_summary version="PeptideProphet v3.0 April 1, 2004 (TPP v2.9 GALE rev.3, Build 200609011623)" author="AKeller@ISB" min_prob="0.05" options="" est_tot_num_correct="147.4">
+      <inputfile name="/regis/data2/search/johnk/Dataset_Paper/mix3/4700/pps_sl20060731_18mix_25ul_r1_1154456409" />
+      <roc_data_point min_prob="0.99" sensitivity="0.6496" error="0.0028" num_corr="96" num_incorr="0" />
+      <roc_data_point min_prob="0.98" sensitivity="0.7098" error="0.0037" num_corr="105" num_incorr="0" />
+      <roc_data_point min_prob="0.95" sensitivity="0.8475" error="0.0088" num_corr="125" num_incorr="1" />
+      <roc_data_point min_prob="0.90" sensitivity="0.9167" error="0.0139" num_corr="135" num_incorr="2" />
+      <roc_data_point min_prob="0.85" sensitivity="0.9465" error="0.0177" num_corr="139" num_incorr="3" />
+      <roc_data_point min_prob="0.80" sensitivity="0.9577" error="0.0199" num_corr="141" num_incorr="3" />
+      <roc_data_point min_prob="0.75" sensitivity="0.9841" error="0.0267" num_corr="145" num_incorr="4" />
+      <roc_data_point min_prob="0.70" sensitivity="0.9891" error="0.0283" num_corr="146" num_incorr="4" />
+      <roc_data_point min_prob="0.65" sensitivity="0.9891" error="0.0283" num_corr="146" num_incorr="4" />
+      <roc_data_point min_prob="0.60" sensitivity="0.9891" error="0.0283" num_corr="146" num_incorr="4" />
+      <roc_data_point min_prob="0.55" sensitivity="0.9891" error="0.0283" num_corr="146" num_incorr="4" />
+      <roc_data_point min_prob="0.50" sensitivity="0.9928" error="0.0311" num_corr="146" num_incorr="5" />
+      <roc_data_point min_prob="0.45" sensitivity="0.9928" error="0.0311" num_corr="146" num_incorr="5" />
+      <roc_data_point min_prob="0.40" sensitivity="0.9928" error="0.0311" num_corr="146" num_incorr="5" />
+      <roc_data_point min_prob="0.35" sensitivity="0.9953" error="0.0351" num_corr="147" num_incorr="5" />
+      <roc_data_point min_prob="0.30" sensitivity="0.9973" error="0.0394" num_corr="147" num_incorr="6" />
+      <roc_data_point min_prob="0.25" sensitivity="0.9973" error="0.0394" num_corr="147" num_incorr="6" />
+      <roc_data_point min_prob="0.20" sensitivity="0.9973" error="0.0394" num_corr="147" num_incorr="6" />
+      <roc_data_point min_prob="0.15" sensitivity="0.9996" error="0.0496" num_corr="147" num_incorr="8" />
+      <roc_data_point min_prob="0.10" sensitivity="0.9996" error="0.0496" num_corr="147" num_incorr="8" />
+      <roc_data_point min_prob="0.05" sensitivity="1.0000" error="0.0553" num_corr="147" num_incorr="9" />
+      <roc_data_point min_prob="0.00" sensitivity="1.0000" error="0.6423" num_corr="147" num_incorr="265" />
+      <error_point error="0.000" min_prob="1.00" num_corr="31" num_incorr="0" />
+      <error_point error="0.010" min_prob="0.94" num_corr="129" num_incorr="1" />
+      <error_point error="0.020" min_prob="0.79" num_corr="143" num_incorr="3" />
+      <error_point error="0.025" min_prob="0.77" num_corr="145" num_incorr="4" />
+      <error_point error="0.030" min_prob="0.55" num_corr="147" num_incorr="5" />
+      <error_point error="0.040" min_prob="0.17" num_corr="147" num_incorr="8" />
+      <error_point error="0.050" min_prob="0.06" num_corr="147" num_incorr="10" />
+      <error_point error="0.075" min_prob="0.00" num_corr="147" num_incorr="14" />
+      <error_point error="0.100" min_prob="0.00" num_corr="147" num_incorr="18" />
+      <distribution_point fvalue="-4.90" obs_1_distr="1" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-4.70" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-4.50" obs_1_distr="3" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-4.30" obs_1_distr="3" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-4.10" obs_1_distr="3" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-3.90" obs_1_distr="9" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-3.70" obs_1_distr="8" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-3.50" obs_1_distr="11" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-3.30" obs_1_distr="9" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-3.10" obs_1_distr="16" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-2.90" obs_1_distr="14" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-2.70" obs_1_distr="23" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-2.50" obs_1_distr="13" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-2.30" obs_1_distr="17" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-2.10" obs_1_distr="10" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-1.90" obs_1_distr="14" model_1_pos_distr="0.00" model_1_neg_distr="6.25" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-1.70" obs_1_distr="9" model_1_pos_distr="0.00" model_1_neg_distr="11.36" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-1.50" obs_1_distr="18" model_1_pos_distr="0.00" model_1_neg_distr="12.83" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-1.30" obs_1_distr="9" model_1_pos_distr="0.00" model_1_neg_distr="12.75" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-1.10" obs_1_distr="7" model_1_pos_distr="0.01" model_1_neg_distr="11.91" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-0.90" obs_1_distr="5" model_1_pos_distr="0.02" model_1_neg_distr="10.72" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-0.70" obs_1_distr="5" model_1_pos_distr="0.03" model_1_neg_distr="9.43" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-0.50" obs_1_distr="4" model_1_pos_distr="0.06" model_1_neg_distr="8.15" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-0.30" obs_1_distr="12" model_1_pos_distr="0.10" model_1_neg_distr="6.95" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="-0.10" obs_1_distr="9" model_1_pos_distr="0.18" model_1_neg_distr="5.87" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="0.10" obs_1_distr="3" model_1_pos_distr="0.30" model_1_neg_distr="4.92" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="0.30" obs_1_distr="5" model_1_pos_distr="0.49" model_1_neg_distr="4.10" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="0.50" obs_1_distr="6" model_1_pos_distr="0.77" model_1_neg_distr="3.40" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="0.70" obs_1_distr="2" model_1_pos_distr="1.16" model_1_neg_distr="2.80" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="0.90" obs_1_distr="7" model_1_pos_distr="1.69" model_1_neg_distr="2.30" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="1.10" obs_1_distr="5" model_1_pos_distr="2.39" model_1_neg_distr="1.88" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="1.30" obs_1_distr="10" model_1_pos_distr="3.25" model_1_neg_distr="1.54" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="1.50" obs_1_distr="11" model_1_pos_distr="4.27" model_1_neg_distr="1.25" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="1.70" obs_1_distr="9" model_1_pos_distr="5.42" model_1_neg_distr="1.01" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="1.90" obs_1_distr="4" model_1_pos_distr="6.65" model_1_neg_distr="0.82" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="2.10" obs_1_distr="9" model_1_pos_distr="7.87" model_1_neg_distr="0.66" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="2.30" obs_1_distr="9" model_1_pos_distr="9.01" model_1_neg_distr="0.54" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="2.50" obs_1_distr="10" model_1_pos_distr="9.95" model_1_neg_distr="0.43" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="2.70" obs_1_distr="7" model_1_pos_distr="10.61" model_1_neg_distr="0.35" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="2.90" obs_1_distr="2" model_1_pos_distr="10.94" model_1_neg_distr="0.28" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="3.10" obs_1_distr="15" model_1_pos_distr="10.88" model_1_neg_distr="0.22" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="3.30" obs_1_distr="10" model_1_pos_distr="10.46" model_1_neg_distr="0.18" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="3.50" obs_1_distr="10" model_1_pos_distr="9.71" model_1_neg_distr="0.14" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="3.70" obs_1_distr="9" model_1_pos_distr="8.71" model_1_neg_distr="0.12" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="3.90" obs_1_distr="7" model_1_pos_distr="7.54" model_1_neg_distr="0.09" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="4.10" obs_1_distr="4" model_1_pos_distr="6.31" model_1_neg_distr="0.07" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="4.30" obs_1_distr="12" model_1_pos_distr="5.10" model_1_neg_distr="0.06" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="4.50" obs_1_distr="6" model_1_pos_distr="3.98" model_1_neg_distr="0.05" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="4.70" obs_1_distr="2" model_1_pos_distr="3.00" model_1_neg_distr="0.04" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="4.90" obs_1_distr="1" model_1_pos_distr="2.18" model_1_neg_distr="0.03" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="5.10" obs_1_distr="2" model_1_pos_distr="1.53" model_1_neg_distr="0.02" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="5.30" obs_1_distr="0" model_1_pos_distr="1.04" model_1_neg_distr="0.02" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="5.50" obs_1_distr="0" model_1_pos_distr="0.68" model_1_neg_distr="0.02" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="5.70" obs_1_distr="2" model_1_pos_distr="0.43" model_1_neg_distr="0.01" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="5.90" obs_1_distr="0" model_1_pos_distr="0.26" model_1_neg_distr="0.01" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="6.10" obs_1_distr="0" model_1_pos_distr="0.16" model_1_neg_distr="0.01" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="6.30" obs_1_distr="0" model_1_pos_distr="0.09" model_1_neg_distr="0.01" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="6.50" obs_1_distr="0" model_1_pos_distr="0.05" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="6.70" obs_1_distr="0" model_1_pos_distr="0.03" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="6.90" obs_1_distr="0" model_1_pos_distr="0.01" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="7.10" obs_1_distr="0" model_1_pos_distr="0.01" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="7.30" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="7.50" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="7.70" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="7.90" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="8.10" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="8.30" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="8.50" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="8.70" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="8.90" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="9.10" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="9.30" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="9.50" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="9.70" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <distribution_point fvalue="9.90" obs_1_distr="0" model_1_pos_distr="0.00" model_1_neg_distr="0.00" obs_2_distr="0" model_2_pos_distr="0.00" model_2_neg_distr="0.00" obs_3_distr="0" model_3_pos_distr="0.00" model_3_neg_distr="0.00" />
+      <mixture_model precursor_ion_charge="1" comments="using training data negative distributions" prior_probability="0.358" est_tot_correct="147.4" tot_num_spectra="412" num_iterations="4">
+        <mixturemodel_distribution name="SEQUEST discrim score [fval] negmean: 1.00">
+          <posmodel_distribution type="gaussian">
+            <parameter name="mean" value="2.97" />
+            <parameter name="stdev" value="1.07" />
+          </posmodel_distribution>
+          <negmodel_distribution type="gamma">
+            <parameter name="m1" value="1.38" />
+            <parameter name="m2" value="3.02" />
+            <parameter name="alpha" value="0.81" />
+            <parameter name="beta" value="1.71" />
+            <parameter name="zero" value="-2.00" />
+            <parameter name="minval" value="-2.00" />
+          </negmodel_distribution>
+        </mixturemodel_distribution>
+        <mixturemodel_distribution name="no. tolerable trypsin term. [ntt]">
+          <posmodel_distribution>
+            <parameter name="ntt=0" value="0.005" />
+            <parameter name="ntt=1" value="0.056" />
+            <parameter name="ntt=2" value="0.940" />
+          </posmodel_distribution>
+          <negmodel_distribution>
+            <parameter name="ntt=0" value="0.524" />
+            <parameter name="ntt=1" value="0.275" />
+            <parameter name="ntt=2" value="0.201" />
+          </negmodel_distribution>
+        </mixturemodel_distribution>
+        <mixturemodel_distribution name="no. missed enz. cleavages [nmc]">
+          <posmodel_distribution>
+            <parameter name="nmc=0" value="0.841" />
+            <parameter name="1&lt;=nmc&lt;=2" value="0.159" />
+            <parameter name="nmc&gt;=3" value="0.000" />
+          </posmodel_distribution>
+          <negmodel_distribution>
+            <parameter name="nmc=0" value="0.612" />
+            <parameter name="1&lt;=nmc&lt;=2" value="0.369" />
+            <parameter name="nmc&gt;=3" value="0.019" />
+          </negmodel_distribution>
+        </mixturemodel_distribution>
+        <mixturemodel_distribution name="var offset mass diff [massd] (offset: -1.000000)">
+          <posmodel_distribution>
+            <parameter name="massd=-2.000000" value="0.003699520" />
+            <parameter name="massd=-1.000000" value="0.085657398" />
+            <parameter name="massd=0.000000" value="0.861557184" />
+            <parameter name="massd=1.000000" value="0.041517103" />
+            <parameter name="massd=2.000000" value="0.001039998" />
+            <parameter name="massd=3.000000" value="0.005813797" />
+            <parameter name="massd=4.000000" value="0.000000000" />
+          </posmodel_distribution>
+          <negmodel_distribution>
+            <parameter name="massd=-2.000000" value="0.081893999" />
+            <parameter name="massd=-1.000000" value="0.110117328" />
+            <parameter name="massd=0.000000" value="0.351714133" />
+            <parameter name="massd=1.000000" value="0.157929494" />
+            <parameter name="massd=2.000000" value="0.120597052" />
+            <parameter name="massd=3.000000" value="0.117340232" />
+            <parameter name="massd=4.000000" value="0.060007229" />
+          </negmodel_distribution>
+        </mixturemodel_distribution>
+      </mixture_model>
+      <mixture_model precursor_ion_charge="2" comments="using training data negative distributions" prior_probability="0.000" est_tot_correct="0.0" tot_num_spectra="0" num_iterations="2">
+        <mixturemodel_distribution name="SEQUEST discrim score [fval] negmean: 1.00">
+          <posmodel_distribution type="gaussian">
+            <parameter name="mean" value="4.10" />
+            <parameter name="stdev" value="1.64" />
+          </posmodel_distribution>
+          <negmodel_distribution type="gamma">
+            <parameter name="m1" value="6.16" />
+            <parameter name="m2" value="39.00" />
+            <parameter name="alpha" value="0.17" />
+            <parameter name="beta" value="35.99" />
+            <parameter name="zero" value="-5.00" />
+            <parameter name="minval" value="-2.00" />
+          </negmodel_distribution>
+        </mixturemodel_distribution>
+        <mixturemodel_distribution name="no. tolerable trypsin term. [ntt]">
+          <posmodel_distribution>
+            <parameter name="ntt=0" value="0.333" />
+            <parameter name="ntt=1" value="0.333" />
+            <parameter name="ntt=2" value="0.333" />
+          </posmodel_distribution>
+          <negmodel_distribution>
+            <parameter name="ntt=0" value="0.333" />
+            <parameter name="ntt=1" value="0.333" />
+            <parameter name="ntt=2" value="0.333" />
+          </negmodel_distribution>
+        </mixturemodel_distribution>
+        <mixturemodel_distribution name="no. missed enz. cleavages [nmc]">
+          <posmodel_distribution>
+            <parameter name="nmc=0" value="0.333" />
+            <parameter name="1&lt;=nmc&lt;=2" value="0.333" />
+            <parameter name="nmc&gt;=3" value="0.333" />
+          </posmodel_distribution>
+          <negmodel_distribution>
+            <parameter name="nmc=0" value="0.333" />
+            <parameter name="1&lt;=nmc&lt;=2" value="0.333" />
+            <parameter name="nmc&gt;=3" value="0.333" />
+          </negmodel_distribution>
+        </mixturemodel_distribution>
+        <mixturemodel_distribution name="var offset mass diff [massd] (offset: 0.000000)">
+          <posmodel_distribution></posmodel_distribution>
+          <negmodel_distribution></negmodel_distribution>
+        </mixturemodel_distribution>
+      </mixture_model>
+      <mixture_model precursor_ion_charge="3" comments="using training data negative distributions" prior_probability="0.000" est_tot_correct="0.0" tot_num_spectra="0" num_iterations="2">
+        <mixturemodel_distribution name="SEQUEST discrim score [fval] negmean: 1.00">
+          <posmodel_distribution type="gaussian">
+            <parameter name="mean" value="4.56" />
+            <parameter name="stdev" value="1.84" />
+          </posmodel_distribution>
+          <negmodel_distribution type="gamma">
+            <parameter name="m1" value="6.06" />
+            <parameter name="m2" value="37.00" />
+            <parameter name="alpha" value="0.05" />
+            <parameter name="beta" value="125.00" />
+            <parameter name="zero" value="-5.00" />
+            <parameter name="minval" value="-1.00" />
+          </negmodel_distribution>
+        </mixturemodel_distribution>
+        <mixturemodel_distribution name="no. tolerable trypsin term. [ntt]">
+          <posmodel_distribution>
+            <parameter name="ntt=0" value="0.333" />
+            <parameter name="ntt=1" value="0.333" />
+            <parameter name="ntt=2" value="0.333" />
+          </posmodel_distribution>
+          <negmodel_distribution>
+            <parameter name="ntt=0" value="0.333" />
+            <parameter name="ntt=1" value="0.333" />
+            <parameter name="ntt=2" value="0.333" />
+          </negmodel_distribution>
+        </mixturemodel_distribution>
+        <mixturemodel_distribution name="no. missed enz. cleavages [nmc]">
+          <posmodel_distribution>
+            <parameter name="nmc=0" value="0.333" />
+            <parameter name="1&lt;=nmc&lt;=2" value="0.333" />
+            <parameter name="nmc&gt;=3" value="0.333" />
+          </posmodel_distribution>
+          <negmodel_distribution>
+            <parameter name="nmc=0" value="0.333" />
+            <parameter name="1&lt;=nmc&lt;=2" value="0.333" />
+            <parameter name="nmc&gt;=3" value="0.333" />
+          </negmodel_distribution>
+        </mixturemodel_distribution>
+        <mixturemodel_distribution name="var offset mass diff [massd] (offset: 0.000000)">
+          <posmodel_distribution></posmodel_distribution>
+          <negmodel_distribution></negmodel_distribution>
+        </mixturemodel_distribution>
+      </mixture_model>
+    </peptideprophet_summary>
+  </analysis_summary>
+  <analysis_summary analysis="interact" time="2006-10-04T10:05:13">
+    <interact_summary filename="/regis/data2/search/johnk/Dataset_Paper/mix3/4700/interact-pps_sl20060731_18mix_25ul_r1_1154456409.xml" directory="/regis/data2/search/johnk/Dataset_Paper/mix3/4700">
+      <inputfile name="pps_sl20060731_18mix_25ul_r1_1154456409.xml" />
+    </interact_summary>
+  </analysis_summary>
+  <dataset_derivation generation_no="0" />
+  <msms_run_summary base_name="/regis/data2/search/johnk/Dataset_Paper/mix3/4700/pps_sl20060731_18mix_25ul_r1_1154456409" raw_data_type="raw" raw_data=".mzXML">
+    <sample_enzyme name="trypsin">
+      <specificity cut="KR" no_cut="P" sense="C" />
+    </sample_enzyme>
+    <search_summary base_name="/regis/data2/search/johnk/Dataset_Paper/mix3/4700/pps_sl20060731_18mix_25ul_r1_1154456409" search_engine="SEQUEST" precursor_mass_type="average" fragment_mass_type="average" out_data_type="out" out_data=".tgz"
+    search_id="1">
+      <search_database local_path="/dbase/misc/18mix092106/18mix092106_hinf" type="AA" />
+      <aminoacid_modification aminoacid="C" massdiff="57.0000" mass="160.1388" variable="N" />
+      <parameter name="peptide_mass_tol" value="3.000" />
+      <parameter name="fragment_ion_tol" value="0.000" />
+      <parameter name="ion_series" value=" 0 0 0 0.0 1.0 0.0 0.0 0.0 0.0 0.0 1.0 0.0" />
+      <parameter name="max_num_differential_AA_per_mod" value="4" />
+      <parameter name="nucleotide_reading_frame" value="0" />
+      <parameter name="num_output_lines" value="5" />
+      <parameter name="remove_precursor_peak" value="0" />
+      <parameter name="ion_cutoff_percentage" value="0.0" />
+      <parameter name="match_peak_count" value="0" />
+      <parameter name="match_peak_allowed_error" value="1" />
+      <parameter name="match_peak_tolerance" value="1.0" />
+      <parameter name="protein_mass_filter" value="0 0" />
+      <parameter name="sequence_header_filter" value="" />
+    </search_summary>
+    <analysis_timestamp analysis="database_refresh" time="2006-10-04T10:05:14" id="1">
+      <database_refresh_timestamp database="/dbase/misc/18mix092106/18mix092106_hinf" />
+    </analysis_timestamp>
+    <analysis_timestamp analysis="peptideprophet" time="2006-10-04T10:05:13" id="1" />
+    <spectrum_query spectrum="pps_sl20060731_18mix_25ul_r1_1154456409.0100.0100.1" start_scan="100" end_scan="100" precursor_neutral_mass="860.3920" assumed_charge="1" index="1">
+      <search_result>
+        <search_hit hit_rank="1" peptide="SLNGEWR" peptide_prev_aa="R" peptide_next_aa="F" protein="sp|P00722|BGAL_ECOLI" num_tot_proteins="1" num_matched_ions=" 11" tot_num_ions=" 12" calc_neutral_pep_mass="860.8920" massdiff="-0.500000"
+        num_tol_term="2" num_missed_cleavages="0" is_rejected="0" protein_descr="BETA-GALACTOSIDASE (EC 3.2.1.23) (LACTASE) - Escherichia coli.">
+          <search_score name="xcorr" value="1.553" />
+          <search_score name="deltacn" value="0.081" />
+          <search_score name="deltacnstar" value="0" />
+          <search_score name="spscore" value="894.0" />
+          <search_score name="sprank" value="1" />
+          <analysis_result analysis="peptideprophet">
+            <peptideprophet_result probability="0.9600" all_ntt_prob="(0.0422,0.5090,0.9600)">
+              <search_score_summary>
+                <parameter name="fval" value="1.4723" />
+                <parameter name="ntt" value="2" />
+                <parameter name="nmc" value="0" />
+                <parameter name="massd" value="-0.500" />
+              </search_score_summary>
+            </peptideprophet_result>
+          </analysis_result>
+        </search_hit>
+      </search_result>
+    </spectrum_query>
+    <spectrum_query spectrum="pps_sl20060731_18mix_25ul_r1_1154456409.0040.0040.1" start_scan="40" end_scan="40" precursor_neutral_mass="677.3920" assumed_charge="1" index="2">
+      <search_result>
+        <search_hit hit_rank="1" peptide="GKKFAK" peptide_prev_aa="N" peptide_next_aa="I" protein="gi|3212198|gb|AAC22319.1|" num_tot_proteins="1" num_matched_ions=" 8" tot_num_ions=" 10" calc_neutral_pep_mass="677.8920" massdiff="-0.500000"
+        num_tol_term="1" num_missed_cleavages="1" is_rejected="0" protein_descr="hemoglobin-binding protein [Haemophilus influenzae Rd]">
+          <search_score name="xcorr" value="1.644" />
+          <search_score name="deltacn" value="0.165" />
+          <search_score name="deltacnstar" value="0" />
+          <search_score name="spscore" value="427.0" />
+          <search_score name="sprank" value="1" />
+          <analysis_result analysis="peptideprophet">
+            <peptideprophet_result probability="0.5480" all_ntt_prob="(0.0491,0.5480,0.9656)">
+              <search_score_summary>
+                <parameter name="fval" value="2.0779" />
+                <parameter name="ntt" value="1" />
+                <parameter name="nmc" value="1" />
+                <parameter name="massd" value="-0.500" />
+              </search_score_summary>
+            </peptideprophet_result>
+          </analysis_result>
+        </search_hit>
+      </search_result>
+    </spectrum_query>
+  </msms_run_summary>
+</msms_pipeline_analysis>
