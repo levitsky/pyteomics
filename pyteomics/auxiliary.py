@@ -1,10 +1,29 @@
+"""
+auxiliary - common functions and objects 
+========================================
+
+Math
+----
+
+  py:func:`linear_regression` - a wrapper for numpy linear regression
+
+Project infrastructure
+----------------------
+
+  py:exception:`PyteomicsError` - a pyteomics-specific exception
+
+"""
+# Licensed under the MIT license:
+# http://www.opensource.org/licenses/mit-license.php 
 import numpy
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
 
-    Attributes:
-        msg  -- explanation of the error
+    Attributes
+    ----------
+    msg : str
+        Error message.
     """
 
     def __init__(self, msg):
@@ -18,7 +37,7 @@ def linear_regression(x, y, a=None, b=None):
 
     Parameters
     ----------
-    x, y : list or 1-D numpy array of float
+    x, y : array_like of float
     a : float
         If specified then the slope coefficient is fixed and equals a.
     b : float        
