@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to pyteomics documentation!
-===================================
+=====================================
 
 Contents:
 
@@ -17,11 +17,6 @@ Contents:
    ./electrochem
 
    ./fasta
-   ./mzml
-   ./pepxml
-
-   ./auxiliary
-   ./pylab_aux
 
 * :ref:`genindex`
 * :ref:`search`
