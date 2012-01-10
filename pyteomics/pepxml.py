@@ -12,10 +12,10 @@ Even though it is to be replaced by a community standard
 commonly.
 
 This module provides minimalistic infrastructure for access to data stored in
-pep.XML files. The most important function is py:func:`iter_psm`, which 
-reads peptide-spectum matches and related information as saves them into 
-human-readable dicts. The rest of data can be obtained via py:func:`get_node` 
-function. This functions relies of the terminology of the underlying 
+pep.XML files. The most important function is :py:func:`iter_psm`, which 
+reads peptide-spectum matches and related information and saves them into 
+human-readable dicts. The rest of data can be obtained via :py:func:`get_node` 
+function. This functions relies on the terminology of the underlying 
 `lxml library <http://lxml.de/>`_.
 
 Data access
