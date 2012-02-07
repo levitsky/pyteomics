@@ -9,17 +9,38 @@ Examples
 --------
 
 The main (and the top-most-level) function in this module is
-:py:func:`iter_spectrum`::
+:py:func:`iter_spectrum`. It allows the user to iterate through spectra
+contained in the file. In the following example a list of parent m/z is created::
 
     >>> from pyteomics.mzml import iter_spectrum
     >>> s = iter_spectrum('my.mzml')
-    >>> for spectrum in s:
-        …
+    >>> parent_mz = [spectrum['base peak m/z'] for spectrum in s]
 
-.. note:: :py:func:`iter_spectrum` returns a *generator object* instead of a 
-    *list* to prevent unnecessary memory use.
-    Type::
+The list can now be used for all kinds of statistical analysis. For example, one
+can calculate the corresponding histogram with pylab::
 
-        spectrum_list = [x for x in iter_spectrum(‘my.mzml’)]
-       
-    to get a list.
+    >>> import pylab
+    >>> pylab.figure()
+    >>> pylab.hist(parent_mz, bins=100)
+    >>> pylab.show()
+
+The data accessible through :py:func:`iter_spectrum` represent the data
+contained in the corresponding mzML file and can thus differ from one file
+to another. However, one can easily inspect the format just by printing any
+of the entries::
+
+    >>> print iter_spectrum('my.mzml').next()
+
+Then, you can develop more complex scripts relying on the exact format of the 
+files you work with.
+
+.. note::
+
+    :py:func:`iter_spectrum` returns a generator object instead of a 
+    list to prevent unnecessary memory use.
+
+If you actually **need** a list, type::
+
+    spectrum_list = [x for x in iter_spectrum(‘my.mzml’)]
+      
+

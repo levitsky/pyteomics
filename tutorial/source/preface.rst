@@ -23,8 +23,8 @@ in proteomics data analysis, such as:
 
 * easy manipulation of sequences of modified peptides and proteins
 
-One of the main features of Pyteomics is Python itself. Python is a perfect
-choice of a programming language for scientific research for multiple reasons:
+One of the main features of Pyteomics is Python itself. Python is the perfect
+choice for scientific research for multiple reasons:
 
 * free and open
 * cross-platform: Win, Mac, Linux

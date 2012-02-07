@@ -47,7 +47,7 @@ You should get something like this:
     additional arguments to the plot function. See the :py:func:`pylab.plot`
     docstring for further info.
 
-::
+The following example demonstates the use of :py:func:`pI` function::
 
     >>> from pyteomics.electrochem import pI
     >>> pI('PEPTIDE')
@@ -55,4 +55,8 @@ You should get something like this:
     >>> pI('PEPTIDE', precision_pI=0.0001)
     2.876354217529297
 
-.. note:: :py:func:`pI`supports input in three formats, just like :py:func:`charge`.
+.. note:: 
+
+    :py:func:`pI` supports input in three formats, just like :py:func:`charge`.
+
+
