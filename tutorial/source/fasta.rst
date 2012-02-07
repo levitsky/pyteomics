@@ -32,7 +32,9 @@ that by means of the :py:func:`decoy_db` function.  ::
 The only required argument is the first one, indicating the source database. The
 second argument is the target file and defaults to system standard output. 
 
-.. seealso:: See the documentation for more info about possible parameters.
+.. seealso::
+
+    See the documentation for more info about possible parameters.
 
 If you need to modify a single sequence, use the :py:func:`decoy_sequence`
 method. It currently supports to modes: *‘reverse’* and *‘random’*.

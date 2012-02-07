@@ -78,6 +78,7 @@ as a formula or as a Composition object.
     1.0
    
 .. note::
+
     If you don’t specify the isotope, the function assumes you don’t care
     about this atom’s isotopic state.
 

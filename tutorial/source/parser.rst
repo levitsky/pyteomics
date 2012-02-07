@@ -40,6 +40,7 @@ A *modX* sequence can be translated to a list of amino acid residues with
 See more examples and information in the documentation.
 
 .. note::
+
     You don’t have to import each function separately. See, for example,
     http://effbot.org/zone/import-confusion.htm.
 
