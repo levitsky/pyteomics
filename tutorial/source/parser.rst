@@ -1,78 +1,75 @@
 Peptide sequence formats. *Parser* module
 =========================================
 
-Everywhere in **Pyteomics** we use a widely established way of peptide
-sequence notation. We call it the **modX notation**, meaning that each amino
-acid residue is represented with a capital letter representing a standard amino
-acid, preceded by an arbitrary number of small letters to designate a
-modification. Terminal groups can be specified using a hyphen (‘-’).
-*“H-HoxMMdaN”* is an example of valid sequence notation. See 
-`parser documentation page` for additional information. Also, *parser* module
-contains some conversion tools for sequence information (see below).
+modX
+----
 
-Examples
---------
+**Pyteomics** uses a custom IUPAC-derived peptide sequence notation named **modX**.
+As in the IUPAC notation, each amino acid residue is represented by a capital 
+letter, but it may preceded by an arbitrary number of small letters to show
+modification. Terminal modifications are separated from the backbone sequence by 
+a hyphen (‘-’). By default, both termini are assumed to be unmodified, which can be
+shown explicitly by 'H-' for N-terminal hydrogen and '-OH' for C-terminal hydroxyl. 
 
-:py:func:`peptide_length` is the easy way to calculate the peptide length. It
-can process sequences with and without explicit terminal groups correctly::
+*“H-HoxMMdaN”* is an example of a valid sequence in modX. See 
+`parser documentation page` for additional information.
 
-    >>> from pyteomics.parser import peptide_length
-    >>> peptide_length(‘H-PEPTIDE’) == peptide_length(‘PEPTIDE’)
-    True
+Sequence operations
+-------------------
 
 A *modX* sequence can be translated to a list of amino acid residues with
-:py:func:`parse_sequence` function::
+:py:func:`parse_sequence` function:
+
+.. code-block:: python
 
     >>> from pyteomics.parser import parse_sequence
-    >>> for label in parse_sequence('PEPTIDE'):
-       print label
-    P
-    E
-    P
-    T
-    I
-    D
-    E
-    >>> from pyteomics.parser import std_labels # std_labels is a pre-defined list of standard amino acid labels
-    >>> parse_sequence('aVRILLaVIGNE', labels=std_labels+['aV'])
-    ['aV', 'R', 'I', 'L', 'L', 'aV', 'I', 'G', 'N', 'E']
+    >>> parse_sequence('PEPTIDE')
+    ['P', 'E', 'P', 'T', 'I', 'D', 'E']
+    >>> parse_sequence('PEPTIDE', show_unmodified_termini=True)
+    ['H-', 'P', 'E', 'P', 'T', 'I', 'D', 'E', '-OH']
+    >>> from pyteomics.parser import std_labels 
+    >>> parse_sequence('Ac-PEpPTIDE', labels=std_labels+['Ac-', 'pP'])
+    ['Ac-', 'P', 'E', 'pP', 'T', 'I', 'D', 'E']
 
-See more examples and information in the documentation.
+In the last example we supplied two arguments, the sequence itself
+and 'labels'. The latter is used to specify what labels are allowed for amino 
+acid residues and terminal modifications. std_labels is a predefined set of
+labels for the twenty standard amino acids, 'H-' for N-terminal hydrogen and 
+'-OH' for C-terminal hydroxyl. In this example we specified the codes for
+phosphorylated threonine and N-terminal acetylation. The same 'labels' argument 
+should be supplied to the other functions in this module if a sequence has
+modifications.
 
-.. note::
+In modX, standard len() function cannot be used to determine the length of a 
+peptide because of the modifications. Use :py:func:`peptide_length` instead:
 
-    You don’t have to import each function separately. See, for example,
-    http://effbot.org/zone/import-confusion.htm.
+.. code-block:: python
+
+    >>> from pyteomics.parser import peptide_length, std_labels
+    >>> peptide_length('aVRILLaVIGNE', labels=std_labels+['aV'])
+    10
 
 The :py:func:`amino_acid_composition` function accepts a sequence and returns
 a *dictionary* with amino acid labels as *keys* and integer numbers as *values*,
-corresponding to the number of times each residue occurs in the sequence::
+corresponding to the number of times each residue occurs in the sequence:
+
+.. code-block:: python
 
     >>> from pyteomics.parser import amino_acid_composition
     >>> amino_acid_composition('PEPTIDE')
     {'I': 1.0, 'P': 2.0, 'E': 2.0, 'T': 1.0, 'D': 1.0}
 
-Lastly, :py:func:`cleave` is a method to perform *in silico* cleavage. You need
-to specify the sequence, the cleavage rule and the number of missed cleavages
-allowed::
+Lastly, :py:func:`cleave` is a method to perform *in silico* cleavage. The
+requiered arguments are the sequence, the rule for enzyme specificity and the 
+number of missed cleavages allowed. Note that each product peptide is reported
+only once:
+
+.. code-block:: python
 
     >>> from pyteomics.parser import cleave, expasy_rules
     >>> cleave('AKAKBK', expasy_rules['trypsin'], 0)
     ['AK', 'BK']
 
-:py:data:`expasy_rules` is a *dictionary* with the most common rules of cleavage.
-It’s contained in the :py:mod:`pyteomics.parser` module, too. As you can see, the
-returned *list* contains unique peptides.
-The following example function finds the common fragments occurring in
-proteolytic digests of all polypeptides in a given list::
+:py:data:`expasy_rules` is a predefined *dict* with the clevage rules
+for the most common proteases.
 
-    def digest_overlap(peptides, rule, missed_cleavages):
-        sets = [set(cleave(peptide, rule, missed_cleavages)) for peptide in peptides]
-        return set.intersection(*sets)
-
-Then one can invoke it like this::
-
-    >>> digest_overlap(['PEKPKTIKDKE', 'TIKDEKPEKP'], expasy_rules['trypsin'], 1)
-    set(['TIK'])
-
-This means, there is only one common peptide in the two digests in the specified conditions.

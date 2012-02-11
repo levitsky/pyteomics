@@ -4,7 +4,7 @@ Preface
 What is pyteomics?
 ------------------
 Pyteomics is a collection of lightweight and handy tools for Python that help
-a researcher working in the field of proteomics to handle various sorts of data.
+to handle various sorts of proteomics data.
 Pyteomics provides a growing set of modules to facilitate the most common tasks
 in proteomics data analysis, such as:
 
@@ -16,8 +16,7 @@ in proteomics data analysis, such as:
 
 * calculation of basic physico-chemical properites of polypeptides:
 
-  * mass
-  * isotopic distributions
+  * mass and isotopic distribution
   * charge and pI
   * chromatographic retention time
 
@@ -26,13 +25,15 @@ in proteomics data analysis, such as:
 One of the main features of Pyteomics is Python itself. Python is the perfect
 choice for scientific research for multiple reasons:
 
-* free and open
-* cross-platform: Win, Mac, Linux
-* powerful syntax, easy to learn and use
-* unbeatable speed of development
-* rich standard and extended libraries
-* a rich set of statistical, numerical and graphing tools
-* easy development of both on-line and desktop GUI applications 
+* Python is truly free and open.
+* Python is cross-platform: Win, Mac, Linux.
+* It has a powerful syntax, easy to learn and use.
+* Python is known for its unbeatable speed of development.
+* "Batteries are included". Python comes with a rich set of standard and 
+  extended libraries.
+* Python has plenty of good 3rd-party statistical, numerical and graphing tools.
+* Thanks to the powerful frameworks, on-line and desktop GUI applications are not 
+  a problem for Python users.
 
 The goal of the Pyteomics project is to provide a versatile, reliable and
 well-documented set of open tools for the wide proteomics community. The main
