@@ -150,11 +150,11 @@ amino acid residues and standard H- and -OH terminal groups.
 class Composition(dict):
     """
     A Composition object stores a chemical composition of a
-    substance. Basically it is a dict object, with the names
+    substance. Basically, it is a dict object, with the names
     of chemical elements as keys and values equal to an integer number of
     atoms of the corresponding element in a substance.
 
-    The main improvement over dict it that Composition objects allow
+    The main improvement over dict is that Composition objects allow
     adding and subtraction.
     """
         
