@@ -1,21 +1,21 @@
 Introduction
 ============
 
-In this tutorial we would like to cover the basic Pyteomics functionality.
-For more details, please, check the API reference.
+This tutorial covers the basic Pyteomics functionality. For more details, 
+please, check the API reference. You can also access the API docstrings from 
+Python shell:
 
-Also, if you are using pyteomics from an interactive Python environment such
-as IPython, the reference entries are available from it. For example, in
-IPython typing an object’s name followed or prepended by a question sign prints
-its docstring, so typing:
-
-::
+.. code-block:: python
 
     >>> from pyteomics.mass import calculate_mass
-    >>> ?calculate_mass
+    >>> help(calculate_mass)
 
-will print the docstring of the :py:func:`calculate_mass` function.
+IPython users can use the following shortcut:
 
-.. note:: You only need to import functions once per session.
+.. code-block:: python
 
-We expect the reader to be familiar with basic Python syntax as well as proteomics concepts.
+    >>> from pyteomics.mass import calculate_mass
+    >>> calculate_mass?
+
+We expect the reader to be familiar with the basic Python syntax as well as 
+the proteomics concepts.
