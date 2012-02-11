@@ -1,33 +1,42 @@
 Mass and isotopes
 =================
 
-Basic functions
----------------
+The functions related to mass calculations and isotopic distributions are 
+organized into the :py:mod:`mass` module. 
 
-For mass-related problems we propose the :py:mod:`mass` module. It allows
-calculation of monoisotopic masses and most probable isotopic states, as well
-as estimation of the relative abundance of certain isotopic states for
-peptides.
+Mass calculations
+-----------------
 
-.. seealso:: For further information, please refer to :py:mod:`mass` documentation page.
+The most common problem in mass spectrometry is to calculate the mass of a 
+non-organic molecule or peptide or m/z ratio of an ion. These tasks can be 
+performed with the :py:func:`calculate_mass` function. It works with
+chemical formulas, polypeptide sequences in modX notation, pre-parsed sequences
+and dictionaries of chemical compositions.
 
-Mass calculation is the most basic task for this module.
+.. code-block:: python
 
-::
-
-    >>> import pyteomics.mass as m
-    >>> m.calculate_mass(sequence='PEPTIDE')
-    799.359964027207
-    >>> calculate_mass(parsed_sequence=parse_sequence('PEPTIDE', show_unmodified_termini=True))
-    799.359964027207
+    >>> from pyteomics.mass import calculate_mass
     >>> calculate_mass(formula='H2O')
+    18.0105646837036
+    >>> calculate_mass(formula='C2H5OH')
+    46.0418648119876
+
+    >>> calculate_mass(sequence='PEPTIDE')
+    799.359964027207
+
+    >>> from pyteomics.parser import parse_sequence
+    >>> ps = parse_sequence('PEPTIDE', show_unmodified_termini=True)
+    >>> calculate_mass(parsed_sequence=ps)
+    799.359964027207
+
+    >>> calculate_mass(composition={'H':2, 'O':1})
     18.0105646837036
 
 .. warning::
-    Don’t forget to set **show_unmodified_termini=True** when parsing a
-    sequence if you want to use the result for mass calculation. Otherwise,
-    the terminal groups won’t be taken into account!
 
+    Always set **show_unmodified_termini=True** when parsing a
+    sequence, if you want to use the result for mass calculation. Otherwise,
+    the mass of the terminal hydrogen and hydroxyl is not taken into account.
 
 With :py:func:`calculate_mass` you can calculate masses of modified peptides
 as well. Just add the information about the elemental composition of modified
@@ -52,7 +61,6 @@ one-letter IUPAC notation::
 
     Like :py:func:`calculate_mass`, :py:func:`fast_mass` can also calculate *m/z*
     when provided ion type and charge.
-
 
 Isotopes
 --------
