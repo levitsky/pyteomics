@@ -15,7 +15,7 @@ setup(
     long_description = ''.join(open('README').readlines()),
     author           = 'Anton Goloborodko & Lev Levitskiy',
     author_email     = 'goloborodko.anton@gmail.com',
-    url              = 'http://pyteomics.theorchromo.ru',
+    url              = 'http://hg.theorchromo.ru/pyteomics',
     packages         = ['pyteomics', ],
     classifiers      = ['Intended Audience :: Science/Research',
                         'Programming Language :: Python :: 2',
