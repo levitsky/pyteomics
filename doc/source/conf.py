@@ -55,7 +55,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'pyteomics'
+project = u'Pyteomics API documentation'
 copyright = u'2011, Anton Goloborodko & Lev Levitsky'
 
 # The version info for the project you're documenting, acts as replacement for
