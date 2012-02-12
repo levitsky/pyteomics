@@ -83,22 +83,25 @@ nist_mass = {
     'C': {12: (12.0000000, 0.98938),
           13: (13.0033548378, 0.01078),
           14: (14.0032419894, 0.0),
-          0: (12.0000000, 1.0)},
+           0: (12.0000000, 1.0)},
 
     'N': {14: (14.00307400486, 0.9963620),
           15: (15.00010889827, 0.0036420),
-          0: (14.00307400486, 1.0)},
+           0: (14.00307400486, 1.0)},
 
     'O': {16: (15.9949146195616, 0.9975716),
           17: (16.9991317012, 0.000381),
           18: (17.99916107, 0.0020514),
-          0: (15.9949146195616, 1.0)},
+           0: (15.9949146195616, 1.0)},
     
+    'P': {31: (30.9737616320, 1.0000),
+           0: (30.9737616320, 1.0000)},
+
     'S': {32: (31.9720710015, 0.949926),
           33: (32.9714587615, 0.00752),
           34: (33.9678669012, 0.042524),
           36: (35.9670807620, 0.00011),
-          0: (31.9720710015, 1.0)},
+           0: (31.9720710015, 1.0)},
     }
 """
 A dict with the exact element masses downloaded from the NIST website:
@@ -589,7 +592,7 @@ def isotopic_composition_abundance(**kwargs):
              and (isotope_num == 0
                   or 0 in isotopic_composition[element_name])):
             raise PyteomicsError(
-                'Please specify the isotopic numbers of all atoms of '
+                'Please specify the isotopic states of all atoms of '
                 '%s or do not specify them at all.' % element_name)
         else:
             if element_name not in isotopic_composition:

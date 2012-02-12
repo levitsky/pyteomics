@@ -22,13 +22,12 @@ A *modX* sequence can be translated to a list of amino acid residues with
 
 .. code-block:: python
 
-    >>> from pyteomics.parser import parse_sequence
-    >>> parse_sequence('PEPTIDE')
+    >>> from pyteomics import parser
+    >>> parser.parse_sequence('PEPTIDE')
     ['P', 'E', 'P', 'T', 'I', 'D', 'E']
-    >>> parse_sequence('PEPTIDE', show_unmodified_termini=True)
+    >>> parser.parse_sequence('PEPTIDE', show_unmodified_termini=True)
     ['H-', 'P', 'E', 'P', 'T', 'I', 'D', 'E', '-OH']
-    >>> from pyteomics.parser import std_labels 
-    >>> parse_sequence('Ac-PEpPTIDE', labels=std_labels+['Ac-', 'pP'])
+    >>> parser.parse_sequence('Ac-PEpPTIDE', labels=parser.std_labels+['Ac-', 'pP'])
     ['Ac-', 'P', 'E', 'pP', 'T', 'I', 'D', 'E']
 
 In the last example we supplied two arguments, the sequence itself
@@ -45,8 +44,8 @@ peptide because of the modifications. Use :py:func:`peptide_length` instead:
 
 .. code-block:: python
 
-    >>> from pyteomics.parser import peptide_length, std_labels
-    >>> peptide_length('aVRILLaVIGNE', labels=std_labels+['aV'])
+    >>> from pyteomics import parser
+    >>> parser.peptide_length('aVRILLaVIGNE', labels=parser.std_labels+['aV'])
     10
 
 The :py:func:`amino_acid_composition` function accepts a sequence and returns
@@ -55,8 +54,8 @@ corresponding to the number of times each residue occurs in the sequence:
 
 .. code-block:: python
 
-    >>> from pyteomics.parser import amino_acid_composition
-    >>> amino_acid_composition('PEPTIDE')
+    >>> from pyteomics import parser
+    >>> parser.amino_acid_composition('PEPTIDE')
     {'I': 1.0, 'P': 2.0, 'E': 2.0, 'T': 1.0, 'D': 1.0}
 
 Lastly, :py:func:`cleave` is a method to perform *in silico* cleavage. The
@@ -66,8 +65,8 @@ only once:
 
 .. code-block:: python
 
-    >>> from pyteomics.parser import cleave, expasy_rules
-    >>> cleave('AKAKBK', expasy_rules['trypsin'], 0)
+    >>> from pyteomics import parser
+    >>> parser.cleave('AKAKBK', parser.expasy_rules['trypsin'], 0)
     ['AK', 'BK']
 
 :py:data:`expasy_rules` is a predefined *dict* with the clevage rules
