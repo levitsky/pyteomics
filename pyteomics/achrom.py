@@ -236,7 +236,7 @@ import numpy
 import auxiliary
 from parser import std_labels, peptide_length, amino_acid_composition
 
-def get_RCs(peptides, RTs, length_correction_factor = -0.21,
+def get_RCs(sequences, RTs, length_correction_factor = -0.21,
             term_aa = False, **kwargs):
     """Calculate the retention coefficients of amino acids using
     retention times of a peptide sample and a fixed value of length
@@ -244,7 +244,7 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
 
     Parameters
     ----------
-    sequence : list of str
+    sequences : list of str
         List of peptide sequences.
     RTs: list of float
         List of corresponding retention times.
@@ -289,7 +289,7 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
     # Make a list of all amino acids present in the sample.
     peptide_dicts = [
         amino_acid_composition(peptide, False, term_aa, labels=labels)
-        for peptide in peptides]
+        for peptide in sequences]
 
     detected_amino_acids = set([aa for peptide_dict in peptide_dicts
                                 for aa in peptide_dict])
@@ -302,7 +302,7 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
             * numpy.log(peptide_length(peptide_dicts[i])))
            for aa in detected_amino_acids]
         + [1.0] # Add free term to each peptide.
-        for i in range(len(peptides))]
+        for i in range(len(sequences))]
 
     # Add normalizing conditions for terminal retention coefficients. The
     # condition we are using here is quite arbitrary. It implies that the sum
@@ -326,6 +326,7 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
     RCs, res, rank, s = numpy.linalg.lstsq(numpy.array(composition_array),
                                            numpy.array(RTs))
 
+    # Remove normalizing elements from the RTs vector.
     if term_aa:
         for term_label in ['nterm', 'cterm']:
             RTs.pop()
@@ -363,7 +364,7 @@ def get_RCs(peptides, RTs, length_correction_factor = -0.21,
 
     return RC_dict
 
-def get_RCs_vary_lcf(peptides, RTs,
+def get_RCs_vary_lcf(sequences, RTs,
                 term_aa = False,
                 lcf_range = (-1.0, 1.0),
                 **kwargs):
@@ -372,7 +373,7 @@ def get_RCs_vary_lcf(peptides, RTs,
 
     Parameters
     ----------
-    sequence : list of str
+    sequences : list of str
         List of peptide sequences.
     RTs : list of float
         List of corresponding retention times.
@@ -423,10 +424,10 @@ def get_RCs_vary_lcf(peptides, RTs,
         lcf_grid = numpy.arange(min_lcf, max_lcf,
                                 (max_lcf - min_lcf) / 10.0)
         for lcf in lcf_grid:
-            RC_dict = get_RCs(peptides, RTs, lcf, term_aa, labels=labels)
+            RC_dict = get_RCs(sequences, RTs, lcf, term_aa, labels=labels)
             regression_coeffs = auxiliary.linear_regression(
                 RTs, 
-                [calculate_RT(peptide, RC_dict) for peptide in peptides])
+                [calculate_RT(peptide, RC_dict) for peptide in sequences])
             if regression_coeffs[2] > best_r:
                 best_r = regression_coeffs[2]
                 best_RC_dict = dict(RC_dict)
@@ -444,7 +445,7 @@ def calculate_RT(peptide, RC_dict):
     ----------
     peptide : str
         A peptide sequence.
-    RC_dict :
+    RC_dict : dict
         A set of retention coefficients, length correction factor and
         a fixed retention time shift.
 

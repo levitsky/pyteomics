@@ -1,77 +1,108 @@
 Retention time prediction
 =========================
 
-:py:mod:`achrom.py` is a module that implements the *additive model of
-polypeptide chromatography* and thus allows prediction of chromatographic
-retention times. 
+Pyteomics has two modules for prediction of retention times (RTs) of peptides 
+and proteins in liquid chromatography.
 
-.. seealso::
+BioLCCC
+-------
 
-    Please refer to :py:mod:`achrom.py` documentation page for more
-    information about the additive model.
-   
-One can find a set of *retention coefficients* that fit a given set of
-chromatographic data and use these coefficients (along with the standard ones
-from the literature) to predict peptide retention times.
+The first module is :py:mod:`pyteomics.biolccc`. This module implements
+the BioLCCC model of liquid chromatography of polypeptides. 
+:py:mod:`pyteomics.biolccc` is not distributed with the main package and has 
+to be installed separately. :py:mod:`pyteomics.biolccc` can be downloaded from 
+http://pypi.python.org/pypi/pyteomics.biolccc, and the project documentation
+is hosted at http://packages.python.org/pyteomics.biolccc.
 
-Examples
---------
+Additive model of peptide chromatography
+----------------------------------------
 
-The following example reads the *data.txt* file where sequences and experimental
-retention times are stored in the following manner::
+Another option for retention time prediction is the :py:mod:`achrom` module
+distributed with Pyteomics. It implements the additive model of polypeptide
+chromatography. Briefly, in the additive model each amino acid residue changes 
+retention time by a fixed value, depending only on its type (e.g. an alanine r
+esidue add 2.0 mins to RT, while an arginine decreases it by 1.1 min). The module 
+documentation contains the complete description of this model and the references. 
+In this tutorial we will focus on the basic usage.
 
-    PEPTIDE 35.1
-    PEPTID 30.2
-    DEPTH 29.1
-    ...
+Retention time prediction
+.........................
 
-::
+Retention time prediction with :py:mod:`achrom` is done by the
+:py:func:`calculate_RT` function:
 
-    data = open(‘data.txt’)
-    sequences = []
-    RTs = []
-    for line in data:
-        seq, time = line.split()
-        sequences.append(seq.strip())
-        RTs.append(float(time.strip()))
-        
-.. note::
+.. code-block:: python
 
-     1. You might need to specify the full path to your datafile, unless it
-        is in the working directory.
-     2. Do not type sequences = RTs = [] ! This is a common Python pitfall.
-
-Now, if you have enough data, you can use :py:data:`sequences` and :py:data:`RTs` to calibrate the additive model:
-
-::
-
-    >>> import pyteomics.achrom as ac
-    >>> RCs = ac.get_RCs(sequences, RTs)
-
-or::
-
-    >>> RCs = ac.get_RCs(sequences, RTs, length_correction_factor=-0.19)
-
-or::
-
-    >>> RCs = ac.get_RCs_vary_lcf(sequences, RTs)
-
-.. seealso::
+    >>> from pyteomics import achrom
+    >>> achrom.calculate_RT('PEPTIDE', achrom.RCs_guo_ph7_0)
+    7.8000000000000025
     
-    For more information about optional parameters, see 
-    :py:mod:`achrom.py` documentation.
+The first argument of the function is the sequence of a peptide in modX 
+notation.
 
-Having found the retention coefficients, we can use them to predict retention
-times for other peptides::
+The second argument is the set parameters called 'retention coefficients' which
+describe chromatographic properties of individual amino acid residues in
+a polypeptide chain. :py:mod:`achrom` has a number of predefined sets of 
+retention coefficients obtained from publications. The list, detailed 
+descriptions and references related to these sets can be found in the module
+documentation.
 
-    myPeptides = [‘PEPTIDE’*2, ‘PEPTIDE’*3]
-    predicted_RTs = [ac.calculate_RT(peptide, RCs) for peptide in myPeptides]
+Calibration
+...........
 
-.. note::
+The main advantage of the additive model is that it gives more accurate 
+predictions if adjusted to specific chromatographic setups and conditions. 
+This adjustment, or 'calibration' requires a set of known peptide 
+sequences and corresponding retention times (a 'training set'( and returns
+a set of new retention coefficients. The following code illustrates the 
+calibration procedure in Pyteomics.
+    
+.. code-block:: python
 
-    1. :py:data:`RCs` were found in the previous snippet.
-    2. You might want to read about **list comprehension in Python** to
-       understand the used syntax better.
-    3. There are other sets of retention coefficients coded in the module that
-       we found in the literature. You can find the references in the
-       documentation. 
+    >>> from pyteomics import achrom
+    >>> RCs = achrom.get_RCs(sequences, RTs)
+    >>> achrom.calculate_RT('PEPTIDE', RCs)
+    
+The first argument of :py:func:`get_RCs` should be a list of modX sequences, 
+the second - a list of float-point retention times.
+ 
+As in :py:func:`parser.parse_sequence`:, all non-standard amino modX
+acid labels used in the training set should be supplied to `labels` keyword 
+argument of :py:func:`get_RCs` along with the standard ones:
+
+.. code-block:: python
+
+    >>> RCs = achrom.get_RCs(sequences, RTs, labels=achrom.std_labels + ['pS', 'pT'])
+
+Advanced calibration
+....................
+
+The standard additive model allows a couple of improvements. Firstly, an 
+explicit dependency on the length of a peptide may be introduced by multiplying
+the retention time by :math:`(1.0 + m * log(L))`, where L is the number of amino
+acid residues in a peptide and m is the length correction factor, typically ~ -0.2.
+
+The value of the length correction factor is set at the calibration and stored along
+with the retention coefficients. By default, length correction is enabled in
+:py:func:`get_RCs` and the factor equals -0.21. You can change
+the value of the length correction factor by supplying the 'lcf' keyword argument, 
+or you can disable length correction completely by setting lcf=0:
+
+.. code-block:: python
+
+    >>> RCs = achrom.get_RCs(sequences, RTs, lcf=-0.18) # A new value of the length correction factor
+
+    >>> RCs = achrom.get_RCs(sequences, RTs, lcf=0) # Disable length correction.
+    
+Another considerable improvement over the standard additive model is to treat
+terminal amino acid residues as separate chemical entities. This behavior
+is disabled by default, but can be enabled by setting term_add=True:
+
+.. code-block:: python
+
+    >>> RCs = achrom.get_RCs(sequences, RTs, term_aa = True) 
+
+This correction is implemented by addition of the 'nterm' and 'cterm' prefixes
+to the labels of terminal amino acid residues of the training peptides. In order 
+for this correction to work, the training peptides should represent all possible
+variations of terminal amino acid residues.
