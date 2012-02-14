@@ -54,7 +54,7 @@ Calibration
 The main advantage of the additive model is that it gives more accurate 
 predictions if adjusted to specific chromatographic setups and conditions. 
 This adjustment, or 'calibration' requires a set of known peptide 
-sequences and corresponding retention times (a 'training set'( and returns
+sequences and corresponding retention times (a 'training set') and returns
 a set of new retention coefficients. The following code illustrates the 
 calibration procedure in Pyteomics.
     
@@ -81,19 +81,19 @@ Advanced calibration
 The standard additive model allows a couple of improvements. Firstly, an 
 explicit dependency on the length of a peptide may be introduced by multiplying
 the retention time by :math:`(1.0 + m * log(L))`, where L is the number of amino
-acid residues in a peptide and m is the length correction factor, typically ~ -0.2.
+acid residues in a peptide and m is the length correction parameter, typically ~ -0.2.
 
-The value of the length correction factor is set at the calibration and stored along
+The value of the length correction parameter is set at the calibration and stored along
 with the retention coefficients. By default, length correction is enabled in
-:py:func:`pyteomics.achrom.get_RCs` and the factor equals -0.21. You can change
-the value of the length correction factor by supplying the 'lcf' keyword argument, 
-or you can disable length correction completely by setting lcf=0:
+:py:func:`pyteomics.achrom.get_RCs` and the parameter equals -0.21. You can change
+the value of the length correction parameter by supplying the 'lcp' keyword argument, 
+or you can disable length correction completely by setting lcp=0:
 
 .. code-block:: python
 
-    >>> RCs = achrom.get_RCs(sequences, RTs, lcf=-0.18) # A new value of the length correction factor
+    >>> RCs = achrom.get_RCs(sequences, RTs, lcp=-0.18) # A new value of the length correction parameter
 
-    >>> RCs = achrom.get_RCs(sequences, RTs, lcf=0) # Disable length correction.
+    >>> RCs = achrom.get_RCs(sequences, RTs, lcp=0) # Disable length correction.
     
 Another considerable improvement over the standard additive model is to treat
 terminal amino acid residues as separate chemical entities. This behavior

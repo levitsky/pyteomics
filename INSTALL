@@ -20,18 +20,18 @@ package manager. The shell code for a freshly installed Ubuntu system::
 Windows
 -------
 
-    - Download pre-compiled binary packages for Pyteomics dependencies: 
+- Download pre-compiled binary packages for Pyteomics dependencies: 
 
-        - `numpy <http://pypi.python.org/pypi/numpy>`_
-        - `matplotlib <http://sourceforge.net/projects/matplotlib/files/matplotlib/>`_
-        - `lxml <http://pypi.python.org/pypi/lxml/2.3>`_ 
+    - `numpy <http://pypi.python.org/pypi/numpy>`_
+    - `matplotlib <http://sourceforge.net/projects/matplotlib/files/matplotlib/>`_
+    - `lxml <http://pypi.python.org/pypi/lxml/2.3>`_ 
 
-    - Download a pre-compiled binary Pyteomics package from the list below.
+- Download a pre-compiled binary Pyteomics package from the list below.
 
-    OR
+OR
 
-    - If you have Enthought Python Distribution / ActivePython, 
-      execute in the command line::
-    
-          easy_install pip
-          pip install lxml numpy matplotlib pyteomics
+- If you have Enthought Python Distribution / ActivePython, 
+  execute in the command line::
+
+      easy_install pip
+      pip install lxml numpy matplotlib pyteomics
