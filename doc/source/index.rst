@@ -6,13 +6,23 @@
 Welcome to Pyteomics tutorial!
 ==============================
 
+.. include:: ../../README
+
+Relation to the other proteomics data analysis tools
+----------------------------------------------------
+Our goal is to create an infrastructure for proteomics data analysis within
+Python ecosystem. Pyteomics is **not** a proteomic search engine, **nor** does
+it any data conversion. There are `other tools <http://www.ms-utils.org/>`_ for
+that. Pyteomics does not aim to substitute any of these, but rather to coexist
+and complement them.
+
 Contents:
 
 .. toctree::
    :maxdepth: 2
 
-   preface
    intro
+   installation
    parser
    properties
    data
