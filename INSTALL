@@ -1,0 +1,37 @@
+Project dependencies
+--------------------
+
+Pyteomics uses the following python packages:
+
+- `numpy <http://pypi.python.org/pypi/numpy>`_
+- `matplotlib <http://sourceforge.net/projects/matplotlib/files/matplotlib/>`_ (used by pyteomics.pylab_aux)
+- `lxml <http://pypi.python.org/pypi/lxml/2.3>`_ (used by pyteomics.mzml, pyteomics.pepxml)
+
+GNU/Linux
+---------
+
+The preferred way to obtain pyteomics.biolccc is via pip Python 
+package manager. The shell code for a freshly installed Ubuntu system::
+
+    sudo apt-get install python-setuptools python-dev build-essential
+    sudo easy_install pip
+    sudo pip install lxml numpy matplotlib pyteomics
+
+Windows
+-------
+
+    - Download pre-compiled binary packages for Pyteomics dependencies: 
+
+        - `numpy <http://pypi.python.org/pypi/numpy>`_
+        - `matplotlib <http://sourceforge.net/projects/matplotlib/files/matplotlib/>`_
+        - `lxml <http://pypi.python.org/pypi/lxml/2.3>`_ 
+
+    - Download a pre-compiled binary Pyteomics package from the list below.
+
+    OR
+
+    - If you have Enthought Python Distribution / ActivePython, 
+      execute in the command line::
+    
+          easy_install pip
+          pip install lxml numpy matplotlib pyteomics

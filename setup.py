@@ -18,7 +18,7 @@ setup(
     url              = 'http://hg.theorchromo.ru/pyteomics',
     packages         = ['pyteomics', ],
     classifiers      = ['Intended Audience :: Science/Research',
-                        'Programming Language :: Python :: 2',
+                        'Programming Language :: Python :: 2.7',
                         'Topic :: Education',
                         'Topic :: Scientific/Engineering :: Bio-Informatics',
                         'Topic :: Scientific/Engineering :: Chemistry',
