@@ -29,9 +29,9 @@ Calibration:
 
   :py:func:`get_RCs` - find a set of retention coefficients using a
   given set of peptides with known retention times and a fixed value of
-  length correction factor.
+  length correction parameter.
 
-  :py:func:`get_RCs_vary_lcf` - find the best length correction factor
+  :py:func:`get_RCs_vary_lcp` - find the best length correction parameter
   and a set of retention coefficients for a given peptide sample.
 
 Retention time calculation:
@@ -151,7 +151,7 @@ peptide sequence:
     RT = \sum_{i=1}^{i=N}{RC_i} + m\,ln N \sum_{i=1}^{i=N}{RC_i} + RT_0
 
 We would call the second term :math:`m\,ln N \sum_{i=1}^{i=N}{RC_i}` *the
-length correction term* and m - *the length correction factor*. The simplified
+length correction term* and m - *the length correction parameter*. The simplified
 and vectorized form of this equation would be:
 
 .. math::
@@ -236,11 +236,11 @@ import numpy
 import auxiliary
 from parser import std_labels, peptide_length, amino_acid_composition
 
-def get_RCs(sequences, RTs, length_correction_factor = -0.21,
+def get_RCs(sequences, RTs, lcp = -0.21,
             term_aa = False, **kwargs):
     """Calculate the retention coefficients of amino acids using
     retention times of a peptide sample and a fixed value of length
-    correction factor.
+    correction parameter.
 
     Parameters
     ----------
@@ -248,7 +248,7 @@ def get_RCs(sequences, RTs, length_correction_factor = -0.21,
         List of peptide sequences.
     RTs: list of float
         List of corresponding retention times.
-    length_correction_factor : float, optional
+    lcp : float, optional
         A multiplier before ln(L) term in the equation for the retention
         time of a peptide. Set to -0.21 by default.
     term_aa : bool, optional
@@ -268,19 +268,19 @@ def get_RCs(sequences, RTs, length_correction_factor = -0.21,
         
         - RC_dict['const'] -- constant retention time shift.
         
-        - RC_dict['lcf'] -- length correction factor.
+        - RC_dict['lcp'] -- length correction parameter.
 
     Examples
     --------
     >>> RCs = get_RCs(['A','AA'], [1.0, 2.0], 0.0, labels=['A'])
     >>> RCs['const'] = round(RCs['const'], 4) # Rounding for comparison
-    >>> RCs == {'aa': {'A': 1.0}, 'lcf': 0.0, 'const': 0.0}
+    >>> RCs == {'aa': {'A': 1.0}, 'lcp': 0.0, 'const': 0.0}
     True
     >>> RCs = get_RCs(['A','AA','B'], [1.0, 2.0, 2.0], 0.0, labels=['A','B'])
     >>> RCs['aa']['A'] = round(RCs['aa']['A'], 4)
     >>> RCs['aa']['B'] = round(RCs['aa']['B'], 4)
     >>> RCs['const'] = round(RCs['const'], 4)
-    >>> RCs == {'aa':{'A': 1.0, 'B': 2.0},'const': 0.0, 'lcf': 0.0}
+    >>> RCs == {'aa':{'A': 1.0, 'B': 2.0},'const': 0.0, 'lcp': 0.0}
     True
     """
 
@@ -298,8 +298,7 @@ def get_RCs(sequences, RTs, length_correction_factor = -0.21,
     # regression. 
     composition_array = [
         [peptide_dicts[i].get(aa, 0.0) 
-         * (1.0 + length_correction_factor
-            * numpy.log(peptide_length(peptide_dicts[i])))
+         * (1.0 + lcp * numpy.log(peptide_length(peptide_dicts[i])))
            for aa in detected_amino_acids]
         + [1.0] # Add free term to each peptide.
         for i in range(len(sequences))]
@@ -337,7 +336,7 @@ def get_RCs(sequences, RTs, length_correction_factor = -0.21,
         zip(list(detected_amino_acids),
             RCs[:len(detected_amino_acids)]))        
     RC_dict['const'] = RCs[len(detected_amino_acids)]
-    RC_dict['lcf'] = length_correction_factor
+    RC_dict['lcp'] = lcp
 
     # Find remaining terminal RCs.
     if term_aa:
@@ -364,11 +363,11 @@ def get_RCs(sequences, RTs, length_correction_factor = -0.21,
 
     return RC_dict
 
-def get_RCs_vary_lcf(sequences, RTs,
+def get_RCs_vary_lcp(sequences, RTs,
                 term_aa = False,
-                lcf_range = (-1.0, 1.0),
+                lcp_range = (-1.0, 1.0),
                 **kwargs):
-    """Find the best combination of a length correction factor and
+    """Find the best combination of a length correction parameter and
     retention coefficients for a given peptide sample.
 
     Parameters
@@ -380,14 +379,14 @@ def get_RCs_vary_lcf(sequences, RTs,
     term_aa : bool, optional
         If True, terminal amino acids are treated as being
         modified with 'ntermX'/'ctermX' modifications. False by default.
-    lcf_range : 2-tuple of float, optional
-        Range of possible values of the length correction factor.
+    lcp_range : 2-tuple of float, optional
+        Range of possible values of the length correction parameter.
     labels : list of str, optional
         List of labels for all possible amino acids and terminal groups
         (default: 20 standard amino acids, N-terminal NH2- and
         C-terminal -OH).
-    lcf_accuracy : float, optional
-        The accuracy of the length correction factor calculation.
+    lcp_accuracy : float, optional
+        The accuracy of the length correction parameter calculation.
 
     Returns
     -------
@@ -398,42 +397,42 @@ def get_RCs_vary_lcf(sequences, RTs,
         
         - RC_dict['const'] -- constant retention time shift.
         
-        - RC_dict['lcf'] -- length correction factor.
+        - RC_dict['lcp'] -- length correction parameter.
 
     Examples
     --------
-    >>> RC_dict = get_RCs_vary_lcf(['A', 'AA', 'AAA'], \
+    >>> RC_dict = get_RCs_vary_lcp(['A', 'AA', 'AAA'], \
         [1.0, 2.0, 3.0], \
         labels=['A'])
     >>> RC_dict['aa']['A'] = round(RC_dict['aa']['A'], 4)
-    >>> RC_dict['lcf'] = round(RC_dict['lcf'], 4)
+    >>> RC_dict['lcp'] = round(RC_dict['lcp'], 4)
     >>> RC_dict['const'] = round(RC_dict['const'], 4)
-    >>> RC_dict == {'aa': {'A': 1.0}, 'lcf': 0.0, 'const': 0.0}
+    >>> RC_dict == {'aa': {'A': 1.0}, 'lcp': 0.0, 'const': 0.0}
     True
     """
     labels = kwargs.get('labels', std_labels)
 
     best_r = -1.1
     best_RC_dict = {}
-    lcf_accuracy = kwargs.get('lcf_accuracy', 0.1)
+    lcp_accuracy = kwargs.get('lcp_accuracy', 0.1)
 
-    min_lcf = lcf_range[0]
-    max_lcf = lcf_range[1]
-    step = (max_lcf - min_lcf) / 10.0
-    while step > lcf_accuracy:
-        lcf_grid = numpy.arange(min_lcf, max_lcf,
-                                (max_lcf - min_lcf) / 10.0)
-        for lcf in lcf_grid:
-            RC_dict = get_RCs(sequences, RTs, lcf, term_aa, labels=labels)
+    min_lcp = lcp_range[0]
+    max_lcp = lcp_range[1]
+    step = (max_lcp - min_lcp) / 10.0
+    while step > lcp_accuracy:
+        lcp_grid = numpy.arange(min_lcp, max_lcp,
+                                (max_lcp - min_lcp) / 10.0)
+        for lcp in lcp_grid:
+            RC_dict = get_RCs(sequences, RTs, lcp, term_aa, labels=labels)
             regression_coeffs = auxiliary.linear_regression(
                 RTs, 
                 [calculate_RT(peptide, RC_dict) for peptide in sequences])
             if regression_coeffs[2] > best_r:
                 best_r = regression_coeffs[2]
                 best_RC_dict = dict(RC_dict)
-        min_lcf = best_RC_dict['lcf'] - step
-        max_lcf = best_RC_dict['lcf'] + step
-        step = (max_lcf - min_lcf) / 10.0
+        min_lcp = best_RC_dict['lcp'] - step
+        max_lcp = best_RC_dict['lcp'] + step
+        step = (max_lcp - min_lcp) / 10.0
 
     return best_RC_dict
 
@@ -446,7 +445,7 @@ def calculate_RT(peptide, RC_dict):
     peptide : str
         A peptide sequence.
     RC_dict : dict
-        A set of retention coefficients, length correction factor and
+        A set of retention coefficients, length correction parameter and
         a fixed retention time shift.
 
     Returns
@@ -456,11 +455,11 @@ def calculate_RT(peptide, RC_dict):
 
     Examples
     --------
-    >>> RT = calculate_RT('AA', {'aa':{'A':1.1},'lcf':0.0,'const':0.1})
+    >>> RT = calculate_RT('AA', {'aa':{'A':1.1},'lcp':0.0,'const':0.1})
     >>> abs(RT - 2.3) < 1e-6      # Float comparison
     True
     >>> RT = calculate_RT('AAA', {'aa': {'ntermA':1.0, 'A':1.1, 'ctermA':1.2},\
-        'lcf':0.0,\
+        'lcp':0.0,\
         'const':0.1})
     >>> abs(RT - 3.4) < 1e-6      # Float comparison
     True
@@ -480,7 +479,7 @@ def calculate_RT(peptide, RC_dict):
     peptide_dict = amino_acid_composition(peptide, False, term_aa,
                                           labels=amino_acids)
     length_correction_term = (
-        1.0 + RC_dict['lcf'] * numpy.log(peptide_length(peptide_dict)))
+        1.0 + RC_dict['lcp'] * numpy.log(peptide_length(peptide_dict)))
     RT = 0.0
     for aa in peptide_dict:
         # if (aa not in RC_dict['aa'] and
@@ -513,7 +512,7 @@ RCs_guo_ph2_0 = {'aa':{'K': -2.1,
                        'W':  8.8,
                        'V':  5.0,
                        'Y':  4.5},
-                 'lcf': 0.0,
+                 'lcp': 0.0,
                  'const': 0.0}
 """A set of retention coefficients from Guo, D.; Mant, C. T.; Taneja,
 A. K.; Parker, J. M. R.; Hodges, R. S.  Prediction of peptide
@@ -551,7 +550,7 @@ RCs_guo_ph7_0 = {'aa':{'K': -0.2,
                        'W':  9.5,
                        'V':  5.7,
                        'Y':  4.6},
-                 'lcf': 0.0,
+                 'lcp': 0.0,
                  'const': 0.0}
 """A set of retention coefficients from Guo, D.; Mant, C. T.; Taneja,
 A. K.; Parker, J. M. R.; Hodges, R. S.  Prediction of peptide
@@ -590,7 +589,7 @@ RCs_meek_ph2_1 = {'aa':{'K': -3.2,
                         'W': 18.1,
                         'V':  3.3,
                         'Y':  8.2},
-                  'lcf': 0.0,
+                  'lcp': 0.0,
                   'const': 0.0}
 """A set of retention coefficients determined in Meek,
 J. L. Prediction of peptide retention times in high-pressure liquid
@@ -626,7 +625,7 @@ RCs_meek_ph7_4 = {'aa':{'K':  0.1,
                         'W': 14.9,
                         'V':  2.7,
                         'Y':  6.1},
-                  'lcf': 0.0,
+                  'lcp': 0.0,
                   'const': 0.0}
 """A set of retention coefficients determined in Meek,
 J. L. Prediction of peptide retention times in high-pressure liquid
@@ -665,7 +664,7 @@ RCs_browne_tfa = {'aa':{'K': -3.7,
                         'V':  3.5,
                         'Y':  5.9,
                         'pY': 3.5},
-                  'lcf': 0.0,
+                  'lcp': 0.0,
                   'const': 0.0}
 """A set of retention coefficients determined in Browne, C. A.;
 Bennett, H. P. J.; Solomon, S. The isolation of peptides by
@@ -703,7 +702,7 @@ RCs_browne_hfba = {'aa':{'K': -2.5,
                          'V':  2.1,
                          'Y':  3.8,
                          'pY':-0.3},
-                   'lcf': 0.0,
+                   'lcp': 0.0,
                    'const': 0.0}
 """A set of retention coefficients determined in Browne, C. A.;
 Bennett, H. P. J.; Solomon, S. The isolation of peptides by
@@ -738,7 +737,7 @@ RCs_palmblad = {'aa':{'K': -0.66,
                       'W':  4.68,
                       'V':  2.44,
                       'Y':  2.78},
-                'lcf': 0.0,
+                'lcp': 0.0,
                 'const': 0.0}
 """A set of retention coefficients determined in Palmblad, M.;
 Ramstrom, M.; Markides, K. E.; Hakansson, P.; Bergquist, J. Prediction
@@ -775,7 +774,7 @@ RCs_yoshida = {'aa':{'K':  2.77,
                      'W': -1.80,
                      'V': -2.19,
                      'Y': -0.11},
-               'lcf': 0.0,
+               'lcp': 0.0,
                'const': 0.0}
 """A set of retention coefficients determined in Yoshida,
 T. Calculation of peptide retention coefficients in normal-phase

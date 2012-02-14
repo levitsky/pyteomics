@@ -1,4 +1,8 @@
-include *.py
 include VERSION
 include README
+include INSTALL
+include COPYING
+include CHANGELOG
+include *.py
+include tests/*.py
 include requirements.txt

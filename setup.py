@@ -12,7 +12,8 @@ setup(
     name = 'pyteomics',
     version = version,
     description      = '''A framework for proteomics data analysis.''',
-    long_description = ''.join(open('README').readlines()),
+    long_description = (''.join(open('README').readlines()) + '\n'
+                        + ''.join(open('README').readlines()))
     author           = 'Anton Goloborodko & Lev Levitskiy',
     author_email     = 'goloborodko.anton@gmail.com',
     url              = 'http://hg.theorchromo.ru/pyteomics',

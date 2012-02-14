@@ -1,0 +1,14 @@
+1.0.0
+-----
+
+The first public release of Pyteomics.
+
+API changes:
+............
+
+    - *achrom*: rename 'length correction factor' to 'length correction parameter'.
+      achrom.get_RCs_vary_lcf() was renamed to achrom.get_RCs_vary_lcp(),
+      'length_correction_factor' keyword argument of achrom.get_RCs() was 
+      renamed to 'lcp'.
+      
+
