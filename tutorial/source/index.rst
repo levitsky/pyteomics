@@ -16,7 +16,7 @@ Contents:
    parser
    properties
    data
-
+   api
 
 Indices and tables
 ==================
