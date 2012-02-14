@@ -1,3 +1,6 @@
+What is Pyteomics?
+------------------
+
 Pyteomics is a collection of lightweight and handy tools for Python that help
 to handle various sorts of proteomics data. Pyteomics provides a growing set of 
 modules to facilitate the most common tasks in proteomics data analysis, such as:
@@ -22,3 +25,9 @@ One of the project's key features is Python itself, a open source language
 increasingly popular in scientific programming. The main
 applications of the library are reproducible statistical data analysis and rapid
 software prototyping.
+
+Pyteomics is hosted at the following sites:
+    - Python package @ Python Package Index: http://pypi.python.org/pypi/pyteomics
+    - project documentation @ python.org:  http://packages.python.org/pyteomics
+    - source code @ bitbucket: http://hg.theorchromo.ru/pyteomics
+    - mailing list @ Google: https://groups.google.com/group/pyteomics
