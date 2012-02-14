@@ -9,14 +9,14 @@ mzML
 ----
 
 **mzML** is an XML-based format for experimental data obtained on MS/MS or LC-MS
-setups. **Pyteomics** offers you the functionality of :py:mod:`mzml` module
+setups. **Pyteomics** offers you the functionality of :py:mod:`pyteomics.mzml` module
 to gain access to the information contained in .mzML files from Python.
 
 Examples
 ........
 
 The main function in this module is
-:py:func:`iter_spectrum`. It allows the user to iterate through MS/MS spectra
+:py:func:`pyteomics.mzml.iter_spectrum`. It allows the user to iterate through MS/MS spectra
 contained in an mzML file. Here is an example of its output:
 
 .. code-block:: python
@@ -48,7 +48,7 @@ contained in an mzML file. Here is an example of its output:
                                        'scan window upper limit': '2000'}]}],
      'total ion current': 15245068.0}
    
-At the moment, the interface of :py:func:`iter_spectrum` is relatively 
+At the moment, the interface of :py:func:`pyteomics.mzml.iter_spectrum` is relatively 
 low-level. It iterates through the spectra in the file and returns each one as 
 a dict with selected fields stored. The interface is relatively raw and can be
 modified in the subsequent releases of Pyteomics.
@@ -58,11 +58,11 @@ pepXML
 
 **.pepXML** is a widely used XML-based format for peptide identifications.
 It contains information about the MS data, the parameters of the search engine 
-used and the assigned sequences. To access these data, use :py:mod:`pepxml`
+used and the assigned sequences. To access these data, use :py:mod:`pyteomics.pepxml`
 module.
 
-:py:mod:`pepxml` has the same structure as :py:mod:`mzml`. The function
-:py:func:`iter_psm` iterates through Peptide-Spectrum matches in a .pepXML file 
+:py:mod:`pyteomics.pepxml` has the same structure as :py:mod:`pyteomics.mzml`. The function
+:py:func:`pyteomics.pepxml.iter_psm` iterates through Peptide-Spectrum matches in a .pepXML file 
 and returns them as a custom dict.
 
 .. code-block:: python
@@ -102,15 +102,15 @@ and returns them as a custom dict.
 FASTA
 -----
 
-To extract data from FASTA databases, use the :py:func:`read_fasta` function
-from :py:mod:`fasta.py`.
+To extract data from FASTA databases, use the :py:func:`pyteomics.fasta.read_fasta` 
+function.
 
 .. code-block:: python
 
     >>> from pyteomics import fasta
     >>> proteins = list(fasta.read_fasta('/path/to/file/my.fasta'))
 
-:py:func:`read_fasta` returns a *generator object* instead of a *list*
+:py:func:`pyteomics.fasta.read_fasta` returns a *generator object* instead of a *list*
 to prevent excessive memory use. 
 
 You can also create a FASTA file using a list of (description, sequence) *tuples*.
@@ -122,7 +122,7 @@ You can also create a FASTA file using a list of (description, sequence) *tuples
     >>> fasta.write_fasta(entries, 'target-file.fasta')
 
 Another common task is to generate a *decoy database*. **Pyteomics** allows
-that by means of the :py:func:`decoy_db` function. 
+that by means of the :py:func:`pyteomics.fasta.decoy_db` function. 
 
 .. code-block:: python
 
@@ -132,7 +132,7 @@ that by means of the :py:func:`decoy_db` function.
 The only required argument is the first one, indicating the source database. The
 second argument is the target file and defaults to system standard output. 
 
-If you need to modify a single sequence, use the :py:func:`decoy_sequence`
+If you need to modify a single sequence, use the :py:func:`pyteomics.fasta.decoy_sequence`
 method. It currently supports two modes: *‘reverse’* and *‘random’*.
 
 .. code-block:: python
