@@ -12,13 +12,13 @@ a hyphen (‘-’). By default, both termini are assumed to be unmodified, which
 shown explicitly by 'H-' for N-terminal hydrogen and '-OH' for C-terminal hydroxyl. 
 
 *“H-HoxMMdaN”* is an example of a valid sequence in modX. See 
-`parser documentation page` for additional information.
+:doc:`api/parser` for additional information.
 
 Sequence operations
 -------------------
 
 A *modX* sequence can be translated to a list of amino acid residues with
-:py:func:`parse_sequence` function:
+:py:func:`pyteomics.parser.parse_sequence` function:
 
 .. code-block:: python
 
@@ -40,7 +40,7 @@ should be supplied to the other functions in this module if a sequence has
 modifications.
 
 In modX, standard len() function cannot be used to determine the length of a 
-peptide because of the modifications. Use :py:func:`peptide_length` instead:
+peptide because of the modifications. Use :py:func:`pyteomics.parser.peptide_length` instead:
 
 .. code-block:: python
 
@@ -48,7 +48,7 @@ peptide because of the modifications. Use :py:func:`peptide_length` instead:
     >>> parser.peptide_length('aVRILLaVIGNE', labels=parser.std_labels+['aV'])
     10
 
-The :py:func:`amino_acid_composition` function accepts a sequence and returns
+The :py:func:`pyteomics.parser.amino_acid_composition` function accepts a sequence and returns
 a *dictionary* with amino acid labels as *keys* and integer numbers as *values*,
 corresponding to the number of times each residue occurs in the sequence:
 
@@ -58,7 +58,7 @@ corresponding to the number of times each residue occurs in the sequence:
     >>> parser.amino_acid_composition('PEPTIDE')
     {'I': 1.0, 'P': 2.0, 'E': 2.0, 'T': 1.0, 'D': 1.0}
 
-Lastly, :py:func:`cleave` is a method to perform *in silico* cleavage. The
+Lastly, :py:func:`pyteomics.parser.cleave` is a method to perform *in silico* cleavage. The
 requiered arguments are the sequence, the rule for enzyme specificity and the 
 number of missed cleavages allowed. Note that each product peptide is reported
 only once:
@@ -69,6 +69,6 @@ only once:
     >>> parser.cleave('AKAKBK', parser.expasy_rules['trypsin'], 0)
     ['AK', 'BK']
 
-:py:data:`expasy_rules` is a predefined *dict* with the clevage rules
+:py:data:`pyteomics.parser.expasy_rules` is a predefined *dict* with the clevage rules
 for the most common proteases.
 

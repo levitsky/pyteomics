@@ -17,7 +17,8 @@ is hosted at http://packages.python.org/pyteomics.biolccc.
 Additive model of peptide chromatography
 ----------------------------------------
 
-Another option for retention time prediction is the :py:mod:`achrom` module
+Another option for retention time prediction is the :py:mod:`pyteomics.achrom` 
+module
 distributed with Pyteomics. It implements the additive model of polypeptide
 chromatography. Briefly, in the additive model each amino acid residue changes 
 retention time by a fixed value, depending only on its type (e.g. an alanine r
@@ -28,8 +29,8 @@ In this tutorial we will focus on the basic usage.
 Retention time prediction
 .........................
 
-Retention time prediction with :py:mod:`achrom` is done by the
-:py:func:`calculate_RT` function:
+Retention time prediction with :py:mod:`pyteomics.achrom` is done by the
+:py:func:`pyteomics.achrom.calculate_RT` function:
 
 .. code-block:: python
 
@@ -42,7 +43,7 @@ notation.
 
 The second argument is the set parameters called 'retention coefficients' which
 describe chromatographic properties of individual amino acid residues in
-a polypeptide chain. :py:mod:`achrom` has a number of predefined sets of 
+a polypeptide chain. :py:mod:`pyteomics.achrom` has a number of predefined sets of 
 retention coefficients obtained from publications. The list, detailed 
 descriptions and references related to these sets can be found in the module
 documentation.
@@ -63,12 +64,12 @@ calibration procedure in Pyteomics.
     >>> RCs = achrom.get_RCs(sequences, RTs)
     >>> achrom.calculate_RT('PEPTIDE', RCs)
     
-The first argument of :py:func:`get_RCs` should be a list of modX sequences, 
+The first argument of :py:func:`pyteomics.achrom.get_RCs` should be a list of modX sequences, 
 the second - a list of float-point retention times.
  
-As in :py:func:`parser.parse_sequence`:, all non-standard amino modX
+As in :py:func:`pyteomics.parser.parse_sequence`:, all non-standard amino modX
 acid labels used in the training set should be supplied to `labels` keyword 
-argument of :py:func:`get_RCs` along with the standard ones:
+argument of :py:func:`pyteomics.achrom.get_RCs` along with the standard ones:
 
 .. code-block:: python
 
@@ -84,7 +85,7 @@ acid residues in a peptide and m is the length correction factor, typically ~ -0
 
 The value of the length correction factor is set at the calibration and stored along
 with the retention coefficients. By default, length correction is enabled in
-:py:func:`get_RCs` and the factor equals -0.21. You can change
+:py:func:`pyteomics.achrom.get_RCs` and the factor equals -0.21. You can change
 the value of the length correction factor by supplying the 'lcf' keyword argument, 
 or you can disable length correction completely by setting lcf=0:
 

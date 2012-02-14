@@ -18,4 +18,4 @@ IPython users can use the following shortcut:
     >>> calculate_mass?
 
 We expect the reader to be familiar with the basic Python syntax as well as 
-the proteomics concepts.
+proteomics concepts.

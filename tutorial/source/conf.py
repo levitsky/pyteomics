@@ -59,7 +59,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = u'Pyteomics tutorial'
+project = u'Pyteomics documentation'
 copyright = u'2011, Lev Levitsky, Anton Goloborodko'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -111,7 +111,7 @@ pygments_style = 'sphinx'
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 html_theme = 'haiku-pyteomics'
-html_theme_path = ["../../doc/source/"]
+html_theme_path = ["./"]
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

@@ -10,7 +10,7 @@ Math
 Project infrastructure
 ----------------------
 
-  :py:exception:`PyteomicsError` - a pyteomics-specific exception
+  :py:class:`PyteomicsError` - a pyteomics-specific exception
 
 -------------------------------------------------------------------------------
 

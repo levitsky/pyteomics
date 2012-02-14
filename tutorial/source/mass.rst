@@ -2,7 +2,7 @@ Mass and isotopes
 =================
 
 The functions related to mass calculations and isotopic distributions are 
-organized into the :py:mod:`mass` module. 
+organized into the :py:mod:`pyteomics.mass` module. 
 
 Basic mass calculations
 -----------------------
@@ -10,7 +10,7 @@ Basic mass calculations
 The most common task in mass spectrometry data analysis is to calculate the 
 mass of an organic molecule or peptide or m/z ratio of an ion. 
 The tasks of this kind can be 
-performed with the :py:func:`calculate_mass` function. It works with
+performed with the :py:func:`pyteomics.mass.calculate_mass` function. It works with
 chemical formulas, polypeptide sequences in modX notation, pre-parsed sequences
 and dictionaries of chemical compositions:
 
@@ -43,7 +43,7 @@ and dictionaries of chemical compositions:
 Mass-to-charge ratio of ions
 ----------------------------
 
-:py:func:`calculate_mass` can be used to calculate the mass/charge ratio of 
+:py:func:`pyteomics.mass.calculate_mass` can be used to calculate the mass/charge ratio of 
 peptide ions and ionized fragments. To do that, simply supply the type of the 
 peptide ionized fragment and its charge:
 
@@ -62,9 +62,9 @@ peptide ionized fragment and its charge:
 Mass of modified peptides
 -------------------------
 
-With :py:func:`calculate_mass` you can calculate masses of modified peptides
+With :py:func:`pyteomics.mass.calculate_mass` you can calculate masses of modified peptides
 as well. For the function to recognize the modified residue, you need to add the 
-information about its elemental composition to the :py:data:`std_aa_comp` 
+information about its elemental composition to the :py:data:`pyteomics.mass.std_aa_comp` 
 dictionary used in the calculations by default.
 
 .. code-block:: python
@@ -86,8 +86,8 @@ Some problems in organic mass spectrometry deal with molecules made by
 addition or subtraction of standard chemical 'building blocks'. 
 In :py:mod:`pyteomics.mass` there are two ways to approach these problems.
 
-* There is a :py:class:`Composition` class intended to store chemical formulas.
-  :py:class:`Composition` objects are dicts that can be added or subtracted
+* There is a :py:class:`pyteomics.mass.Composition` class intended to store chemical formulas.
+  :py:class:`pyteomics.mass.Composition` objects are dicts that can be added or subtracted
   from one another.
 
   .. code-block:: python
@@ -100,7 +100,7 @@ In :py:mod:`pyteomics.mass` there are two ways to approach these problems.
      >>> print p + T
      {'C': 4, 'H': 8, 'N': 1, 'O': 5, 'P': 1}
 
-  The values of :py:data:`std_aa_comp` are :py:class:`Composition` objects.
+  The values of :py:data:`pyteomics.mass.std_aa_comp` are :py:class:`pyteomics.mass.Composition` objects.
 
 * All functions that accept a **formula** keyword argument sum and 
   subtract numbers following the same atom in the formula:
@@ -116,11 +116,11 @@ In :py:mod:`pyteomics.mass` there are two ways to approach these problems.
 Faster mass calculations
 ------------------------
 
-While :py:func:`calculate_mass` has flexible and convenient interface, it may be 
+While :py:func:`pyteomics.mass.calculate_mass` has flexible and convenient interface, it may be 
 too slow for large-scale calculations. There is an optimized and simplified 
-version of this function named :py:func:`fast_mass`. It works only with 
+version of this function named :py:func:`pyteomics.mass.fast_mass`. It works only with 
 unmodified sequences in standard one-letter IUPAC notation. Like 
-:py:func:`calculate_mass`, :py:func:`fast_mass` can calculate *m/z* when
+:py:func:`pyteomics.mass.calculate_mass`, :py:func:`pyteomics.mass.fast_mass` can calculate *m/z* when
 provided with ion type and charge.
 
 .. code-block:: python
@@ -145,7 +145,7 @@ abundance of 100%.
     >>> mass.calculate_mass(formula='H[2]HO') # Semiheavy water
     19.0168414294726
 
-:py:func:`isotopic_composition_abundance` function calculates the relative 
+:py:func:`pyteomics.mass.isotopic_composition_abundance` function calculates the relative 
 abundance of a given isotopic state of a molecule. The input can be provided
 as a formula or as a Composition/dict. 
 
@@ -166,7 +166,7 @@ as a formula or as a Composition/dict.
 .. warning::
 
     You cannot mix specified and unspecified states of the same element in one 
-    formula in :py:func:`isotopic_composition_abundance` due to ambiguity.
+    formula in :py:func:`pyteomics.mass.isotopic_composition_abundance` due to ambiguity.
 
     .. code-block:: python
 
@@ -175,8 +175,8 @@ as a formula or as a Composition/dict.
         PyteomicsError: Pyteomics error, message: 'Please specify the isotopic states of all atoms of H or do not specify them at all.'
   
 Finally, you can find the most probable isotopic composition for a substance
-with :py:func:`most_probable_isotopic_composition` function. The substance is
-specified as a formula, a :py:obj:`Composition` object or a modX sequence string.
+with :py:func:`pyteomics.mass.most_probable_isotopic_composition` function. The substance is
+specified as a formula, a :py:class:`pyteomics.mass.Composition` object or a modX sequence string.
 
 .. code-block:: python
 
@@ -189,7 +189,7 @@ specified as a formula, a :py:obj:`Composition` object or a modX sequence string
     {'C[12]': 3364.0,  'C[13]': 36.0,  'H[1]': 5102.0,  'H[2]': 0.0, 'N[14]': 698.0,  'N[15]': 2.0,  'O[16]':  398.0,  'O[17]': 3.0}
 
 The information about chemical elements, their isotopes and relative abundances
-is stored in the :py:data:`nist_mass` dictionary defined in :py:mod:`mass.py`.
+is stored in the :py:data:`pyteomics.mass.nist_mass` dictionary defined in :py:mod:`pyteomics.mass.mass`.
 
 .. code-block:: python
 
@@ -200,7 +200,7 @@ is stored in the :py:data:`nist_mass` dictionary defined in :py:mod:`mass.py`.
 The zero key stands for the unspecified isotopic state. The data about isotopes 
 are stored as tuples *(accurate mass, relative abundance)*.
 
-At the moment, :py:data:`nist_mass` has the data only for the atoms of organic
+At the moment, :py:data:`pyteomics.mass.nist_mass` has the data only for the atoms of organic
 chemistry, the proton and electron:
 
 .. code-block:: python
