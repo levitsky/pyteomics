@@ -181,6 +181,7 @@ def _spectrum_from_element(element, namespaces):
     spectrum.update(
         read_params(element, 'd:scanList', namespaces=namespaces))
     spectrum['scanList'] = []
+
     for scan_elem in element.xpath('d:scanList/d:scan', namespaces=namespaces):
         scan = read_params(scan_elem, 'self::*', namespaces=namespaces)
         scan['scanWindowList'] = []

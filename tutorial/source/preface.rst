@@ -8,17 +8,17 @@ to handle various sorts of proteomics data.
 Pyteomics provides a growing set of modules to facilitate the most common tasks
 in proteomics data analysis, such as:
 
-* access to common proteomics data:
-
-  * MS or LC-MS data
-  * FASTA databases
-  * search engines output
-
 * calculation of basic physico-chemical properites of polypeptides:
 
   * mass and isotopic distribution
   * charge and pI
   * chromatographic retention time
+
+* access to common proteomics data:
+
+  * MS or LC-MS data
+  * FASTA databases
+  * search engines output
 
 * easy manipulation of sequences of modified peptides and proteins
 
