@@ -27,8 +27,8 @@ A *modX* sequence can be translated to a list of amino acid residues with
     ['P', 'E', 'P', 'T', 'I', 'D', 'E']
     >>> parser.parse_sequence('PEPTIDE', show_unmodified_termini=True)
     ['H-', 'P', 'E', 'P', 'T', 'I', 'D', 'E', '-OH']
-    >>> parser.parse_sequence('Ac-PEpPTIDE', labels=parser.std_labels+['Ac-', 'pP'])
-    ['Ac-', 'P', 'E', 'pP', 'T', 'I', 'D', 'E']
+    >>> parser.parse_sequence('Ac-PEpTIDE', labels=parser.std_labels+['Ac-', 'pT'])
+    ['Ac-', 'P', 'E', 'pT', 'I', 'D', 'E']
 
 In the last example we supplied two arguments, the sequence itself
 and 'labels'. The latter is used to specify what labels are allowed for amino 
