@@ -21,7 +21,7 @@ modules to facilitate the most common tasks in proteomics data analysis, such as
 
 The goal of the Pyteomics project is to provide a versatile, reliable and
 well-documented set of open tools for the wide proteomics community. 
-One of the project's key features is Python itself, a open source language 
+One of the project's key features is Python itself, an open source language 
 increasingly popular in scientific programming. The main
 applications of the library are reproducible statistical data analysis and rapid
 software prototyping.
