@@ -10,7 +10,7 @@ Pyteomics uses the following python packages:
 GNU/Linux
 ---------
 
-The preferred way to obtain pyteomics.biolccc is via pip Python 
+The preferred way to obtain Pyteomics is via pip Python 
 package manager. The shell code for a freshly installed Ubuntu system::
 
     sudo apt-get install python-setuptools python-dev build-essential
@@ -26,7 +26,7 @@ Windows
     - `matplotlib <http://sourceforge.net/projects/matplotlib/files/matplotlib/>`_
     - `lxml <http://pypi.python.org/pypi/lxml/2.3>`_ 
 
-- Download a pre-compiled binary Pyteomics package from the list below.
+- Download a pre-compiled binary Pyteomics package from the `list <http://pypi.python.org/pypi/pyteomics#downloads>`_.
 
 OR
 
