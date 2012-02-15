@@ -32,14 +32,14 @@ A *modX* sequence can be translated to a list of amino acid residues with
 
 In the last example we supplied two arguments, the sequence itself
 and 'labels'. The latter is used to specify what labels are allowed for amino 
-acid residues and terminal modifications. std_labels is a predefined set of
+acid residues and terminal modifications. :py:data:`std_labels` is a predefined set of
 labels for the twenty standard amino acids, 'H-' for N-terminal hydrogen and 
 '-OH' for C-terminal hydroxyl. In this example we specified the codes for
 phosphorylated threonine and N-terminal acetylation. The same 'labels' argument 
 should be supplied to the other functions in this module if a sequence has
 modifications.
 
-In modX, standard len() function cannot be used to determine the length of a 
+In modX, standard :py:func:`len` function cannot be used to determine the length of a 
 peptide because of the modifications. Use :py:func:`pyteomics.parser.peptide_length` instead:
 
 .. code-block:: python

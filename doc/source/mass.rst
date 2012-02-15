@@ -8,7 +8,7 @@ Basic mass calculations
 -----------------------
 
 The most common task in mass spectrometry data analysis is to calculate the 
-mass of an organic molecule or peptide or m/z ratio of an ion. 
+mass of an organic molecule or peptide or *m/z* ratio of an ion. 
 The tasks of this kind can be 
 performed with the :py:func:`pyteomics.mass.calculate_mass` function. It works with
 chemical formulas, polypeptide sequences in modX notation, pre-parsed sequences

@@ -21,8 +21,8 @@ Another option for retention time prediction is the :py:mod:`pyteomics.achrom`
 module
 distributed with Pyteomics. It implements the additive model of polypeptide
 chromatography. Briefly, in the additive model each amino acid residue changes 
-retention time by a fixed value, depending only on its type (e.g. an alanine r
-esidue add 2.0 mins to RT, while an arginine decreases it by 1.1 min). The module 
+retention time by a fixed value, depending only on its type (e.g. an alanine 
+residue add 2.0 mins to RT, while an arginine decreases it by 1.1 min). The module 
 documentation contains the complete description of this model and the references. 
 In this tutorial we will focus on the basic usage.
 
@@ -67,7 +67,7 @@ calibration procedure in Pyteomics.
 The first argument of :py:func:`pyteomics.achrom.get_RCs` should be a list of modX sequences, 
 the second - a list of float-point retention times.
  
-As in :py:func:`pyteomics.parser.parse_sequence`:, all non-standard amino modX
+Like in :py:func:`pyteomics.parser.parse_sequence`, all non-standard amino modX
 acid labels used in the training set should be supplied to `labels` keyword 
 argument of :py:func:`pyteomics.achrom.get_RCs` along with the standard ones:
 
@@ -81,7 +81,7 @@ Advanced calibration
 The standard additive model allows a couple of improvements. Firstly, an 
 explicit dependency on the length of a peptide may be introduced by multiplying
 the retention time by :math:`(1.0 + m * log(L))`, where L is the number of amino
-acid residues in a peptide and m is the length correction parameter, typically ~ -0.2.
+acid residues in the peptide and m is the length correction parameter, typically ~ -0.2.
 
 The value of the length correction parameter is set at the calibration and stored along
 with the retention coefficients. By default, length correction is enabled in

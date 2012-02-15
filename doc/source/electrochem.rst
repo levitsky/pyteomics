@@ -39,7 +39,7 @@ a parsed sequence or a dict with amino acid composition.
 Customization
 -------------
 
-The pKas of individual amino acids are stored in dicts in the following format:
+The pK\ :sub:`a`\ s of individual amino acids are stored in dicts in the following format:
 {`modX label` : (`pKa`, `charge`)}. The module contains several datasets 
 published in scientific journals: :py:data:`pyteomics.electrochem.pK_lehninger` (used by default), 
 :py:data:`pyteomics.electrochem.pK_sillero`, :py:data:`pyteomics.electrochem.pK_dawson`, :py:data:`pyteomics.electrochem.pK_rodwell`. 
