@@ -45,7 +45,14 @@ extensions = [
               'matplotlib_sphinxext.only_directives',
               'matplotlib_sphinxext.mathmpl',
               'numpydoc',
+              'googleanalytics'
              ]
+
+# Enable Google Analytics via a script from
+# http://pypi.python.org/pypi/sphinxcontrib-googleanalytics
+googleanalytics_enabled = True
+googleanalytics_id = 'UA-29285906-1'
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
@@ -60,7 +67,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Pyteomics documentation'
-copyright = u'2011, Lev Levitsky, Anton Goloborodko'
+copyright = u'2011, Lev Levitsky, Anton Goloborodko, Mikhail Gorshkov'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
