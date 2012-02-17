@@ -97,7 +97,7 @@ In :py:mod:`pyteomics.mass` there are two ways to approach these problems.
      {'H': 1, 'O': 3, 'P': 1}
      >>> print mass.std_aa_comp['T']
      {'C': 4, 'H': 7, 'N': 1, 'O': 2}
-     >>> print p + T
+     >>> print p + mass.std_aa_comp['T']
      {'C': 4, 'H': 8, 'N': 1, 'O': 5, 'P': 1}
 
   The values of :py:data:`pyteomics.mass.std_aa_comp` are :py:class:`pyteomics.mass.Composition` objects.
