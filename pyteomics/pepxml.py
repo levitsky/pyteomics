@@ -15,7 +15,7 @@ This module provides minimalistic infrastructure for access to data stored in
 pep.XML files. The most important function is :py:func:`iter_psm`, which 
 reads peptide-spectum matches and related information and saves them into 
 human-readable dicts. The rest of data can be obtained via :py:func:`get_node` 
-function. This functions relies on the terminology of the underlying 
+function. This function relies on the terminology of the underlying 
 `lxml library <http://lxml.de/>`_.
 
 Data access
@@ -62,25 +62,27 @@ def _peptide_length(psm):
 def _insert_default_ns(xpath, ns_key = 'd'):
     """Inserts the key for the default namespace before each node name.
     Does not modify a nodename if it already has a namespace.
-
+    
     Parameters
     ----------
     xpath : str
         An original XPath
     ns_key : str
         A key for the default namespace.
+        If empty string, `xpath` will be returned unchanged.
 
     Returns
     -------
     out : str
         A modified XPath.
     """
+    if not ns_key: return xpath
     return '/'.join(
         [(ns_key + ':' + node if (node and node.count(':') == 0) else node)
          for node in xpath.split('/')])
 
 def get_node(source, xpath, namespaces={'d':xmlns}):
-    """Retrieves arbitrary nodes from a pepxml file by their xpath.
+    """Retrieves arbitrary nodes from a pepXML file by their xpath.
     Each node in the xpath is assigned to the default namespace 
     'http://regis-web.systemsbiology.net/pepXML' unless specified else.
 
@@ -92,6 +94,8 @@ def get_node(source, xpath, namespaces={'d':xmlns}):
         An XPath to target nodes. 
     namespaces : dict, optional
         A dictionary of namespaces. The default namespace key is 'd'.
+        If the XML document does not have a specified namespace,
+        supply an empty dictionary.
     
     Returns
     -------
@@ -107,11 +111,17 @@ def get_node(source, xpath, namespaces={'d':xmlns}):
     parser = etree.XMLParser(remove_comments=True, ns_clean=True)
     tree = etree.parse(source, parser=parser)
 
-    xpath_w_namespace = _insert_default_ns(xpath)
+    if not namespaces: ns_key = ''
+    else: ns_key = 'd'
 
-    return tree.xpath(xpath_w_namespace, namespaces=namespaces)
+    xpath_w_namespace = _insert_default_ns(xpath, ns_key)
+    kwargs = {}
+    if namespaces: kwargs['namespaces'] = namespaces
+       
+    return tree.xpath(xpath_w_namespace, **kwargs)
+
     
-def _psm_from_query(query, namespaces={'d':xmlns}):
+def _psm_from_query(query):
     """Analyze a spectrum query Element object and generate a dictionary with 
     its properties.
 
@@ -129,8 +139,8 @@ def _psm_from_query(query, namespaces={'d':xmlns}):
     psm = dict(query.attrib)
     # ... and the best hit from peptide database.
     search_hit_elements = query.xpath(
-        'd:search_result/d:search_hit[@hit_rank=\'1\']',
-        namespaces=namespaces)
+        "*[local-name()='search_result']"
+        "/*[local-name()='search_hit' and @hit_rank='1']")
     if not search_hit_elements:
         return {}
     psm.update(search_hit_elements[0].attrib)
@@ -149,27 +159,29 @@ def _psm_from_query(query, namespaces={'d':xmlns}):
     proteins.append(
         {"protein":         psm.pop("protein"),
          "protein_descr":   psm.pop("protein_descr", ""),
-         "num_tol_term":    float(psm.pop("num_tol_term")),
+         "num_tol_term":    float(psm.pop("num_tol_term"))
+                            if "num_tol_term" in psm else None,
          "peptide_prev_aa": psm.pop("peptide_prev_aa"),
          "peptide_next_aa": psm.pop("peptide_next_aa")})
 
     # Store a list of modifications.
     modifications = []
-    for subelement in query.xpath('d:search_result/d:search_hit/'
-                                  'd:search_score', 
-                                  namespaces=namespaces):
+    for subelement in query.xpath("*[local-name()='search_result']"
+        "/*[local-name()='search_hit' and @hit_rank='1']"
+        "/*[local-name()='search_score']"):
         psm[subelement.attrib['name']] = float(subelement.attrib['value'])
-    for subelement in query.xpath('d:search_result/d:search_hit/'
-                                  'd:analysis_result/d:peptideprophet_result',
-                                  namespaces=namespaces):
+    for subelement in query.xpath("*[local-name()='search_result']"
+        "/*[local-name()='search_hit' and @hit_rank='1']"
+        "/*[local-name()='analysis_result']"
+        "/*[local-name()='peptideprophet_result']"):
         psm['peptideprophet'] = float(subelement.attrib['probability'])
-    for subelement in query.xpath('d:search_result/d:search_hit/'
-                                  'd:alternative_protein',
-                                  namespaces=namespaces):
+    for subelement in query.xpath("*[local-name()='search_result']"
+        "/*[local-name()='search_hit' and @hit_rank='1']"
+        "/*[local-name()='alternative_protein']"):
         proteins.append(subelement.attrib)
-    for subelement in query.xpath('d:search_result/d:search_hit/'
-                                  'd:modification_info',
-                                  namespaces=namespaces):
+    for subelement in query.xpath("*[local-name()='search_result']"
+        "/*[local-name()='search_hit' and @hit_rank='1']"
+        "/*[local-name()='modification_info']"):
         psm['modified_peptide'] = subelement.attrib.get('modified_peptide',
                                                         '')
         if 'mod_nterm_mass' in subelement.attrib:
@@ -180,8 +192,8 @@ def _psm_from_query(query, namespaces={'d':xmlns}):
             modifications.append(
                 {'position' : _peptide_length(psm) + 1,
                  'mass': float(subelement.attrib['mod_cterm_mass'])})
-        for mod_element in subelement.xpath('d:mod_aminoacid_mass',
-                                            namespaces=namespaces):
+        for mod_element in subelement.xpath(
+                "*[local-name()='mod_aminoacid_mass']"):
             modification = dict(mod_element.attrib)
             modification['position'] = int(modification['position'])
             modification['mass'] = float(modification['mass'])
@@ -208,10 +220,10 @@ def iter_psm(source):
 
     parser = etree.XMLParser(remove_comments=True, ns_clean=True) 
     tree = etree.parse(source, parser=parser)
-
+    
     for spectrum_query in tree.xpath(
-        '/d:msms_pipeline_analysis/d:msms_run_summary/d:spectrum_query',
-        namespaces = {'d': xmlns}):
+        "/*[local-name()='msms_pipeline_analysis']/"
+        "*[local-name()='msms_run_summary']/*[local-name()='spectrum_query']"):
         
         yield _psm_from_query(spectrum_query)
 
@@ -234,10 +246,10 @@ def roc_curve(source):
 
     roc_curve = []
     for roc_element in tree.xpath(
-        '/d:msms_pipeline_analysis'
-        '/d:analysis_summary[@analysis=\'peptideprophet\']'
-        '/d:peptideprophet_summary/d:roc_data_point',
-        namespaces = {'d': xmlns}):
+        "/*[local-name()='msms_pipeline_analysis']"
+        "/*[local-name()='analysis_summary and @analysis='peptideprophet']"
+        "/*[local-name()='peptideprophet_summary']"
+        "/*[local-name()='roc_data_point']"):
         
         roc_data_point = dict(roc_element.attrib)
         for key in roc_data_point:
