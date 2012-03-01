@@ -137,71 +137,74 @@ def _psm_from_query(query):
 
     # A psm stores the properties of the spectrum query...
     psm = dict(query.attrib)
-    # ... and the best hit from peptide database.
+    # ... and the info about all search hits (in a list).
     search_hit_elements = query.xpath(
         "*[local-name()='search_result']"
-        "/*[local-name()='search_hit' and @hit_rank='1']")
+        "/*[local-name()='search_hit']")
     if not search_hit_elements:
         return {}
-    psm.update(search_hit_elements[0].attrib)
+    psm['search_hits'] = []
+    for search_hit in search_hit_elements:
+        # form a dictionary with search hit info, then add it to the list
+        search_hit_info = {}
+        search_hit_info.update(search_hit.attrib)
 
-    # Use non-modified sequence of a peptide as a modified one if
-    # there are no modifications.
-    psm['modified_peptide'] = psm['peptide']
+        # Use non-modified sequence of a peptide as a modified one if
+        # there are no modifications.
+        search_hit_info['modified_peptide'] = search_hit_info['peptide']
 
-    # Convert str values to float.
-    for key in float_keys:
-        if key in psm:
-            psm[key] = float(psm[key])    
+        # Convert str values to float.
+        for key in float_keys:
+            if key in search_hit_info:
+                search_hit_info[key] = float(search_hit_info[key])    
 
-    # Store alternative proteins as a list of dictionaries.
-    proteins = []
-    proteins.append(
-        {"protein":         psm.pop("protein"),
-         "protein_descr":   psm.pop("protein_descr", ""),
-         "num_tol_term":    float(psm.pop("num_tol_term"))
-                            if "num_tol_term" in psm else None,
-         "peptide_prev_aa": psm.pop("peptide_prev_aa"),
-         "peptide_next_aa": psm.pop("peptide_next_aa")})
+        # Store alternative proteins as a list of dictionaries.
+        proteins = []
+        proteins.append(
+            {"protein":         search_hit_info.pop("protein"),
+             "protein_descr":   search_hit_info.pop("protein_descr", ""),
+             "num_tol_term":    float(search_hit_info.pop("num_tol_term"))
+                                if "num_tol_term" in search_hit_info else None,
+             "peptide_prev_aa": search_hit_info.pop("peptide_prev_aa"),
+             "peptide_next_aa": search_hit_info.pop("peptide_next_aa")})
 
-    # Store a list of modifications.
-    modifications = []
-    for subelement in query.xpath("*[local-name()='search_result']"
-        "/*[local-name()='search_hit' and @hit_rank='1']"
-        "/*[local-name()='search_score']"):
-        psm[subelement.attrib['name']] = float(subelement.attrib['value'])
-    for subelement in query.xpath("*[local-name()='search_result']"
-        "/*[local-name()='search_hit' and @hit_rank='1']"
-        "/*[local-name()='analysis_result']"
-        "/*[local-name()='peptideprophet_result']"):
-        psm['peptideprophet'] = float(subelement.attrib['probability'])
-    for subelement in query.xpath("*[local-name()='search_result']"
-        "/*[local-name()='search_hit' and @hit_rank='1']"
-        "/*[local-name()='alternative_protein']"):
-        proteins.append(subelement.attrib)
-    for subelement in query.xpath("*[local-name()='search_result']"
-        "/*[local-name()='search_hit' and @hit_rank='1']"
-        "/*[local-name()='modification_info']"):
-        psm['modified_peptide'] = subelement.attrib.get('modified_peptide',
-                                                        '')
-        if 'mod_nterm_mass' in subelement.attrib:
-            modifications.append(
-                {'position' : 0,
-                 'mass': float(subelement.attrib['mod_nterm_mass'])})
-        if 'mod_cterm_mass' in subelement.attrib:
-            modifications.append(
-                {'position' : _peptide_length(psm) + 1,
-                 'mass': float(subelement.attrib['mod_cterm_mass'])})
-        for mod_element in subelement.xpath(
-                "*[local-name()='mod_aminoacid_mass']"):
-            modification = dict(mod_element.attrib)
-            modification['position'] = int(modification['position'])
-            modification['mass'] = float(modification['mass'])
-            modifications.append(modification)                
+        # Store a list of modifications.
+        modifications = []
+        for subelement in search_hit.xpath("*[local-name()='search_score']"):
+            search_hit_info[subelement.attrib['name']] = float(
+                    subelement.attrib['value'])
+        for subelement in search_hit.xpath("*[local-name()='analysis_result']"
+            "/*[local-name()='peptideprophet_result']"):
+            search_hit_info['peptideprophet'] = float(
+                    subelement.attrib['probability'])
+        for subelement in search_hit.xpath(
+                "*[local-name()='alternative_protein']"):
+            proteins.append(subelement.attrib)
+        for subelement in search_hit.xpath(
+                "/*[local-name()='modification_info']"):
+            search_hit_info['modified_peptide'] = subelement.attrib.get(
+                'modified_peptide', '')
+            if 'mod_nterm_mass' in subelement.attrib:
+                modifications.append(
+                    {'position' : 0,
+                     'mass': float(subelement.attrib['mod_nterm_mass'])})
+            if 'mod_cterm_mass' in subelement.attrib:
+                modifications.append(
+                    {'position' : _peptide_length(psm) + 1,
+                     'mass': float(subelement.attrib['mod_cterm_mass'])})
+            for mod_element in subelement.xpath(
+                    "*[local-name()='mod_aminoacid_mass']"):
+                modification = dict(mod_element.attrib)
+                modification['position'] = int(modification['position'])
+                modification['mass'] = float(modification['mass'])
+                modifications.append(modification)                
 
-    psm["proteins"] = proteins
-    psm["modifications"] = modifications
+        search_hit_info["proteins"] = proteins
+        search_hit_info["modifications"] = modifications
 
+        psm['search_hits'].append(search_hit_info)
+
+    psm['search_hits'].sort(key = lambda x: x['hit_rank'])
     return psm
     
 def iter_psm(source):
