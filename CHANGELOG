@@ -1,3 +1,16 @@
+1.0.2
+-----
+
+In **pepxml** module, now all search hits are read from file (not only the top
+hit).
+
+API changes:
+............
+
+    - *pepxml*: information specific to search hits is now stored in a list
+    under the 'search_hits' key. The list is sorted by hit rank.
+
+
 1.0.1
 -----
 
