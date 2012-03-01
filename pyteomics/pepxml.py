@@ -143,6 +143,12 @@ def _psm_from_query(query):
         "/*[local-name()='search_hit']")
     if not search_hit_elements:
         return {}
+
+    # Convert str values to float.
+    for key in float_keys:
+            if key in psm:
+                psm[key] = float(psm[key])
+
     psm['search_hits'] = []
     for search_hit in search_hit_elements:
         # form a dictionary with search hit info, then add it to the list
@@ -153,7 +159,7 @@ def _psm_from_query(query):
         # there are no modifications.
         search_hit_info['modified_peptide'] = search_hit_info['peptide']
 
-        # Convert str values to float.
+        # Convert str values to float in search hit.
         for key in float_keys:
             if key in search_hit_info:
                 search_hit_info[key] = float(search_hit_info[key])    
@@ -190,7 +196,7 @@ def _psm_from_query(query):
                      'mass': float(subelement.attrib['mod_nterm_mass'])})
             if 'mod_cterm_mass' in subelement.attrib:
                 modifications.append(
-                    {'position' : _peptide_length(psm) + 1,
+                    {'position' : _peptide_length(search_hit_info) + 1,
                      'mass': float(subelement.attrib['mod_cterm_mass'])})
             for mod_element in subelement.xpath(
                     "*[local-name()='mod_aminoacid_mass']"):
