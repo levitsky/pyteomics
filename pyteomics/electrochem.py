@@ -22,15 +22,15 @@ where the sum is taken over all ionizable groups of the polypeptide, and
 :math:`Q_i` is -1 and +1 for acidic and basic functional groups,
 respectively.
 
-Main functions:
----------------
+Main functions
+--------------
 
   :py:func:`charge` - calculate the charge of a polypeptide
   
   :py:func:`pI` - calculate the isoelectric point of a polypeptide
 
-Data:
------
+Data
+----
 
   :py:data:`pK_lehninger` - a set of pK from [#Lehninger]_.
 

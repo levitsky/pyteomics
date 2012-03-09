@@ -1,3 +1,9 @@
+1.1.0
+-----
+
+New module added - **pyteomics.mgf**. It is intended for reading and writing
+files in Mascot Generic Format.
+
 1.0.2
 -----
 

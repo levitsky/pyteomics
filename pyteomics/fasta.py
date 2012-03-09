@@ -39,11 +39,12 @@ def read_fasta(fasta_file, ignore_comments=False):
 
     Parameters
     ----------
+
     fasta_file : str or file
         A file object (or file name) with a FASTA database.
     ignore_comments : bool, optional
         If True then ignore the second and subsequent lines of description.
-        Default is False.
+        Default is :py:const:`False`.
 
     Yield a tuple (description, sequence).
     """
@@ -177,7 +178,7 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
     close : bool, optional
         If True, the target file will be closed in the end (default).
         Set to False, if you need to perform I/O operations with the file
-        from your Python script after it's created. True by default.
+        from your Python script after it's created. :py:const:`True` by default.
     
     Returns
     -------
@@ -190,7 +191,7 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
         source_file = open(source)
     else:
         raise PyteomicsError("""Wrong argument type:
-        'source' must be file or str, not %s""" % type(source))
+        `source` must be file or str, not %s""" % type(source))
 
     if type(output) == file:
         output_file = output
@@ -200,7 +201,7 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
         output_file = sys.stdout
     else:
         raise PyteomicsError("""Wrong argument type:
-        'output' must be file or None, not %s""" % type(source))
+        `output` must be file or None, not %s""" % type(source))
 
     if not decoy_only:
         write_fasta(read_fasta(source_file, False), output_file, False)

@@ -24,8 +24,8 @@ In order to use achrom, one needs to find the retention
 coeffcients, using experimentally determined retention times for a training set
 of peptide retention times, i.e. to *calibrate* the model.
 
-Calibration:
-------------
+Calibration
+-----------
 
   :py:func:`get_RCs` - find a set of retention coefficients using a
   given set of peptides with known retention times and a fixed value of
@@ -34,14 +34,14 @@ Calibration:
   :py:func:`get_RCs_vary_lcp` - find the best length correction parameter
   and a set of retention coefficients for a given peptide sample.
 
-Retention time calculation:
----------------------------
+Retention time calculation
+--------------------------
 
   :py:func:`calculate_RT` - calculate the retention time of a peptide
   using a given set of retention coefficients.
 
-Data:
------
+Data
+----
 
   :py:data:`RCs_guo_ph2_0` - a set of retention coefficients (RCs)
   from [#Guo1]_. Conditions: Synchropak RP-P C18 column (250 x 4.1 mm

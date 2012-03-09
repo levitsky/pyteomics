@@ -64,7 +64,6 @@ class FastaTest(unittest.TestCase):
         decoy_db(self.fasta_file, decdb, decoy_only=False, prefix='PREFIX_', close=False)
         decdb.seek(0)
         all_entries = [i for i in read_fasta(decdb, False)]
-#       print all_entries
         decdb.close()
         self.assertEqual(all_entries, self.fasta_entries_long + 
                 [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long])

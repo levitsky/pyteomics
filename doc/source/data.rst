@@ -12,9 +12,6 @@ mzML
 setups. **Pyteomics** offers you the functionality of :py:mod:`pyteomics.mzml` module
 to gain access to the information contained in .mzML files from Python.
 
-Examples
-........
-
 The main function in this module is
 :py:func:`pyteomics.mzml.iter_spectrum`. It allows the user to iterate through MS/MS spectra
 contained in an mzML file. Here is an example of its output:
@@ -48,15 +45,103 @@ contained in an mzML file. Here is an example of its output:
                                        'scan window upper limit': '2000'}]}],
      'total ion current': 15245068.0}
    
-At the moment, the interface of :py:func:`pyteomics.mzml.iter_spectrum` is relatively 
-low-level. It iterates through the spectra in the file and returns each one as 
-a dict with selected fields stored. The interface is relatively raw and can be
-modified in the subsequent releases of Pyteomics.
+At the moment, the interface of :py:func:`pyteomics.mzml.iter_spectrum` is
+relatively low-level. It iterates through the spectra in the file and returns
+each one as a dict with selected fields stored. The interface is relatively
+raw and can be modified in the subsequent releases of Pyteomics.
+
+MGF
+---
+
+Mascot Generic Format
+(`MGF <http://www.matrixscience.com/help/data_file_help.html>`_) is a simple
+human-readable format for MS/MS data. It allows storing MS/MS peak lists and
+exprimental parameters. :py:mod:`pyteomics.mgf` is a module that implements
+reading and writing MGF files.
+
+Similar to :py:mod:`pyteomics.mzml`, :py:mod:`pyteomics.mgf` has a 
+:py:func:`iter_spectrum` function. It allows iterating through spectrum entries.
+Spectra are represented as :py:class:`dictionaries`. MS/MS peak lists are stored
+as :py:class:`numpy.array` objects :py:obj:`masses` and :py:obj:`intensities`.
+Parameters are stored as a :py:class:`dict` under 'params' key.
+
+Here is an example of use:
+
+.. code-block:: python
+
+    >>> from pyteomics import mgf
+    >>> reader = mgf.iter_spectrum('tests/test.mgf')
+    >>> print reader.next() # Retrieve the first spectrum from the file and print it.
+    {'intensities': array([  73.,   44.,   67.,  291.,   54.,   49.]), 
+    'masses': array([  846.6,   846.8,   847.6,  1640.1,  1640.6,  1895.5]), 
+    'params': {'username': 'Lou Scene', 'useremail': 'leu@altered-state.edu',
+    'mods': 'Carbamidomethyl (C)', 'itolu': 'Da', 'title': 'Spectrum 1',
+    'itol': '1', 'charge': '2+ and 3+', 'mass': 'Monoisotopic',
+    'it_mods': 'Oxidation (M)', 'pepmass': '983.6',
+    'com': 'Taken from http://www.matrixscience.com/help/data_file_help.html'}}
+
+Also, :py:mod:`pyteomics.mgf` allows to extract headers with general search 
+parameters from MGF files with :py:func:`read_header` function. It also returns
+a :py:class:`dict`.
+
+.. code-block:: python
+
+    >>> header = mgf.read_header('tests/test.mgf')
+    >>> print header
+    {'username': 'Lou Scene', 'itol': '1', 'useremail': 'leu@altered-state.edu',
+    'mods': 'Carbamidomethyl (C)', 'it_mods': 'Oxidation (M)',
+    'charge': '2+ and 3+', 'mass': 'Monoisotopic', 'itolu': 'Da',
+    'com': 'Taken from http://www.matrixscience.com/help/data_file_help.html'}
+
+
+Creation of MGF files is implemented in :py:func:`write_mgf` function. The user
+can specify the header, list of spectra in the same format as returned by
+:py:func:`iter_spectrum` and the output path.
+
+.. code-block:: python
+
+    >>> spectra = [s for s in mgf.iter_spectrum('tests/test.mgf')]
+    >>> mgf.write_mgf(spectra=spectra, header=header)
+    USERNAME=Lou Scene
+    ITOL=1
+    USEREMAIL=leu@altered-state.edu
+    MODS=Carbamidomethyl (C)
+    IT_MODS=Oxidation (M)
+    CHARGE=2+ and 3+
+    MASS=Monoisotopic
+    ITOLU=Da
+    COM=Taken from http://www.matrixscience.com/help/data_file_help.html
+
+    BEGIN IONS
+    TITLE=Spectrum 1
+    PEPMASS=983.6
+    846.6 73.0
+    846.8 44.0
+    847.6 67.0
+    1640.1 291.0
+    1640.6 54.0
+    1895.5 49.0
+    END IONS
+
+    BEGIN IONS
+    TITLE=Spectrum 2
+    RTINSECONDS=25
+    PEPMASS=1084.9
+    SCANS=3
+    345.1 237.0
+    370.2 128.0
+    460.2 108.0
+    1673.3 1007.0
+    1674.0 974.0
+    1675.3 79.0
+    END IONS
+
 
 pepXML
 ------
 
-**.pepXML** is a widely used XML-based format for peptide identifications.
+`pepXML <http://tools.proteomecenter.org/wiki/index.php?title=Formats:pepXML>`_
+is a widely used XML-based format for peptide identifications.
 It contains information about the MS data, the parameters of the search engine 
 used and the assigned sequences. To access these data, use :py:mod:`pyteomics.pepxml`
 module.
@@ -110,10 +195,11 @@ function.
     >>> from pyteomics import fasta
     >>> proteins = list(fasta.read_fasta('/path/to/file/my.fasta'))
 
-:py:func:`pyteomics.fasta.read_fasta` returns a *generator object* instead of a *list*
-to prevent excessive memory use. 
+:py:func:`pyteomics.fasta.read_fasta` returns a *generator object* instead of a
+:py:class:`list` to prevent excessive memory use. 
 
-You can also create a FASTA file using a list of (description, sequence) *tuples*.
+You can also create a FASTA file using a list of (description, sequence)
+:py:class:`tuples`.
 
 .. code-block:: python
 
