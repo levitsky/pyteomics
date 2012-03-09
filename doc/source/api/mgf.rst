@@ -1,0 +1,2 @@
+.. automodule:: pyteomics.mgf
+    :members:

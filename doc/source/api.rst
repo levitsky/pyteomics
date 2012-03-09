@@ -13,6 +13,7 @@ Contents:
 
    api/fasta
    api/mzml
+   api/mgf
    api/pepxml
 
    api/auxiliary
