@@ -37,6 +37,9 @@ Operations on polypeptide sequences
   :py:func:`cleave` - cleave a polypeptide using a given rule of
   enzymatic digestion.
 
+  :py:func:`modify_peptide` - find the set of unique modified peptides
+  given the initial sequence and modifications.
+
 Auxiliary commands
 ------------------
 
@@ -295,8 +298,8 @@ def cleave(sequence, rule, missed_cleavages=0):
     rule : str    
         A string with a regular expression describing the C-terminal site of
         cleavage.    
-    missed_cleavages : int
-        The maximal number of allowed missed cleavages.
+    missed_cleavages : int, optional
+        The maximal number of allowed missed cleavages. Defaults to 0.
 
     Returns
     -------
@@ -373,6 +376,36 @@ at Expasy.
 """
 
 def modify_peptide(peptide, **kwargs):
+    """
+    Apply potential and constant modifications to the peptide and return a
+    :py:class:`set` of unique modified peptides.
+
+    Parameters
+    ----------
+    peptide : str
+        Peptide sequence to modify.
+    potential : dict, optional
+        A dict of potential modification in the following format:
+        :py:const:`{'label1': ['X', 'Y', ...], 'label2': ['X', 'A', 'B', ...]}`
+
+        **Note**: several potential modification can occur on amino acids of the
+        same type, but in the output each amino acid residue will be modified
+        at most once.
+    constant : dict, optional
+        A dict of constant modifications in the same format.
+        **Note**: if a residue is constantly modified, no potential modifications
+        will be applied to it.
+    labels : list, optional
+        A list of amino acid labels containing all the labels present in
+        `peptide`. Modified entries will be added automatically.
+        Defaults to :py:obj:`std_labels`.
+
+    Returns
+    -------
+    modified_peptides : set
+        A set of all possible unique peptides resulting from the specified
+        modifications.
+    """
     potential = kwargs.get('potential', {})
     constant = kwargs.get('constant', {})
     labels = kwargs.get('labels', std_labels)
