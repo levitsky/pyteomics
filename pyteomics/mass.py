@@ -693,3 +693,22 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
 
     return mass
  
+def add_modifications(aa_comp, mods):
+    """
+    Update :py:obj:`aa_comp` with modified amino acids.
+    :py:obj:`mods` is a list of dicts with
+    'label', 'formula', and 'residues' keys. 'residues' is a list of amino acid
+    residues (already present in :py:obj:`aa_comp`) that the modification can
+    occur on.
+    """
+
+    for mod in mods:
+        for aa in mod['residues']:
+            if not aa in aa_comp:
+                raise PyteomicsError("`pyteomics.mass.add_modifications`"
+                        "Unrecognized aa residue specified: %s" % aa)
+            else:
+                aa_comp[mod['label']+aa] = Composition(
+                        formula=mod['formula']) + aa_comp[aa]
+    return aa_comp
+
