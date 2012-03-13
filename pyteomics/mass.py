@@ -54,6 +54,12 @@ Data
   :py:data:`std_aa_mass` - a dict with the monoisotopic masses
   of the standard twenty amino acid residues.
 
+Auxiliary
+---------
+
+  :py:func:`add_modifications` - easily add entries for modified amino acids
+  to an amino acid composition dict.
+
 .. ipython::
    :suppress:
 
@@ -693,13 +699,23 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
 
     return mass
  
-def add_modifications(aa_comp, mods):
+def add_modifications(aa_comp=dict(std_labels), mods):
     """
-    Update :py:obj:`aa_comp` with modified amino acids.
-    :py:obj:`mods` is a list of dicts with
-    'label', 'formula', and 'residues' keys. 'residues' is a list of amino acid
-    residues (already present in :py:obj:`aa_comp`) that the modification can
-    occur on.
+    Update :py:obj:`aa_comp` with modified amino acids. 
+
+    Parameters
+    ----------
+    aa_comp : dict
+        Amino acid composition dict.
+    mods : list
+        List of modifications in the following format:
+
+        :py:const:`[{'label': 'mod', 'formula': 'H2O',
+        residues: ['X', 'Y', ..]}, ..]`
+
+    Returns
+    -------
+    new_aa_comp : dict
     """
 
     for mod in mods:
