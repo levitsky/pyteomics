@@ -372,6 +372,43 @@ at Expasy.
    In [2]: pprint(pyteomics.parser.expasy_rules)
 """
 
+def modify_peptide(peptide, **kwargs):
+    potential = kwargs.get('potential', {})
+    constant = kwargs.get('constant', {})
+    labels = kwargs.get('labels', std_labels)
+    
+    mods = {}
+    mods.update(constant)
+    mods.update(potential)
+
+    parsed_peptide = parse_sequence(peptide, 
+            labels=labels+[m+aa for m in mods for aa in mods[m]])
+    for cmod in constant:
+        for group in parsed_peptide:
+            if group in constant[cmod]:
+                i = parsed_peptide.index(group)
+                parsed_peptide[i] = cmod+group
+
+    for aa in range(len(parsed_peptide)):
+        if any([parsed_peptide[aa] in x for x in potential.values()]):
+            variable = aa
+            break
+    if not 'variable' in locals():
+        return [''.join(parsed_peptide)]
+
+    mod_peptides = []
+    for mod in potential:
+        if parsed_peptide[variable] in mods[mod]:
+            mod_parsed = parsed_peptide[:]
+            mod_parsed[variable] = mod + parsed_peptide[variable]
+            mod_peptides += [''.join(parsed_peptide[:variable+1]) + x
+                    for x in modify_peptide(
+                        ''.join(parsed_peptide[variable+1:]), **kwargs)]
+            mod_peptides += [''.join(mod_parsed[:variable+1]) + x
+                    for x in modify_peptide(
+                        ''.join(mod_parsed[variable+1:]), **kwargs)]
+    return set(mod_peptides)
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
