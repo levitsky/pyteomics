@@ -17,5 +17,24 @@ class ParserTest(unittest.TestCase):
             for aa in set(seq):
                 self.assertEqual(seq.count(aa), comp[aa])
 
+    def test_modify_peptide_simple(self):
+        self.assertEqual(
+                modify_peptide('PEPTIDE', potential={'xx': ['A', 'B', 'P', 'E']}),
+                set(['PEPTIDE', 'PEPTIDxxE', 'PExxPTIDE', 'PExxPTIDxxE', 'PxxEPTIDE',
+                     'PxxEPTIDxxE', 'PxxExxPTIDE', 'PxxExxPTIDxxE', 'xxPEPTIDE', 'xxPEPTIDxxE',
+                     'xxPExxPTIDE', 'xxPExxPTIDxxE', 'xxPxxEPTIDE', 'xxPxxEPTIDxxE',
+                     'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE']))
+
+#    def test_modify_peptide_len(self):
+#        L = random.randint([5, 15])
+#        labels = ['A', 'B', 'C', 'N']
+#        peptide = ''.join([random.choice(labels) for _ in xrange(L)])
+#        potential = {'pot': ['X', 'A', 'B'], 'otherpot': ['C', 'D', 'E']}
+#        constant = {'const': ['B']}
+#        modseqs = modify_peptide(peptide, potential=potential,
+#                constant=constant, labels=labels)
+#        for p in modseqs:
+#            self.assertEqual(len(
+
 if __name__ == '__main__':
     unittest.main()

@@ -442,6 +442,33 @@ def modify_peptide(peptide, **kwargs):
                         ''.join(mod_parsed[variable+1:]), **kwargs)]
     return set(mod_peptides)
 
+def add_modifications(labels, mods):
+    """
+    Add labels for modified amino acids to the `labels` list.
+ 
+    Parameters
+    ----------
+    labels : list
+        List of amino acid labels to expand.
+    mods : dict
+        Dictionary in the following format:
+        :py:const:`{'mod': ['A', 'B', 'X'], 'p': ['S', 'T', 'Y'], ...}`
+        
+        **Note**: all amino acids mentioned in `mods` should be already present
+        in `labels`.
+ 
+    Returns
+    -------
+    Nothing is returned, `labels` is modified in place.
+    """
+    for mod in mods:
+        for aa in mods[mod]:
+            if not aa in labels:
+                raise PyteomicsError("`pyteomics.parser.add_modifications`:"
+                        "Unrecognized residue %s (not present in `labels`" % aa)
+            else:
+                labels.append(mod + aa)
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
