@@ -39,6 +39,44 @@ phosphorylated threonine and N-terminal acetylation. The same 'labels' argument
 should be supplied to the other functions in this module if a sequence has
 modifications.
 
+A user-defined list of labels can be easily extended with new modified labels using
+:py:func:`pyteomics.parser.add_modifications`. One needs to specifiy the list to
+extend and a *dict* of modifications:
+
+.. code-block:: python
+
+    >>> from pyteomics import parser
+    >>> mylabels = list(parser.std_labels)
+    >>> parser.add_modifications(mylabels, {'p': ['S', 'T', 'Y'], 'ox': ['M', 'P']})
+    >>> mylabels
+    ['Q',
+     'W',
+     'E',
+     'R',
+     'T',
+     'Y',
+     'I',
+     'P',
+     'A',
+     'S',
+     'D',
+     'F',
+     'G',
+     'H',
+     'K',
+     'L',
+     'C',
+     'V',
+     'N',
+     'M',
+     'H-',
+     '-OH',
+     'pS',
+     'pT',
+     'pY',
+     'oxM',
+     'oxP']
+
 In modX, standard :py:func:`len` function cannot be used to determine the length of a 
 peptide because of the modifications. Use :py:func:`pyteomics.parser.peptide_length` instead:
 
@@ -58,7 +96,7 @@ corresponding to the number of times each residue occurs in the sequence:
     >>> parser.amino_acid_composition('PEPTIDE')
     {'I': 1.0, 'P': 2.0, 'E': 2.0, 'T': 1.0, 'D': 1.0}
 
-Lastly, :py:func:`pyteomics.parser.cleave` is a method to perform *in silico* cleavage. The
+:py:func:`pyteomics.parser.cleave` is a method to perform *in silico* cleavage. The
 requiered arguments are the sequence, the rule for enzyme specificity and the 
 number of missed cleavages allowed. Note that each product peptide is reported
 only once:
@@ -71,4 +109,20 @@ only once:
 
 :py:data:`pyteomics.parser.expasy_rules` is a predefined *dict* with the clevage rules
 for the most common proteases.
+
+All possible modified sequences of a peptide can be obtained with
+:py:func:`pyteomics.parser.modify_peptide`:
+
+.. code-block:: python
+
+    >>> from pyteomics import parser
+    >>> parser.modify_peptide('PEPTIDE', potential={'p': ['T'], 'ox': ['P']})
+    set(['PEPTIDE',
+         'PEPpTIDE',
+         'PEoxPTIDE',
+         'PEoxPpTIDE',
+         'oxPEPTIDE',
+         'oxPEPpTIDE',
+         'oxPEoxPTIDE',
+         'oxPEoxPpTIDE'])
 

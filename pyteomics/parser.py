@@ -398,7 +398,7 @@ def modify_peptide(peptide, **kwargs):
     labels : list, optional
         A list of amino acid labels containing all the labels present in
         `peptide`. Modified entries will be added automatically.
-        Defaults to :py:obj:`std_labels`.
+        Defaults to :py:data:`std_labels`.
 
     Returns
     -------

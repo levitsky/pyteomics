@@ -277,8 +277,8 @@ class Composition(dict):
             A dict with the elemental composition of the amino acids (the
             default value is std_aa_comp).
         mass_data : dict, optional
-            A dict with the masses of the chemical elements (the default
-            value is nist_mass). It is used for formulae parsing only. 
+            A dict with the masses of chemical elements (the default
+            value is :py:data:`nist_mass`). It is used for formulae parsing only. 
         """
         if len(args) == 0 and len(kwargs) == 0:
             pass
@@ -411,7 +411,7 @@ def calculate_mass(**kwargs):
         default value is std_aa_comp).
     mass_data : dict, optional
         A dict with the masses of the chemical elements (the default
-        value is nist_mass). 
+        value is :py:data:`nist_mass`). 
     ion_comp : dict, optional
         A dict with the relative elemental compositions of peptide ion
         fragments (default is std_ion_comp).
@@ -492,8 +492,8 @@ def most_probable_isotopic_composition(**kwargs):
         A dict with the elemental composition of the amino acids (the
         default value is std_aa_comp).
     mass_data : dict, optional
-        A dict with the masses of the chemical elements (the default
-        value is nist_mass). 
+        A dict with the masses of chemical elements (the default
+        value is :py:data:`nist_mass`). 
     ion_comp : dict, optional
         A dict with the relative elemental compositions of peptide ion
         fragments (default is std_ion_comp).
@@ -571,8 +571,8 @@ def isotopic_composition_abundance(**kwargs):
     composition : Composition, optional
         A Composition object with the isotopic composition of a substance.
     mass_data : dict, optional
-        A dict with the masses of the chemical elements (the default
-        value is nist_mass). 
+        A dict with the masses of chemical elements (the default
+        value is :py:data:`nist_mass`). 
 
     Returns
     -------
@@ -668,8 +668,8 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         by the corresponding number of proton masses and divided
         by z.
     mass_data : dict, optional
-        A dict with the masses of the chemical elements (the default
-        value is nist_mass). 
+        A dict with the masses of chemical elements (the default
+        value is :py:data:`nist_mass`). 
     aa_mass : dict, optional
         A dict with the monoisotopic mass of amino acid residues
         (default is std_aa_mass);
@@ -699,7 +699,7 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
 
     return mass
  
-def add_modifications(aa_comp, mods):
+def add_modifications(aa_comp, mods, **kwargs):
     """
     Update :py:obj:`aa_comp` with modified amino acids. 
 
@@ -712,6 +712,9 @@ def add_modifications(aa_comp, mods):
 
         :py:const:`{'mod': ('H2O', ['X', 'Y', ..],
         'p': ('H3O4P', ['S', 'T'], ...}`
+    mass_data : dict, optional
+        A dict with the masses of chemical elements.
+        Defaults to :py:data:`nist_mass`
 
     Returns
     -------
@@ -725,5 +728,5 @@ def add_modifications(aa_comp, mods):
                         "Unrecognized residue specified: %s" % aa)
             else:
                 aa_comp[mod+aa] = Composition(
-                        formula=mods[mod][0]) + aa_comp[aa]
+                        formula=mods[mod][0], **kwargs) + aa_comp[aa]
 
