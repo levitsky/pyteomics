@@ -75,6 +75,43 @@ dictionary used in the calculations by default.
     >>> mass.calculate_mass(sequence='PEPpTIDE')
     879.3262945499629
 
+To add information about modified amino acids to a user-defined "aa_comp" *dict*
+use :py:func:`pyteomics.mass.add_modifications`:
+
+.. code-block:: python
+
+    >>> from pyteomics import mass
+    >>> aa_comp = dict(mass.std_aa_comp)
+    >>> mass.add_modifications(aa_comp,
+        {'p': ('HPO3', ['S', 'T']), 'ox': ('O', ['M', 'P'])})
+    >>> aa_comp
+    {'-OH': {'H': 1, 'O': 1},
+     'A': {'C': 3, 'H': 5, 'N': 1, 'O': 1},
+     'C': {'C': 3, 'H': 5, 'N': 1, 'O': 1, 'S': 1},
+     'D': {'C': 4, 'H': 5, 'N': 1, 'O': 3},
+     'E': {'C': 5, 'H': 7, 'N': 1, 'O': 3},
+     'F': {'C': 9, 'H': 9, 'N': 1, 'O': 1},
+     'G': {'C': 2, 'H': 3, 'N': 1, 'O': 1},
+     'H': {'C': 6, 'H': 7, 'N': 3, 'O': 1},
+     'H-': {'H': 1},
+     'I': {'C': 6, 'H': 11, 'N': 1, 'O': 1},
+     'K': {'C': 6, 'H': 12, 'N': 2, 'O': 1},
+     'L': {'C': 6, 'H': 11, 'N': 1, 'O': 1},
+     'M': {'C': 5, 'H': 9, 'N': 1, 'O': 1, 'S': 1},
+     'N': {'C': 4, 'H': 6, 'N': 2, 'O': 2},
+     'P': {'C': 5, 'H': 7, 'N': 1, 'O': 1},
+     'Q': {'C': 5, 'H': 8, 'N': 2, 'O': 2},
+     'R': {'C': 6, 'H': 12, 'N': 4, 'O': 1},
+     'S': {'C': 3, 'H': 5, 'N': 1, 'O': 2},
+     'T': {'C': 4, 'H': 7, 'N': 1, 'O': 2},
+     'V': {'C': 5, 'H': 9, 'N': 1, 'O': 1},
+     'W': {'C': 11, 'H': 10, 'N': 2, 'O': 1},
+     'Y': {'C': 9, 'H': 9, 'N': 1, 'O': 2},
+     'oxM': {'C': 5, 'H': 9, 'N': 1, 'O': 2, 'S': 1},
+     'oxP': {'C': 5, 'H': 7, 'N': 1, 'O': 2},
+     'pS': {'C': 3, 'H': 6, 'N': 1, 'O': 5, 'P': 1},
+     'pT': {'C': 4, 'H': 8, 'N': 1, 'O': 5, 'P': 1}}
+
 `Unimod database <http://www.unimod.org>`_ is an 
 excellent resource for the information on the chemical compositions of 
 known protein modifications.

@@ -1,3 +1,11 @@
+1.1.1
+-----
+
+New functions called **add_modifications()** added in **pyteomics.parser** and
+**pyteomics.mass**. They update *labels* and *aa_comp*, respectively. Also,
+**modify_peptide()** is a new method in **parser** to get all possible modified
+sequences of a peptide.
+
 1.1.0
 -----
 
