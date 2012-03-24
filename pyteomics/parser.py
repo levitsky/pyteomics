@@ -37,7 +37,7 @@ Operations on polypeptide sequences
   :py:func:`cleave` - cleave a polypeptide using a given rule of
   enzymatic digestion.
 
-  :py:func:`modify_peptide` - find the set of unique modified peptides
+  :py:func:`isoforms` - find the set of unique modified peptides
   given the initial sequence and modifications.
 
 Auxiliary commands
@@ -375,99 +375,72 @@ at Expasy.
    In [2]: pprint(pyteomics.parser.expasy_rules)
 """
 
-def modify_peptide(peptide, **kwargs):
+def isoforms(sequence, **kwargs):
     """
-    Apply potential and constant modifications to the peptide and return a
-    :py:class:`set` of unique modified peptides.
+    Apply variable and fixed modifications to the polypeptide and return a
+    :py:class:`set` of unique modified sequences.
 
     Parameters
     ----------
-    peptide : str
+    sequence : str
         Peptide sequence to modify.
-    potential : dict, optional
-        A dict of potential modification in the following format:
+    variable_mods : dict, optional
+        A dict of variable modifications in the following format:
         :py:const:`{'label1': ['X', 'Y', ...], 'label2': ['X', 'A', 'B', ...]}`
 
-        **Note**: several potential modification can occur on amino acids of the
+        **Note**: several variable modifications can occur on amino acids of the
         same type, but in the output each amino acid residue will be modified
         at most once.
-    constant : dict, optional
-        A dict of constant modifications in the same format.
-        **Note**: if a residue is constantly modified, no potential modifications
-        will be applied to it.
+    fixed_mods : dict, optional
+        A dict of fixed modifications in the same format.
+        **Note**: if a residue is affected by a fixed modification, no variable
+        modifications will be applied to it.
     labels : list, optional
         A list of amino acid labels containing all the labels present in
-        `peptide`. Modified entries will be added automatically.
+        `sequence`. Modified entries will be added automatically.
         Defaults to :py:data:`std_labels`.
 
     Returns
     -------
-    modified_peptides : set
-        A set of all possible unique peptides resulting from the specified
-        modifications.
+    isoforms : set
+        A set of all possible unique polypeptide sequences resulting from the
+        specified modifications.
     """
-    potential = kwargs.get('potential', {})
-    constant = kwargs.get('constant', {})
+    variable_mods = kwargs.get('variable_mods', {})
+    fixed_mods = kwargs.get('fixed_mods', {})
     labels = kwargs.get('labels', std_labels)
     
     mods = {}
-    mods.update(constant)
-    mods.update(potential)
+    mods.update(fixed_mods)
+    mods.update(variable_mods)
 
-    parsed_peptide = parse_sequence(peptide, 
+    parsed = parse_sequence(sequence, 
             labels=labels+[m+aa for m in mods for aa in mods[m]])
-    for cmod in constant:
-        for group in parsed_peptide:
-            if group in constant[cmod]:
-                i = parsed_peptide.index(group)
-                parsed_peptide[i] = cmod+group
+    for cmod in fixed_mods:
+        for group in parsed:
+            if group in fixed_mods[cmod]:
+                i = parsed.index(group)
+                parsed[i] = cmod+group
 
-    for aa in range(len(parsed_peptide)):
-        if any([parsed_peptide[aa] in x for x in potential.values()]):
+    for aa in range(len(parsed)):
+        if any([parsed[aa] in x for x in variable_mods.values()]):
             variable = aa
             break
     if not 'variable' in locals():
-        return [''.join(parsed_peptide)]
+        return [''.join(parsed)]
 
     mod_peptides = []
-    for mod in potential:
-        if parsed_peptide[variable] in mods[mod]:
-            mod_parsed = parsed_peptide[:]
-            mod_parsed[variable] = mod + parsed_peptide[variable]
-            mod_peptides += [''.join(parsed_peptide[:variable+1]) + x
-                    for x in modify_peptide(
-                        ''.join(parsed_peptide[variable+1:]), **kwargs)]
+    for mod in variable_mods:
+        if parsed[variable] in mods[mod]:
+            mod_parsed = parsed[:]
+            mod_parsed[variable] = mod + parsed[variable]
+            mod_peptides += [''.join(parsed[:variable+1]) + x
+                    for x in isoforms(
+                        ''.join(parsed[variable+1:]), **kwargs)]
             mod_peptides += [''.join(mod_parsed[:variable+1]) + x
-                    for x in modify_peptide(
+                    for x in isoforms(
                         ''.join(mod_parsed[variable+1:]), **kwargs)]
     return set(mod_peptides)
-
-def add_modifications(labels, mods):
-    """
-    Add labels for modified amino acids to the `labels` list.
- 
-    Parameters
-    ----------
-    labels : list
-        List of amino acid labels to expand.
-    mods : dict
-        Dictionary in the following format:
-        :py:const:`{'mod': ['A', 'B', 'X'], 'p': ['S', 'T', 'Y'], ...}`
-        
-        **Note**: all amino acids mentioned in `mods` should be already present
-        in `labels`.
- 
-    Returns
-    -------
-    Nothing is returned, `labels` is modified in place.
-    """
-    for mod in mods:
-        for aa in mods[mod]:
-            if not aa in labels:
-                raise PyteomicsError("`pyteomics.parser.add_modifications`:"
-                        "Unrecognized residue %s (not present in `labels`" % aa)
-            else:
-                labels.append(mod + aa)
 
 if __name__ == "__main__":
     import doctest
