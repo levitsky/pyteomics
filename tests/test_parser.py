@@ -10,8 +10,8 @@ class ParserTest(unittest.TestCase):
         self.extlabels = self.labels[:]
         self.potential = {'pot': ['X', 'A', 'B'], 'otherpot': ['A', 'C']}
         self.constant = {'const': ['B']}
-        add_modifications(self.extlabels, self.potential)
-        add_modifications(self.extlabels, self.constant)
+        self.extlabels.extend(['potX', 'potA', 'potB', 'otherpotA', 'otherpotC'])
+        self.extlabels.extend(['constB'])
 
     def test_parse_sequence_simple(self):
         for seq in self.simple_sequences:
@@ -23,25 +23,20 @@ class ParserTest(unittest.TestCase):
             for aa in set(seq):
                 self.assertEqual(seq.count(aa), comp[aa])
 
-    def test_modify_peptide_simple(self):
+    def test_isoforms_simple(self):
         self.assertEqual(
-                modify_peptide('PEPTIDE', potential={'xx': ['A', 'B', 'P', 'E']}),
+                isoforms('PEPTIDE', variable_mods={'xx': ['A', 'B', 'P', 'E']}),
                 set(['PEPTIDE', 'PEPTIDxxE', 'PExxPTIDE', 'PExxPTIDxxE', 'PxxEPTIDE',
                      'PxxEPTIDxxE', 'PxxExxPTIDE', 'PxxExxPTIDxxE', 'xxPEPTIDE', 'xxPEPTIDxxE',
                      'xxPExxPTIDE', 'xxPExxPTIDxxE', 'xxPxxEPTIDE', 'xxPxxEPTIDxxE',
                      'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE']))
 
-    def test_add_modifications(self):
-        self.assertEqual(len(self.extlabels)-len(self.labels),
-            sum([len(x) for x in self.potential.values()]) +
-            sum([len(x) for x in self.constant.values()]))
-
-    def test_modify_peptide_len(self):
+    def test_isoforms_len(self):
         for j in xrange(10):
             L = random.randint(5, 15)
             peptide = ''.join([random.choice(self.labels) for _ in xrange(L)])
-            modseqs = modify_peptide(peptide, potential=self.potential,
-                    constant=self.constant, labels=self.labels)
+            modseqs = isoforms(peptide, variable_mods=self.potential,
+                    fixed_mods=self.constant, labels=self.labels)
             pp = parse_sequence(peptide, labels=self.labels)
             for p in modseqs:
                 self.assertEqual(len(pp),
