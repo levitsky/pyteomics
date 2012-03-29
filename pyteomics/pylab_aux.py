@@ -146,12 +146,12 @@ def plot_function_3d(x, y, function, **kwargs):
     ax.set_title(kwargs.get('title', ''))
 
 def plot_function_contour(x, y, function, **kwargs):
-    """Plot values of a function of two variables in 3D.
+    """Make a contour plot of a function of two variables.
 
     Parameters
     ----------
     x, y : array_like of float
-        The plotting range.
+        The positions of the nodes of a plotting grid.
     function : function
         The function to plot.
     filling : bool
