@@ -710,8 +710,8 @@ def add_modifications(aa_comp, mods, **kwargs):
     mods : dict
         Dict of modifications in the following format:
 
-        :py:const:`{'mod': ('H2O', ['X', 'Y', ..],
-        'p': ('H3O4P', ['S', 'T'], ...}`
+        :py:const:`{'mod': ('H2O', ['X', 'Y', ..]),
+        'p': ('H3O4P', ['S', 'T']), ...}`
     mass_data : dict, optional
         A dict with the masses of chemical elements.
         Defaults to :py:data:`nist_mass`
