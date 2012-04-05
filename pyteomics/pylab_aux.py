@@ -32,7 +32,7 @@ See also
 
 import pylab
 import numpy
-from auxiliary import linear_regression, PyteomicsError
+from .auxiliary import linear_regression, PyteomicsError
 
 def plot_line(a, b, **kwargs):
     """Plot a line y = a * x + b.

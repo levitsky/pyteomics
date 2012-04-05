@@ -35,7 +35,7 @@ Data access
 
 import numpy
 import zlib
-
+import base64
 from lxml import etree
 
 # A list of the spectrum attributes which contain float values.
@@ -123,7 +123,7 @@ def _decode_base64_data_array(source, dtype, is_compressed):
     out : numpy.array
     """
 
-    decoded_source = source.decode('base64')
+    decoded_source = base64.b64decode(source.encode('ascii'))
     if is_compressed:
         decoded_source = zlib.decompress(decoded_source)
     output = numpy.frombuffer(decoded_source, dtype=dtype)

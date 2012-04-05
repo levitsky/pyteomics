@@ -80,8 +80,8 @@ Data
 
 import re
 from collections import deque
-from itertools import imap, chain
-from auxiliary import PyteomicsError
+from itertools import chain
+from .auxiliary import PyteomicsError
 
 std_amino_acids = ['Q','W','E','R','T','Y','I','P','A','S',
                    'D','F','G','H','K','L','C','V','N','M']
@@ -125,8 +125,8 @@ def peptide_length(sequence, **kwargs):
     """    
     labels = kwargs.get('labels', std_labels)
 
-    if isinstance(sequence, basestring) or isinstance(sequence, list):
-        if isinstance(sequence, basestring):
+    if isinstance(sequence, str) or isinstance(sequence, list):
+        if isinstance(sequence, str):
             parsed_sequence = parse_sequence(sequence, labels=labels)
         else:
             parsed_sequence = sequence            
@@ -137,7 +137,7 @@ def peptide_length(sequence, **kwargs):
             num_term_groups += 1
         return len(parsed_sequence) - num_term_groups
     elif isinstance(sequence, dict):
-        return sum([amount for aa, amount in sequence.items() 
+        return sum([amount for aa, amount in list(sequence.items()) 
                     if not is_term_mod(aa)])
 
     raise PyteomicsError('Unsupported type of a sequence.')
@@ -262,7 +262,7 @@ def amino_acid_composition(sequence,
     """
     labels = kwargs.get('labels', std_labels)
 
-    if isinstance(sequence, basestring):
+    if isinstance(sequence, str):
         parsed_sequence = parse_sequence(sequence, show_unmodified_termini,
                                          labels=labels)
     elif isinstance(sequence, list):
@@ -316,7 +316,7 @@ def cleave(sequence, rule, missed_cleavages=0):
     """
     peptides = set()
     cleavage_sites = deque([0], maxlen=missed_cleavages+2)
-    for i in chain(imap(lambda x: x.end(), re.finditer(rule, sequence)),
+    for i in chain(map(lambda x: x.end(), re.finditer(rule, sequence)),
                    [None]):
         cleavage_sites.append(i)
         for j in range(0, len(cleavage_sites)-1):
