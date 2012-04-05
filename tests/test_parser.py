@@ -1,6 +1,6 @@
 import unittest
 from pyteomics.parser import *
-from string import uppercase
+from string import ascii_uppercase as uppercase
 import random
 class ParserTest(unittest.TestCase):
     def setUp(self):
@@ -32,9 +32,9 @@ class ParserTest(unittest.TestCase):
                      'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE']))
 
     def test_isoforms_len(self):
-        for j in xrange(10):
+        for j in range(10):
             L = random.randint(5, 15)
-            peptide = ''.join([random.choice(self.labels) for _ in xrange(L)])
+            peptide = ''.join([random.choice(self.labels) for _ in range(L)])
             modseqs = isoforms(peptide, variable_mods=self.potential,
                     fixed_mods=self.constant, labels=self.labels)
             pp = parse_sequence(peptide, labels=self.labels)

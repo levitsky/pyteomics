@@ -233,8 +233,8 @@ References
 
 import operator
 import numpy
-import auxiliary
-from parser import std_labels, peptide_length, amino_acid_composition
+from . import auxiliary
+from .parser import std_labels, peptide_length, amino_acid_composition
 
 def get_RCs(sequences, RTs, lcp = -0.21,
             term_aa = False, **kwargs):
@@ -334,7 +334,7 @@ def get_RCs(sequences, RTs, lcp = -0.21,
     RC_dict = {}
     RC_dict['aa'] = dict(
         zip(list(detected_amino_acids),
-            RCs[:len(detected_amino_acids)]))        
+            RCs[:len(detected_amino_acids)]))
     RC_dict['const'] = RCs[len(detected_amino_acids)]
     RC_dict['lcp'] = lcp
 

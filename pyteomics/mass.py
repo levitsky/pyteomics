@@ -72,8 +72,8 @@ Auxiliary
 
 import math
 import numpy
-import parser
-from auxiliary import PyteomicsError
+from . import parser
+from .auxiliary import PyteomicsError
 
 nist_mass = {
     'H': {1: (1.0078250320710, 0.99988570),
@@ -189,7 +189,7 @@ class Composition(dict):
         self.clear()
         parsed_sequence = parser.parse_sequence(
             sequence,
-            labels=aa_comp.keys(),
+            labels=list(aa_comp.keys()),
             show_unmodified_termini=True)
         self._from_parsed_sequence(parsed_sequence, aa_comp)
         
@@ -296,7 +296,7 @@ class Composition(dict):
             
         elif isinstance(args[0], dict):
             mass_data = kwargs.get('mass_data', nist_mass)
-            for isotope_string, num_atoms in args[0].iteritems():
+            for isotope_string, num_atoms in args[0].items():
                 element_name, isotope_num = _parse_isotope_string(
                     isotope_string)
 
@@ -525,7 +525,7 @@ def most_probable_isotopic_composition(**kwargs):
             # Take the two most abundant isotopes.
             first_iso, second_iso = sorted(
                 [(i[0], i[1][1])
-                 for i in mass_data[element_name].iteritems() if i[0]])[:2]
+                 for i in mass_data[element_name].items() if i[0]])[:2]
             
             # Write the number of isotopes of the most abundant type.
             first_iso_str = _make_isotope_string(element_name, first_iso[0])

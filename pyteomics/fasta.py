@@ -32,7 +32,7 @@ Decoy database generation
 import itertools
 import sys
 import random
-from auxiliary import PyteomicsError
+from .auxiliary import PyteomicsError
 
 def read_fasta(fasta_file, ignore_comments=False):
     """Read a FASTA file and return entries iteratively.
@@ -106,7 +106,7 @@ def write_fasta(entries, output=None, close=True):
     output_file : file object
         The file where the FASTA is written.
     """
-    if type(output) == file:
+    if hasattr(output, 'write'):
         output_file = output
     elif type(output) == str:
         output_file = open(output, 'a')
@@ -185,7 +185,7 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
     output_file : file
         A file object with the created file.
     """
-    if type(source) == file:
+    if hasattr(source, 'seek'):
         source_file = source
     elif type(source) == str:
         source_file = open(source)
@@ -193,15 +193,12 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
         raise PyteomicsError("""Wrong argument type:
         `source` must be file or str, not %s""" % type(source))
 
-    if type(output) == file:
-        output_file = output
-    elif type(output) == str:
+    if type(output) == str:
         output_file = open(output, 'a')
     elif output == None:
         output_file = sys.stdout
     else:
-        raise PyteomicsError("""Wrong argument type:
-        `output` must be file or None, not %s""" % type(source))
+        output_file = output
 
     if not decoy_only:
         write_fasta(read_fasta(source_file, False), output_file, False)
