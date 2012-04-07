@@ -113,6 +113,7 @@ def plot_function_3d(x, y, function, **kwargs):
     See also
     --------
     More on 3D plotting in pylab:
+
     http://www.scipy.org/Cookbook/Matplotlib/mplot3D
 
     """
