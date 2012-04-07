@@ -275,12 +275,9 @@ def iter_spectrum(source):
        An iterator over the dicts with spectra properties.
     """
 
-    parser = etree.XMLParser(remove_comments=True, ns_clean=True)
-    tree = etree.parse(source, parser=parser)
     namespaces = {'d': xmlns}
 
-    for spectrum_element in tree.xpath(
-        _insert_default_ns('/indexedmzML/mzML/run/spectrumList/spectrum'),
-        namespaces=namespaces):
-        
+    for _, spectrum_element in etree.iterparse(
+            source, tag='{%s}spectrum' % xmlns, huge_tree=True):
         yield _spectrum_from_element(spectrum_element, namespaces=namespaces)
+        spectrum_element.clear()
