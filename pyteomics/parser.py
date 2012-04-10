@@ -144,18 +144,22 @@ def peptide_length(sequence, **kwargs):
     return None
 
 def parse_sequence(sequence,               
-                   show_unmodified_termini=False,
+                   show_unmodified_termini=False, split=False,
                    **kwargs):
     """Parse a sequence string written in modX notation into a list of
-    amino acid residues and terminal modifications. 
+    tuples representing amino acid residues and their modifications. 
 
     Parameters
     ----------
     sequence : str
         The sequence of a polypeptide.
-    show_unmodified_termini : bool    
-        If True then the unmodified N- and C-termini are explicitly shown in
-        the returned list.
+    show_unmodified_termini : bool, optional   
+        If :py:const:`True` then the unmodified N- and C-termini are explicitly
+        shown in the returned list. Default value is :py:const:`False`.
+    split : bool, optional
+        If :py:const:`True` then the result will be a list of tuples with 1 to 3
+        elements: terminal modification, modification, residue. Default value is
+        :py:const:`False`.
     labels : list, optional
         A list of allowed labels for amino acids and terminal modifications
         (default is the 20 standard amino acids, N-terminal H- and C-terminal
@@ -164,12 +168,12 @@ def parse_sequence(sequence,
     Returns
     -------
     out : list
-        List of labels of terminal modifications and amino acid residues.
+        List of tuples with labels of modifications and amino acid residues.
 
     Examples
     --------
-    >>> parse_sequence('PEPTIDE')
-    ['P', 'E', 'P', 'T', 'I', 'D', 'E']
+    >>> parse_sequence('PEPTIDE', split=True)
+    [('P',), ('E',), ('P',), ('T',), ('I',), ('D',), ('E',)]
     >>> parse_sequence('H-PEPTIDE')
     ['P', 'E', 'P', 'T', 'I', 'D', 'E']
     >>> parse_sequence('PEPTIDE', show_unmodified_termini=True)
@@ -221,6 +225,34 @@ def parse_sequence(sequence,
         parsed_sequence.insert(0, nterm)
         parsed_sequence.append(cterm)
 
+    # Make a list of tuples instead of list of labels
+    if split:
+        if not parsed_sequence or all(is_term_mod, parsed_sequence):
+            return map(tuple, parsed_sequence)
+
+        def split_label(label):
+            if len(label) == 1:
+                return (label, )
+            else:
+                mod, res = (label[:-1], label[-1])
+                if not (mod.islower() and res.isupper()):
+                    raise PyteomicsError(
+                    "Couldn't split label %s" % label)
+                return (mod, res)
+
+        tuples = []
+        start = 0
+        if is_term_mod(parsed_sequence[0]):
+            tuples.append((parsed_sequence[0],) + split_label(parsed_sequence[1]))
+            start = 2
+        tuples.extend(split_label(x) for x in parsed_sequence[start:-1])
+        if is_term_mod(parsed_sequence[-1]):
+            tuples.append(split_label(parsed_sequence[-2]) + (parsed_sequence[-1],))
+        else:
+            tuples.append(split_label(parsed_sequence[-1]))
+        
+        return tuples
+
     return parsed_sequence
 
 def amino_acid_composition(sequence,
@@ -233,22 +265,22 @@ def amino_acid_composition(sequence,
     ----------
     sequence : str or list
         The sequence of a polypeptide or a list with a parsed sequence.
-    show_unmodified_termini : bool    
-        If True then the unmodified N- and C-terminus are explicitly shown in
-        the returned list.
-    term_aa : bool
-        If True then the terminal amino acid residues are artificially
-        modified with "nterm" or "cterm" modification.     
+    show_unmodified_termini : bool, optional
+        If :py:const:`True` then the unmodified N- and C-terminus are explicitly
+        shown in the returned list. Default value is :py:const:`False`.
+    term_aa : bool, optional
+        If :py:const:`True` then the terminal amino acid residues are
+        artificially modified with `nterm` or `cterm` modification.
+        Default value is :py:const:`False`.
     labels : list, optional
         A list of allowed labels for amino acids and terminal modifications
-        (default is the 20 standard amino acids, N-terminal H- and C-terminal
-        -OH).
+        (default is the 20 standard amino acids, N-terminal 'H-' and C-terminal
+        '-OH').
 
     Returns
     -------
-    out : dict or None
-        a dictionary of amino acid content. Returns None if `sequence` is not
-        of supported type.
+    out : dict
+        A dictionary of amino acid composition.
 
     Examples
     --------
@@ -268,7 +300,8 @@ def amino_acid_composition(sequence,
     elif isinstance(sequence, list):
         parsed_sequence = sequence
     else:
-        raise PyteomicsError('Unsupported type of a sequence.')
+        raise PyteomicsError('Unsupported type of a sequence.'
+                'Must be str or list, not %s' % type(sequence))
 
     aa_dict = {}
 
@@ -279,12 +312,12 @@ def amino_acid_composition(sequence,
             len(parsed_sequence) - 2 if is_term_mod(parsed_sequence[-1])
             else len(parsed_sequence) - 1)
         if len(parsed_sequence) > 1:
-            aa_dict['cterm' + parsed_sequence.pop(cterm_aa_position)] = 1.0
-        aa_dict['nterm' + parsed_sequence.pop(nterm_aa_position)] = 1.0
+            aa_dict['cterm' + parsed_sequence.pop(cterm_aa_position)] = 1
+        aa_dict['nterm' + parsed_sequence.pop(nterm_aa_position)] = 1
 
     # Process core amino acids.
     for aa in parsed_sequence:
-        aa_dict[aa] = aa_dict.get(aa, 0.0) + 1.0
+        aa_dict[aa] = aa_dict.get(aa, 0) + 1
         
     return aa_dict
 
