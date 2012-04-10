@@ -187,7 +187,7 @@ def _psm_from_query(query):
                 "*[local-name()='alternative_protein']"):
             proteins.append(subelement.attrib)
         for subelement in search_hit.xpath(
-                "/*[local-name()='modification_info']"):
+                "*[local-name()='modification_info']"):
             search_hit_info['modified_peptide'] = subelement.attrib.get(
                 'modified_peptide', '')
             if 'mod_nterm_mass' in subelement.attrib:
@@ -203,7 +203,22 @@ def _psm_from_query(query):
                 modification = dict(mod_element.attrib)
                 modification['position'] = int(modification['position'])
                 modification['mass'] = float(modification['mass'])
-                modifications.append(modification)                
+                modifications.append(modification)
+        
+        if modifications and ((not search_hit_info['modified_peptide']) or 
+                search_hit_info['modified_peptide'] == 
+                search_hit_info['peptide']):
+            seq = list(search_hit_info['peptide'])
+            splitseq = []
+            indices = sorted([x['position'] for x in modifications])
+            reduce(lambda x, y: splitseq.append(seq[x:y]) or y,
+                    indices + [len(seq)], 0)
+            mods = ['[%d]' % int(round(x['mass'])) for x in sorted(
+                modifications, key=lambda y: y['position'])]
+            modseq = ''.join(splitseq[0])
+            for i in range(len(mods)):
+                modseq += mods[i] + ''.join(splitseq[i+1])
+            search_hit_info['modified_peptide'] = modseq
 
         search_hit_info["proteins"] = proteins
         search_hit_info["modifications"] = modifications
