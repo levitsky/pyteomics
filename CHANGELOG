@@ -1,3 +1,12 @@
+1.2.2
+-----
+
+Bugfix in **pepxml**: modification info is now extracted.
+New optional bool argument 'split' in **parser.parse_sequence()** allows to
+generate a list of tuples where modifications are separated from the residues
+instead of a regular list of labels.
+
+
 1.2.1
 -----
 
