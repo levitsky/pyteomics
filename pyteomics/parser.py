@@ -97,10 +97,31 @@ std_labels = std_amino_acids + [std_nterm, std_cterm]
 """modX labels for the standard amino acids and unmodified termini."""
 
 def is_term_mod(label):
-    """Check if a label corresponds to a terminal modification.
-    Return Bool.
+    """Check if `label` corresponds to a terminal modification.
+
+    Parameters
+    ----------
+    label : str
+
+    Returns
+    -------
+    out : bool
     """
     return label.startswith('-') or label.endswith('-')
+
+def is_modX(label):
+    """Check if `label` is a valid 'modX' label.
+
+    Parameters
+    ----------
+    label : str
+
+    Returns
+    -------
+    out : bool
+    """
+    return label and ((len(label) == 1 and label[0].isupper()) or
+            (label[:-1].islower() and label[-1].isupper()))
 
 def peptide_length(sequence, **kwargs):
     """Calculate the number of amino acid residues in a polypeptide
@@ -181,6 +202,13 @@ def parse_sequence(sequence,
     >>> parse_sequence('TEpSToxM', labels=std_labels + ['pS', 'oxM'])
     ['T', 'E', 'pS', 'T', 'oxM']
     """
+    def split_label(label):
+        if not is_modX(label):
+            raise PyteomicsError('Cannot split a non-modX label: %s' % label)
+        if len(label) == 1:
+            return (label, )
+        else:
+            return (label[:-1], label[-1])
 
     labels = kwargs.get('labels', std_labels)
     backbone_sequence = str(sequence)
@@ -209,16 +237,30 @@ def parse_sequence(sequence,
     while i < len(backbone_sequence):
         amino_acid_found = False
         for aa in labels:
-            if backbone_sequence.startswith(aa, i):
+            if backbone_sequence.startswith(aa, i) and is_modX(aa):
                 parsed_sequence.append(aa)
                 amino_acid_found = True
                 break
+
+        j = i+2
+        while j <= len(backbone_sequence):
+            try:
+                mod, res = split_label(backbone_sequence[i:j])
+            except PyteomicsError:
+                pass
+            else:
+                if mod in labels and res in labels:
+                    parsed_sequence.append(backbone_sequence[i:j])
+                    amino_acid_found = True
+                    break
+            finally:
+                j += 1
+
         if not amino_acid_found:
             raise PyteomicsError(
                 'Unknown amino acid in sequence %s at position %d: %s' % (
                     backbone_sequence, i+1, backbone_sequence[i:]))
-            return []
-        i = i + len(parsed_sequence[-1])
+        i += len(parsed_sequence[-1])
 
     # Append labels of unmodified termini.
     if show_unmodified_termini:
@@ -227,19 +269,10 @@ def parse_sequence(sequence,
 
     # Make a list of tuples instead of list of labels
     if split:
-        if not parsed_sequence or all(is_term_mod, parsed_sequence):
+        if not parsed_sequence or all(map(is_term_mod, parsed_sequence)):
             return map(tuple, parsed_sequence)
 
-        def split_label(label):
-            if len(label) == 1:
-                return (label, )
-            else:
-                mod, res = (label[:-1], label[-1])
-                if not (mod.islower() and res.isupper()):
-                    raise PyteomicsError(
-                    "Couldn't split label %s" % label)
-                return (mod, res)
-
+        
         tuples = []
         start = 0
         if is_term_mod(parsed_sequence[0]):
