@@ -168,6 +168,7 @@ def parse_sequence(sequence,
                    show_unmodified_termini=False, split=False,
                    **kwargs):
     """Parse a sequence string written in modX notation into a list of
+    labels or (if `split` argument is :py:const:`True`) into a list of
     tuples representing amino acid residues and their modifications. 
 
     Parameters
@@ -184,7 +185,10 @@ def parse_sequence(sequence,
     labels : list, optional
         A list of allowed labels for amino acids and terminal modifications
         (default is the 20 standard amino acids, N-terminal H- and C-terminal
-        -OH).
+        -OH). 
+
+        New in ver. 1.2.2: separate labels for modifications (such as 'p' or 'ox')
+        are now allowed.
 
     Returns
     -------
@@ -201,6 +205,8 @@ def parse_sequence(sequence,
     ['H-', 'P', 'E', 'P', 'T', 'I', 'D', 'E', '-OH']
     >>> parse_sequence('TEpSToxM', labels=std_labels + ['pS', 'oxM'])
     ['T', 'E', 'pS', 'T', 'oxM']
+    >>> parse_sequence('zPEPzTIDzE', True, True, labels=std_labels+['z'])
+    [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',), ('z', 'E'), ('z', 'E', '-OH')]
     """
     def split_label(label):
         if not is_modX(label):

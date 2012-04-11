@@ -4,7 +4,9 @@
 Bugfix in **pepxml**: modification info is now extracted.
 New optional bool argument 'split' in **parser.parse_sequence()** allows to
 generate a list of tuples where modifications are separated from the residues
-instead of a regular list of labels.
+instead of a regular list of labels. In *labels* not only *modX* labels are
+now allowed, but also separate *mod* prefixes. Such modificatiuons are assumed
+to be applicable to any residue.
 
 
 1.2.1
