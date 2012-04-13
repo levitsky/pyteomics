@@ -306,7 +306,7 @@ def amino_acid_composition(sequence,
         The sequence of a polypeptide or a list with a parsed sequence.
     show_unmodified_termini : bool, optional
         If :py:const:`True` then the unmodified N- and C-terminus are explicitly
-        shown in the returned list. Default value is :py:const:`False`.
+        shown in the returned dict. Default value is :py:const:`False`.
     term_aa : bool, optional
         If :py:const:`True` then the terminal amino acid residues are
         artificially modified with `nterm` or `cterm` modification.
@@ -375,15 +375,15 @@ def cleave(sequence, rule, missed_cleavages=0):
 
     Returns
     -------
-    out : list
-        A list of unique (!) peptides.
+    out : set
+        A set of unique (!) peptides.
 
     Examples
     --------
     >>> cleave('AKAKBK', expasy_rules['trypsin'], 0)
-    ['AK', 'BK']
+    set(['AK', 'BK'])
     >>> cleave('AKAKBKCK', expasy_rules['trypsin'], 2)
-    ['CK', 'AKBK', 'BKCK', 'AKAK', 'AKBKCK', 'AK', 'AKAKBK', 'BK']
+    set(['CK', 'AKBK', 'BKCK', 'AKAK', 'AKBKCK', 'AK', 'AKAKBK', 'BK'])
 
     """
     peptides = set()
@@ -393,7 +393,7 @@ def cleave(sequence, rule, missed_cleavages=0):
         cleavage_sites.append(i)
         for j in range(0, len(cleavage_sites)-1):
             peptides.add(sequence[cleavage_sites[j]:cleavage_sites[-1]])
-    return list(peptides)
+    return peptides
 
 expasy_rules = {
     'arg-c':         'R',
@@ -454,19 +454,24 @@ def isoforms(sequence, **kwargs):
 
     Parameters
     ----------
+    
     sequence : str
         Peptide sequence to modify.
+    
     variable_mods : dict, optional
         A dict of variable modifications in the following format:
         :py:const:`{'label1': ['X', 'Y', ...], 'label2': ['X', 'A', 'B', ...]}`
 
         **Note**: several variable modifications can occur on amino acids of the
         same type, but in the output each amino acid residue will be modified
-        at most once.
+        at most once (apart from terminal modifications).
+    
     fixed_mods : dict, optional
         A dict of fixed modifications in the same format.
+        
         **Note**: if a residue is affected by a fixed modification, no variable
-        modifications will be applied to it.
+        modifications will be applied to it (apart from terminal modifications).
+    
     labels : list, optional
         A list of amino acid labels containing all the labels present in
         `sequence`. Modified entries will be added automatically.
@@ -488,17 +493,20 @@ def isoforms(sequence, **kwargs):
 
     parsed = parse_sequence(sequence, 
             labels=labels+[m+aa for m in mods for aa in mods[m]])
+
+    # Apply fixed modifications
     for cmod in fixed_mods:
         for group in parsed:
             if group in fixed_mods[cmod]:
                 i = parsed.index(group)
                 parsed[i] = cmod+group
 
-    for aa in range(len(parsed)):
-        if any([parsed[aa] in x for x in variable_mods.values()]):
-            variable = aa
+    variable = None
+    for i, aa in enumerate(parsed):
+        if any([aa in x for x in variable_mods.values()]):
+            variable = i
             break
-    if not 'variable' in locals():
+    if variable is None:
         return [''.join(parsed)]
 
     mod_peptides = []
