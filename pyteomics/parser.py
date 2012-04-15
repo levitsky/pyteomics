@@ -284,11 +284,11 @@ def parse_sequence(sequence,
         if is_term_mod(parsed_sequence[0]):
             tuples.append((parsed_sequence[0],) + split_label(parsed_sequence[1]))
             start = 2
-        tuples.extend(split_label(x) for x in parsed_sequence[start:-1])
+        tuples.extend(split_label(x) for x in parsed_sequence[start:-2])
         if is_term_mod(parsed_sequence[-1]):
             tuples.append(split_label(parsed_sequence[-2]) + (parsed_sequence[-1],))
         else:
-            tuples.append(split_label(parsed_sequence[-1]))
+            tuples.extend(split_label(x) for x in parsed_sequence[-2:])
         
         return tuples
 
@@ -483,6 +483,17 @@ def isoforms(sequence, **kwargs):
         A set of all possible unique polypeptide sequences resulting from the
         specified modifications.
     """
+    def apply_mod(label, mod, index, length):
+        if is_term_mod(mod):
+            if is_term_mod(label):
+                raise PyteomicsError(
+                        'Trying to apply a term_mod %s to a term_mod %s' % 
+                        (mod, label))
+            if mod.startswith('-') and index == length-1: return label+mod
+            if index == 0 and mod.endswith('-'): return mod+label
+            return label
+        return mod+label
+
     variable_mods = kwargs.get('variable_mods', {})
     fixed_mods = kwargs.get('fixed_mods', {})
     labels = kwargs.get('labels', std_labels)
@@ -496,30 +507,33 @@ def isoforms(sequence, **kwargs):
 
     # Apply fixed modifications
     for cmod in fixed_mods:
-        for group in parsed:
+        for i, group in enumerate(parsed):
             if group in fixed_mods[cmod]:
-                i = parsed.index(group)
-                parsed[i] = cmod+group
+                parsed[i] = apply_mod(group, cmod, i, len(parsed))
 
-    variable = None
+    site = None
     for i, aa in enumerate(parsed):
         if any([aa in x for x in variable_mods.values()]):
-            variable = i
+            site = i
             break
-    if variable is None:
+    if site is None:
         return [''.join(parsed)]
 
     mod_peptides = []
     for mod in variable_mods:
-        if parsed[variable] in mods[mod]:
+        if parsed[site] in mods[mod]:
             mod_parsed = parsed[:]
-            mod_parsed[variable] = mod + parsed[variable]
-            mod_peptides += [''.join(parsed[:variable+1]) + x
+            mod_parsed[site] = apply_mod(parsed[site], mod, site, len(parsed))
+            mod_peptides += [''.join(parsed[:site+1]) + x
                     for x in isoforms(
-                        ''.join(parsed[variable+1:]), **kwargs)]
-            mod_peptides += [''.join(mod_parsed[:variable+1]) + x
+                        ''.join(parsed[site+1:]), variable_mods=dict(
+                            (mod, sites) for mod, sites in variable_mods.items()
+                            if not mod.endswith('-')), labels=labels+list(fixed_mods.keys()))]
+            mod_peptides += [''.join(mod_parsed[:site+1]) + x
                     for x in isoforms(
-                        ''.join(mod_parsed[variable+1:]), **kwargs)]
+                        ''.join(mod_parsed[site+1:]), variable_mods=dict(
+                            (mod, sites) for mod, sites in variable_mods.items()
+                            if not mod.endswith('-')), labels=labels+list(fixed_mods.keys()))]
     return set(mod_peptides)
 
 if __name__ == "__main__":

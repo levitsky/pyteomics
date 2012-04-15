@@ -1,3 +1,11 @@
+1.2.3
+-----
+
+**parser.isoforms** now allows terminal modifications.
+
+Bugfix in **parser.parse_sequence** (in *split* mode): the terminal group
+could be duplicated in the output if there was a modification on it.
+
 1.2.2
 -----
 

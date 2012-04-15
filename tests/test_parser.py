@@ -8,10 +8,9 @@ class ParserTest(unittest.TestCase):
             int(random.uniform(1, 20)))]) for j in range(10)]
         self.labels = ['A', 'B', 'C', 'N', 'X']
         self.extlabels = self.labels[:]
-        self.potential = {'pot': ['X', 'A', 'B'], 'otherpot': ['A', 'C']}
+        self.potential = {'pot': ['X', 'A', 'B'], 'otherpot': ['A', 'C'], 'N-': ['N'], '-C': ['C']}
         self.constant = {'const': ['B']}
-        self.extlabels.extend(['potX', 'potA', 'potB', 'otherpotA', 'otherpotC'])
-        self.extlabels.extend(['constB'])
+        self.extlabels.extend(['pot', 'otherpot', 'const', '-C', 'N-'])
 
     def test_parse_sequence_simple(self):
         for seq in self.simple_sequences:
@@ -32,17 +31,20 @@ class ParserTest(unittest.TestCase):
                      'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE']))
 
     def test_isoforms_len(self):
-        for j in range(10):
+        for j in range(5):
             L = random.randint(5, 15)
             peptide = ''.join([random.choice(self.labels) for _ in range(L)])
             modseqs = isoforms(peptide, variable_mods=self.potential,
                     fixed_mods=self.constant, labels=self.labels)
-            pp = parse_sequence(peptide, labels=self.labels)
+            pp = parse_sequence(peptide, labels=self.extlabels)
+            N = 1
+            if pp[0] =='N': N += 1
+            if pp[-1] == 'C': N += 2
             for p in modseqs:
                 self.assertEqual(len(pp),
-                        len(parse_sequence(p, labels=self.extlabels)))
-            self.assertEqual(len(modseqs), (3**pp.count('A'))*
-                    (2**(pp.count('X')+pp.count('C'))))
+                        peptide_length(p, labels=self.extlabels))
+            self.assertEqual(len(modseqs), (3**pp.count('A')) *
+                    (2**(pp.count('X')+pp[:-1].count('C'))) * N)
 
 if __name__ == '__main__':
     unittest.main()
