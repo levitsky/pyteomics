@@ -80,7 +80,7 @@ Data
 
 import re
 from collections import deque
-from itertools import chain
+from itertools import chain, product
 from .auxiliary import PyteomicsError
 
 std_amino_acids = ['Q','W','E','R','T','Y','I','P','A','S',
@@ -275,10 +275,9 @@ def parse_sequence(sequence,
 
     # Make a list of tuples instead of list of labels
     if split:
-        if not parsed_sequence or all(map(is_term_mod, parsed_sequence)):
-            return map(tuple, parsed_sequence)
+        if sum(1 for aa in parsed_sequence if not is_term_mod(aa)) == 1:
+            return [tuple(parsed_sequence)]
 
-        
         tuples = []
         start = 0
         if is_term_mod(parsed_sequence[0]):
@@ -293,6 +292,39 @@ def parse_sequence(sequence,
         return tuples
 
     return parsed_sequence
+
+def tostring(parsed_sequence, show_unmodified_termini=True):
+    """Create a string from a parsed sequence.
+    
+    Parameters
+    ----------
+    parsed_sequence : iterable
+        Expected to be in one of the formats returned by
+        :py:func:`parse_sequence`, i.e. list of labels or list of tuples.
+    show_unmodified_termini : bool, optional
+        Defines the behavior towards standard terminal groups in the input.
+        :py:const:`True` means that they will be preserved if present (default).
+        :py:const:`False` means that they will be removed. Standard terminal
+        modifications will not be added if not shown in `parsed_sequence`,
+        regardless of this setting.
+
+    Returns
+    -------
+    sequence : str
+    """
+    labels = []
+    for group in parsed_sequence:
+        if type(group) == str:
+            if (group not in (std_cterm, std_nterm)) or show_unmodified_termini:
+                labels.append(group)
+        else: #treat `group` as a tuple
+            group_l = list(group)
+            if not show_unmodified_termini:
+                if std_cterm in group_l: group_l.remove(std_cterm)
+                if std_nterm in group_l: group_l.remove(std_nterm)
+            labels.append(''.join(group_l))
+    return ''.join(labels)
+            
 
 def amino_acid_composition(sequence,
                            show_unmodified_termini=False,
@@ -449,8 +481,8 @@ at Expasy.
 
 def isoforms(sequence, **kwargs):
     """
-    Apply variable and fixed modifications to the polypeptide and return a
-    :py:class:`set` of unique modified sequences.
+    Apply variable and fixed modifications to the polypeptide and yield 
+    the unique modified sequences.
 
     Parameters
     ----------
@@ -477,64 +509,84 @@ def isoforms(sequence, **kwargs):
         `sequence`. Modified entries will be added automatically.
         Defaults to :py:data:`std_labels`.
 
-    Returns
+    override : bool, optional
+        Defines how to handle the residues that are modified in the input.
+        :py:const:`False` means that they will be preserved (default).
+        :py:const:`True` means they will be treated as unmodified.
+
+    Yields
     -------
-    isoforms : set
-        A set of all possible unique polypeptide sequences resulting from the
-        specified modifications.
+    isoform : str
+        All possible unique polypeptide sequences resulting from
+        the specified modifications.
     """
-    def apply_mod(label, mod, index, length):
-        if is_term_mod(mod):
-            if is_term_mod(label):
-                raise PyteomicsError(
-                        'Trying to apply a term_mod %s to a term_mod %s' % 
-                        (mod, label))
-            if mod.startswith('-') and index == length-1: return label+mod
-            if index == 0 and mod.endswith('-'): return mod+label
-            return label
-        return mod+label
+    def main(group): # index of the residue (capital letter) in `group`
+        temp = [i for i, x in enumerate(group) if 
+                (not is_term_mod(x)) and x.isupper()]
+        if len(temp) != 1: raise PyteomicsError('Invalid group: %s' % group)
+        return temp[0], group[temp[0]]
+
+    def apply_mod(label, mod):
+    # `label` is assumed to be a tuple (see split option of parse_sequence)
+    # unmodified termini are assumed shown
+    # if the modification is not applicable, `label` is returned
+        group = list(label)
+        m = main(group)[0]
+        if m == 0 and not is_term_mod(mod): group.insert(0, mod)
+        elif mod.startswith('-') and (group[-1] == std_cterm or (
+            group[-1].startswith('-') and override)):
+            group[-1] = mod
+        elif mod.endswith('-') and (group[0] == std_nterm or (
+            group[0].endswith('-') and override)):
+            group[0] = mod
+        elif not is_term_mod(mod):
+            if not group[m-1].endswith('-'):
+                if override: group[m-1] = mod
+            else: group.insert(m, mod)
+        return tuple(group)            
 
     variable_mods = kwargs.get('variable_mods', {})
     fixed_mods = kwargs.get('fixed_mods', {})
     labels = kwargs.get('labels', std_labels)
-    
-    mods = {}
-    mods.update(fixed_mods)
-    mods.update(variable_mods)
-
-    parsed = parse_sequence(sequence, 
-            labels=labels+[m+aa for m in mods for aa in mods[m]])
+    length = peptide_length(sequence, labels=labels)
+    parsed = parse_sequence(sequence, True, True,
+            labels=labels+list(fixed_mods.keys()))
+    override = kwargs.get('override', False)
+    show_unmodified_termini = kwargs.get('show_unmodified_termini', False)
 
     # Apply fixed modifications
     for cmod in fixed_mods:
         for i, group in enumerate(parsed):
-            if group in fixed_mods[cmod]:
-                parsed[i] = apply_mod(group, cmod, i, len(parsed))
+            if main(group)[1] in fixed_mods[cmod]:
+                parsed[i] = apply_mod(group, cmod)
 
-    site = None
-    for i, aa in enumerate(parsed):
-        if any([aa in x for x in variable_mods.values()]):
-            site = i
-            break
-    if site is None:
-        return [''.join(parsed)]
+    # Create a list of possible states for each group
+    # Start with N-terminal mods and regular mods on the N-terminal residue
+    second = set(apply_mod(parsed[0], m) for m, r in variable_mods.items()
+            if main(parsed[0])[1] in r and not is_term_mod(m)).union([parsed[0]])
+#   print 'second:', second
+    first = chain((apply_mod(group, mod) for group in second 
+            for mod, res in variable_mods.items()
+        if mod.endswith('-') and main(group)[1] in res), second)
+#   print 'first:', first
+    states = [set(first).union([parsed[0]])]
+#   print states[0]
+    # Continue with regular mods
+    states.extend([set([group]).union(set([apply_mod(group, mod) for mod in variable_mods if
+        main(group)[1] in variable_mods[mod] and not is_term_mod(mod)])) for group in parsed[1:-1]])
+    # Finally add C-terminal mods and regular mods on the C-terminal residue
+    second = set(apply_mod(parsed[-1], m) for m, r in variable_mods.items()
+            if main(parsed[-1])[1] in r and not is_term_mod(m)).union([parsed[-1]])
+#   print 'second:', second
+    first = chain((apply_mod(group, mod) for group in second 
+            for mod, res in variable_mods.items()
+        if mod.startswith('-') and main(group)[1] in res), second)
+#   print 'first:', first
+    states.append(set(first).union([parsed[-1]]))
+#   print states[-1]
 
-    mod_peptides = []
-    for mod in variable_mods:
-        if parsed[site] in mods[mod]:
-            mod_parsed = parsed[:]
-            mod_parsed[site] = apply_mod(parsed[site], mod, site, len(parsed))
-            mod_peptides += [''.join(parsed[:site+1]) + x
-                    for x in isoforms(
-                        ''.join(parsed[site+1:]), variable_mods=dict(
-                            (mod, sites) for mod, sites in variable_mods.items()
-                            if not mod.endswith('-')), labels=labels+list(fixed_mods.keys()))]
-            mod_peptides += [''.join(mod_parsed[:site+1]) + x
-                    for x in isoforms(
-                        ''.join(mod_parsed[site+1:]), variable_mods=dict(
-                            (mod, sites) for mod, sites in variable_mods.items()
-                            if not mod.endswith('-')), labels=labels+list(fixed_mods.keys()))]
-    return set(mod_peptides)
+    return (tostring(x, show_unmodified_termini) for x in product(*states))
+    
 
 if __name__ == "__main__":
     import doctest

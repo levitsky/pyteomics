@@ -24,27 +24,29 @@ class ParserTest(unittest.TestCase):
 
     def test_isoforms_simple(self):
         self.assertEqual(
-                isoforms('PEPTIDE', variable_mods={'xx': ['A', 'B', 'P', 'E']}),
+                set(isoforms('PEPTIDE', variable_mods={'xx': ['A', 'B', 'P', 'E']})),
                 set(['PEPTIDE', 'PEPTIDxxE', 'PExxPTIDE', 'PExxPTIDxxE', 'PxxEPTIDE',
                      'PxxEPTIDxxE', 'PxxExxPTIDE', 'PxxExxPTIDxxE', 'xxPEPTIDE', 'xxPEPTIDxxE',
                      'xxPExxPTIDE', 'xxPExxPTIDxxE', 'xxPxxEPTIDE', 'xxPxxEPTIDxxE',
                      'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE']))
 
     def test_isoforms_len(self):
-        for j in range(5):
-            L = random.randint(5, 15)
+        for j in range(20):
+            L = random.randint(1, 10)
             peptide = ''.join([random.choice(self.labels) for _ in range(L)])
+            print peptide
             modseqs = isoforms(peptide, variable_mods=self.potential,
                     fixed_mods=self.constant, labels=self.labels)
+            forms = sum(1 for x in modseqs)
             pp = parse_sequence(peptide, labels=self.extlabels)
-            N = 1
+            N = 0
             if pp[0] =='N': N += 1
-            if pp[-1] == 'C': N += 2
+            if pp[-1] == 'C': N += 1
             for p in modseqs:
                 self.assertEqual(len(pp),
                         peptide_length(p, labels=self.extlabels))
-            self.assertEqual(len(modseqs), (3**pp.count('A')) *
-                    (2**(pp.count('X')+pp[:-1].count('C'))) * N)
+            self.assertEqual(forms, (3**pp.count('A')) *
+                    (2**(pp.count('X')+pp.count('C'))) * 2**N)
 
 if __name__ == '__main__':
     unittest.main()
