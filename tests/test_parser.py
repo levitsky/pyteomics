@@ -31,10 +31,10 @@ class ParserTest(unittest.TestCase):
                      'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE']))
 
     def test_isoforms_len(self):
-        for j in range(20):
+        for j in range(50):
             L = random.randint(1, 10)
             peptide = ''.join([random.choice(self.labels) for _ in range(L)])
-            print peptide
+#           print peptide
             modseqs = isoforms(peptide, variable_mods=self.potential,
                     fixed_mods=self.constant, labels=self.labels)
             forms = sum(1 for x in modseqs)
