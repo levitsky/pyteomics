@@ -276,7 +276,11 @@ def parse_sequence(sequence,
     # Make a list of tuples instead of list of labels
     if split:
         if sum(1 for aa in parsed_sequence if not is_term_mod(aa)) == 1:
-            return [tuple(parsed_sequence)]
+            result = []
+            for x in parsed_sequence:
+                if is_term_mod(x): result.append(x)
+                else: result.extend(split_label(x))
+            return [tuple(result)]
 
         tuples = []
         start = 0
@@ -564,26 +568,22 @@ def isoforms(sequence, **kwargs):
     # Start with N-terminal mods and regular mods on the N-terminal residue
     second = set(apply_mod(parsed[0], m) for m, r in variable_mods.items()
             if main(parsed[0])[1] in r and not is_term_mod(m)).union([parsed[0]])
-#   print 'second:', second
     first = chain((apply_mod(group, mod) for group in second 
             for mod, res in variable_mods.items()
-        if mod.endswith('-') and main(group)[1] in res), second)
-#   print 'first:', first
+        if (mod.endswith('-') or mod.startswith('-') and len(parsed) == 1)
+        and main(group)[1] in res), second)
     states = [set(first).union([parsed[0]])]
-#   print states[0]
     # Continue with regular mods
     states.extend([set([group]).union(set([apply_mod(group, mod) for mod in variable_mods if
         main(group)[1] in variable_mods[mod] and not is_term_mod(mod)])) for group in parsed[1:-1]])
     # Finally add C-terminal mods and regular mods on the C-terminal residue
-    second = set(apply_mod(parsed[-1], m) for m, r in variable_mods.items()
-            if main(parsed[-1])[1] in r and not is_term_mod(m)).union([parsed[-1]])
-#   print 'second:', second
-    first = chain((apply_mod(group, mod) for group in second 
-            for mod, res in variable_mods.items()
-        if mod.startswith('-') and main(group)[1] in res), second)
-#   print 'first:', first
-    states.append(set(first).union([parsed[-1]]))
-#   print states[-1]
+    if len(parsed) > 1:
+        second = set(apply_mod(parsed[-1], m) for m, r in variable_mods.items()
+                if main(parsed[-1])[1] in r and not is_term_mod(m)).union([parsed[-1]])
+        first = chain((apply_mod(group, mod) for group in second 
+                for mod, res in variable_mods.items()
+            if mod.startswith('-') and main(group)[1] in res), second)
+        states.append(set(first).union([parsed[-1]]))
 
     return (tostring(x, show_unmodified_termini) for x in product(*states))
     
