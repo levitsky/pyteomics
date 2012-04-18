@@ -268,9 +268,10 @@ def parse_sequence(sequence,
                     backbone_sequence, i+1, backbone_sequence[i:]))
         i += len(parsed_sequence[-1])
 
-    # Append labels of unmodified termini.
-    if show_unmodified_termini:
+    # Append terminal labels.
+    if show_unmodified_termini or nterm != std_nterm:
         parsed_sequence.insert(0, nterm)
+    if show_unmodified_termini or cterm != std_cterm:
         parsed_sequence.append(cterm)
 
     # Make a list of tuples instead of list of labels
