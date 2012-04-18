@@ -518,6 +518,12 @@ def isoforms(sequence, **kwargs):
         :py:const:`False` means that they will be preserved (default).
         :py:const:`True` means they will be treated as unmodified.
 
+        **Note**: If :py:const:`True`, then supplying fixed mods is pointless.
+        
+    show_unmodified_termini : bool, optional
+        If :py:const:`True` then the unmodified N- and C-termini are explicitly
+        shown in the returned sequences. Default value is :py:const:`False`.
+
     Yields
     -------
     isoform : str
