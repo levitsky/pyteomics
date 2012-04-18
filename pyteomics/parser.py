@@ -37,7 +37,7 @@ Operations on polypeptide sequences
   :py:func:`cleave` - cleave a polypeptide using a given rule of
   enzymatic digestion.
 
-  :py:func:`isoforms` - find the set of unique modified peptides
+  :py:func:`isoforms` - generate all unique modified peptide sequences
   given the initial sequence and modifications.
 
 Auxiliary commands
@@ -45,6 +45,8 @@ Auxiliary commands
 
   :py:func:`peptide_length` - calculate the number of amino acid
   residues in a polypeptide.
+
+  :py:func:`is_modX` - check if supplied code corresponds to a modX label.
 
   :py:func:`is_term_mod` - check if supplied code corresponds to a
   terminal modification.
