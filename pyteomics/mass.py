@@ -74,6 +74,7 @@ import math
 import numpy
 from . import parser
 from .auxiliary import PyteomicsError
+from itertools import chain
 
 nist_mass = {
     'H': {1: (1.0078250320710, 0.99988570),
@@ -182,9 +183,39 @@ class Composition(dict):
     def _from_parsed_sequence(self, parsed_sequence, aa_comp=std_aa_comp):
         self.clear()
         for aa in parsed_sequence:
-            for elem, cnt in aa_comp[aa].items():
-                self[elem] = self.get(elem, 0) + aa_comp[aa][elem]
+            if aa in aa_comp:
+                for elem, cnt in aa_comp[aa].items():
+                    self[elem] = self.get(elem, 0) + cnt
+            else:
+                try:
+                    mod, aa = parser._split_label(aa)
+                    for elem, cnt in chain(
+                            aa_comp[mod].items(), aa_comp[aa].items()):
+                        self[elem] = self.get(elem, 0) + cnt
+
+                except PyteomicsError, KeyError:
+                    raise PyteomicsError(
+                            'No information for %s in `aa_comp`' % aa)
     
+    def _from_split_sequence(self, split_sequence, aa_comp=std_aa_comp):
+        self.clear()
+        for group in split_sequence:
+            i = 0
+            while i < len(group):
+                for j in range(i+1, len(group)+2): # excessive iteration
+                    try:                           # used in `raise`
+                        label = ''.join(group[i:j])
+                        for elem, cnt in aa_comp[label].items():
+                            self[elem] = self.get(elem, 0) + cnt
+                    except KeyError:
+                        continue
+                    else:
+                        i = j
+                        break
+                if j > len(group):
+                    raise PyteomicsError("Invalid group starting from"
+                            "position %d: %s" % (i+1, group))
+
     def _from_sequence(self, sequence, aa_comp=std_aa_comp):
         self.clear()
         parsed_sequence = parser.parse_sequence(
@@ -273,6 +304,10 @@ class Composition(dict):
             A polypeptide sequence string in modX notation.
         parsed_sequence : list of str, optional
             A polypeptide sequence parsed into a list of amino acids.
+        split_sequence : list of tuples of str, optional
+            A polypeptyde sequence parsed into a list of tuples
+            (as returned be :py:func:`pyteomics.parser.parse_sequence` with
+            'split=True').
         aa_comp : dict, optional
             A dict with the elemental composition of the amino acids (the
             default value is std_aa_comp).
@@ -289,6 +324,10 @@ class Composition(dict):
         elif 'parsed_sequence' in kwargs:
             aa_comp = kwargs.get('aa_comp', std_aa_comp)
             self._from_parsed_sequence(kwargs['parsed_sequence'], aa_comp)
+            
+        elif 'split_sequence' in kwargs:
+            aa_comp = kwargs.get('aa_comp', std_aa_comp)
+            self._from_split_sequence(kwargs['split_sequence'], aa_comp)
             
         elif 'formula' in kwargs:
             mass_data = kwargs.get('mass_data', nist_mass)
