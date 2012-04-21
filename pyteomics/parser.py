@@ -166,6 +166,15 @@ def peptide_length(sequence, **kwargs):
     raise PyteomicsError('Unsupported type of a sequence.')
     return None
 
+def _split_label(label):
+        if not is_modX(label):
+            raise PyteomicsError('Cannot split a non-modX label: %s' % label)
+        if len(label) == 1:
+            return (label, )
+        else:
+            return (label[:-1], label[-1])
+
+
 def parse_sequence(sequence,               
                    show_unmodified_termini=False, split=False,
                    **kwargs):
@@ -210,14 +219,6 @@ def parse_sequence(sequence,
     >>> parse_sequence('zPEPzTIDzE', True, True, labels=std_labels+['z'])
     [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',), ('z', 'E'), ('z', 'E', '-OH')]
     """
-    def split_label(label):
-        if not is_modX(label):
-            raise PyteomicsError('Cannot split a non-modX label: %s' % label)
-        if len(label) == 1:
-            return (label, )
-        else:
-            return (label[:-1], label[-1])
-
     labels = kwargs.get('labels', std_labels)
     backbone_sequence = str(sequence)
 
@@ -253,7 +254,7 @@ def parse_sequence(sequence,
         j = i+2
         while j <= len(backbone_sequence):
             try:
-                mod, res = split_label(backbone_sequence[i:j])
+                mod, res = _split_label(backbone_sequence[i:j])
             except PyteomicsError:
                 pass
             else:
@@ -282,19 +283,19 @@ def parse_sequence(sequence,
             result = []
             for x in parsed_sequence:
                 if is_term_mod(x): result.append(x)
-                else: result.extend(split_label(x))
+                else: result.extend(_split_label(x))
             return [tuple(result)]
 
         tuples = []
         start = 0
         if is_term_mod(parsed_sequence[0]):
-            tuples.append((parsed_sequence[0],) + split_label(parsed_sequence[1]))
+            tuples.append((parsed_sequence[0],) + _split_label(parsed_sequence[1]))
             start = 2
-        tuples.extend(split_label(x) for x in parsed_sequence[start:-2])
+        tuples.extend(_split_label(x) for x in parsed_sequence[start:-2])
         if is_term_mod(parsed_sequence[-1]):
-            tuples.append(split_label(parsed_sequence[-2]) + (parsed_sequence[-1],))
+            tuples.append(_split_label(parsed_sequence[-2]) + (parsed_sequence[-1],))
         else:
-            tuples.extend(split_label(x) for x in parsed_sequence[-2:])
+            tuples.extend(_split_label(x) for x in parsed_sequence[-2:])
         
         return tuples
 
@@ -363,12 +364,12 @@ def amino_acid_composition(sequence,
     Examples
     --------
     >>> amino_acid_composition('PEPTIDE')
-    {'I': 1.0, 'P': 2.0, 'E': 2.0, 'T': 1.0, 'D': 1.0}
+    {'I': 1, 'P': 2, 'E': 2, 'T': 1, 'D': 1}
     >>> amino_acid_composition('PEPTDE', term_aa=True)
-    {'ctermE': 1.0, 'E': 1.0, 'D': 1.0, 'P': 1.0, 'T': 1.0, 'ntermP': 1.0}
+    {'ctermE': 1, 'E': 1, 'D': 1, 'P': 1, 'T': 1, 'ntermP': 1}
     >>> amino_acid_composition('PEPpTIDE',\
     labels=std_labels+['pT'])
-    {'I': 1.0, 'P': 2.0, 'E': 2.0, 'D': 1.0, 'pT': 1.0}
+    {'I': 1, 'P': 2, 'E': 2, 'D': 1, 'pT': 1}
     """
     labels = kwargs.get('labels', std_labels)
 
