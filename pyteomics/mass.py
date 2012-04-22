@@ -201,8 +201,8 @@ class Composition(dict):
         for group in split_sequence:
             i = 0
             while i < len(group):
-                for j in range(i+1, len(group)+2): # excessive iteration
-                    try:                           # used in `raise`
+                for j in range(len(group)+1, -1, -1): 
+                    try:                           
                         label = ''.join(group[i:j])
                         for elem, cnt in aa_comp[label].items():
                             self[elem] = self.get(elem, 0) + cnt
@@ -211,8 +211,8 @@ class Composition(dict):
                     else:
                         i = j
                         break
-                if j > len(group):
-                    raise PyteomicsError("Invalid group starting from"
+                if j == 0:
+                    raise PyteomicsError("Invalid group starting from "
                             "position %d: %s" % (i+1, group))
 
     def _from_sequence(self, sequence, aa_comp=std_aa_comp):
