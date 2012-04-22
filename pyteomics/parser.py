@@ -30,6 +30,8 @@ Operations on polypeptide sequences
 
   :py:func:`parse_sequence` - convert a sequence string into a list of
   amino acid residues.
+
+  :py:func:`tostring` - convert a parsed sequence to a string.
   
   :py:func:`amino_acid_composition` - get numbers of each amino acid
   residue in a peptide.

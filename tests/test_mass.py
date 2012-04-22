@@ -209,17 +209,5 @@ class MassTest(unittest.TestCase):
                 (self.mass_data['A'][1][1]
                  * self.mass_data['F'][6][1] ) ** peplen)
 
-    def test_add_modifications(self):
-        newcomp = dict(self.aa_comp)
-        newcomp.update(
-                {'xxX': mass.Composition({'A': 3, 'B': 1}, mass_data=self.mass_data),
-                    'yyX': mass.Composition({'A': 1, 'B': 2, 'C': 1}, mass_data=self.mass_data),
-                    'yyY': mass.Composition({'B': 3, 'C': 1}, mass_data=self.mass_data),
-                    'yyZ': mass.Composition({'B': 2, 'C': 2}, mass_data=self.mass_data)})
-        mass.add_modifications(self.aa_comp, self.mods, mass_data=self.mass_data)
-        self.assertEqual(newcomp, self.aa_comp)
-
-
-                                            
 if __name__ == '__main__':
     unittest.main()
