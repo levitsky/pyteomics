@@ -71,7 +71,6 @@ Auxiliary
 # http://www.opensource.org/licenses/mit-license.php
 
 import math
-import numpy
 from . import parser
 from .auxiliary import PyteomicsError
 from itertools import chain
@@ -193,7 +192,7 @@ class Composition(dict):
                             aa_comp[mod].items(), aa_comp[aa].items()):
                         self[elem] = self.get(elem, 0) + cnt
 
-                except PyteomicsError, KeyError:
+                except (PyteomicsError, KeyError):
                     raise PyteomicsError(
                             'No information for %s in `aa_comp`' % aa)
     
@@ -293,7 +292,8 @@ class Composition(dict):
          
         .. warning::
          
-            Be cafeful when supplying a list with a parsed sequence. It must be
+            Be cafeful when supplying a list with a parsed sequence as a keyword
+            argument. It must be
             obtained with enabled `show_unmodified_termini` option.
         
         Parameters
@@ -348,7 +348,12 @@ class Composition(dict):
                                          (element_name,))
             
         else:
-            raise PyteomicsError('A Composition object must be specified by '
+            try:
+                sequence = parser.tostring(args[0], True)
+                aa_comp = kwargs.get('aa_comp', std_aa_comp)
+                self._from_sequence(sequence, aa_comp)
+            except:
+                raise PyteomicsError('A Composition object must be specified by '
                                  'a sequence, parsed sequence, formula or '
                                  'a dict')
     
@@ -408,12 +413,12 @@ and the sum of elemental compositions of its constituting amino acid residues.
    In [2]: pprint(pyteomics.mass.std_ion_comp)
 """
 
-def calculate_mass(**kwargs):
+def calculate_mass(*args, **kwargs):
     """Calculates the monoisotopic mass of a polypeptide defined by a 
     sequence string, parsed sequence, chemical formula or
     Composition object.
 
-    One and only one of the following keyword arguments is required:
+    One or none of the following keyword arguments is required:
     **formula**, **sequence**, **parsed_sequence** or **composition**.
     
     Note that if a sequence string is supplied then the mass is
@@ -465,7 +470,7 @@ def calculate_mass(**kwargs):
     # Make a deep copy of `composition` keyword argument.
     composition = (dict(kwargs['composition'])
                    if 'composition' in kwargs
-                   else Composition(**kwargs))
+                   else Composition(*args, **kwargs))
 
     if 'ion_type' in kwargs:
         composition += ion_comp[kwargs['ion_type']]
@@ -478,7 +483,7 @@ def calculate_mass(**kwargs):
         if charge:
             raise PyteomicsError(
                 'Charge is specified both by the number of protons and '
-                '\'charge\' in kwargs: %s' % str(kwargs))
+                '`charge` in kwargs: %s' % str(kwargs))
         charge = kwargs['charge']
         composition['H+'] = charge
 
@@ -503,7 +508,7 @@ def calculate_mass(**kwargs):
         mass = mass / charge
     return mass
  
-def most_probable_isotopic_composition(**kwargs):
+def most_probable_isotopic_composition(*args, **kwargs):
     """Calculate the most probable isotopic composition of a peptide
     molecule/ion defined by a sequence string, parsed sequence,
     chemical formula or Composition object.
@@ -545,7 +550,7 @@ def most_probable_isotopic_composition(**kwargs):
     """
 
     composition = (dict(kwargs['composition']) if 'composition' in kwargs
-                   else Composition(**kwargs))
+                   else Composition(*args, **kwargs))
 
     # Removing isotopes from the composition.
     for isotope_string in composition:
@@ -599,7 +604,7 @@ def binomial_coeff(n, k):
 def binomial_dist(k, n, p):
     return binomial_coeff(n, k) * (p ** k) * (1.0 - p) ** (n - k)
 
-def isotopic_composition_abundance(**kwargs):
+def isotopic_composition_abundance(*args, **kwargs):
     """Calculate the relative abundance of a given isotopic composition
     of a molecule.
     
@@ -621,7 +626,7 @@ def isotopic_composition_abundance(**kwargs):
 
     composition = (dict(kwargs['composition'])
                    if 'composition' in kwargs
-                   else Composition(**kwargs))
+                   else Composition(*args, **kwargs))
 
     isotopic_composition = {}
 
@@ -722,7 +727,7 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         Monoisotopic mass or m/z of a peptide molecule/ion.
     """
     aa_mass = kwargs.get('aa_mass', std_aa_mass)
-    mass = sum([aa_mass[i] for i in sequence])
+    mass = sum(aa_mass[i] for i in sequence)
 
     mass_data = kwargs.get('mass_data', nist_mass)
     mass += mass_data['H'][0][0] * 2.0 + mass_data['O'][0][0]
@@ -730,42 +735,11 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
     if ion_type:
         ion_comp = kwargs.get('ion_comp', std_ion_comp)
         mass += sum(
-            [mass_data[element][0][0] * ion_comp[ion_type][element]
-             for element in ion_comp[ion_type]])
+            mass_data[element][0][0] * ion_comp[ion_type][element]
+             for element in ion_comp[ion_type])
         
     if charge:
         mass = (mass + mass_data['H+'][0][0] * charge) / charge
 
     return mass
  
-def add_modifications(aa_comp, mods, **kwargs):
-    """
-    Update :py:obj:`aa_comp` with modified amino acids. 
-
-    Parameters
-    ----------
-    aa_comp : dict
-        Amino acid composition dict.
-    mods : dict
-        Dict of modifications in the following format:
-
-        :py:const:`{'mod': ('H2O', ['X', 'Y', ..]),
-        'p': ('H3O4P', ['S', 'T']), ...}`
-    mass_data : dict, optional
-        A dict with the masses of chemical elements.
-        Defaults to :py:data:`nist_mass`
-
-    Returns
-    -------
-    No value is returned. aa_comp is updated in place. 
-    """
-
-    for mod in mods:
-        for aa in mods[mod][1]:
-            if not aa in aa_comp:
-                raise PyteomicsError("`pyteomics.mass.add_modifications`"
-                        "Unrecognized residue specified: %s" % aa)
-            else:
-                aa_comp[mod+aa] = Composition(
-                        formula=mods[mod][0], **kwargs) + aa_comp[aa]
-
