@@ -168,13 +168,13 @@ class Composition(dict):
     """
         
     def __add__(self, other):
-        result = self.copy()
+        result = Composition(self)
         for elem, cnt in other.items():
             result[elem] = result.get(elem, 0) + cnt
         return result
 
     def __sub__(self, other):
-        result = self.copy()
+        result = Composition(self)
         for elem, cnt in other.items():
             result[elem] = result.get(elem, 0) - cnt
         return result
@@ -358,9 +358,10 @@ class Composition(dict):
                     self._from_formula(args[0], mass_data)
                 except:
                     raise PyteomicsError(
+                            'Could not create a Composition object from `%s`. '
                             'A Composition object must be specified by '
                             'a sequence, parsed sequence, formula or '
-                            'a dict')
+                            'a dict' % args[0])
     
 std_aa_comp.update({
     'A':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1}),
