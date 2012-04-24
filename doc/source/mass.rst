@@ -75,42 +75,41 @@ dictionary used in the calculations by default.
     >>> mass.calculate_mass(sequence='PEPpTIDE')
     879.3262945499629
 
-To add information about modified amino acids to a user-defined "aa_comp" *dict*
-use :py:func:`pyteomics.mass.add_modifications`:
+To add information about modified amino acids to a user-defined `aa_comp` *dict*
+one can either add the composition info for a specific modified residue or just
+for a modification:
 
 .. code-block:: python
 
     >>> from pyteomics import mass
     >>> aa_comp = dict(mass.std_aa_comp)
-    >>> mass.add_modifications(aa_comp,
-        {'p': ('HPO3', ['S', 'T']), 'ox': ('O', ['M', 'P'])})
-    >>> aa_comp
-    {'-OH': {'H': 1, 'O': 1},
-     'A': {'C': 3, 'H': 5, 'N': 1, 'O': 1},
-     'C': {'C': 3, 'H': 5, 'N': 1, 'O': 1, 'S': 1},
-     'D': {'C': 4, 'H': 5, 'N': 1, 'O': 3},
-     'E': {'C': 5, 'H': 7, 'N': 1, 'O': 3},
-     'F': {'C': 9, 'H': 9, 'N': 1, 'O': 1},
-     'G': {'C': 2, 'H': 3, 'N': 1, 'O': 1},
-     'H': {'C': 6, 'H': 7, 'N': 3, 'O': 1},
-     'H-': {'H': 1},
-     'I': {'C': 6, 'H': 11, 'N': 1, 'O': 1},
-     'K': {'C': 6, 'H': 12, 'N': 2, 'O': 1},
-     'L': {'C': 6, 'H': 11, 'N': 1, 'O': 1},
-     'M': {'C': 5, 'H': 9, 'N': 1, 'O': 1, 'S': 1},
-     'N': {'C': 4, 'H': 6, 'N': 2, 'O': 2},
-     'P': {'C': 5, 'H': 7, 'N': 1, 'O': 1},
-     'Q': {'C': 5, 'H': 8, 'N': 2, 'O': 2},
-     'R': {'C': 6, 'H': 12, 'N': 4, 'O': 1},
-     'S': {'C': 3, 'H': 5, 'N': 1, 'O': 2},
-     'T': {'C': 4, 'H': 7, 'N': 1, 'O': 2},
-     'V': {'C': 5, 'H': 9, 'N': 1, 'O': 1},
-     'W': {'C': 11, 'H': 10, 'N': 2, 'O': 1},
-     'Y': {'C': 9, 'H': 9, 'N': 1, 'O': 2},
-     'oxM': {'C': 5, 'H': 9, 'N': 1, 'O': 2, 'S': 1},
-     'oxP': {'C': 5, 'H': 7, 'N': 1, 'O': 2},
-     'pS': {'C': 3, 'H': 6, 'N': 1, 'O': 5, 'P': 1},
-     'pT': {'C': 4, 'H': 8, 'N': 1, 'O': 5, 'P': 1}}
+    >>> aa_comp['p'] = mass.Composition('HPO3')
+    >>> mass.Composition('pT', aa_comp=aa_comp)
+    {'H': 10, 'C': 4, 'N': 1, 'O': 6, 'P': 1}
+
+In this example we create :py:class:`Composition` objects with positional
+(non-keyword) arguments ('HPO3' and 'pT'). This feature was added in version
+1.2.4. When you provide a non-keyword argument, it will be treated as a sequence;
+if it fails, it will be treated as a formula; in case it fails as well, a
+:py:class:`PyteomicsError` will be raised.
+Note that 'pT' is treated as a sequence here, so default terminal groups are
+implied when calculating the composition:
+
+.. code-block:: python
+
+    >>> mass.Composition('pT', aa_comp=aa_comp) == mass.Composition(aa_comp['p']) + mass.Composition(aa_comp['T']) + mass.Composition('H2O')
+    True
+
+You can create a specific entry for a modified amino acid to override the
+modification on a specific residue:
+
+.. code-block:: python
+
+    >>> aa_comp['pT'] = mass.Composition({'N': 2})
+    >>> mass.Composition('pT', aa_comp=aa_comp)
+    {'H': 2, 'O': 1, 'N': 2}
+    >>> mass.Composition('pH', aa_comp=aa_comp)
+    {'H': 10, 'C': 6, 'N': 3, 'O': 5, 'P': 1}
 
 `Unimod database <http://www.unimod.org>`_ is an 
 excellent resource for the information on the chemical compositions of 
