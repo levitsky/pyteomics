@@ -253,19 +253,20 @@ def parse_sequence(sequence,
                 amino_acid_found = True
                 break
 
-        j = i+2
-        while j <= len(backbone_sequence):
-            try:
-                mod, res = _split_label(backbone_sequence[i:j])
-            except PyteomicsError:
-                pass
-            else:
-                if mod in labels and res in labels:
-                    parsed_sequence.append(backbone_sequence[i:j])
-                    amino_acid_found = True
-                    break
-            finally:
-                j += 1
+        if not amino_acid_found:
+            j = i+2
+            while j <= len(backbone_sequence):
+                try:
+                    mod, res = _split_label(backbone_sequence[i:j])
+                except PyteomicsError:
+                    pass
+                else:
+                    if mod in labels and res in labels:
+                        parsed_sequence.append(backbone_sequence[i:j])
+                        amino_acid_found = True
+                        break
+                finally:
+                    j += 1
 
         if not amino_acid_found:
             raise PyteomicsError(
