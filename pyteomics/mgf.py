@@ -36,7 +36,7 @@ Functions
 
 import sys
 import os
-from auxiliary import PyteomicsError
+from .auxiliary import PyteomicsError
 import numpy
 
 
@@ -66,7 +66,7 @@ def iter_spectrum(source, use_header=True):
     -------
     dict : {'masses': mumpy.array, 'intensities': numpy.asrray, 'params': dict} 
     """
-    if type(source) == file:
+    if all(hasattr(source, x) for x in ('tell', 'seek', 'close')):
         pos = source.tell()
         header = read_header(source, False)
         source.seek(pos)
@@ -110,6 +110,7 @@ def iter_spectrum(source, use_header=True):
                         masses.append(float(l[0]))            # this may cause
                         intensities.append(float(l[1]))       # exceptions...
                         # ... if this is not a peak list
+    MGF.close()
 
 def read_header(source, close=True):
     """
@@ -130,13 +131,11 @@ def read_header(source, close=True):
 
     header : dict
     """
-    if type(source) == file:
-        MGF = source
-    elif type(source) == str:
+    if type(source) == str:
         MGF = open(source)
     else:
-        raise PyteomicsError("Unsupported argument `mgf` in `pyteomics.mgf.read_header`."
-                "Must be a file object or a path (str), %s given" % type(source))
+        MGF = source
+    
     header = {}
     for line in MGF:
         if line.strip() == 'BEGIN IONS':
@@ -190,7 +189,7 @@ def write_mgf(output=None, spectra=None, header='', close=True):
 
     output : file
     """
-    if type(output) == file:
+    if hasattr(output, 'write'):
         MGF = output
     elif type(output) == str:
         if not os.path.isdir(os.path.split(mgf)[0]):

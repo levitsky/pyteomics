@@ -4,7 +4,7 @@ from pyteomics.fasta import *
 
 class FastaTest(unittest.TestCase):
     def setUp(self):
-        self.fasta_file = tempfile.TemporaryFile()
+        self.fasta_file = tempfile.TemporaryFile(mode='r+')
         self.fasta_file.write('''
             ;test sequence
             ;test sequence 2
@@ -40,7 +40,7 @@ class FastaTest(unittest.TestCase):
 
     def test_read_and_write_fasta_short(self):
         self.fasta_file.seek(0)
-        new_fasta_file = tempfile.TemporaryFile()
+        new_fasta_file = tempfile.TemporaryFile(mode='r+')
         write_fasta(read_fasta(self.fasta_file, True), new_fasta_file, False)
         new_fasta_file.seek(0)
         new_entries = [i for i in read_fasta(new_fasta_file, True)]
@@ -50,7 +50,7 @@ class FastaTest(unittest.TestCase):
 
     def test_read_and_write_fasta_long(self):
         self.fasta_file.seek(0)
-        new_fasta_file = tempfile.TemporaryFile()
+        new_fasta_file = tempfile.TemporaryFile(mode='r+')
         write_fasta(read_fasta(self.fasta_file, False), new_fasta_file, False)
         new_fasta_file.seek(0)
         new_entries = [i for i in read_fasta(new_fasta_file, False)]
@@ -60,7 +60,7 @@ class FastaTest(unittest.TestCase):
         
     def test_decoy_db(self):
         self.fasta_file.seek(0)
-        decdb = tempfile.TemporaryFile()
+        decdb = tempfile.TemporaryFile(mode='r+')
         decoy_db(self.fasta_file, decdb, decoy_only=False, prefix='PREFIX_', close=False)
         decdb.seek(0)
         all_entries = [i for i in read_fasta(decdb, False)]

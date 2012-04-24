@@ -77,8 +77,8 @@ References
 # Licensed under the MIT license:
 # http://www.opensource.org/licenses/mit-license.php 
 
-import parser
-from auxiliary import PyteomicsError
+from . import parser
+from .auxiliary import PyteomicsError
 
 def charge(sequence, pH, **kwargs):
     """Calculate the charge of a polypeptide in given pH or list of pHs using
@@ -118,7 +118,7 @@ def charge(sequence, pH, **kwargs):
             labels.append(label)
 
     # Parse the sequence.
-    if isinstance(sequence, basestring) or isinstance(sequence, list):
+    if isinstance(sequence, str) or isinstance(sequence, list):
         peptide_dict = parser.amino_acid_composition(sequence, True, False,
                                                      labels=labels)
     elif isinstance(sequence, dict):

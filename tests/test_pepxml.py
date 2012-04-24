@@ -1,7 +1,6 @@
 import unittest
 from pyteomics.pepxml import *
 
-import pylab
 import numpy as np
 
 class PepxmlTest(unittest.TestCase):

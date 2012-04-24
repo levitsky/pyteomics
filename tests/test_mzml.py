@@ -1,7 +1,6 @@
 import unittest
 from pyteomics.mzml import *
 
-import pylab
 import numpy as np
 
 class MzmlTest(unittest.TestCase):
