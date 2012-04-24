@@ -353,9 +353,14 @@ class Composition(dict):
                 aa_comp = kwargs.get('aa_comp', std_aa_comp)
                 self._from_sequence(sequence, aa_comp)
             except:
-                raise PyteomicsError('A Composition object must be specified by '
-                                 'a sequence, parsed sequence, formula or '
-                                 'a dict')
+                try:
+                    mass_data = kwargs.get('mass_data', nist_mass)
+                    self._from_formula(args[0], mass_data)
+                except:
+                    raise PyteomicsError(
+                            'A Composition object must be specified by '
+                            'a sequence, parsed sequence, formula or '
+                            'a dict')
     
 std_aa_comp.update({
     'A':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1}),
