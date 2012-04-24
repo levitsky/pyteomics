@@ -227,14 +227,10 @@ def iter_psm(source):
        An iterator over the dicts with PSM properties.
     """
 
-    parser = etree.XMLParser(remove_comments=True, ns_clean=True) 
-    tree = etree.parse(source, parser=parser)
-    
-    for spectrum_query in tree.xpath(
-        "/*[local-name()='msms_pipeline_analysis']/"
-        "*[local-name()='msms_run_summary']/*[local-name()='spectrum_query']"):
-        
-        yield _psm_from_query(spectrum_query)
+    for _, tag in etree.iterparse(source):
+        if tag.tag.endswith('spectrum_query'):
+            yield _psm_from_query(tag)
+            tag.clear()
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.

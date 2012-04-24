@@ -1,3 +1,9 @@
+1.2.1
+-----
+
+Memory usage **significantly** decreased when parsing large mzML and pepXML
+files.
+
 1.2.0
 -----
 
@@ -6,9 +12,9 @@ Added support for Python 3. Python 2.7 is still supported, Python 2.6 is not.
 1.1.1
 -----
 
-New functions called **add_modifications()** added in **pyteomics.parser** and
-**pyteomics.mass**. They update *labels* and *aa_comp*, respectively. Also,
-**modify_peptide()** is a new method in **parser** to get all possible modified
+New function called **add_modifications()** added in
+**pyteomics.mass**. It updates *aa_comp*. Also,
+**isoforms()** is a new method in **parser** to get all possible modified
 sequences of a peptide.
 
 1.1.0
