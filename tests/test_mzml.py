@@ -4,9 +4,6 @@ from pyteomics.mzml import *
 import numpy as np
 
 class MzmlTest(unittest.TestCase):
-    def setUp(self):
-        pass
-
     def testReadSpectrum(self):
         mz_array = np.load('test_mzml_mz.npy')
         intensity_array = np.load('test_mzml_intensity.npy')
