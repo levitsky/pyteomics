@@ -51,8 +51,6 @@ class MassTest(unittest.TestCase):
                          'a': mass.Composition({'A':-1},
                                                mass_data=self.mass_data)}
         self.mods = {'xx': ('A2B', ['X']), 'yy': ('B2C', ['X', 'Y', 'Z'])}
-        self.kwargs = {'aa_comp': self.aa_comp, 'mass_data': self.mass_data}
-        
 
     def test_fast_mass(self):
         for pep in self.random_peptides:
