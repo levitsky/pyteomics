@@ -288,13 +288,24 @@ class Composition(dict):
         addition and subtraction.
 
         A Composition object can be initialized with one of the
-        following arguments: formula, sequence or parsed_sequence.
+        following arguments: formula, sequence, parsed_sequence or
+        split_sequence.
+
+        If none of these are specified, the constructor will look at the first
+        positional argument and try to build the object from it.
+        
+        If there's in an ambiguity, i.e. the argument is both a valid sequence
+        and a formula (such as 'HCN'), it will be treated as a sequence. You
+        need to provide the 'formula' keyword to override this.
          
         .. warning::
          
-            Be cafeful when supplying a list with a parsed sequence as a keyword
-            argument. It must be
+            Be cafeful when supplying a list with a parsed sequence or a split
+            sequence as a keyword argument. It must be
             obtained with enabled `show_unmodified_termini` option.
+            When supplying it as a positional argument, the option doesn't
+            matter, because the positional argument is always converted to
+            a sequence prior to any processing.
         
         Parameters
         ----------
