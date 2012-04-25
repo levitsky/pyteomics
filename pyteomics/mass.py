@@ -74,6 +74,7 @@ import math
 from . import parser
 from .auxiliary import PyteomicsError
 from itertools import chain
+from collections import defaultdict
 
 nist_mass = {
     'H': {1: (1.0078250320710, 0.99988570),
@@ -156,7 +157,7 @@ amino acid residues and standard H- and -OH terminal groups.
     In [2]: pprint(pyteomics.mass.std_aa_comp)
 """
 
-class Composition(dict):
+class Composition(defaultdict):
     """
     A Composition object stores a chemical composition of a
     substance. Basically, it is a dict object, with the names
@@ -168,36 +169,42 @@ class Composition(dict):
     """
         
     def __add__(self, other):
-        result = Composition(self)
+        result = self.copy()
         for elem, cnt in other.items():
-            result[elem] = result.get(elem, 0) + cnt
+            result[elem] += cnt
         return result
 
     def __sub__(self, other):
-        result = Composition(self)
+        result = self.copy()
         for elem, cnt in other.items():
-            result[elem] = result.get(elem, 0) - cnt
+            result[elem] -= cnt
         return result
+
+    def copy(self):
+        return Composition(self)
     
-    def _from_parsed_sequence(self, parsed_sequence, aa_comp=std_aa_comp):
+    def _from_parsed_sequence(self, parsed_sequence, aa_comp):
         self.clear()
+        comp = defaultdict(int)
         for aa in parsed_sequence:
             if aa in aa_comp:
                 for elem, cnt in aa_comp[aa].items():
-                    self[elem] = self.get(elem, 0) + cnt
+                    comp[elem] += cnt
             else:
                 try:
                     mod, aa = parser._split_label(aa)
                     for elem, cnt in chain(
                             aa_comp[mod].items(), aa_comp[aa].items()):
-                        self[elem] = self.get(elem, 0) + cnt
+                        comp[elem] += cnt
 
                 except (PyteomicsError, KeyError):
                     raise PyteomicsError(
                             'No information for %s in `aa_comp`' % aa)
+        self._from_dict(comp)
     
-    def _from_split_sequence(self, split_sequence, aa_comp=std_aa_comp):
+    def _from_split_sequence(self, split_sequence, aa_comp):
         self.clear()
+        comp = defaultdict(int)
         for group in split_sequence:
             i = 0
             while i < len(group):
@@ -205,7 +212,7 @@ class Composition(dict):
                     try:                           
                         label = ''.join(group[i:j])
                         for elem, cnt in aa_comp[label].items():
-                            self[elem] = self.get(elem, 0) + cnt
+                            comp[elem] += cnt
                     except KeyError:
                         continue
                     else:
@@ -214,16 +221,16 @@ class Composition(dict):
                 if j == 0:
                     raise PyteomicsError("Invalid group starting from "
                             "position %d: %s" % (i+1, group))
+        self._from_dict(comp)
 
-    def _from_sequence(self, sequence, aa_comp=std_aa_comp):
-        self.clear()
+    def _from_sequence(self, sequence, aa_comp):
         parsed_sequence = parser.parse_sequence(
             sequence,
             labels=list(aa_comp.keys()),
             show_unmodified_termini=True)
         self._from_parsed_sequence(parsed_sequence, aa_comp)
         
-    def _from_formula(self, formula, mass_data=nist_mass):
+    def _from_formula(self, formula, mass_data):
         # Parsing a formula backwards.
         prev_chem_symbol_start = len(formula)
         i = len(formula) - 1
@@ -277,6 +284,15 @@ class Composition(dict):
                     raise PyteomicsError(
                         'Unknown chemical element in the formula: %s' %formula)
 
+    def _from_dict(self, comp):
+        for isotope_string, num_atoms in comp.items():
+            element_name, isotope_num = _parse_isotope_string(
+                isotope_string)
+
+                # Remove explicitly undefined isotopes (e.g. X[0]).
+            self[_make_isotope_string(element_name, isotope_num)] = (
+                        num_atoms)
+
     def __init__(self, *args, **kwargs):
         """
         A Composition object stores a chemical composition of a
@@ -326,46 +342,33 @@ class Composition(dict):
             A dict with the masses of chemical elements (the default
             value is :py:data:`nist_mass`). It is used for formulae parsing only. 
         """
+        defaultdict.__init__(self, int)
+        
+        aa_comp=kwargs.get('aa_comp', std_aa_comp)
+        mass_data=kwargs.get('mass_data', nist_mass)
+        
         if len(args) == 0 and len(kwargs) == 0:
             pass
         elif 'sequence' in kwargs:
-            aa_comp = kwargs.get('aa_comp', std_aa_comp)
             self._from_sequence(kwargs['sequence'], aa_comp)
             
         elif 'parsed_sequence' in kwargs:
-            aa_comp = kwargs.get('aa_comp', std_aa_comp)
             self._from_parsed_sequence(kwargs['parsed_sequence'], aa_comp)
             
         elif 'split_sequence' in kwargs:
-            aa_comp = kwargs.get('aa_comp', std_aa_comp)
             self._from_split_sequence(kwargs['split_sequence'], aa_comp)
             
         elif 'formula' in kwargs:
-            mass_data = kwargs.get('mass_data', nist_mass)
             self._from_formula(kwargs['formula'], mass_data)
             
         elif isinstance(args[0], dict):
-            mass_data = kwargs.get('mass_data', nist_mass)
-            for isotope_string, num_atoms in args[0].items():
-                element_name, isotope_num = _parse_isotope_string(
-                    isotope_string)
-
-                if element_name in mass_data:
-                    # Remove explicitly undefined isotopes (e.g. X[0]).
-                    self[_make_isotope_string(element_name, isotope_num)] = (
-                        num_atoms)                    
-                else:
-                    raise PyteomicsError('Unknown chemical element: %s' %
-                                         (element_name,))
-            
+            self._from_dict(args[0])
         else:
             try:
                 sequence = parser.tostring(args[0], True)
-                aa_comp = kwargs.get('aa_comp', std_aa_comp)
                 self._from_sequence(sequence, aa_comp)
             except:
                 try:
-                    mass_data = kwargs.get('mass_data', nist_mass)
                     self._from_formula(args[0], mass_data)
                 except:
                     raise PyteomicsError(
