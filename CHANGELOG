@@ -1,3 +1,27 @@
+1.2.4
+-----
+
+Changes in **mass**.
+
+API changes
+...........
+
+    - **Composition** objects can be created using positional first argument,
+    which will be treated as a sequence or (upon failure) as a formula. That
+    means that all functions relying on Composition (**calculate_mass**,
+    **most_probable_isotopic_composition**, **isotopic_composition_abundance**)
+    allow that as well. However, it's of no use for the latter.
+
+    - **Composition** entries for modifications can be added to *aa_comp* and
+    used in composition in mass calculations. This way the specified group will
+    be added to any residue bearing this modification.
+
+    - That being said, the **add_modifications** function is not needed anymore
+    and has been removed.
+
+    - Addition and subtraction of **Composition** objects now produces a
+    **Composition** object, allowing addition/subtraction of multiple objects.
+
 1.2.3
 -----
 

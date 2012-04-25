@@ -84,20 +84,20 @@ for a modification:
     >>> from pyteomics import mass
     >>> aa_comp = dict(mass.std_aa_comp)
     >>> aa_comp['p'] = mass.Composition('HPO3')
-    >>> mass.Composition('pT', aa_comp=aa_comp)
-    {'H': 10, 'C': 4, 'N': 1, 'O': 6, 'P': 1}
+    >>> mass.calculate_mass('pT', aa_comp=aa_comp)
+    199.02457367493957
 
-In this example we create :py:class:`Composition` objects with positional
-(non-keyword) arguments ('HPO3' and 'pT'). This feature was added in version
+In this example we call :py:func:`calculate_mass` with a positional
+(non-keyword) argument ('pT'). This feature was added in version
 1.2.4. When you provide a non-keyword argument, it will be treated as a sequence;
 if it fails, it will be treated as a formula; in case it fails as well, a
 :py:class:`PyteomicsError` will be raised.
 Note that 'pT' is treated as a sequence here, so default terminal groups are
-implied when calculating the composition:
+implied when calculating the composition and mass:
 
 .. code-block:: python
 
-    >>> mass.Composition('pT', aa_comp=aa_comp) == mass.Composition(aa_comp['p']) + mass.Composition(aa_comp['T']) + mass.Composition('H2O')
+    >>> mass.calculate_mass('pT', aa_comp=aa_comp) == mass.calculate_mass(aa_comp['p']) + mass.calculate_mass(aa_comp['T']) + mass.calculate_mass('H2O')
     True
 
 You can create a specific entry for a modified amino acid to override the
@@ -108,8 +108,8 @@ modification on a specific residue:
     >>> aa_comp['pT'] = mass.Composition({'N': 2})
     >>> mass.Composition('pT', aa_comp=aa_comp)
     {'H': 2, 'O': 1, 'N': 2}
-    >>> mass.Composition('pH', aa_comp=aa_comp)
-    {'H': 10, 'C': 6, 'N': 3, 'O': 5, 'P': 1}
+    >>> mass.Composition('pS', aa_comp=aa_comp)
+    {'H': 8, 'C': 3, 'N': 1, 'O': 6, 'P': 1}
 
 `Unimod database <http://www.unimod.org>`_ is an 
 excellent resource for the information on the chemical compositions of 
