@@ -13,7 +13,7 @@ API changes
     allow that as well. However, it's of no use for the latter.
 
     - **Composition** entries for modifications can be added to *aa_comp* and
-    used in composition in mass calculations. This way the specified group will
+    used in composition and mass calculations. This way the specified group will
     be added to any residue bearing this modification.
 
     - That being said, the **add_modifications** function is not needed anymore
@@ -21,6 +21,9 @@ API changes
 
     - Addition and subtraction of **Composition** objects now produces a
     **Composition** object, allowing addition/subtraction of multiple objects.
+
+    - **Composition** is now a subclass of **collections.defaultdict** so one
+    can safely retrieve values without checking if a key exists.
 
 1.2.3
 -----
