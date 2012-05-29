@@ -93,11 +93,12 @@ def write_fasta(entries, output=None, close=True):
 
     Parameters
     ----------
-    entries : list of (str, str) tuples
-        A list containing 2-tuples in the form (description, sequence).
-    output : file or str, optional
+    entries : iterable of (str, str) tuples
+        An iterable of 2-tuples in the form (description, sequence).
+    output : file-like or str, optional
         A file open for writing or a path to write to. If the file exists,
-        it will be open for appending.
+        it will be open for appending. Default is :py:const:`None`, which
+        means write to standard output.
     close : bool, optional
         If True, the file will be closed after writing. Defaults to True.
 
@@ -108,13 +109,14 @@ def write_fasta(entries, output=None, close=True):
     """
     if hasattr(output, 'write'):
         output_file = output
-    elif type(output) == str:
+    elif isinstance(output, str):
         output_file = open(output, 'a')
-    elif output == None:
+    elif output is None:
         output_file = sys.stdout
     else:
         raise PyteomicsError("""Wrong argument type:
-        'output' must be file or str or None, not %s""" % type(source))
+        `output` must be file-like or str or None, not %s (%s)""" % (
+            type(output), output))
     
     for protein in entries:
         # write the description
@@ -122,6 +124,7 @@ def write_fasta(entries, output=None, close=True):
         # write the sequence; it should be interrupted with \n every 70 characters
         output_file.write(''.join([('%s\n' % protein[1][i:i+70])
             for i in range(0, len(protein[1]), 70)]) + '\n')
+
     if close and output: output_file.close()
     return output_file
 
@@ -147,6 +150,10 @@ def decoy_sequence(sequence, mode):
         modified_sequence = list(sequence)
         random.shuffle(modified_sequence)
         modified_sequence = ''.join(modified_sequence)
+    else:
+        raise PyteomicsError(
+                """`fasta.decoy_sequence`: `mode` must be 'reverse' or
+                'shuffle', not '%s'""" % mode)
     return modified_sequence
 
 def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
@@ -164,8 +171,8 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
     source : file-like object or str
         A path to a FASTA database or a file object itself.
     output : file-like object or str, optional
-        A path to an output database or a file open for writing.
-        If not specified, the results go to the standard output.
+        A path to the output database or a file open for writing.
+        Defaults to :py:const:`None`, the results go to the standard output.
     mode : {'reverse', 'shuffle'}, optional
         Algorithm of decoy sequence generation. 'reverse' by default.
     prefix : str, optional
@@ -176,9 +183,9 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
         If False, the entries from 'source' will be written as well.
         False by default.
     close : bool, optional
-        If True, the target file will be closed in the end (default).
+        If :py:const:`True`, the target file will be closed in the end (default).
         Set to False, if you need to perform I/O operations with the file
-        from your Python script after it's created. :py:const:`True` by default.
+        from your Python script after it's created.
     
     Returns
     -------
@@ -187,15 +194,15 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
     """
     if hasattr(source, 'seek'):
         source_file = source
-    elif type(source) == str:
+    elif isinstance(source, str):
         source_file = open(source)
     else:
         raise PyteomicsError("""Wrong argument type:
         `source` must be file or str, not %s""" % type(source))
 
-    if type(output) == str:
+    if isinstance(output, str):
         output_file = open(output, 'a')
-    elif output == None:
+    elif output is None:
         output_file = sys.stdout
     else:
         output_file = output
@@ -206,9 +213,9 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
     # return to the beginning of the source file to read again
     source_file.seek(0)
 
-    decoy_entries = [(prefix + protein[0],
+    decoy_entries = ((prefix + protein[0],
         decoy_sequence(protein[1], mode))
-        for protein in read_fasta(source_file, False)]
+        for protein in read_fasta(source_file, False))
 
     write_fasta(decoy_entries, output_file, close=(close if output else False))
     return output_file
