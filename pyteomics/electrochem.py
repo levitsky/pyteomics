@@ -66,11 +66,6 @@ References
    focusing patterns. Analytical Biochemistry, 1982, 119 (2), 440-449.
    `Link. <http://dx.doi.org/10.1016/0003-2697(82)90611-X>`_
 
-.. ipython::
-   :suppress:
-
-   In [1]: import pyteomics.parser; from pprint import pprint
-
 -------------------------------------------------------------------------------
 
 """
@@ -124,7 +119,7 @@ def charge(sequence, pH, **kwargs):
     elif isinstance(sequence, dict):
         peptide_dict = sequence
     else:
-        raise PyteomicsError('Unsupported type of a sequence.')
+        raise PyteomicsError('Unsupported type of sequence: %s' % type(sequence))
 
     # Check if a sequence was parsed with `show_unmodified_termini` enabled.
     num_term_mod = 0
@@ -216,10 +211,6 @@ pK_lehninger = {
     }
 """A set of pK from Nelson, D. L.; Cox, M. M. Lehninger Principles of
 Biochemistry, Fourth Edition; W. H. Freeman, 2004; p. 1100.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.electrochem.pK_lehninger)
 """
 
 pK_sillero = {
@@ -236,10 +227,6 @@ pK_sillero = {
 """A set of pK from Sillero, A.; Ribeiro, J. Isoelectric points of proteins:
 Theoretical determination. Analytical Biochemistry, vol. 179 (2), pp. 319-325,
 1989.
-   
-.. ipython::
-   
-   In [2]: pprint(pyteomics.electrochem.pK_sillero)
 """
 
 pK_dawson = {
@@ -256,10 +243,6 @@ pK_dawson = {
 """A set of pK from Dawson, R. M. C.; Elliot, D. C.; Elliot, W. H.; Jones,
 K. M.  Data for biochemical research. Oxford University Press, 1989; p. 592.
 pKs for NH2- and -OH are taken from `pK_sillero`.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.electrochem.pK_dawson)
 """
 
 pK_rodwell = {
@@ -276,10 +259,6 @@ pK_rodwell = {
 """A set of pK from Rodwell, J. Heterogeneity of component bands in
 isoelectric focusing patterns. Analytical Biochemistry, vol. 119 (2),
 pp. 440-449, 1982.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.electrochem.pK_rodwell)
 """
 
 if __name__ == "__main__":

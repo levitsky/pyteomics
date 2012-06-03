@@ -12,6 +12,13 @@
 # serve to show the default.
 
 import sys, os
+from sphinx.ext.autodoc import ModuleLevelDocumenter, DataDocumenter
+
+def add_directive_header(self, sig):
+    ModuleLevelDocumenter.add_directive_header(self, sig)
+    # Rest of original method ignored
+
+DataDocumenter.add_directive_header = add_directive_header
 
 sys.path.insert(0, os.path.abspath('exts'))
 pyteomics_path = os.path.abspath('../../')
@@ -39,8 +46,6 @@ extensions = [
               'sphinx.ext.todo', 
               'sphinx.ext.pngmath', 
               'sphinx.ext.mathjax',
-              'matplotlib_sphinxext.ipython_console_highlighting',
-              'matplotlib_sphinxext.ipython_directive',
               'matplotlib_sphinxext.plot_directive',
               'matplotlib_sphinxext.only_directives',
               'matplotlib_sphinxext.mathmpl',
