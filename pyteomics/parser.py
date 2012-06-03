@@ -70,11 +70,6 @@ Data
   :py:const:`expasy_rules` - a dict with the regular expressions of
   cleavage rules for the most popular proteolytic enzymes.
 
-.. ipython::
-   :suppress:
-
-   In [1]: import pyteomics.parser; from pprint import pprint
-
 -------------------------------------------------------------------------------
 
 """
@@ -484,10 +479,6 @@ popular proteolytic enzymes. The rules were taken from the
 `PeptideCutter tool
 <http://ca.expasy.org/tools/peptidecutter/peptidecutter_enzymes.html>`_
 at Expasy.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.parser.expasy_rules)
 """
 
 def isoforms(sequence, **kwargs):
