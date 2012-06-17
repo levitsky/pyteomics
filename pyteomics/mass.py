@@ -54,21 +54,22 @@ Data
   :py:data:`std_aa_mass` - a dict with the monoisotopic masses
   of the standard twenty amino acid residues.
 
-Auxiliary
----------
-
-  :py:func:`add_modifications` - easily add entries for modified amino acids
-  to an amino acid composition dict.
-
-.. ipython::
-   :suppress:
-
-   In [1]: import pyteomics.mass; from pprint import pprint
-
 -----------------------------------------------------------------------------
 """
-# Licensed under the MIT license:
-# http://www.opensource.org/licenses/mit-license.php
+
+#   Copyright 2012 Anton Goloborodko, Lev Levitsky
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 
 import math
 from . import parser
@@ -116,10 +117,6 @@ http://www.nist.gov/pml/data/comp.cfm . There are entries for each
 element containing the masses and relative abundances of several
 abundant isotopes and a separate entry for undefined isotope with zero
 key, mass of the most abundant isotope and 1.0 abundance.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.mass.nist_mass)
 """
 
 def _make_isotope_string(element_name, isotope_num):
@@ -151,10 +148,6 @@ def _parse_isotope_string(label):
 std_aa_comp = {}
 """A dictionary with elemental compositions of the twenty standard
 amino acid residues and standard H- and -OH terminal groups.
-
-.. ipython::
-   
-    In [2]: pprint(pyteomics.mass.std_aa_comp)
 """
 
 class Composition(defaultdict):
@@ -427,10 +420,6 @@ std_ion_comp = {
 fragment ions. An elemental composition of a fragment ion is calculated as a
 difference between the total elemental composition of an ion
 and the sum of elemental compositions of its constituting amino acid residues.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.mass.std_ion_comp)
 """
 
 def calculate_mass(*args, **kwargs):
@@ -708,10 +697,6 @@ std_aa_mass = {
     }
 """A dictionary with monoisotopic masses of the twenty standard
 amino acid residues.
-
-.. ipython::
-   
-    In [2]: pprint(pyteomics.mass.std_aa_mass)
 """
 
 def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
