@@ -221,15 +221,21 @@ References
 .. [#Yoshida] Yoshida, T. Calculation of peptide retention
    coefficients in normal-phase liquid chromatography. Journal of
    Chromatography A, 1998, 808 (1-2), 105-112.
-   
-.. ipython::
-   :suppress:
-
-   In [1]: import pyteomics.parser; from pprint import pprint
 """
 
-# Licensed under the MIT license:
-# http://www.opensource.org/licenses/mit-license.php 
+#   Copyright 2012 Anton Goloborodko, Lev Levitsky
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
 
 import operator
 import numpy
@@ -524,10 +530,6 @@ A, 1986, 359, 499-518.
 Conditions: Synchropak RP-P C18 column (250 x 4.1 mm I.D.), gradient
 (A = 0.1% aq. TFA, pH 2.0; B = 0.1% TFA in acetonitrile) at 1% B/min,
 flow rate 1 ml/min, 26 centigrades.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.achrom.RCs_guo_ph2_0)
 """
 
 RCs_guo_ph7_0 = {'aa':{'K': -0.2,
@@ -563,10 +565,6 @@ Conditions: Synchropak RP-P C18 column (250 x 4.1 mm I.D.), gradient
 (A = aq. 10 mM (NH4)2HPO4 - 0.1 M NaClO4, pH 7.0; B = 0.1 M NaClO4 in
 60% aq. acetonitrile) at 1.67% B/min, flow rate 1 ml/min, 26
 centigrades.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.achrom.RCs_guo_ph7_0)
 """
 
 RCs_meek_ph2_1 = {'aa':{'K': -3.2,
@@ -599,10 +597,6 @@ chromatography on the basis of amino acid composition. PNAS, 1980, 77
 Conditions: Bio-Rad "ODS" column, gradient (A = 0.1 M NaClO4,
 0.1% phosphoric acid in water; B = 0.1 M NaClO4, 0.1% phosphoric acid
 in 60% aq. acetonitrile) at 1.25% B/min, room temperature.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.achrom.RCs_meek_ph2_1)
 """
 
 RCs_meek_ph7_4 = {'aa':{'K':  0.1,
@@ -635,10 +629,6 @@ chromatography on the basis of amino acid composition. PNAS, 1980, 77
 Conditions: Bio-Rad "ODS" column, gradient (A = 0.1 M NaClO4,
 5 mM phosphate buffer in water; B = 0.1 M NaClO4, 5 mM phosphate buffer
 in 60% aq. acetonitrile) at 1.25% B/min, room temperature.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.achrom.RCs_meek_ph7_4)
 """
 
 RCs_browne_tfa = {'aa':{'K': -3.7,
@@ -673,10 +663,6 @@ positions. Analytical Biochemistry, 1982, 124 (1), 201-208.
 
 Conditions: Waters mjuBondapak C18 column, gradient (A = 0.1% aq. TFA,
 B = 0.1% TFA in acetonitrile) at 0.33% B/min, flow rate 1.5 ml/min.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.achrom.RCs_browne_tfa)
 """
 
 RCs_browne_hfba = {'aa':{'K': -2.5,
@@ -711,10 +697,6 @@ positions. Analytical Biochemistry, 1982, 124 (1), 201-208.
 
 Conditions: Waters mjuBondapak C18 column, gradient (A = 0.13% aq. HFBA,
 B = 0.13% HFBA in acetonitrile) at 0.33% B/min, flow rate 1.5 ml/min.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.achrom.RCs_browne_hfba)
 """
 
 RCs_palmblad = {'aa':{'K': -0.66,
@@ -748,10 +730,6 @@ Chromatography/Mass Spectrometry. Analytical Chemistry, 2002, 74 (22),
 Conditions: a fused silica column (80-100 x 0.200 mm I.D.) packed
 in-house with C18 ODS-AQ; solvent A = 0.5% aq. HAc, B = 0.5% HAc in
 acetonitrile.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.achrom.RCs_palmblad)
 """
 
 RCs_yoshida = {'aa':{'K':  2.77,
@@ -784,10 +762,6 @@ liquid chromatography. Journal of Chromatography A, 1998, 808 (1-2),
 Conditions: TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A =
 0.1% TFA in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at
 0.6% water/min, flow rate 1.0 ml/min, 40 centigrades.
-
-.. ipython::
-   
-   In [2]: pprint(pyteomics.achrom.RCs_yoshida)
 """
 
 if __name__ == "__main__":
