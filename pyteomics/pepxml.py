@@ -47,6 +47,10 @@ Data access
 #   limitations under the License.
 
 from lxml import etree
+try:
+    reduce # Python 2.7
+except NameError: # Python 3.x
+    from functools import reduce
 
 # A list of the spectrum_query attributes which contain float values.
 float_keys = [
