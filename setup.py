@@ -26,5 +26,5 @@ setup(
                         'Topic :: Scientific/Engineering :: Chemistry',
                         'Topic :: Scientific/Engineering :: Physics',
                         'Topic :: Software Development :: Libraries'],
-    license          = 'License :: OSI Approved :: MIT License',
+    license          = 'License :: OSI Approved :: Apache Software License',
     )
