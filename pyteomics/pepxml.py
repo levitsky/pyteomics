@@ -52,8 +52,8 @@ try:
 except NameError: # Python 3.x
     from functools import reduce
 
-# A list of the spectrum_query attributes which contain float values.
-float_keys = [
+# spectrum_query attributes which contain float values.
+float_keys = (
     'calc_neutral_pep_mass',
     'precursor_neutral_mass',
     'massdiff',
@@ -67,7 +67,7 @@ float_keys = [
     'num_matched_ions',
     'index',
     'hit_rank',
-    ]
+    )
 
 # Default namespace of pepXML.
 xmlns = 'http://regis-web.systemsbiology.net/pepXML'
@@ -190,8 +190,6 @@ def _psm_from_query(query):
              "peptide_prev_aa": search_hit_info.pop("peptide_prev_aa"),
              "peptide_next_aa": search_hit_info.pop("peptide_next_aa")})
 
-        # Store a list of modifications.
-        modifications = []
         for subelement in search_hit.xpath("*[local-name()='search_score']"):
             search_hit_info[subelement.attrib['name']] = float(
                     subelement.attrib['value'])
@@ -202,6 +200,9 @@ def _psm_from_query(query):
         for subelement in search_hit.xpath(
                 "*[local-name()='alternative_protein']"):
             proteins.append(subelement.attrib)
+
+        # Store a list of modifications.
+        modifications = []
         for subelement in search_hit.xpath(
                 "*[local-name()='modification_info']"):
             search_hit_info['modified_peptide'] = subelement.attrib.get(
