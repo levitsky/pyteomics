@@ -11,7 +11,7 @@ Standard Initiative.
 
 This module provides a minimalistic way to extract information from mzIdentML
 files. The main idea is the same as in :py:mod:`pyteomics.pepxml`: the top-level
-function :pt:func:`iter_psm` allows iterating over entries in
+function :pt:func:`read` allows iterating over entries in
 `<SpectrumIdentificationResult>` tags, i.e. groups of identifications
 for a certain spectrum. Note that each entry can contain more than one PSM
 (peptide-spectrum match). They are accessible with `"search_hits"` key, just
@@ -20,7 +20,7 @@ like in :py:mod:`pyteomics.pepxml`.
 Data access
 -----------
 
-  :py:func:`iter_psm` - iterate through peptide-spectrum matches in a pep.XML 
+  :py:func:`read` - iterate through peptide-spectrum matches in a pep.XML 
   file. Data from a single PSM group are converted to a human-readable dict. 
 
   :py:func:`get_by_id` - get an element by its ID and extract the data from it.
@@ -45,7 +45,7 @@ Data access
 from lxml import etree
 
 
-def iter_psm(source):
+def read(source):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters

@@ -12,7 +12,7 @@ Even though it is to be replaced by a community standard
 commonly.
 
 This module provides minimalistic infrastructure for access to data stored in
-pep.XML files. The most important function is :py:func:`iter_psm`, which 
+pep.XML files. The most important function is :py:func:`read`, which 
 reads peptide-spectum matches and related information and saves them into 
 human-readable dicts. The rest of data can be obtained via :py:func:`get_node` 
 function. This function relies on the terminology of the underlying 
@@ -21,7 +21,7 @@ function. This function relies on the terminology of the underlying
 Data access
 -----------
 
-  :py:func:`iter_psm` - iterate through peptide-spectrum matches in a pep.XML 
+  :py:func:`read` - iterate through peptide-spectrum matches in a pep.XML 
   file. Data from a single PSM are converted to a human-readable dict. 
 
   :py:func:`get_node` - get arbitrary nodes of pep.XML file by their xpath.
@@ -245,7 +245,7 @@ def _psm_from_query(query):
     psm['search_hits'].sort(key = lambda x: x['hit_rank'])
     return psm
     
-def iter_psm(source):
+def read(source):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
