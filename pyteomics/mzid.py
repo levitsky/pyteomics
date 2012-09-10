@@ -11,7 +11,7 @@ Standard Initiative.
 
 This module provides a minimalistic way to extract information from mzIdentML
 files. The main idea is the same as in :py:mod:`pyteomics.pepxml`: the top-level
-function :pt:func:`read` allows iterating over entries in
+function :py:func:`read` allows iterating over entries in
 `<SpectrumIdentificationResult>` tags, i.e. groups of identifications
 for a certain spectrum. Note that each entry can contain more than one PSM
 (peptide-spectrum match). They are accessible with `"search_hits"` key, just
@@ -44,6 +44,55 @@ Data access
 
 from lxml import etree
 
+def _local_name(element):
+    if element.tag.startswith('{'):
+        return element.tag.rsplit('}', 1)[1]
+    else:
+        return element.tag
+
+def _get_info(element, recursive=False):
+    """Extract info from element's attributes, possibly recursive.
+    <cvParam> elements are treated in a special way."""
+
+    if _local_name(element) == 'cvParam':
+        if 'name' in element.attrib:
+            if 'value' in element.attrib:
+                return {element.attrib['name']: element.attrib['value']}
+            else:
+                return element.attrib['name']
+        else:
+            return dict(element.attrib) 
+    info = dict(element.attrib)
+    if recursive:
+        for child in element.iterchildren():
+            info[_local_name(child)] = _get_info(child, True)
+    return info
+
+def _get_info_smart(element):
+    """Extract the info in a smart way depending on the element type"""
+
+    raise NotImplementedError
+
+def get_by_id(source, elem_id):
+    """Parse ``source`` and return the element with `id` attribute equal to
+    ``elem_id``. Returns :py:const:`None` if no such element is found.
+
+    Parameters
+    ----------
+    source : str or file
+        A path to a target mzIdentML file of the file object itself.
+    
+    elem_id : str
+        The value of the `id` attribute to match.
+
+    Returns
+    -------
+    out : :py:class:`lxml.etree.Element` or :py:const:`None`
+    """
+    for _, e in etree.iterparse(source):
+        if e.attrib.get('id') == elem_id:
+            return _get_info_smart(e)
+    return None
 
 def read(source):
     """Parse ``source`` and iterate through peptide-spectrum matches.
@@ -51,7 +100,7 @@ def read(source):
     Parameters
     ----------
     source : str or file
-        A path or an URL to a target pepXML file or the file object itself.
+        A path to a target mzIdentML file or the file object itself.
 
     Returns
     -------
@@ -59,8 +108,8 @@ def read(source):
        An iterator over the dicts with PSM properties.
     """
 
-    for _, tag in etree.iterparse(source):
-        if tag.tag == '{{{}}}SpectrumIdentificationResult'.format(
-                tag.nsmap.get(None, '')):
-            yield _psm_from_sid(tag)
-            tag.clear()
+    for _, elem in etree.iterparse(source):
+        if elem.tag == '{{{}}}SpectrumIdentificationResult'.format(
+                elem.nsmap.get(None, '')):
+            yield _get_info_smart(elem)
+            elem.clear()

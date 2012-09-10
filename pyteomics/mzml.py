@@ -95,7 +95,7 @@ def get_node(source, xpath, namespaces={'d':xmlns}):
     Parameters
     ----------
     source : str or file
-        A path or an URL to a target mzML file or the file object itself.
+        A path to a target mzML file or the file object itself.
     xpath : str
         An XPath to target nodes. 
     namespaces : dict, optional
@@ -279,7 +279,7 @@ def read(source):
     Parameters
     ----------
     source : str or file
-        A path or an URL to a target mzML file or the file object itself.
+        A path to a target mzML file or the file object itself.
 
     Returns
     -------
