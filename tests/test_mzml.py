@@ -7,7 +7,7 @@ class MzmlTest(unittest.TestCase):
     def testReadSpectrum(self):
         mz_array = np.load('test_mzml_mz.npy')
         intensity_array = np.load('test_mzml_intensity.npy')
-        for spectrum in iter_spectrum('test.mzML'):
+        for spectrum in read('test.mzML'):
             self.assertTrue(
                 all(spectrum['m/z array'] - mz_array < 1.0e-4))
             self.assertTrue(all(np.equal(

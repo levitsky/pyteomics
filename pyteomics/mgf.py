@@ -10,23 +10,23 @@ human-readable format for MS/MS data. It allows storing MS/MS peak lists and
 exprimental parameters.
 
 This module provides minimalistic infrastructure for access to data stored in
-MGF files. The most important function is :py:func:`iter_spectrum`, which 
+MGF files. The most important function is :py:func:`read`, which 
 reads spectra and related information as saves them into human-readable
 :py:class:`dict`'s.
 Also, common parameters can be read from MGF file header with
-:py:func:`read_header` function. :py:func:`write_mgf` allows creation of MGF
+:py:func:`read_header` function. :py:func:`write` allows creation of MGF
 files.
 
 Functions
 ---------
 
-  :py:func:`iter_spectrum` - iterate through spectra in MGF file. Data from a
+  :py:func:`read` - iterate through spectra in MGF file. Data from a
   single spectrum are converted to a human-readable dict.
 
   :py:func:`read_header` - get a dict with common parameters for all spectra
   from the beginning of MGF file.
 
-  :py:func:`write_mgf` - write an MGF file.
+  :py:func:`write` - write an MGF file.
 
 -------------------------------------------------------------------------------
 
@@ -54,7 +54,7 @@ import numpy
 
 _comments = '#;!/'
 
-def iter_spectrum(source, use_header=True):
+def read(source, use_header=True):
     """Read an MGF file and return entries iteratively.
     
     Read the specified MGF file, **yield** spectra one by one.
@@ -87,7 +87,7 @@ def iter_spectrum(source, use_header=True):
         header = read_header(source)
         MGF = open(source)
     else:
-        raise PyteomicsError("Unsupported argument type in `pyteomics.mgf.iter_spectrum`."
+        raise PyteomicsError("Unsupported argument type in `pyteomics.mgf.read`."
                 "'source' must be a file object or a path (string), %s given." % type(source))
     reading_spectrum = False
     params = {}
@@ -158,7 +158,7 @@ def read_header(source, close=True):
     if close: MGF.close()
     return header
 
-def write_mgf(output=None, spectra=None, header='', close=True):
+def write(output=None, spectra=None, header='', close=True):
     """
     Create a file in MGF format.
 
@@ -210,7 +210,7 @@ def write_mgf(output=None, spectra=None, header='', close=True):
     elif output == None:
         MGF = sys.stdout
     else:
-        raise PyteomicsError("Unsupported argument `output` in `pyteomics.mgf.write_mgf`."
+        raise PyteomicsError("Unsupported type of `output` in `pyteomics.mgf.write`."
                 "Must be a file object or a path (string) or None, not %s" % type(output))
 
     if type(header) == dict:

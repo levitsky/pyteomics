@@ -8,7 +8,7 @@ class PepxmlTest(unittest.TestCase):
         self.maxDiff = None
 
     def testReadPSM(self):
-        psms = [psm for psm in iter_psm('test.pep.xml')]
+        psms = [psm for psm in read('test.pep.xml')]
         self.assertEqual(psms, [
             {'spectrum': 'pps_sl20060731_18mix_25ul_r1_1154456409.0100.0100.1',
              'end_scan': 100.0, 

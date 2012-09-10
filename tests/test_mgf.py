@@ -6,14 +6,14 @@ class MGFTest(unittest.TestCase):
     def setUp(self):
         path = 'test.mgf'
         self.header = read_header(path)
-        self.spectra = [s for s in iter_spectrum(path)]
+        self.spectra = [s for s in read(path)]
         self.tmpfile = tempfile.TemporaryFile(mode='r+')
-        write_mgf(header=self.header, spectra=self.spectra,
+        write(header=self.header, spectra=self.spectra,
                 output=self.tmpfile, close=False)
         self.tmpfile.seek(0)
         self.header2 = read_header(self.tmpfile, close=False)
         self.tmpfile.seek(0)
-        tmpreader = iter_spectrum(self.tmpfile)
+        tmpreader = read(self.tmpfile)
         self.spectra2 = [x for x in tmpreader]
         self.tmpfile.close()
         self.ns = len(self.spectra)
