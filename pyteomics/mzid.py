@@ -52,26 +52,44 @@ def _local_name(element):
 
 def _get_info(element, recursive=False):
     """Extract info from element's attributes, possibly recursive.
-    <cvParam> elements are treated in a special way."""
-
-    if _local_name(element) == 'cvParam':
-        if 'name' in element.attrib:
-            if 'value' in element.attrib:
-                return {element.attrib['name']: element.attrib['value']}
-            else:
-                return element.attrib['name']
+    <cvParam> and <userParam> elements are treated in a special way."""
+    name = _local_name(element)
+    if name in ('cvParam', 'userParam'):
+        if 'value' in element.attrib:
+            return {element.attrib['name']: element.attrib['value']}
         else:
-            return dict(element.attrib) 
+            return {'name': element.attrib['name']}
     info = dict(element.attrib)
     if recursive:
         for child in element.iterchildren():
-            info[_local_name(child)] = _get_info(child, True)
+            cname = _local_name(child)
+            if cname in ('cvParam', 'userParam'):
+                info.update(_get_info(child))
+            else:
+                if child not in info:
+                    info[cname] = _get_info(child, True)
+                else:
+                    if not isinstance(info[cname], list):
+                        info[cname] = [info[cname]]
+                    info[cname].append(_get_info(child, True))
+    if element.text and element.text.strip():
+        stext = element.text.strip()
+        if stext:
+            if info:
+                info[name] = stext
+            else:
+                return stext
     return info
 
 def _get_info_smart(element):
     """Extract the info in a smart way depending on the element type"""
-
-    raise NotImplementedError
+    name = _local_name(element)
+    if name == 'MzIdentML':
+        return _get_info(element, False)
+    elif name == 'Affiliation':
+        return {name: element.attrib['organization_ref']}
+    else:
+        return _get_info(element, True)
 
 def get_by_id(source, elem_id):
     """Parse ``source`` and return the element with `id` attribute equal to
@@ -89,9 +107,17 @@ def get_by_id(source, elem_id):
     -------
     out : :py:class:`lxml.etree.Element` or :py:const:`None`
     """
-    for _, e in etree.iterparse(source):
-        if e.attrib.get('id') == elem_id:
-            return _get_info_smart(e)
+    found = False
+    for event, elem in etree.iterparse(source, events=('start', 'end')):
+        if event == 'start':
+            if elem.attrib.get('id') == elem_id:
+                found = True
+        else:
+            if elem.attrib.get('id') == elem_id:
+                return _get_info_smart(elem)
+                found = False
+        if not found:
+            elem.clear()
     return None
 
 def read(source):
