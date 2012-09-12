@@ -43,6 +43,7 @@ Data access
 #   limitations under the License.
 
 from lxml import etree
+from .auxiliary import PyteomicsError
 
 def _local_name(element):
     if element.tag.startswith('{'):
@@ -107,6 +108,14 @@ def get_by_id(source, elem_id):
     -------
     out : :py:class:`lxml.etree.Element` or :py:const:`None`
     """
+
+    if hasattr(source, 'seek'):
+        try:
+            pos = source.tell()
+        except AttributeError:
+            raise PyteomicsError("File-like object passed as `source`, but "
+                    "can't `tell()` the current position")
+        source.seek(0)
     found = False
     for event, elem in etree.iterparse(source, events=('start', 'end')):
         if event == 'start':
@@ -114,10 +123,11 @@ def get_by_id(source, elem_id):
                 found = True
         else:
             if elem.attrib.get('id') == elem_id:
+                if hasattr(source, 'seek'):
+                    source.seek(pos)
                 return _get_info_smart(elem)
-                found = False
-        if not found:
-            elem.clear()
+            if not found:
+                elem.clear()
     return None
 
 def read(source):
@@ -134,8 +144,21 @@ def read(source):
        An iterator over the dicts with PSM properties.
     """
 
-    for _, elem in etree.iterparse(source):
-        if elem.tag == '{{{}}}SpectrumIdentificationResult'.format(
-                elem.nsmap.get(None, '')):
-            yield _get_info_smart(elem)
-            elem.clear()
+    return _itertag(source, 'SpectrumIdentificationResult')
+
+def _itertag(source, localname):
+    """Parse ``source`` and yield info on elements with specified local name.
+    Case-insensitive. Namespace-aware."""
+    found = False
+    for ev, elem in etree.iterparse(source, events=('start', 'end')):
+        if ev == 'start':
+            if elem.tag.lower() == '{{{}}}{}'.format(
+                    elem.nsmap.get(None, '').lower(), localname.lower()):
+                found = True
+        else:
+            if elem.tag.lower() == '{{{}}}{}'.format(
+                    elem.nsmap.get(None, '').lower(), localname.lower()):
+                yield _get_info_smart(elem)
+                found = False
+                if not found:
+                    elem.clear()
