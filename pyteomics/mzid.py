@@ -1,5 +1,5 @@
 """
-mzidentml - reader for peptide identification data in mzIdentML format
+mzid - reader for peptide identification data in mzIdentML format
 ======================================================================
 
 Summary
@@ -43,7 +43,22 @@ Data access
 #   limitations under the License.
 
 from lxml import etree
+from functools import wraps
 from .auxiliary import PyteomicsError
+
+def _keepstate(func):
+    """Decorator to help keep the position in open files passed as arguments"""
+    @wraps(func)
+    def wrapped(source, *args, **kwargs):
+        if hasattr(source, 'seek') and hasattr(source, 'tell'):
+            pos = source.tell()
+            source.seek(0)
+            res = func(source, *args, **kwargs)
+            source.seek(pos)
+            return res
+        else:
+            return func(source, *args, **kwargs)
+    return wrapped
 
 def _local_name(element):
     if element.tag.startswith('{'):
@@ -67,7 +82,7 @@ def _get_info(element, recursive=False):
             if cname in ('cvParam', 'userParam'):
                 info.update(_get_info(child))
             else:
-                if child not in info:
+                if cname not in info:
                     info[cname] = _get_info(child, True)
                 else:
                     if not isinstance(info[cname], list):
@@ -92,6 +107,7 @@ def _get_info_smart(element):
     else:
         return _get_info(element, True)
 
+@_keepstate
 def get_by_id(source, elem_id):
     """Parse ``source`` and return the element with `id` attribute equal to
     ``elem_id``. Returns :py:const:`None` if no such element is found.
@@ -109,13 +125,6 @@ def get_by_id(source, elem_id):
     out : :py:class:`lxml.etree.Element` or :py:const:`None`
     """
 
-    if hasattr(source, 'seek'):
-        try:
-            pos = source.tell()
-        except AttributeError:
-            raise PyteomicsError("File-like object passed as `source`, but "
-                    "can't `tell()` the current position")
-        source.seek(0)
     found = False
     for event, elem in etree.iterparse(source, events=('start', 'end')):
         if event == 'start':
@@ -123,8 +132,6 @@ def get_by_id(source, elem_id):
                 found = True
         else:
             if elem.attrib.get('id') == elem_id:
-                if hasattr(source, 'seek'):
-                    source.seek(pos)
                 return _get_info_smart(elem)
             if not found:
                 elem.clear()
@@ -146,6 +153,7 @@ def read(source):
 
     return _itertag(source, 'SpectrumIdentificationResult')
 
+@_keepstate
 def _itertag(source, localname):
     """Parse ``source`` and yield info on elements with specified local name.
     Case-insensitive. Namespace-aware."""
