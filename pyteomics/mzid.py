@@ -170,3 +170,24 @@ def _itertag(source, localname):
                 found = False
                 if not found:
                     elem.clear()
+
+@_keepstate
+def mzid_version(source):
+    for elem in _itertag(source, 'MzIdentML'):
+        return elem.get('version')
+
+def _schema_info(source, key):
+    '''Stores defaults for version 1.1.0, tries to retrieve the schema for
+    other versions. Keys are: 'floats', 'ints', 'lists'.'''
+    version = mzid_version(source)
+    defaults = {'ints': 'fillhere',
+            'floats': 'fillhere',
+            'lists': 'fillhere'}
+    if version == '1.1.0':
+        return defaults[key]
+    else:
+        try:
+            schema_url = list(_itertag(source, 'MzIdentML')
+                    )[0]['xsi:schemaLocation'].split()[-1]
+        except:
+            raise
