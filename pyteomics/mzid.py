@@ -44,6 +44,12 @@ Data access
 
 from lxml import etree
 from functools import wraps
+from warnings import warn
+from collections import defaultdict
+try: # Python 2.7
+    from urllib import urlopen
+except ImportError: # Python 3.x
+    from urllib.request import urlopen
 from .auxiliary import PyteomicsError
 
 def _keepstate(func):
@@ -66,7 +72,7 @@ def _local_name(element):
     else:
         return element.tag
 
-def _get_info(element, recursive=False):
+def _get_info(source, element, recursive=False):
     """Extract info from element's attributes, possibly recursive.
     <cvParam> and <userParam> elements are treated in a special way."""
     name = _local_name(element)
@@ -76,18 +82,20 @@ def _get_info(element, recursive=False):
         else:
             return {'name': element.attrib['name']}
     info = dict(element.attrib)
+    # process subelements
     if recursive:
         for child in element.iterchildren():
             cname = _local_name(child)
             if cname in ('cvParam', 'userParam'):
-                info.update(_get_info(child))
+                info.update(_get_info(source, child))
             else:
-                if cname not in info:
-                    info[cname] = _get_info(child, True)
+                if cname not in _schema_info(source, 'lists'):
+                    info[cname] = _get_info(source, child, True)
                 else:
-                    if not isinstance(info[cname], list):
-                        info[cname] = [info[cname]]
-                    info[cname].append(_get_info(child, True))
+                    if cname not in info:
+                        info[cname] = []
+                    info[cname].append(_get_info(source, child, True))
+    # process element text
     if element.text and element.text.strip():
         stext = element.text.strip()
         if stext:
@@ -95,17 +103,22 @@ def _get_info(element, recursive=False):
                 info[name] = stext
             else:
                 return stext
+    # convert types
+    for k, v in info.items():
+        if k in _schema_info(source, 'ints'):
+            info[k] = int(v)
+        elif k in _schema_info(source, 'floats'):
+            info[k] = float(v)
+        
     return info
 
-def _get_info_smart(element):
+def _get_info_smart(source, element):
     """Extract the info in a smart way depending on the element type"""
     name = _local_name(element)
     if name == 'MzIdentML':
-        return _get_info(element, False)
-    elif name == 'Affiliation':
-        return {name: element.attrib['organization_ref']}
+        return _get_info(source, element, False)
     else:
-        return _get_info(element, True)
+        return _get_info(source, element, True)
 
 @_keepstate
 def get_by_id(source, elem_id):
@@ -132,7 +145,7 @@ def get_by_id(source, elem_id):
                 found = True
         else:
             if elem.attrib.get('id') == elem_id:
-                return _get_info_smart(elem)
+                return _get_info_smart(source, elem)
             if not found:
                 elem.clear()
     return None
@@ -160,34 +173,80 @@ def _itertag(source, localname):
     found = False
     for ev, elem in etree.iterparse(source, events=('start', 'end')):
         if ev == 'start':
-            if elem.tag.lower() == '{{{}}}{}'.format(
-                    elem.nsmap.get(None, '').lower(), localname.lower()):
+            if _local_name(elem).lower() == localname.lower():
                 found = True
         else:
-            if elem.tag.lower() == '{{{}}}{}'.format(
-                    elem.nsmap.get(None, '').lower(), localname.lower()):
-                yield _get_info_smart(elem)
+            if _local_name(elem).lower() == localname.lower():
+                yield _get_info_smart(source, elem)
                 found = False
                 if not found:
                     elem.clear()
 
 @_keepstate
-def mzid_version(source):
-    for elem in _itertag(source, 'MzIdentML'):
-        return elem.get('version')
+def mzid_version_info(source):
+    for _, elem in etree.iterparse(source, events=('start',)):
+        if _local_name(elem) == 'MzIdentML':
+            return elem.attrib.get('version'), elem.attrib.get((
+                '{{{}}}'.format(elem.nsmap['xsi'])
+                if 'xsi' in elem.nsmap else '') + 'schemaLocation')
 
+_schema_info_cache = defaultdict(dict)
 def _schema_info(source, key):
     '''Stores defaults for version 1.1.0, tries to retrieve the schema for
     other versions. Keys are: 'floats', 'ints', 'lists'.'''
-    version = mzid_version(source)
-    defaults = {'ints': 'fillhere',
-            'floats': 'fillhere',
-            'lists': 'fillhere'}
+
+    if key in _schema_info_cache[source]:
+        return _schema_info_cache[source][key]
+    
+    version, schema = mzid_version_info(source)
+    defaults = {'ints': ('charge', 'chargeState', 'rank', 'location',
+                'missedCleavages', 'start', 'end', 'length', 'year'),
+            'floats': ('massDelta', 'experimentalMassToCharge',
+                  'calculatedMassToCharge', 'calculatedPI', 'avgMassDelta',
+                  'monoisotopicMassDelta', 'mass'),
+            'lists': ('Residue', 'AnalysisSoftware', 'SpectrumIdentificationList',
+                'SourceFile', 'SpectrumIdentificationProtocol',
+                'ProteinDetectionHypothesis', 'SpectraData', 'Enzyme',
+                'Modification', 'MassTable', 'DBSequence',
+                'InputSpectra', 'cv', 'IonType', 'SearchDatabaseRef',
+                'Peptide', 'SearchDatabase', 'ContactRole', 'cvParam',
+                'ProteinAmbiguityGroup', 'SubSample', 'SpectrumIdentificationItem',
+                'TranslationTable', 'AmbiguousResidue', 'SearchModification',
+                'SubstitutionModification', 'PeptideEvidenceRef',
+                'PeptideEvidence', 'SpecificityRules',
+                'SpectrumIdentificationResult', 'Filter', 'FragmentArray',
+                'InputSpectrumIdentifications', 'BibliographicReference',
+                'SpectrumIdentification', 'Sample', 'Affiliation',
+                'PeptideHypothesis',
+                'Measure', 'SpectrumIdentificationItemRef')}
     if version == '1.1.0':
-        return defaults[key]
+        ret = defaults[key]
     else:
         try:
-            schema_url = list(_itertag(source, 'MzIdentML')
-                    )[0]['xsi:schemaLocation'].split()[-1]
-        except:
-            raise
+            if not schema:
+                schema_url = ''
+                raise PyteomicsError(
+                        'Schema information not found in {}.'.format(source))
+            schema_url = schema.split()[-1]
+            schema_file = urlopen(schema_url)
+            if key == 'ints':
+                ret = set(elem['name'] for elem in _itertag(
+                    schema_file, 'attribute') if elem.get('type') == 'xsd:int')
+            elif key == 'floats':
+                ret = set(elem['name'] for elem in _itertag(
+                    schema_file, 'attribute') if elem.get('type') in (
+                        'xsd:float', 'xsd:double'))
+            elif key == 'lists':
+                ret = set(elem['name'] for elem in _itertag(
+                    schema_file, 'element') if elem.get('maxOccurs', '1') != '1')
+            else:
+                raise PyteomicsError('Unknown key ' + key)
+
+        except Exception, e:
+            warn("Unknown MzIdentML version `{}`. Attempt to use schema "
+                    "information from <{}> failed. Reason:\n{!r}: {}\n"
+                    "Falling back to defaults for 1.1.0".format(
+                        version, schema_url, type(e), e.message))
+            ret = defaults[key]
+    _schema_info_cache[source][key] = ret
+    return ret
