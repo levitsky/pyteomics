@@ -46,6 +46,7 @@ from lxml import etree
 from functools import wraps
 from warnings import warn
 from collections import defaultdict
+import numpy
 try: # Python 2.7
     from urllib import urlopen
 except ImportError: # Python 3.x
@@ -72,7 +73,7 @@ def _local_name(element):
     else:
         return element.tag
 
-def _get_info(source, element, recursive=False):
+def _get_info(source, element, recursive=False, retrieve_refs=False):
     """Extract info from element's attributes, possibly recursive.
     <cvParam> and <userParam> elements are treated in a special way."""
     name = _local_name(element)
@@ -90,11 +91,11 @@ def _get_info(source, element, recursive=False):
                 info.update(_get_info(source, child))
             else:
                 if cname not in _schema_info(source, 'lists'):
-                    info[cname] = _get_info(source, child, True)
+                    info[cname] = _get_info(source, child, True, retrieve_refs)
                 else:
                     if cname not in info:
                         info[cname] = []
-                    info[cname].append(_get_info(source, child, True))
+                    info[cname].append(_get_info(source, child, True, retrieve_refs))
     # process element text
     if element.text and element.text.strip():
         stext = element.text.strip()
@@ -109,16 +110,28 @@ def _get_info(source, element, recursive=False):
             info[k] = int(v)
         elif k in _schema_info(source, 'floats'):
             info[k] = float(v)
-        
+        elif k in _schema_info(source, 'intlists'):
+            info[k] = numpy.fromstring(v, dtype=int, sep = ' ')
+        elif k in _schema_info(source, 'floatlists'):
+            info[k] = numpy.fromstring(v, sep = ' ')
+    # resolve refs
+    if retrieve_refs:
+        for k, v in dict(info).items():
+            if k.endswith('_ref'):
+                info.update(get_by_id(source, v))
     return info
 
-def _get_info_smart(source, element):
+def _get_info_smart(source, element, **kw):
     """Extract the info in a smart way depending on the element type"""
     name = _local_name(element)
+    kwargs = dict(kw)
+    rec = kwargs.pop('recursive', None)
     if name == 'MzIdentML':
-        return _get_info(source, element, False)
+        return _get_info(source, element, rec if rec is not None else False,
+                **kwargs)
     else:
-        return _get_info(source, element, True)
+        return _get_info(source, element, rec if rec is not None else True,
+                **kwargs)
 
 @_keepstate
 def get_by_id(source, elem_id):
@@ -150,7 +163,7 @@ def get_by_id(source, elem_id):
                 elem.clear()
     return None
 
-def read(source):
+def read(source, **kwargs):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
@@ -163,11 +176,11 @@ def read(source):
     out : iterator
        An iterator over the dicts with PSM properties.
     """
-
-    return _itertag(source, 'SpectrumIdentificationResult')
+    
+    return _itertag(source, 'SpectrumIdentificationResult', **kwargs)
 
 @_keepstate
-def _itertag(source, localname):
+def _itertag(source, localname, **kwargs):
     """Parse ``source`` and yield info on elements with specified local name.
     Case-insensitive. Namespace-aware."""
     found = False
@@ -177,7 +190,7 @@ def _itertag(source, localname):
                 found = True
         else:
             if _local_name(elem).lower() == localname.lower():
-                yield _get_info_smart(source, elem)
+                yield _get_info_smart(source, elem, **kwargs)
                 found = False
                 if not found:
                     elem.clear()
@@ -218,7 +231,9 @@ def _schema_info(source, key):
                 'InputSpectrumIdentifications', 'BibliographicReference',
                 'SpectrumIdentification', 'Sample', 'Affiliation',
                 'PeptideHypothesis',
-                'Measure', 'SpectrumIdentificationItemRef')}
+                'Measure', 'SpectrumIdentificationItemRef'),
+            'intlists': ('index', 'msLevel'),
+            'floatlists': ('values',)}
     if version == '1.1.0':
         ret = defaults[key]
     else:
@@ -230,15 +245,25 @@ def _schema_info(source, key):
             schema_url = schema.split()[-1]
             schema_file = urlopen(schema_url)
             if key == 'ints':
-                ret = set(elem['name'] for elem in _itertag(
-                    schema_file, 'attribute') if elem.get('type') == 'xsd:int')
+                ret = set(elem['name'] for _, elem in etree.iterparse(
+                    schema_file) if _local_name(elem) == 'attribute' and (
+                        elem.attrib.get('type') == 'xsd:int'))
             elif key == 'floats':
-                ret = set(elem['name'] for elem in _itertag(
-                    schema_file, 'attribute') if elem.get('type') in (
-                        'xsd:float', 'xsd:double'))
+                ret = set(elem['name'] for _, elem in etree.iterparse(
+                    schema_file) if _local_name(elem) == 'attribute' and (
+                        elem.attrib.get('type') in ('xsd:float', 'xsd:double')))
             elif key == 'lists':
-                ret = set(elem['name'] for elem in _itertag(
-                    schema_file, 'element') if elem.get('maxOccurs', '1') != '1')
+                ret = set(elem['name'] for _, elem in etree.iterparse(
+                    schema_file) if _local_name(elem) == 'element' and (
+                        elem.attrib.get('maxOccurs', '1') != '1'))
+            elif key == 'intlists':
+                ret = set(elem['name'] for _, elem in etree.iterparse(
+                    schema_file) if _local_name(elem) == 'attribute' and (
+                        elem.attrib.get('type') == 'listOfIntegers'))
+            elif key == 'floatlists':
+                ret = set(elem['name'] for _, elem in etree.iterparse(
+                    schema_file) if _local_name(elem) == 'attribute' and (
+                        elem.attrib.get('type') == 'listOfFloats'))
             else:
                 raise PyteomicsError('Unknown key ' + key)
 
