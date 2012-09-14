@@ -104,15 +104,15 @@ def _get_info(source, element, recursive=False, retrieve_refs=False):
             else:
                 return stext
     # convert types
+    converters = {'ints': int, 'floats': float,
+            'intlists': lambda x: numpy.fromstring(x, dtype=int, sep=' '),
+            'floatlists': lambda x: numpy.fromstring(x, sep=' ')}
     for k, v in info.items():
-        if k in _schema_info(source, 'ints'):
-            info[k] = int(v)
-        elif k in _schema_info(source, 'floats'):
-            info[k] = float(v)
-        elif k in _schema_info(source, 'intlists'):
-            info[k] = numpy.fromstring(v, dtype=int, sep = ' ')
-        elif k in _schema_info(source, 'floatlists'):
-            info[k] = numpy.fromstring(v, sep = ' ')
+        for t, a in converters.items():
+#           print (_local_name(element), k)
+#           print _schema_info(source, t)
+            if (_local_name(element), k) in _schema_info(source, t):
+                info[k] = a(v)
     # resolve refs
     if retrieve_refs:
         for k, v in dict(info).items():
@@ -211,12 +211,26 @@ def _schema_info(source, key):
         return _schema_info_cache[source][key]
     
     version, schema = mzid_version_info(source)
-    defaults = {'ints': ('charge', 'chargeState', 'rank', 'location',
-                'missedCleavages', 'start', 'end', 'length', 'year'),
-            'floats': ('massDelta', 'experimentalMassToCharge',
-                  'calculatedMassToCharge', 'calculatedPI', 'avgMassDelta',
-                  'monoisotopicMassDelta', 'mass'),
-            'lists': ('Residue', 'AnalysisSoftware', 'SpectrumIdentificationList',
+    defaults = {'ints': {('ModificationType', 'location'),
+                     ('SpectrumIdentificationItemType', 'chargeState'),
+                     ('IonTypeType', 'charge'),
+                     ('SubstitutionModificationType', 'location'),
+                     ('BibliographicReferenceType', 'year'),
+                     ('EnzymeType', 'missedCleavages'),
+                     ('SpectrumIdentificationItemType', 'rank'),
+                     ('PeptideEvidenceType', 'start'),
+                     ('PeptideEvidenceType', 'end'),
+                     ('DBSequenceType', 'length')},
+            'floats': {('SpectrumIdentificationItemType', 'calculatedMassToCharge'),
+                     ('SubstitutionModificationType', 'monoisotopicMassDelta'),
+                     ('ResidueType', 'mass'),
+                     ('ModificationType', 'avgMassDelta'),
+                     ('ModificationType', 'monoisotopicMassDelta'),
+                     ('SearchModificationType', 'massDelta'),
+                     ('SubstitutionModificationType', 'avgMassDelta'),
+                     ('SpectrumIdentificationItemType', 'calculatedPI'),
+                     ('SpectrumIdentificationItemType', 'experimentalMassToCharge')},
+            'lists': {'Residue', 'AnalysisSoftware', 'SpectrumIdentificationList',
                 'SourceFile', 'SpectrumIdentificationProtocol',
                 'ProteinDetectionHypothesis', 'SpectraData', 'Enzyme',
                 'Modification', 'MassTable', 'DBSequence',
@@ -230,12 +244,13 @@ def _schema_info(source, key):
                 'InputSpectrumIdentifications', 'BibliographicReference',
                 'SpectrumIdentification', 'Sample', 'Affiliation',
                 'PeptideHypothesis',
-                'Measure', 'SpectrumIdentificationItemRef'),
-            'intlists': ('index', 'msLevel'),
-            'floatlists': ('values',)}
+                'Measure', 'SpectrumIdentificationItemRef'},
+            'intlists': {('IonTypeType', 'index'), ('MassTableType', 'msLevel')},
+            'floatlists': {('FragmentArray', 'values')}}
     if version == '1.1.0':
         ret = defaults
     else:
+        ret = {}
         try:
             if not schema:
                 schema_url = ''
@@ -249,21 +264,26 @@ def _schema_info(source, key):
                     'intlists': ('listOfIntegers',),
                     'floatlists': ('listOfFloats',)}
             for key, val in types.items():
-                ret[key] = [(schema_tree.xpath('//*[@type="{}"]'.format(
-                    elem.getparent().attrib['name']))[0].attrib['name'],
-                    elem.attrib['name'])
-                    for elem in schema_tree.xpath(
-                        '//*[local-name()="attribute"]')
-                    if elem.attrib.get('type') in val and (
-                        _local_name(elem.getparent()) == 'complexType')]
-            ret['lists'] = set(elem.attrib['name'] for elem in tree.xpath(
+                tuples = set()
+                for elem in schema_tree.iter():
+                    if elem.attrib.get('type') in val:
+                        anc = elem.getparent()
+                        while not _local_name(anc) == 'complexType':
+                            anc = anc.getparent()
+                            if anc is None:
+                                break
+                        else:
+                            tuples.add(
+                                    (anc.attrib['name'], elem.attrib['name']))
+                ret[key] = tuples
+            ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
                 '//*[local-name()="element"]') if elem.attrib.get(
                     'maxOccurs', '1') != '1')
         except Exception, e:
-            warn("Unknown MzIdentML version `{}`. Attempt to use schema "
-                    "information from <{}> failed. Reason:\n{!r}: {}\n"
+            warn("Unknown MzIdentML version `{}`. Attempt to use schema\n"
+                    "information from <{}> failed. Reason:\n{}: {}\n"
                     "Falling back to defaults for 1.1.0".format(
-                        version, schema_url, type(e), e.message))
+                        version, schema_url, type(e).__name__, e.message))
             ret = defaults
     _schema_info_cache[source] = ret
     return ret[key]
