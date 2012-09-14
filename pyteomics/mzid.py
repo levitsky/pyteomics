@@ -45,7 +45,6 @@ Data access
 from lxml import etree
 from functools import wraps
 from warnings import warn
-from collections import defaultdict
 import numpy
 try: # Python 2.7
     from urllib import urlopen
@@ -203,12 +202,12 @@ def mzid_version_info(source):
                 '{{{}}}'.format(elem.nsmap['xsi'])
                 if 'xsi' in elem.nsmap else '') + 'schemaLocation')
 
-_schema_info_cache = defaultdict(dict)
+_schema_info_cache = {}
 def _schema_info(source, key):
     '''Stores defaults for version 1.1.0, tries to retrieve the schema for
     other versions. Keys are: 'floats', 'ints', 'lists'.'''
 
-    if key in _schema_info_cache[source]:
+    if source in _schema_info_cache:
         return _schema_info_cache[source][key]
     
     version, schema = mzid_version_info(source)
@@ -235,7 +234,7 @@ def _schema_info(source, key):
             'intlists': ('index', 'msLevel'),
             'floatlists': ('values',)}
     if version == '1.1.0':
-        ret = defaults[key]
+        ret = defaults
     else:
         try:
             if not schema:
@@ -244,34 +243,27 @@ def _schema_info(source, key):
                         'Schema information not found in {}.'.format(source))
             schema_url = schema.split()[-1]
             schema_file = urlopen(schema_url)
-            if key == 'ints':
-                ret = set(elem['name'] for _, elem in etree.iterparse(
-                    schema_file) if _local_name(elem) == 'attribute' and (
-                        elem.attrib.get('type') == 'xsd:int'))
-            elif key == 'floats':
-                ret = set(elem['name'] for _, elem in etree.iterparse(
-                    schema_file) if _local_name(elem) == 'attribute' and (
-                        elem.attrib.get('type') in ('xsd:float', 'xsd:double')))
-            elif key == 'lists':
-                ret = set(elem['name'] for _, elem in etree.iterparse(
-                    schema_file) if _local_name(elem) == 'element' and (
-                        elem.attrib.get('maxOccurs', '1') != '1'))
-            elif key == 'intlists':
-                ret = set(elem['name'] for _, elem in etree.iterparse(
-                    schema_file) if _local_name(elem) == 'attribute' and (
-                        elem.attrib.get('type') == 'listOfIntegers'))
-            elif key == 'floatlists':
-                ret = set(elem['name'] for _, elem in etree.iterparse(
-                    schema_file) if _local_name(elem) == 'attribute' and (
-                        elem.attrib.get('type') == 'listOfFloats'))
-            else:
-                raise PyteomicsError('Unknown key ' + key)
-
+            schema_tree = etree.parse(schema_file)
+            types = {'ints': ('xsd:int',),
+                    'floats': ('xsd:float', 'xsd:double'),
+                    'intlists': ('listOfIntegers',),
+                    'floatlists': ('listOfFloats',)}
+            for key, val in types.items():
+                ret[key] = [(schema_tree.xpath('//*[@type="{}"]'.format(
+                    elem.getparent().attrib['name']))[0].attrib['name'],
+                    elem.attrib['name'])
+                    for elem in schema_tree.xpath(
+                        '//*[local-name()="attribute"]')
+                    if elem.attrib.get('type') in val and (
+                        _local_name(elem.getparent()) == 'complexType')]
+            ret['lists'] = set(elem.attrib['name'] for elem in tree.xpath(
+                '//*[local-name()="element"]') if elem.attrib.get(
+                    'maxOccurs', '1') != '1')
         except Exception, e:
             warn("Unknown MzIdentML version `{}`. Attempt to use schema "
                     "information from <{}> failed. Reason:\n{!r}: {}\n"
                     "Falling back to defaults for 1.1.0".format(
                         version, schema_url, type(e), e.message))
-            ret = defaults[key]
-    _schema_info_cache[source][key] = ret
-    return ret
+            ret = defaults
+    _schema_info_cache[source] = ret
+    return ret[key]
