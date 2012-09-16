@@ -211,41 +211,41 @@ def _schema_info(source, key):
         return _schema_info_cache[source][key]
     
     version, schema = mzid_version_info(source)
-    defaults = {'ints': {('ModificationType', 'location'),
-                     ('SpectrumIdentificationItemType', 'chargeState'),
-                     ('IonTypeType', 'charge'),
-                     ('SubstitutionModificationType', 'location'),
-                     ('BibliographicReferenceType', 'year'),
-                     ('EnzymeType', 'missedCleavages'),
-                     ('SpectrumIdentificationItemType', 'rank'),
-                     ('PeptideEvidenceType', 'start'),
-                     ('PeptideEvidenceType', 'end'),
-                     ('DBSequenceType', 'length')},
-            'floats': {('SpectrumIdentificationItemType', 'calculatedMassToCharge'),
-                     ('SubstitutionModificationType', 'monoisotopicMassDelta'),
-                     ('ResidueType', 'mass'),
-                     ('ModificationType', 'avgMassDelta'),
-                     ('ModificationType', 'monoisotopicMassDelta'),
-                     ('SearchModificationType', 'massDelta'),
-                     ('SubstitutionModificationType', 'avgMassDelta'),
-                     ('SpectrumIdentificationItemType', 'calculatedPI'),
-                     ('SpectrumIdentificationItemType', 'experimentalMassToCharge')},
-            'lists': {'Residue', 'AnalysisSoftware', 'SpectrumIdentificationList',
-                'SourceFile', 'SpectrumIdentificationProtocol',
-                'ProteinDetectionHypothesis', 'SpectraData', 'Enzyme',
-                'Modification', 'MassTable', 'DBSequence',
-                'InputSpectra', 'cv', 'IonType', 'SearchDatabaseRef',
-                'Peptide', 'SearchDatabase', 'ContactRole', 'cvParam',
-                'ProteinAmbiguityGroup', 'SubSample', 'SpectrumIdentificationItem',
-                'TranslationTable', 'AmbiguousResidue', 'SearchModification',
-                'SubstitutionModification', 'PeptideEvidenceRef',
-                'PeptideEvidence', 'SpecificityRules',
-                'SpectrumIdentificationResult', 'Filter', 'FragmentArray',
-                'InputSpectrumIdentifications', 'BibliographicReference',
-                'SpectrumIdentification', 'Sample', 'Affiliation',
-                'PeptideHypothesis',
-                'Measure', 'SpectrumIdentificationItemRef'},
-            'intlists': {('IonTypeType', 'index'), ('MassTableType', 'msLevel')},
+    defaults = {'ints': {('DBSequence', 'length'),
+                     ('IonType', 'charge'),
+                     ('BibliographicReference', 'year'),
+                     ('SubstitutionModification', 'location'),
+                     ('PeptideEvidence', 'end'),
+                     ('Enzyme', 'missedCleavages'),
+                     ('PeptideEvidence', 'start'),
+                     ('Modification', 'location'),
+                     ('SpectrumIdentificationItem', 'rank'),
+                     ('SpectrumIdentificationItem', 'chargeState')},
+            'floats': {('SubstitutionModification', 'monoisotopicMassDelta'),
+                     ('SpectrumIdentificationItem', 'experimentalMassToCharge'),
+                     ('Residue', 'mass'),
+                     ('SpectrumIdentificationItem', 'calculatedPI'),
+                     ('Modification', 'avgMassDelta'),
+                     ('SearchModification', 'massDelta'),
+                     ('Modification', 'monoisotopicMassDelta'),
+                     ('SubstitutionModification', 'avgMassDelta'),
+                     ('SpectrumIdentificationItem', 'calculatedMassToCharge')},
+            'lists': {'SourceFile', 'SpectrumIdentificationProtocol',
+                    'ProteinDetectionHypothesis', 'SpectraData', 'Enzyme',
+                    'Modification', 'MassTable', 'DBSequence',
+                    'InputSpectra', 'cv', 'IonType', 'SearchDatabaseRef',
+                    'Peptide', 'SearchDatabase', 'ContactRole', 'cvParam',
+                    'ProteinAmbiguityGroup', 'SubSample',
+                    'SpectrumIdentificationItem', 'TranslationTable',
+                    'AmbiguousResidue', 'SearchModification',
+                    'SubstitutionModification', 'PeptideEvidenceRef',
+                    'PeptideEvidence', 'SpecificityRules',
+                    'SpectrumIdentificationResult', 'Filter', 'FragmentArray',
+                    'InputSpectrumIdentifications', 'BibliographicReference',
+                    'SpectrumIdentification', 'Sample', 'Affiliation',
+                    'PeptideHypothesis',
+                    'Measure', 'SpectrumIdentificationItemRef'},
+            'intlists': {('IonType', 'index'), ('MassTable', 'msLevel')},
             'floatlists': {('FragmentArray', 'values')}}
     if version == '1.1.0':
         ret = defaults
@@ -263,7 +263,7 @@ def _schema_info(source, key):
                     'floats': ('xsd:float', 'xsd:double'),
                     'intlists': ('listOfIntegers',),
                     'floatlists': ('listOfFloats',)}
-            for key, val in types.items():
+            for k, val in types.items():
                 tuples = set()
                 for elem in schema_tree.iter():
                     if elem.attrib.get('type') in val:
@@ -273,9 +273,11 @@ def _schema_info(source, key):
                             if anc is None:
                                 break
                         else:
+                            elname = schema_tree.find('//*[@type="{}"]'.format(
+                                anc.attrib['name'])).attrib['name']
                             tuples.add(
-                                    (anc.attrib['name'], elem.attrib['name']))
-                ret[key] = tuples
+                                    (elname, elem.attrib['name']))
+                ret[k] = tuples
             ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
                 '//*[local-name()="element"]') if elem.attrib.get(
                     'maxOccurs', '1') != '1')
