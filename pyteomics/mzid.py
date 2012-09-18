@@ -76,7 +76,8 @@ def _get_info(source, element, recursive=False, retrieve_refs=False):
     """Extract info from element's attributes, possibly recursive.
     <cvParam> and <userParam> elements are treated in a special way."""
     name = _local_name(element)
-    if name in ('cvParam', 'userParam'):
+    kwargs = dict(recursive=recursive, retrieve_refs=retrieve_refs)
+    if name in {'cvParam', 'userParam'}:
         if 'value' in element.attrib:
             try:
                 value = float(element.attrib['value'])
@@ -85,20 +86,21 @@ def _get_info(source, element, recursive=False, retrieve_refs=False):
             return {element.attrib['name']: value}
         else:
             return {'name': element.attrib['name']}
+
     info = dict(element.attrib)
     # process subelements
     if recursive:
         for child in element.iterchildren():
             cname = _local_name(child)
-            if cname in ('cvParam', 'userParam'):
+            if cname in {'cvParam', 'userParam'}:
                 info.update(_get_info(source, child))
             else:
                 if cname not in _schema_info(source, 'lists'):
-                    info[cname] = _get_info(source, child, True, retrieve_refs)
+                    info[cname] = _get_info_smart(source, child, **kwargs)
                 else:
                     if cname not in info:
                         info[cname] = []
-                    info[cname].append(_get_info(source, child, True, retrieve_refs))
+                    info[cname].append(_get_info_smart(source, child, **kwargs))
     # process element text
     if element.text and element.text.strip():
         stext = element.text.strip()
@@ -125,6 +127,22 @@ def _get_info(source, element, recursive=False, retrieve_refs=False):
         for k, v in dict(info).items():
             if k.endswith('_ref'):
                 info.update(get_by_id(source, v))
+                del info[k]
+                del info['id']
+    # flatten the excessive nesting
+    keys = {'Fragmentation',} # should contain keys whose value is a dict
+    for k, v in dict(info).items():
+        if k in keys:
+            info.update(v)
+            del info[k]
+    # another simplification
+    for k, v in dict(info).items():
+        if isinstance(v, dict) and 'name' in v and len(v) == 1:
+            info[k] = v['name']
+    if len(info) == 2 and ('value' in info or 'values' in info):
+        name = info.pop('name')
+        info = {name: info.popitem()[1]}
+    print info, '\n'+'-'*100
     return info
 
 def _get_info_smart(source, element, **kw):
@@ -176,6 +194,13 @@ def read(source, **kwargs):
     ----------
     source : str or file
         A path to a target mzIdentML file or the file object itself.
+    recursive : bool, optional
+        If :py:const:`False`, subelements will not be processed when
+        extracting info from elements. Default is :py:const:`True`.
+    retrieve_refs : bool, optional
+        If :py:const:`True`, additional information from references will be
+        automatically added to the results. The file processing time will
+        increase. Default is :py:const:`False`.
 
     Returns
     -------
