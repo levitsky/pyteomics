@@ -78,7 +78,11 @@ def _get_info(source, element, recursive=False, retrieve_refs=False):
     name = _local_name(element)
     if name in ('cvParam', 'userParam'):
         if 'value' in element.attrib:
-            return {element.attrib['name']: element.attrib['value']}
+            try:
+                value = float(element.attrib['value'])
+            except ValueError:
+                value = element.attrib['value']
+            return {element.attrib['name']: value}
         else:
             return {'name': element.attrib['name']}
     info = dict(element.attrib)
@@ -104,13 +108,16 @@ def _get_info(source, element, recursive=False, retrieve_refs=False):
             else:
                 return stext
     # convert types
-    converters = {'ints': int, 'floats': float,
+    def str_to_bool(s):
+        if s.lower() in {'true', '1'}: return True
+        if s.lower() in {'false', '0'}: return False
+        raise PyteomicsError('Cannot convert string to bool: ' + s)
+
+    converters = {'ints': int, 'floats': float, 'bools': str_to_bool,
             'intlists': lambda x: numpy.fromstring(x, dtype=int, sep=' '),
             'floatlists': lambda x: numpy.fromstring(x, sep=' ')}
     for k, v in info.items():
         for t, a in converters.items():
-#           print (_local_name(element), k)
-#           print _schema_info(source, t)
             if (_local_name(element), k) in _schema_info(source, t):
                 info[k] = a(v)
     # resolve refs
@@ -230,6 +237,12 @@ def _schema_info(source, key):
                      ('Modification', 'monoisotopicMassDelta'),
                      ('SubstitutionModification', 'avgMassDelta'),
                      ('SpectrumIdentificationItem', 'calculatedMassToCharge')},
+            'bools': {('PeptideEvidence', 'isDecoy'),
+                     ('SearchModification', 'fixedMod'),
+                     ('Enzymes', 'independent'),
+                     ('Enzyme', 'semiSpecific'),
+                     ('SpectrumIdentificationItem', 'passThreshold'),
+                     ('ProteinDetectionHypothesis', 'passThreshold')},
             'lists': {'SourceFile', 'SpectrumIdentificationProtocol',
                     'ProteinDetectionHypothesis', 'SpectraData', 'Enzyme',
                     'Modification', 'MassTable', 'DBSequence',
@@ -261,6 +274,7 @@ def _schema_info(source, key):
             schema_tree = etree.parse(schema_file)
             types = {'ints': ('xsd:int',),
                     'floats': ('xsd:float', 'xsd:double'),
+                    'bools': ('xsd:boolean',),
                     'intlists': ('listOfIntegers',),
                     'floatlists': ('listOfFloats',)}
             for k, val in types.items():
