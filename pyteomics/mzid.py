@@ -117,18 +117,25 @@ def _get_info(source, element, recursive=False, retrieve_refs=False):
 
     converters = {'ints': int, 'floats': float, 'bools': str_to_bool,
             'intlists': lambda x: numpy.fromstring(x, dtype=int, sep=' '),
-            'floatlists': lambda x: numpy.fromstring(x, sep=' ')}
+            'floatlists': lambda x: numpy.fromstring(x, sep=' '),
+            'charlists': list}
     for k, v in info.items():
         for t, a in converters.items():
             if (_local_name(element), k) in _schema_info(source, t):
                 info[k] = a(v)
     # resolve refs
+    # loop is needed to resolve refs pulled from other refs
     if retrieve_refs:
-        for k, v in dict(info).items():
-            if k.endswith('_ref'):
-                info.update(get_by_id(source, v))
-                del info[k]
-                del info['id']
+        while True:
+            refs = False
+            for k, v in dict(info).items():
+                if k.endswith('_ref'):
+                    refs = True
+                    info.update(get_by_id(source, v))
+                    del info[k]
+                    del info['id']
+            if not refs:
+                break
     # flatten the excessive nesting
     keys = {'Fragmentation',} # should contain keys whose value is a dict
     for k, v in dict(info).items():
@@ -139,10 +146,10 @@ def _get_info(source, element, recursive=False, retrieve_refs=False):
     for k, v in dict(info).items():
         if isinstance(v, dict) and 'name' in v and len(v) == 1:
             info[k] = v['name']
-    if len(info) == 2 and ('value' in info or 'values' in info):
+    if len(info) == 2 and 'name' in info and (
+            'value' in info or 'values' in info):
         name = info.pop('name')
         info = {name: info.popitem()[1]}
-    print info, '\n'+'-'*100
     return info
 
 def _get_info_smart(source, element, **kw):
@@ -284,7 +291,9 @@ def _schema_info(source, key):
                     'PeptideHypothesis',
                     'Measure', 'SpectrumIdentificationItemRef'},
             'intlists': {('IonType', 'index'), ('MassTable', 'msLevel')},
-            'floatlists': {('FragmentArray', 'values')}}
+            'floatlists': {('FragmentArray', 'values')},
+            'charlists': {('Modification', 'residues'),
+                    ('SearchModification', 'residues')}}
     if version == '1.1.0':
         ret = defaults
     else:
@@ -297,11 +306,12 @@ def _schema_info(source, key):
             schema_url = schema.split()[-1]
             schema_file = urlopen(schema_url)
             schema_tree = etree.parse(schema_file)
-            types = {'ints': ('xsd:int',),
-                    'floats': ('xsd:float', 'xsd:double'),
-                    'bools': ('xsd:boolean',),
-                    'intlists': ('listOfIntegers',),
-                    'floatlists': ('listOfFloats',)}
+            types = {'ints': {'xsd:int'},
+                    'floats': {'xsd:float', 'xsd:double'},
+                    'bools': {'xsd:boolean'},
+                    'intlists': {'listOfIntegers'},
+                    'floatlists': {'listOfFloats'},
+                    'charlists': {'listOfChars', 'listOfCharsOrAny'}}
             for k, val in types.items():
                 tuples = set()
                 for elem in schema_tree.iter():
