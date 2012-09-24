@@ -198,7 +198,7 @@ def parse_sequence(sequence,
         If :py:const:`True` then the unmodified N- and C-termini are explicitly
         shown in the returned list. Default value is :py:const:`False`.
     split : bool, optional
-        If :py:const:`True` then the result will be a list of tuples with 1 to 3
+        If :py:const:`True` then the result will be a list of tuples with 1 to 4
         elements: terminal modification, modification, residue. Default value is
         :py:const:`False`.
     labels : list, optional
@@ -225,7 +225,7 @@ def parse_sequence(sequence,
     >>> parse_sequence('TEpSToxM', labels=std_labels + ['pS', 'oxM'])
     ['T', 'E', 'pS', 'T', 'oxM']
     >>> parse_sequence('zPEPzTIDzE', True, True, labels=std_labels+['z'])
-    [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',), ('z', 'E'), ('z', 'E', '-OH')]
+    [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',), ('z', 'E', '-OH')]
     """
     labels = kwargs.get('labels', std_labels)
     backbone_sequence = str(sequence)

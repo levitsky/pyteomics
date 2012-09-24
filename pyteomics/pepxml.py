@@ -53,7 +53,7 @@ except NameError: # Python 3.x
     from functools import reduce
 
 # spectrum_query attributes which contain float values.
-float_keys = (
+float_keys = {
     'calc_neutral_pep_mass',
     'precursor_neutral_mass',
     'massdiff',
@@ -67,7 +67,8 @@ float_keys = (
     'num_matched_ions',
     'index',
     'hit_rank',
-    )
+    'is_rejected'
+    }
 
 # Default namespace of pepXML.
 xmlns = 'http://regis-web.systemsbiology.net/pepXML'

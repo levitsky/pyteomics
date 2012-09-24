@@ -1,6 +1,8 @@
 import tempfile
 import unittest
 from pyteomics.fasta import *
+import random
+import string
 
 class FastaTest(unittest.TestCase):
     def setUp(self):
@@ -34,11 +36,24 @@ class FastaTest(unittest.TestCase):
                           ('test sequence 4', 'TEST')])
 
     def test_decoy_sequence_reverse(self):
-        sequence = 'ABCDEF123'
+        sequence = ''.join(random.choice(string.ascii_uppercase)
+                             for i in range(random.randint(1,100)))
         self.assertEqual(decoy_sequence(sequence, 'reverse'),
                 sequence[::-1])
 
-    def test_read_and_write_short(self):
+    def test_decoy_sequence_shuffle(self):
+        sequences = (''.join(random.choice(string.ascii_uppercase)
+                             for i in range(random.randint(1,100)))
+                                for j in range(10))
+        test = True
+        for s in sequences:
+            ss = decoy_sequence(s, 'shuffle')
+            self.assertEqual(sorted(list(s)), sorted(list(ss)))
+            if not all(a == b for a, b in zip(s, ss)):
+                test = False
+        self.assertFalse(test)
+
+    def test_read_and_write_fasta_short(self):
         self.fasta_file.seek(0)
         new_fasta_file = tempfile.TemporaryFile(mode='r+')
         write(read(self.fasta_file, True), new_fasta_file, False)
