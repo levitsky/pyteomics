@@ -330,7 +330,7 @@ def _schema_info(source, key):
             ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
                 '//*[local-name()="element"]') if elem.attrib.get(
                     'maxOccurs', '1') != '1')
-        except Exception, e:
+        except Exception as e:
             warn("Unknown MzIdentML version `{}`. Attempt to use schema\n"
                     "information from <{}> failed. Reason:\n{}: {}\n"
                     "Falling back to defaults for 1.1.0".format(

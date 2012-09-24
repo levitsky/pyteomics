@@ -338,5 +338,71 @@ xsi:schemaLocation="http://regis-web.systemsbiology.net/pepXML /tools/bin/TPP/tp
         </search_hit>
       </search_result>
     </spectrum_query>
+    <spectrum_query spectrum="MASCOT" start_scan="1366" end_scan="1366" precursor_neutral_mass="718.4136" assumed_charge="2" index="29" retention_time_sec="38.426123">
+    <search_result>
+    <search_hit hit_rank="1" peptide="VGQFIR" peptide_prev_aa="K" peptide_next_aa="L" protein="IPI00200898" num_tot_proteins="1" num_matched_ions="5" tot_num_ions="10" calc_neutral_pep_mass="718.4126" massdiff="+0.0011" num_tol_term="2" num_missed_cleavages="0" is_rejected="0">
+    <search_score name="ionscore" value="36.45"/>
+    <search_score name="identityscore" value="25.38"/>
+    <search_score name="star" value="0"/>
+    <search_score name="homologyscore" value="46.61"/>
+    <search_score name="expect" value="0.00"/>
+    <analysis_result analysis="peptideprophet">
+    <peptideprophet_result probability="0.7264" all_ntt_prob="(0.0000,0.5741,0.7264)">
+    <search_score_summary>
+    <parameter name="fval" value="0.6052"/>
+    <parameter name="ntt" value="2"/>
+    <parameter name="nmc" value="0"/>
+    <parameter name="massd" value="0.001"/>
+    </search_score_summary>
+    </peptideprophet_result>
+    </analysis_result>
+    </search_hit>
+    </search_result>
+    </spectrum_query>
+      <spectrum_query spectrum="X!Tandem" start_scan="6862" end_scan="6862" precursor_neutral_mass="1404.7476" assumed_charge="2" index="49">
+      <search_result>
+         <search_hit hit_rank="1" peptide="EVPLNTIIFMGR" peptide_prev_aa="R" peptide_next_aa="V" protein="sp|P01008|ANT3_HUMAN" protein_descr="Antithrombin-III OS=Homo sapiens GN=SERPINC1 PE=1 SV=1" num_tot_proteins="2" num_matched_ions="8" tot_num_ions="22" calc_neutral_pep_mass="1404.7435" massdiff="0.004" num_tol_term="2" num_missed_cleavages="0" is_rejected="0">
+            <alternative_protein protein="tr|Q8TCE1|Q8TCE1_HUMAN" protein_descr="SERPINC1 protein OS=Homo sapiens GN=SERPINC1 PE=2 SV=1" num_tol_term="2"/>
+            <modification_info>
+               <mod_aminoacid_mass position="10" mass="147.0354" />
+            </modification_info>
+            <search_score name="hyperscore" value="23.5"/>
+            <search_score name="nextscore" value="14.6"/>
+            <search_score name="bscore" value="2"/>
+            <search_score name="yscore" value="8.7"/>
+            <search_score name="expect" value="0.012"/>
+         </search_hit>
+      </search_result>
+      </spectrum_query>
+    <spectrum_query spectrum=" Cmpd 24, +MSn(1085.6886), 1.2 min.23.23.3" start_scan="23" end_scan="23" precursor_neutral_mass="3254.044921875" assumed_charge="3" index="3">
+      <search_result>
+        <search_hit hit_rank="1" peptide="DQQFDSSSSMALEDCGEETNCQSDFK" peptide_prev_aa="R" peptide_next_aa="I" protein="BL_ORD_ID:125453" num_tot_proteins="1" num_matched_ions="3" tot_num_ions="50" calc_neutral_pep_mass="3254.04711914062" massdiff="-0.002197265625" is_rejected="0" protein_descr="sp|O43149|ZZEF1_HUMAN Zinc finger ZZ-type and EF-hand domain-containing protein 1 OS=Homo sapiens GN=ZZEF1 PE=1 SV=6:reversed">
+          <modification_info modified_peptide="DQQFDS[166]S[166]SS[166]MALEDCGEETNCQSDFK">
+            <mod_aminoacid_mass position="6" mass="166.99803"/>
+            <mod_aminoacid_mass position="7" mass="166.99803"/>
+            <mod_aminoacid_mass position="9" mass="166.99803"/>
+            <mod_aminoacid_mass position="15" mass="160.03019"/>
+            <mod_aminoacid_mass position="21" mass="160.03019"/>
+          </modification_info>
+          <search_score name="pvalue" value="59.525854692994471"/>
+          <search_score name="expect" value="13690.946579388728424"/>
+        </search_hit>
+        <search_hit hit_rank="2" peptide="CENCNYPKEGTHTNQHETLHTSR" peptide_prev_aa="R" peptide_next_aa="S" protein="BL_ORD_ID:144314" num_tot_proteins="2" num_matched_ions="6" tot_num_ions="44" calc_neutral_pep_mass="3254.04711914062" massdiff="-0.002197265625" is_rejected="0" protein_descr="tr|Q6ZND3|Q6ZND3_HUMAN Zinc finger protein 184 OS=Homo sapiens GN=ZNF184 PE=2 SV=1:reversed">
+          <alternative_protein protein="BL_ORD_ID:154629" protein_descr="sp|Q99676|ZN184_HUMAN Zinc finger protein 184 OS=Homo sapiens GN=ZNF184 PE=1 SV=4:reversed"/>
+          <modification_info modified_peptide="CENCNY[243]PK[170]EGT[181]HT[181]NQHET[181]LHT[181]SR">
+            <mod_aminoacid_mass position="6" mass="243.02933"/>
+            <mod_aminoacid_mass position="8" mass="170.10596"/>
+            <mod_aminoacid_mass position="11" mass="181.01368"/>
+            <mod_aminoacid_mass position="13" mass="181.01368"/>
+            <mod_aminoacid_mass position="18" mass="181.01368"/>
+            <mod_aminoacid_mass position="21" mass="181.01368"/>
+            <mod_aminoacid_mass position="1" mass="160.03019"/>
+            <mod_aminoacid_mass position="4" mass="160.03019"/>
+          </modification_info>
+          <search_score name="pvalue" value="64.51166436222492"/>
+          <search_score name="expect" value="14837.682803311732641"/>
+        </search_hit>
+      </search_result>
+    </spectrum_query>
   </msms_run_summary>
 </msms_pipeline_analysis>

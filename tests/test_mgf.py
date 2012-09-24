@@ -26,9 +26,10 @@ class MGFTest(unittest.TestCase):
 
     def test_readwrite_keys(self):
         for i in range(self.ns):
-            self.assertEqual(self.spectra[i].keys(), self.spectra2[i].keys())
-            self.assertEqual(list(self.spectra[i].keys()),
-                    ['intensities', 'masses', 'params'])
+            self.assertEqual(set(self.spectra[i].keys()),
+                    set(self.spectra2[i].keys()))
+            self.assertEqual(set(self.spectra[i].keys()),
+                    {'intensities', 'masses', 'params', 'charges'})
 
     def test_readwrite_params(self):
         for i in range(self.ns):
