@@ -4,17 +4,33 @@ from string import ascii_uppercase as uppercase
 import random
 class ParserTest(unittest.TestCase):
     def setUp(self):
-        self.simple_sequences = [''.join([random.choice(uppercase) for i in range(
-            int(random.uniform(1, 20)))]) for j in range(10)]
+        self.simple_sequences = [''.join(random.choice(uppercase) for i in range(
+            int(random.uniform(1, 20)))) for j in range(10)]
         self.labels = ['A', 'B', 'C', 'N', 'X']
         self.extlabels = self.labels[:]
         self.potential = {'pot': ['X', 'A', 'B'], 'otherpot': ['A', 'C'], 'N-': ['N'], '-C': ['C']}
         self.constant = {'const': ['B']}
-        self.extlabels.extend(['pot', 'otherpot', 'const', '-C', 'N-'])
+        self.extlabels.extend(('pot', 'otherpot', 'const', '-C', 'N-'))
 
     def test_parse_sequence_simple(self):
         for seq in self.simple_sequences:
             self.assertEqual(seq, ''.join(parse_sequence(seq, labels=uppercase)))
+
+    def test_parse_sequence(self):
+        self.assertEqual(
+                [('P',), ('E',), ('P',), ('T',), ('I',), ('D',), ('E',)],
+                parse_sequence('PEPTIDE', split=True))
+        self.assertEqual(['P', 'E', 'P', 'T', 'I', 'D', 'E'],
+                parse_sequence('H-PEPTIDE'))
+        self.assertEqual(['H-', 'P', 'E', 'P', 'T', 'I', 'D', 'E', '-OH'],
+                parse_sequence('PEPTIDE', show_unmodified_termini=True))
+        self.assertEqual(['T', 'E', 'pS', 'T', 'oxM'],
+                parse_sequence('TEpSToxM', labels=std_labels + ['pS', 'oxM']))
+        self.assertEqual(
+                [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',),
+                    ('z', 'E', '-OH')],
+                parse_sequence(
+                    'zPEPzTIDzE', True, True, labels=std_labels+['z']))
 
     def test_tostring(self):
         for seq in self.simple_sequences:
@@ -27,6 +43,24 @@ class ParserTest(unittest.TestCase):
             comp = amino_acid_composition(seq, labels=uppercase)
             for aa in set(seq):
                 self.assertEqual(seq.count(aa), comp[aa])
+
+    def test_amino_acid_composition(self):
+        for seq in self.simple_sequences:
+            comp = amino_acid_composition(seq, term_aa=True, labels=uppercase)
+            comp_default = amino_acid_composition(seq, labels=uppercase)
+            self.assertEqual(1, comp['nterm'+seq[0]])
+            if len(seq) > 1:
+                self.assertEqual(1, comp['cterm'+seq[-1]])
+            self.assertEqual(sum(comp_default.values()),
+                             sum(comp.values()))
+
+    def test_cleave(self):
+        for seq in self.simple_sequences:
+            for elem in cleave(
+                    seq, expasy_rules['trypsin'], int(random.uniform(1, 10))):
+                self.assertIn(elem, seq)
+            self.assertTrue(any(elem == seq
+                for elem in cleave(seq, expasy_rules['trypsin'], len(seq))))
 
     def test_isoforms_simple(self):
         self.assertEqual(

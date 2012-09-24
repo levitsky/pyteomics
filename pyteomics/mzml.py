@@ -10,7 +10,7 @@ Please refer to http://www.psidev.info/index.php?q=node/257 for the detailed
 specification of the format and the structure of mzML files.
 
 This module provides minimalistic infrastructure for access to data stored in
-mzML files. The most important function is :py:func:`iter_spectrum`, which 
+mzML files. The most important function is :py:func:`read`, which 
 reads spectra and related information as saves them into human-readable dicts.
 The rest of data can be obtained via a combination of :py:func:`get_node` and
 :py:func:`read_params` functions. These functions rely on the terminology of 
@@ -19,7 +19,7 @@ the underlying `lxml library <http://lxml.de/>`_.
 Data access
 -----------
 
-  :py:func:`iter_spectrum` - iterate through spectra in mzML file. Data from a
+  :py:func:`read` - iterate through spectra in mzML file. Data from a
   single spectrum are converted to a human-readable dict. Spectra themselves are 
   stored under 'm/z array' and 'intensity array' keys.
 
@@ -95,7 +95,7 @@ def get_node(source, xpath, namespaces={'d':xmlns}):
     Parameters
     ----------
     source : str or file
-        A path or an URL to a target mzML file or the file object itself.
+        A path to a target mzML file or the file object itself.
     xpath : str
         An XPath to target nodes. 
     namespaces : dict, optional
@@ -273,13 +273,13 @@ def _spectrum_from_element(element, namespaces):
 
     return spectrum
 
-def iter_spectrum(source):
+def read(source):
     """Parse ``source`` and iterate through spectra.
 
     Parameters
     ----------
     source : str or file
-        A path or an URL to a target mzML file or the file object itself.
+        A path to a target mzML file or the file object itself.
 
     Returns
     -------
