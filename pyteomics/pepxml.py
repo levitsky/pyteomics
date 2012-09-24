@@ -12,7 +12,7 @@ Even though it is to be replaced by a community standard
 commonly.
 
 This module provides minimalistic infrastructure for access to data stored in
-pep.XML files. The most important function is :py:func:`iter_psm`, which 
+pep.XML files. The most important function is :py:func:`read`, which 
 reads peptide-spectum matches and related information and saves them into 
 human-readable dicts. The rest of data can be obtained via :py:func:`get_node` 
 function. This function relies on the terminology of the underlying 
@@ -21,7 +21,7 @@ function. This function relies on the terminology of the underlying
 Data access
 -----------
 
-  :py:func:`iter_psm` - iterate through peptide-spectrum matches in a pep.XML 
+  :py:func:`read` - iterate through peptide-spectrum matches in a pep.XML 
   file. Data from a single PSM are converted to a human-readable dict. 
 
   :py:func:`get_node` - get arbitrary nodes of pep.XML file by their xpath.
@@ -47,9 +47,13 @@ Data access
 #   limitations under the License.
 
 from lxml import etree
+try:
+    reduce # Python 2.7
+except NameError: # Python 3.x
+    from functools import reduce
 
-# A list of the spectrum_query attributes which contain float values.
-float_keys = [
+# spectrum_query attributes which contain float values.
+float_keys = {
     'calc_neutral_pep_mass',
     'precursor_neutral_mass',
     'massdiff',
@@ -63,7 +67,8 @@ float_keys = [
     'num_matched_ions',
     'index',
     'hit_rank',
-    ]
+    'is_rejected'
+    }
 
 # Default namespace of pepXML.
 xmlns = 'http://regis-web.systemsbiology.net/pepXML'
@@ -101,7 +106,7 @@ def get_node(source, xpath, namespaces={'d':xmlns}):
     Parameters
     ----------
     source : str or file
-        A path or an URL to a target pepXML file or the file object itself.
+        A path to a target pepXML file or the file object itself.
     xpath : str
         An XPath to target nodes. 
     namespaces : dict, optional
@@ -186,8 +191,6 @@ def _psm_from_query(query):
              "peptide_prev_aa": search_hit_info.pop("peptide_prev_aa"),
              "peptide_next_aa": search_hit_info.pop("peptide_next_aa")})
 
-        # Store a list of modifications.
-        modifications = []
         for subelement in search_hit.xpath("*[local-name()='search_score']"):
             search_hit_info[subelement.attrib['name']] = float(
                     subelement.attrib['value'])
@@ -198,6 +201,9 @@ def _psm_from_query(query):
         for subelement in search_hit.xpath(
                 "*[local-name()='alternative_protein']"):
             proteins.append(subelement.attrib)
+
+        # Store a list of modifications.
+        modifications = []
         for subelement in search_hit.xpath(
                 "*[local-name()='modification_info']"):
             search_hit_info['modified_peptide'] = subelement.attrib.get(
@@ -240,13 +246,13 @@ def _psm_from_query(query):
     psm['search_hits'].sort(key = lambda x: x['hit_rank'])
     return psm
     
-def iter_psm(source):
+def read(source):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
     ----------
     source : str or file
-        A path or an URL to a target pepXML file or the file object itself.
+        A path to a target pepXML file or the file object itself.
 
     Returns
     -------
@@ -265,7 +271,7 @@ def roc_curve(source):
     Parameters
     ----------
     source : str or file
-        A path or an URL to a target pepXML file or the file object itself.
+        A path to a target pepXML file or the file object itself.
 
     Returns
     -------

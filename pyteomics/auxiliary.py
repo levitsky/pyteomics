@@ -37,15 +37,15 @@ class PyteomicsError(Exception):
 
     Attributes
     ----------
-    msg : str
+    message : str
         Error message.
     """
 
     def __init__(self, msg):
-        self.msg = msg
+        self.message = msg
         
     def __str__(self):
-        return "Pyteomics error, message: %s" % (repr(self.msg),)
+        return "Pyteomics error, message: %s" % (repr(self.message),)
 
 def linear_regression(x, y, a=None, b=None):
     """Calculate coefficients of a linear regression y = a * x + b.

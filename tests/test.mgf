@@ -1,0 +1,40 @@
+COM=Taken from http://www.matrixscience.com/help/data_file_help.html
+ITOL=1
+ITOLU=Da
+MODS=Carbamidomethyl (C)
+IT_MODS=Oxidation (M)
+MASS=Monoisotopic
+USERNAME=Lou Scene
+USEREMAIL=leu@altered-state.edu
+CHARGE=2+ and 3+
+
+BEGIN IONS
+TITLE=Spectrum 1
+PEPMASS=983.6
+846.60 73
+846.80 44
+847.60 67
+1640.10 291
+1640.60 54
+1895.50 49
+END IONS
+
+BEGIN IONS
+TITLE=Spectrum 2
+PEPMASS=1084.9
+SCANS=3
+RTINSECONDS=25
+345.10 237
+370.20 128
+460.20 108
+1673.30 1007
+1674.00 974
+1675.30 79
+END IONS
+
+BEGIN IONS
+TITLE=Spectrum 3
+PEPMASS=1244.7
+SCANS=29-34
+RTINSECONDS=95-97
+
