@@ -442,6 +442,8 @@ def cleave(sequence, rule, missed_cleavages=0):
         cleavage_sites.append(i)
         for j in range(0, len(cleavage_sites)-1):
             peptides.add(sequence[cleavage_sites[j]:cleavage_sites[-1]])
+    if '' in peptides:
+        peptides.remove('')
     return peptides
 
 expasy_rules = {
