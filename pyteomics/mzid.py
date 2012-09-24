@@ -241,16 +241,7 @@ def mzid_version_info(source):
                 '{{{}}}'.format(elem.nsmap['xsi'])
                 if 'xsi' in elem.nsmap else '') + 'schemaLocation')
 
-_schema_info_cache = {}
-def _schema_info(source, key):
-    '''Stores defaults for version 1.1.0, tries to retrieve the schema for
-    other versions. Keys are: 'floats', 'ints', 'lists'.'''
-
-    if source in _schema_info_cache:
-        return _schema_info_cache[source][key]
-    
-    version, schema = mzid_version_info(source)
-    defaults = {'ints': {('DBSequence', 'length'),
+mzid_schema_defaults = {'ints': {('DBSequence', 'length'),
                      ('IonType', 'charge'),
                      ('BibliographicReference', 'year'),
                      ('SubstitutionModification', 'location'),
@@ -294,47 +285,65 @@ def _schema_info(source, key):
             'floatlists': {('FragmentArray', 'values')},
             'charlists': {('Modification', 'residues'),
                     ('SearchModification', 'residues')}}
-    if version == '1.1.0':
-        ret = defaults
-    else:
-        ret = {}
-        try:
-            if not schema:
-                schema_url = ''
-                raise PyteomicsError(
-                        'Schema information not found in {}.'.format(source))
-            schema_url = schema.split()[-1]
-            schema_file = urlopen(schema_url)
-            schema_tree = etree.parse(schema_file)
-            types = {'ints': {'xsd:int'},
-                    'floats': {'xsd:float', 'xsd:double'},
-                    'bools': {'xsd:boolean'},
-                    'intlists': {'listOfIntegers'},
-                    'floatlists': {'listOfFloats'},
-                    'charlists': {'listOfChars', 'listOfCharsOrAny'}}
-            for k, val in types.items():
-                tuples = set()
-                for elem in schema_tree.iter():
-                    if elem.attrib.get('type') in val:
-                        anc = elem.getparent()
-                        while not _local_name(anc) == 'complexType':
-                            anc = anc.getparent()
-                            if anc is None:
-                                break
-                        else:
-                            elname = schema_tree.find('//*[@type="{}"]'.format(
-                                anc.attrib['name'])).attrib['name']
-                            tuples.add(
-                                    (elname, elem.attrib['name']))
-                ret[k] = tuples
-            ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
-                '//*[local-name()="element"]') if elem.attrib.get(
-                    'maxOccurs', '1') != '1')
-        except Exception as e:
-            warn("Unknown MzIdentML version `{}`. Attempt to use schema\n"
-                    "information from <{}> failed. Reason:\n{}: {}\n"
-                    "Falling back to defaults for 1.1.0".format(
-                        version, schema_url, type(e).__name__, e.message))
-            ret = defaults
-    _schema_info_cache[source] = ret
-    return ret[key]
+
+def make_schema_info(env):
+    _schema_info_cache = {}
+    def _schema_info(source, key):
+        '''Stores defaults for version 1.1.0, tries to retrieve the schema for
+        other versions. Keys are: 'floats', 'ints', 'lists'.'''
+
+        if source in _schema_info_cache:
+            return _schema_info_cache[source][key]
+        
+        version, schema = env['version_info'](source)
+        if version == env['default_version']:
+            ret = env['defaults']
+        else:
+            ret = {}
+            try:
+                if not schema:
+                    schema_url = ''
+                    raise PyteomicsError(
+                            'Schema information not found in {}.'.format(source))
+                schema_url = schema.split()[-1]
+                schema_file = urlopen(schema_url)
+                schema_tree = etree.parse(schema_file)
+                types = {'ints': {'xsd:int'},
+                        'floats': {'xsd:float', 'xsd:double'},
+                        'bools': {'xsd:boolean'},
+                        'intlists': {'listOfIntegers'},
+                        'floatlists': {'listOfFloats'},
+                        'charlists': {'listOfChars', 'listOfCharsOrAny'}}
+                for k, val in types.items():
+                    tuples = set()
+                    for elem in schema_tree.iter():
+                        if elem.attrib.get('type') in val:
+                            anc = elem.getparent()
+                            while not _local_name(anc) == 'complexType':
+                                anc = anc.getparent()
+                                if anc is None:
+                                    break
+                            else:
+                                elname = schema_tree.find('//*[@type="{}"]'.format(
+                                    anc.attrib['name'])).attrib['name']
+                                tuples.add(
+                                        (elname, elem.attrib['name']))
+                    ret[k] = tuples
+                ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
+                    '//*[local-name()="element"]') if elem.attrib.get(
+                        'maxOccurs', '1') != '1')
+            except Exception as e:
+                warn("Unknown {} version `{}`. Attempt to use schema\n"
+                        "information from <{}> failed. Reason:\n{}: {}\n"
+                        "Falling back to defaults for {}".format(
+                            env['format'],
+                            version, schema_url, type(e).__name__, e.message,
+                            env['default_version']))
+                ret = env['defaults']
+        _schema_info_cache[source] = ret
+        return ret[key]
+    return _schema_info
+
+mzid_env = {'format': 'MzIdentML', 'version_info': mzid_version_info,
+        'default_version': '1.1.0', 'defaults': mzid_schema_defaults}
+_schema_info = make_schema_info(mzid_env)
