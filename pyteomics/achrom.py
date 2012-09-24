@@ -240,7 +240,7 @@ References
 import operator
 import numpy
 from . import auxiliary
-from .parser import std_labels, peptide_length, amino_acid_composition
+from .parser import std_labels, peptide_length, amino_acid_composition, std_nterm, std_cterm
 
 def get_RCs(sequences, RTs, lcp = -0.21,
             term_aa = False, **kwargs):
@@ -341,6 +341,8 @@ def get_RCs(sequences, RTs, lcp = -0.21,
     RC_dict['aa'] = dict(
         zip(list(detected_amino_acids),
             RCs[:len(detected_amino_acids)]))
+    RC_dict['aa'][std_nterm] = 0.0
+    RC_dict['aa'][std_cterm] = 0.0
     RC_dict['const'] = RCs[len(detected_amino_acids)]
     RC_dict['lcp'] = lcp
 
@@ -517,7 +519,9 @@ RCs_guo_ph2_0 = {'aa':{'K': -2.1,
                        'T':  0.6,
                        'W':  8.8,
                        'V':  5.0,
-                       'Y':  4.5},
+                       'Y':  4.5,
+                       'H-': 0.0,
+                       '-OH':0.0},
                  'lcp': 0.0,
                  'const': 0.0}
 """A set of retention coefficients from Guo, D.; Mant, C. T.; Taneja,
@@ -551,7 +555,9 @@ RCs_guo_ph7_0 = {'aa':{'K': -0.2,
                        'T':  0.3,
                        'W':  9.5,
                        'V':  5.7,
-                       'Y':  4.6},
+                       'Y':  4.6,
+                       'H-': 0.0,
+                       '-OH':0.0},
                  'lcp': 0.0,
                  'const': 0.0}
 """A set of retention coefficients from Guo, D.; Mant, C. T.; Taneja,
@@ -586,7 +592,9 @@ RCs_meek_ph2_1 = {'aa':{'K': -3.2,
                         'T':  1.5,
                         'W': 18.1,
                         'V':  3.3,
-                        'Y':  8.2},
+                        'Y':  8.2,
+                        'H-': 0.0,
+                        '-OH':0.0},
                   'lcp': 0.0,
                   'const': 0.0}
 """A set of retention coefficients determined in Meek,
@@ -618,7 +626,9 @@ RCs_meek_ph7_4 = {'aa':{'K':  0.1,
                         'T':  2.7,
                         'W': 14.9,
                         'V':  2.7,
-                        'Y':  6.1},
+                        'Y':  6.1,
+                        'H-': 0.0,
+                        '-OH':0.0},
                   'lcp': 0.0,
                   'const': 0.0}
 """A set of retention coefficients determined in Meek,
@@ -653,7 +663,9 @@ RCs_browne_tfa = {'aa':{'K': -3.7,
                         'W': 16.3,
                         'V':  3.5,
                         'Y':  5.9,
-                        'pY': 3.5},
+                        'pY': 3.5,
+                        'H-': 0.0,
+                        '-OH':0.0},
                   'lcp': 0.0,
                   'const': 0.0}
 """A set of retention coefficients determined in Browne, C. A.;
@@ -687,7 +699,9 @@ RCs_browne_hfba = {'aa':{'K': -2.5,
                          'W': 17.8,
                          'V':  2.1,
                          'Y':  3.8,
-                         'pY':-0.3},
+                         'pY':-0.3,
+                         'H-': 0.0,
+                         '-OH':0.0},
                    'lcp': 0.0,
                    'const': 0.0}
 """A set of retention coefficients determined in Browne, C. A.;
@@ -718,7 +732,9 @@ RCs_palmblad = {'aa':{'K': -0.66,
                       'T':  0.37,
                       'W':  4.68,
                       'V':  2.44,
-                      'Y':  2.78},
+                      'Y':  2.78,
+                      'H-': 0.0,
+                      '-OH':0.0},
                 'lcp': 0.0,
                 'const': 0.0}
 """A set of retention coefficients determined in Palmblad, M.;
@@ -751,7 +767,9 @@ RCs_yoshida = {'aa':{'K':  2.77,
                      'T':  1.73,
                      'W': -1.80,
                      'V': -2.19,
-                     'Y': -0.11},
+                     'Y': -0.11,
+                     'H-': 0.0,
+                     '-OH':0.0},
                'lcp': 0.0,
                'const': 0.0}
 """A set of retention coefficients determined in Yoshida,
