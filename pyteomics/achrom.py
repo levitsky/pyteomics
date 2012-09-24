@@ -815,7 +815,7 @@ RCs_yoshida_lc = {'aa': {'A': 1.29,
                          'W': -1.87,
                          'Y': -0.46,
                          'H-': 0.0,
-                         'OH-': 0.0},
+                         '-OH': 0.0},
                   'const': 0.0, 
                   'lcp': -0.2}
 """A set of retention coefficients from the length-corrected model
