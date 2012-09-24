@@ -84,6 +84,12 @@ Data
   in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at 0.6%
   water/min, flow rate 1.0 ml/min, 40 centigrades.
 
+  :py:data:`RCs_yoshida_lc` - a set of length-corrected RCs calculated in 
+  [#Moskovets]_ for the data from [#Yoshida]_. Conditions:
+  TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A = 0.1% TFA
+  in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at 0.6%
+  water/min, flow rate 1.0 ml/min, 40 centigrades.
+
 Theory
 ------
 
@@ -221,6 +227,12 @@ References
 .. [#Yoshida] Yoshida, T. Calculation of peptide retention
    coefficients in normal-phase liquid chromatography. Journal of
    Chromatography A, 1998, 808 (1-2), 105-112.
+
+.. [#Moskovets] Moskovets, E.; Goloborodko A. A.; Gorshkov A. V.; Gorshkov M.V.
+   `Limitation of predictive 2-D liquid chromatography in reducing the database 
+   search space in shotgun proteomics: In silico studies.
+   <http://dx.doi.org/10.1002/jssc.201100798>`_
+   Journal of Separation Science, 2012, 35 (14), 1771-1778. 
 """
 
 #   Copyright 2012 Anton Goloborodko, Lev Levitsky
@@ -776,6 +788,44 @@ RCs_yoshida = {'aa':{'K':  2.77,
 T. Calculation of peptide retention coefficients in normal-phase
 liquid chromatography. Journal of Chromatography A, 1998, 808 (1-2),
 105-112.
+
+Conditions: TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A =
+0.1% TFA in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at
+0.6% water/min, flow rate 1.0 ml/min, 40 centigrades.
+"""
+
+RCs_yoshida_lc = {'aa': {'A': 1.29,
+                         'C': 0.94,
+                         'D': 3.89,
+                         'E': 4.40,
+                         'F': -4.18,
+                         'G': 1.29,
+                         'H': 7.57,
+                         'I': -2.65,
+                         'K': 7.33,
+                         'L': -3.93,
+                         'M': -1.48,
+                         'N': 6.65,
+                         'P': 1.03,
+                         'Q': 6.68,
+                         'R': 7.08,
+                         'S': 5.09,
+                         'T': 3.46,
+                         'V': -2.52,
+                         'W': -1.87,
+                         'Y': -0.46,
+                         'H-': 0.0,
+                         'OH-': 0.0},
+                  'const': 0.0, 
+                  'lcp': -0.2}
+"""A set of retention coefficients from the length-corrected model
+of normal-phase peptide chromatography. The dataset comes from Yoshida, T.
+Calculation of peptide retention coefficients in normal-phase
+liquid chromatography. Journal of Chromatography A, 1998, 808 (1-2),
+105-112. The RCs were calculated in Moskovets, E.; Goloborodko A. A.;
+Gorshkov A. V.; Gorshkov M.V. Limitation of predictive 2-D liquid chromatography
+in reducing the database search space in shotgun proteomics: In silico studies.
+Journal of Separation Science, 2012, 35 (14), 1771-1778. 
 
 Conditions: TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A =
 0.1% TFA in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at
