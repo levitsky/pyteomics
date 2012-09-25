@@ -183,7 +183,8 @@ def get_by_id(source, elem_id):
     """
 
     found = False
-    for event, elem in etree.iterparse(source, events=('start', 'end')):
+    for event, elem in etree.iterparse(source, events=('start', 'end'),
+            remove_comments=True):
         if event == 'start':
             if elem.attrib.get('id') == elem_id:
                 found = True
@@ -222,7 +223,8 @@ def _itertag(source, localname, **kwargs):
     """Parse ``source`` and yield info on elements with specified local name.
     Case-insensitive. Namespace-aware."""
     found = False
-    for ev, elem in etree.iterparse(source, events=('start', 'end')):
+    for ev, elem in etree.iterparse(source, events=('start', 'end'),
+            remove_comments=True):
         if ev == 'start':
             if _local_name(elem).lower() == localname.lower():
                 found = True
@@ -235,7 +237,8 @@ def _itertag(source, localname, **kwargs):
 
 @_keepstate
 def mzid_version_info(source):
-    for _, elem in etree.iterparse(source, events=('start',)):
+    for _, elem in etree.iterparse(source, events=('start',),
+            remove_comments=True):
         if _local_name(elem) == 'MzIdentML':
             return elem.attrib.get('version'), elem.attrib.get((
                 '{{{}}}'.format(elem.nsmap['xsi'])
@@ -308,7 +311,7 @@ def make_schema_info(env):
                 schema_url = schema.split()[-1]
                 schema_file = urlopen(schema_url)
                 schema_tree = etree.parse(schema_file)
-                types = {'ints': {'xsd:int'},
+                types = {'ints': {'xsd:int', 'xsd:long'},
                         'floats': {'xsd:float', 'xsd:double'},
                         'bools': {'xsd:boolean'},
                         'intlists': {'listOfIntegers'},
