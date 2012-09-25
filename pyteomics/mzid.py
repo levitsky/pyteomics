@@ -72,85 +72,87 @@ def _local_name(element):
     else:
         return element.tag
 
-def _get_info(source, element, recursive=False, retrieve_refs=False):
-    """Extract info from element's attributes, possibly recursive.
-    <cvParam> and <userParam> elements are treated in a special way."""
-    name = _local_name(element)
-    kwargs = dict(recursive=recursive, retrieve_refs=retrieve_refs)
-    if name in {'cvParam', 'userParam'}:
-        if 'value' in element.attrib:
-            try:
-                value = float(element.attrib['value'])
-            except ValueError:
-                value = element.attrib['value']
-            return {element.attrib['name']: value}
-        else:
-            return {'name': element.attrib['name']}
-
-    info = dict(element.attrib)
-    # process subelements
-    if recursive:
-        for child in element.iterchildren():
-            cname = _local_name(child)
-            if cname in {'cvParam', 'userParam'}:
-                info.update(_get_info(source, child))
+# 'keys' should contain keys whose value is a dict
+def _make_get_info(env):
+    def _get_info(source, element, recursive=False, retrieve_refs=False):
+        """Extract info from element's attributes, possibly recursive.
+        <cvParam> and <userParam> elements are treated in a special way."""
+        name = _local_name(element)
+        kwargs = dict(recursive=recursive, retrieve_refs=retrieve_refs)
+        if name in {'cvParam', 'userParam'}:
+            if 'value' in element.attrib:
+                try:
+                    value = float(element.attrib['value'])
+                except ValueError:
+                    value = element.attrib['value']
+                return {element.attrib['name']: value}
             else:
-                if cname not in _schema_info(source, 'lists'):
-                    info[cname] = _get_info_smart(source, child, **kwargs)
+                return {'name': element.attrib['name']}
+
+        info = dict(element.attrib)
+        # process subelements
+        if recursive:
+            for child in element.iterchildren():
+                cname = _local_name(child)
+                if cname in {'cvParam', 'userParam'}:
+                    info.update(_get_info(source, child))
                 else:
-                    if cname not in info:
-                        info[cname] = []
-                    info[cname].append(_get_info_smart(source, child, **kwargs))
-    # process element text
-    if element.text and element.text.strip():
-        stext = element.text.strip()
-        if stext:
-            if info:
-                info[name] = stext
-            else:
-                return stext
-    # convert types
-    def str_to_bool(s):
-        if s.lower() in {'true', '1'}: return True
-        if s.lower() in {'false', '0'}: return False
-        raise PyteomicsError('Cannot convert string to bool: ' + s)
+                    if cname not in env['schema_info'](source, 'lists'):
+                        info[cname] = _get_info_smart(source, child, **kwargs)
+                    else:
+                        if cname not in info:
+                            info[cname] = []
+                        info[cname].append(_get_info_smart(source, child, **kwargs))
+        # process element text
+        if element.text and element.text.strip():
+            stext = element.text.strip()
+            if stext:
+                if info:
+                    info[name] = stext
+                else:
+                    return stext
+        # convert types
+        def str_to_bool(s):
+            if s.lower() in {'true', '1'}: return True
+            if s.lower() in {'false', '0'}: return False
+            raise PyteomicsError('Cannot convert string to bool: ' + s)
 
-    converters = {'ints': int, 'floats': float, 'bools': str_to_bool,
-            'intlists': lambda x: numpy.fromstring(x, dtype=int, sep=' '),
-            'floatlists': lambda x: numpy.fromstring(x, sep=' '),
-            'charlists': list}
-    for k, v in info.items():
-        for t, a in converters.items():
-            if (_local_name(element), k) in _schema_info(source, t):
-                info[k] = a(v)
-    # resolve refs
-    # loop is needed to resolve refs pulled from other refs
-    if retrieve_refs:
-        while True:
-            refs = False
-            for k, v in dict(info).items():
-                if k.endswith('_ref'):
-                    refs = True
-                    info.update(get_by_id(source, v))
-                    del info[k]
-                    del info['id']
-            if not refs:
-                break
-    # flatten the excessive nesting
-    keys = {'Fragmentation',} # should contain keys whose value is a dict
-    for k, v in dict(info).items():
-        if k in keys:
-            info.update(v)
-            del info[k]
-    # another simplification
-    for k, v in dict(info).items():
-        if isinstance(v, dict) and 'name' in v and len(v) == 1:
-            info[k] = v['name']
-    if len(info) == 2 and 'name' in info and (
-            'value' in info or 'values' in info):
-        name = info.pop('name')
-        info = {name: info.popitem()[1]}
-    return info
+        converters = {'ints': int, 'floats': float, 'bools': str_to_bool,
+                'intlists': lambda x: numpy.fromstring(x, dtype=int, sep=' '),
+                'floatlists': lambda x: numpy.fromstring(x, sep=' '),
+                'charlists': list}
+        for k, v in info.items():
+            for t, a in converters.items():
+                if (_local_name(element), k) in env['schema_info'](source, t):
+                    info[k] = a(v)
+        # resolve refs
+        # loop is needed to resolve refs pulled from other refs
+        if retrieve_refs:
+            while True:
+                refs = False
+                for k, v in dict(info).items():
+                    if k.endswith('_ref'):
+                        refs = True
+                        info.update(get_by_id(source, v))
+                        del info[k]
+                        del info['id']
+                if not refs:
+                    break
+        # flatten the excessive nesting
+        for k, v in dict(info).items():
+            if k in env['keys']:
+                info.update(v)
+                del info[k]
+        # another simplification
+        for k, v in dict(info).items():
+            if isinstance(v, dict) and 'name' in v and len(v) == 1:
+                info[k] = v['name']
+        if len(info) == 2 and 'name' in info and (
+                'value' in info or 'values' in info):
+            name = info.pop('name')
+            info = {name: info.popitem()[1]}
+        return info
+    return _get_info
 
 def _get_info_smart(source, element, **kw):
     """Extract the info in a smart way depending on the element type"""
@@ -236,7 +238,20 @@ def _itertag(source, localname, **kwargs):
                     elem.clear()
 
 @_keepstate
-def mzid_version_info(source):
+def version_info(source):
+    """
+    Provide version information about the mzIdentML file.
+
+    Parameters:
+    -----------
+    source : str or file
+        mzIdentML file object or path to file
+
+    Returns:
+    --------
+    out : tuple
+        A (version, schema URL) tuple, both elements are strings or None.
+    """
     for _, elem in etree.iterparse(source, events=('start',),
             remove_comments=True):
         if _local_name(elem) == 'MzIdentML':
@@ -244,7 +259,7 @@ def mzid_version_info(source):
                 '{{{}}}'.format(elem.nsmap['xsi'])
                 if 'xsi' in elem.nsmap else '') + 'schemaLocation')
 
-mzid_schema_defaults = {'ints': {('DBSequence', 'length'),
+_schema_defaults = {'ints': {('DBSequence', 'length'),
                      ('IonType', 'charge'),
                      ('BibliographicReference', 'year'),
                      ('SubstitutionModification', 'location'),
@@ -289,11 +304,12 @@ mzid_schema_defaults = {'ints': {('DBSequence', 'length'),
             'charlists': {('Modification', 'residues'),
                     ('SearchModification', 'residues')}}
 
-def make_schema_info(env):
+def _make_schema_info(env):
     _schema_info_cache = {}
     def _schema_info(source, key):
-        '''Stores defaults for version 1.1.0, tries to retrieve the schema for
-        other versions. Keys are: 'floats', 'ints', 'lists'.'''
+        '''Stores defaults for version {}, tries to retrieve the schema for
+        other versions. Keys are: 'floats', 'ints', 'bools', 'lists',
+        'intlists', 'floatlists', 'charlists'.'''.format(env['default_version'])
 
         if source in _schema_info_cache:
             return _schema_info_cache[source][key]
@@ -347,6 +363,9 @@ def make_schema_info(env):
         return ret[key]
     return _schema_info
 
-mzid_env = {'format': 'MzIdentML', 'version_info': mzid_version_info,
-        'default_version': '1.1.0', 'defaults': mzid_schema_defaults}
-_schema_info = make_schema_info(mzid_env)
+_schema_env = {'format': 'MzIdentML', 'version_info': version_info,
+        'default_version': '1.1.0', 'defaults': _schema_defaults}
+_schema_info = _make_schema_info(_schema_env)
+_get_info_env = {'keys':  {'Fragmentation',},
+        'schema_info': _schema_info}
+_get_info = _make_get_info(_get_info_env)
