@@ -47,6 +47,7 @@ Data access
 #   limitations under the License.
 
 from lxml import etree
+from . import mzid, auxiliary
 try:
     reduce # Python 2.7
 except NameError: # Python 3.x
@@ -296,3 +297,13 @@ def roc_curve(source):
 
     return sorted(roc_curve, key=lambda x: x['min_prob'])
     
+def version_info(source):
+    for _, elem in etree.iterparse(source, events=('start',),
+            remove_comments=True):
+        if auxiliary._local_name(elem) == 'msms_pipeline_analysis':
+            return elem.attrib.get('version'), elem.attrib.get((
+                '{{{}}}'.format(elem.nsmap['xsi']) if 'xsi' in elem.nsmap
+                    else '') + 'schemaLocation')
+
+
+#_schema_env = {'format': 'pepXML', 

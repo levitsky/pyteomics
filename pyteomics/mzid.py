@@ -50,27 +50,7 @@ try: # Python 2.7
     from urllib import urlopen
 except ImportError: # Python 3.x
     from urllib.request import urlopen
-from .auxiliary import PyteomicsError
-
-def _keepstate(func):
-    """Decorator to help keep the position in open files passed as arguments"""
-    @wraps(func)
-    def wrapped(source, *args, **kwargs):
-        if hasattr(source, 'seek') and hasattr(source, 'tell'):
-            pos = source.tell()
-            source.seek(0)
-            res = func(source, *args, **kwargs)
-            source.seek(pos)
-            return res
-        else:
-            return func(source, *args, **kwargs)
-    return wrapped
-
-def _local_name(element):
-    if element.tag.startswith('{'):
-        return element.tag.rsplit('}', 1)[1]
-    else:
-        return element.tag
+from .auxiliary import PyteomicsError, _keepstate, _local_name
 
 # 'keys' should contain keys whose value is a dict
 def _make_get_info(env):
@@ -197,45 +177,24 @@ def get_by_id(source, elem_id):
                 elem.clear()
     return None
 
-def read(source, **kwargs):
-    """Parse ``source`` and iterate through peptide-spectrum matches.
-
-    Parameters
-    ----------
-    source : str or file
-        A path to a target mzIdentML file or the file object itself.
-    recursive : bool, optional
-        If :py:const:`False`, subelements will not be processed when
-        extracting info from elements. Default is :py:const:`True`.
-    retrieve_refs : bool, optional
-        If :py:const:`True`, additional information from references will be
-        automatically added to the results. The file processing time will
-        increase. Default is :py:const:`False`.
-
-    Returns
-    -------
-    out : iterator
-       An iterator over the dicts with PSM properties.
-    """
-    
-    return _itertag(source, 'SpectrumIdentificationResult', **kwargs)
-
-@_keepstate
-def _itertag(source, localname, **kwargs):
-    """Parse ``source`` and yield info on elements with specified local name.
-    Case-insensitive. Namespace-aware."""
-    found = False
-    for ev, elem in etree.iterparse(source, events=('start', 'end'),
-            remove_comments=True):
-        if ev == 'start':
-            if _local_name(elem).lower() == localname.lower():
-                found = True
-        else:
-            if _local_name(elem).lower() == localname.lower():
-                yield _get_info_smart(source, elem, **kwargs)
-                found = False
-                if not found:
-                    elem.clear()
+def _make_itertag(env):
+    @_keepstate
+    def _itertag(source, localname, **kwargs):
+        """Parse ``source`` and yield info on elements with specified local name.
+        Case-insensitive. Namespace-aware."""
+        found = False
+        for ev, elem in etree.iterparse(source, events=('start', 'end'),
+                remove_comments=True):
+            if ev == 'start':
+                if _local_name(elem).lower() == localname.lower():
+                    found = True
+            else:
+                if _local_name(elem).lower() == localname.lower():
+                    yield env['get_info_smart'](source, elem, **kwargs)
+                    found = False
+                    if not found:
+                        elem.clear()
+    return _itertag
 
 @_keepstate
 def version_info(source):
@@ -369,3 +328,28 @@ _schema_info = _make_schema_info(_schema_env)
 _get_info_env = {'keys':  {'Fragmentation',},
         'schema_info': _schema_info}
 _get_info = _make_get_info(_get_info_env)
+_itertag_env = {'get_info_smart': _get_info_smart}
+_itertag = _make_itertag(_itertag_env)
+
+def read(source, **kwargs):
+    """Parse ``source`` and iterate through peptide-spectrum matches.
+
+    Parameters
+    ----------
+    source : str or file
+        A path to a target mzIdentML file or the file object itself.
+    recursive : bool, optional
+        If :py:const:`False`, subelements will not be processed when
+        extracting info from elements. Default is :py:const:`True`.
+    retrieve_refs : bool, optional
+        If :py:const:`True`, additional information from references will be
+        automatically added to the results. The file processing time will
+        increase. Default is :py:const:`False`.
+
+    Returns
+    -------
+    out : iterator
+       An iterator over the dicts with PSM properties.
+    """
+    
+    return _itertag(source, 'SpectrumIdentificationResult', **kwargs)
