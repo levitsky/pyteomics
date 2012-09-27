@@ -31,6 +31,7 @@ Project infrastructure
 #   limitations under the License.
 
 import numpy
+from functools import wraps
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
@@ -79,3 +80,26 @@ def linear_regression(x, y, a=None, b=None):
     stderr = numpy.std([y[i] - a * x[i] - b for i in range(len(x))])
 
     return (a, b, r, stderr)
+
+def _keepstate(func):
+    """Decorator to help keep the position in open file passed as first argument
+    to functions"""
+    @wraps(func)
+    def wrapped(source, *args, **kwargs):
+        if hasattr(source, 'seek') and hasattr(source, 'tell'):
+            pos = source.tell()
+            source.seek(0)
+            res = func(source, *args, **kwargs)
+            source.seek(pos)
+            return res
+        else:
+            return func(source, *args, **kwargs)
+    return wrapped
+
+def _local_name(element):
+    if element.tag.startswith('{'):
+        return element.tag.rsplit('}', 1)[1]
+    else:
+        return element.tag
+
+
