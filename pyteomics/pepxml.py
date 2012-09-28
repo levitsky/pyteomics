@@ -428,3 +428,22 @@ _schema_defaults = {'ints':
 _schema_env = {'format': 'pepXML', 'version_info': version_info,
         'default_version': '1.15', 'defaults': _schema_defaults}
 _schema_info = aux._make_schema_info(_schema_env)
+
+def _get_info_smart(source, element, **kw): # maybe add something smarter here
+    """Extract the info in a smart way depending on the element type"""
+    name = aux._local_name(element)
+    kwargs = dict(kw)
+    rec = kwargs.pop('recursive', None)
+    if name == 'msms_pipeline_analysis':
+        return _get_info(source, element, rec if rec is not None else False,
+                **kwargs)
+    else:
+        return _get_info(source, element, rec if rec is not None else True,
+                **kwargs)
+
+_getinfo_env = {'keys': [], 'schema_info': _schema_info,
+        'get_info_smart': _get_info_smart}
+_get_info = aux._make_get_info(_getinfo_env)
+
+_itertag_env = {'get_info_smart': _get_info_smart}
+_itertag = aux._make_itertag(_itertag_env)

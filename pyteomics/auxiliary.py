@@ -201,3 +201,103 @@ def _make_schema_info(env):
         'intlists', 'floatlists', 'charlists'.""".format(env['default_version'])
     return _schema_info
 
+def _make_get_info(env):
+    def _get_info(source, element, recursive=False, retrieve_refs=False):
+        """Extract info from element's attributes, possibly recursive.
+        <cvParam> and <userParam> elements are treated in a special way."""
+        name = _local_name(element)
+        kwargs = dict(recursive=recursive, retrieve_refs=retrieve_refs)
+        if name in {'cvParam', 'userParam'}:
+            if 'value' in element.attrib:
+                try:
+                    value = float(element.attrib['value'])
+                except ValueError:
+                    value = element.attrib['value']
+                return {element.attrib['name']: value}
+            else:
+                return {'name': element.attrib['name']}
+
+        info = dict(element.attrib)
+        # process subelements
+        if recursive:
+            for child in element.iterchildren():
+                cname = _local_name(child)
+                if cname in {'cvParam', 'userParam'}:
+                    info.update(_get_info(source, child))
+                else:
+                    if cname not in env['schema_info'](source, 'lists'):
+                        info[cname] = env['get_info_smart'](source, child, **kwargs)
+                    else:
+                        if cname not in info:
+                            info[cname] = []
+                        info[cname].append(env['get_info_smart'](source, child, **kwargs))
+        # process element text
+        if element.text and element.text.strip():
+            stext = element.text.strip()
+            if stext:
+                if info:
+                    info[name] = stext
+                else:
+                    return stext
+        # convert types
+        def str_to_bool(s):
+            if s.lower() in {'true', '1'}: return True
+            if s.lower() in {'false', '0'}: return False
+            raise PyteomicsError('Cannot convert string to bool: ' + s)
+
+        converters = {'ints': int, 'floats': float, 'bools': str_to_bool,
+                'intlists': lambda x: numpy.fromstring(x, dtype=int, sep=' '),
+                'floatlists': lambda x: numpy.fromstring(x, sep=' '),
+                'charlists': list}
+        for k, v in info.items():
+            for t, a in converters.items():
+                if (_local_name(element), k) in env['schema_info'](source, t):
+                    info[k] = a(v)
+        # resolve refs
+        # loop is needed to resolve refs pulled from other refs
+        if retrieve_refs:
+            while True:
+                refs = False
+                for k, v in dict(info).items():
+                    if k.endswith('_ref'):
+                        refs = True
+                        info.update(get_by_id(source, v))
+                        del info[k]
+                        del info['id']
+                if not refs:
+                    break
+        # flatten the excessive nesting
+        for k, v in dict(info).items():
+            if k in env['keys']:
+                info.update(v)
+                del info[k]
+        # another simplification
+        for k, v in dict(info).items():
+            if isinstance(v, dict) and 'name' in v and len(v) == 1:
+                info[k] = v['name']
+        if len(info) == 2 and 'name' in info and (
+                'value' in info or 'values' in info):
+            name = info.pop('name')
+            info = {name: info.popitem()[1]}
+        return info
+    return _get_info
+
+def _make_itertag(env):
+    @_keepstate
+    def _itertag(source, localname, **kwargs):
+        """Parse ``source`` and yield info on elements with specified local name.
+        Case-insensitive. Namespace-aware."""
+        found = False
+        for ev, elem in etree.iterparse(source, events=('start', 'end'),
+                remove_comments=True):
+            if ev == 'start':
+                if _local_name(elem).lower() == localname.lower():
+                    found = True
+            else:
+                if _local_name(elem).lower() == localname.lower():
+                    yield env['get_info_smart'](source, elem, **kwargs)
+                    found = False
+                    if not found:
+                        elem.clear()
+    return _itertag
+
