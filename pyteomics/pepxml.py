@@ -47,7 +47,8 @@ Data access
 #   limitations under the License.
 
 from lxml import etree
-from . import mzid, auxiliary
+from . import mzid
+from . import auxiliary as aux
 try:
     reduce # Python 2.7
 except NameError: # Python 3.x
@@ -297,13 +298,133 @@ def roc_curve(source):
 
     return sorted(roc_curve, key=lambda x: x['min_prob'])
     
-def version_info(source):
-    for _, elem in etree.iterparse(source, events=('start',),
-            remove_comments=True):
-        if auxiliary._local_name(elem) == 'msms_pipeline_analysis':
-            return elem.attrib.get('version'), elem.attrib.get((
-                '{{{}}}'.format(elem.nsmap['xsi']) if 'xsi' in elem.nsmap
-                    else '') + 'schemaLocation')
+_version_info_env = {'format': 'pepXML', 'element': 'msms_pipeline_analysis'}
+version_info = aux._make_version_info(_version_info_env)
 
+_schema_defaults = {'ints': 
+    {('distribution_point', 'obs_5_distr'),
+     ('distribution_point', 'obs_2_distr'),
+     ('enzymatic_search_constraint', 'max_num_internal_cleavages'),
+     ('asapratio_lc_heavypeak', 'right_valley'),
+     ('libra_summary', 'output_type'),
+     ('distribution_point', 'obs_7_distr'),
+     ('data_filter', 'number'),
+     ('search_hit', 'num_tol_term'),
+     ('asapratio_lc_lightpeak', 'right_valley'),
+     ('specificity', 'min_spacing'),
+     ('database_refresh_timestamp', 'min_num_enz_term'),
+     ('enzymatic_search_constraint', 'min_number_termini'),
+     ('distribution_point', 'obs_3_distr'),
+     ('search_database', 'size_in_db_entries'),
+     ('alternative_protein', 'num_tol_term'),
+     ('search_hit', 'tot_num_ions'),
+     ('mixture_model', 'precursor_ion_charge'),
+     ('search_hit', 'num_matched_ions'),
+     ('dataset_derivation', 'generation_no'),
+     ('spectrum_query', 'assumed_charge'),
+     ('distribution_point', 'obs_4_distr'),
+     ('libra_summary', 'normalization'),
+     ('asapratio_lc_heavypeak', 'left_valley'),
+     ('distribution_point', 'obs_6_distr'),
+     ('asapratio_lc_lightpeak', 'left_valley'),
+     ('search_database', 'size_of_residues'),
+     ('asapratio_peptide_data', 'cidIndex'),
+     ('mixture_model', 'num_iterations'),
+     ('mod_aminoacid_mass', 'position'),
+     ('asapratio_summary', 'area_flag'),
+     ('mixture_model', 'tot_num_spectra'),
+     ('distribution_point', 'obs_1_distr'),
+     ('asapratio_contribution', 'charge'),
+     ('libra_summary', 'centroiding_preference')},
+    'floats':
+    {('asapratio_contribution', 'error'),
+     ('asapratio_lc_heavypeak', 'area_error'),
+     ('modification_info', 'mod_nterm_mass'),
+     ('distribution_point', 'model_4_neg_distr'),
+     ('distribution_point', 'model_5_pos_distr'),
+     ('spectrum_query', 'precursor_neutral_mass'),
+     ('asapratio_lc_heavypeak', 'time_width'),
+     ('xpressratio_summary', 'masstol'),
+     ('affected_channel', 'correction'),
+     ('distribution_point', 'model_7_neg_distr'),
+     ('error_point', 'error'),
+     ('intensity', 'target_mass'),
+     ('roc_data_point', 'sensitivity'),
+     ('distribution_point', 'model_4_pos_distr'),
+     ('distribution_point', 'model_2_neg_distr'),
+     ('distribution_point', 'model_3_pos_distr'),
+     ('mixture_model', 'prior_probability'),
+     ('roc_data_point', 'error'),
+     ('intensity', 'normalized'),
+     ('modification_info', 'mod_cterm_mass'),
+     ('asapratio_lc_lightpeak', 'area_error'),
+     ('distribution_point', 'fvalue'),
+     ('distribution_point', 'model_1_neg_distr'),
+     ('peptideprophet_summary', 'min_prob'),
+     ('asapratio_result', 'mean'),
+     ('point', 'pos_dens'),
+     ('fragment_masses', 'mz'),
+     ('mod_aminoacid_mass', 'mass'),
+     ('distribution_point', 'model_6_neg_distr'),
+     ('asapratio_lc_lightpeak', 'time_width'),
+     ('asapratio_result', 'heavy2light_error'),
+     ('peptideprophet_result', 'probability'),
+     ('error_point', 'min_prob'),
+     ('peptideprophet_summary', 'est_tot_num_correct'),
+     ('roc_data_point', 'min_prob'),
+     ('asapratio_result', 'heavy2light_mean'),
+     ('distribution_point', 'model_5_neg_distr'),
+     ('mixturemodel', 'neg_bandwidth'),
+     ('asapratio_result', 'error'),
+     ('xpressratio_result', 'light_mass'),
+     ('point', 'neg_dens'),
+     ('asapratio_lc_lightpeak', 'area'),
+     ('distribution_point', 'model_1_pos_distr'),
+     ('xpressratio_result', 'mass_tol'),
+     ('mixturemodel', 'pos_bandwidth'),
+     ('xpressratio_result', 'light_area'),
+     ('asapratio_peptide_data', 'heavy_mass'),
+     ('distribution_point', 'model_2_pos_distr'),
+     ('search_hit', 'calc_neutral_pep_mass'),
+     ('intensity', 'absolute'),
+     ('asapratio_peptide_data', 'light_mass'),
+     ('distribution_point', 'model_3_neg_distr'),
+     ('aminoacid_modification', 'mass'),
+     ('asapratio_lc_heavypeak', 'time'),
+     ('asapratio_lc_lightpeak', 'time'),
+     ('asapratio_lc_lightpeak', 'background'),
+     ('mixture_model', 'est_tot_correct'),
+     ('point', 'value'),
+     ('asapratio_lc_heavypeak', 'background'),
+     ('terminal_modification', 'mass'),
+     ('fragment_masses', 'offset'),
+     ('xpressratio_result', 'heavy_mass'),
+     ('search_hit', 'protein_mw'),
+     ('libra_summary', 'mass_tolerance'),
+     ('spectrum_query', 'retention_time_sec'),
+     ('distribution_point', 'model_7_pos_distr'),
+     ('asapratio_lc_heavypeak', 'area'),
+     ('alternative_protein', 'protein_mw'),
+     ('asapratio_contribution', 'ratio'),
+     ('xpressratio_result', 'heavy_area'),
+     ('distribution_point', 'model_6_pos_distr')},
+    'bools':
+    {('sample_enzyme', 'independent'),
+     ('intensity', 'reject'),
+     ('libra_result', 'is_rejected')},
+    'intlists': set(),
+    'floatlists': set(),
+    'charlists': set(),
+    'lists': {'point', 'aminoacid_modification', 'msms_run_summary',
+            'mixturemodel', 'search_hit', 'mixturemodel_distribution',
+            'sequence_search_constraint', 'specificity', 'alternative_protein',
+            'analysis_result', 'data_filter', 'fragment_masses', 'error_point',
+            'parameter', 'spectrum_query', 'search_result', 'affected_channel',
+            'analysis_summary', 'roc_data_point', 'distribution_point',
+            'search_summary', 'mod_aminoacid_mass', 'search_score', 'intensity',
+            'analysis_timestamp', 'mixture_model', 'terminal_modification',
+            'contributing_channel', 'inputfile'}}
 
-#_schema_env = {'format': 'pepXML', 
+_schema_env = {'format': 'pepXML', 'version_info': version_info,
+        'default_version': '1.15', 'defaults': _schema_defaults}
+_schema_info = aux._make_schema_info(_schema_env)
