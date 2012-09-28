@@ -32,6 +32,13 @@ Project infrastructure
 
 import numpy
 from functools import wraps
+from lxml import etree
+from warnings import warn
+from traceback import format_exc
+try: # Python 2.7
+    from urllib import urlopen
+except ImportError: # Python 3.x
+    from urllib.request import urlopen
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
@@ -97,9 +104,100 @@ def _keepstate(func):
     return wrapped
 
 def _local_name(element):
+    """Strip namespace from the XML element's name"""
     if element.tag.startswith('{'):
         return element.tag.rsplit('}', 1)[1]
     else:
         return element.tag
 
+def _make_version_info(env):
+    @_keepstate
+    def version_info(source):
+        for _, elem in etree.iterparse(source, events=('start',),
+                remove_comments=True):
+            if _local_name(elem) == env['element']:
+                return elem.attrib.get('version'), elem.attrib.get((
+                    '{{{}}}'.format(elem.nsmap['xsi'])
+                    if 'xsi' in elem.nsmap else '') + 'schemaLocation')
+    version_info.__doc__ = """
+        Provide version information about the {0} file.
+
+        Parameters:
+        -----------
+        source : str or file
+            {0} file object or path to file
+
+        Returns:
+        --------
+        out : tuple
+            A (version, schema URL) tuple, both elements are strings or None.
+        """.format(env['format'])
+    return version_info
+
+def _make_schema_info(env):
+    _schema_info_cache = {}
+    def _schema_info(source, key):
+        if source in _schema_info_cache:
+            return _schema_info_cache[source][key]
+        
+        version, schema = env['version_info'](source)
+        if version == env['default_version']:
+            ret = env['defaults']
+        else:
+            ret = {}
+            try:
+                if not schema:
+                    schema_url = ''
+                    raise PyteomicsError(
+                            'Schema information not found in {}.'.format(source))
+                schema_url = schema.split()[-1]
+                schema_file = urlopen(schema_url)
+                p = etree.XMLParser(remove_comments=True)
+                schema_tree = etree.parse(schema_file, parser=p)
+                types = {'ints': {'int', 'long', 'nonNegativeInteger'},
+                        'floats': {'float', 'double'},
+                        'bools': {'boolean'},
+                        'intlists': {'listOfIntegers'},
+                        'floatlists': {'listOfFloats'},
+                        'charlists': {'listOfChars', 'listOfCharsOrAny'}}
+                for k, val in types.items():
+                    tuples = set()
+                    for elem in schema_tree.iter():
+                        if _local_name(elem) == 'attribute' and elem.attrib.get(
+                                'type', '').split(':')[-1] in val:
+                            anc = elem.getparent()
+                            while not (
+                                    (_local_name(anc) == 'complexType' 
+                                        and 'name' in anc.attrib)
+                                    or _local_name(anc) == 'element'):
+                                anc = anc.getparent()
+                                if anc is None:
+                                    break
+                            else:
+                                if _local_name(anc) == 'complexType':
+                                    elname = schema_tree.find(
+                                            '//*[@type="{}"]'.format(
+                                        anc.attrib['name'])).attrib['name']
+                                else:
+                                    elname = anc.attrib['name']
+                                tuples.add(
+                                        (elname, elem.attrib['name']))
+                    ret[k] = tuples
+                ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
+                    '//*[local-name()="element"]') if 'name' in elem.attrib and
+                    elem.attrib.get( 'maxOccurs', '1') != '1')
+            except Exception as e:
+                warn("Unknown {} version `{}`. Attempt to use schema\n"
+                        "information from <{}> failed.\n{}\n"
+                        "Falling back to defaults for {}".format(
+                            env['format'], version, schema_url,
+                            format_exc(), env['default_version']))
+                ret = env['defaults']
+        _schema_info_cache[source] = ret
+        return ret[key]
+    _schema_info.__doc__ = """
+        Stores defaults for version {}, tries to retrieve the schema for
+        other versions. Keys are: 'floats', 'ints', 'bools', 'lists',
+        'intlists', 'floatlists', 'charlists'.""".format(env['default_version'])
+    return _schema_info
 

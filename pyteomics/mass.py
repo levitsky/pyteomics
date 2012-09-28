@@ -732,7 +732,10 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         Monoisotopic mass or m/z of a peptide molecule/ion.
     """
     aa_mass = kwargs.get('aa_mass', std_aa_mass)
-    mass = sum(aa_mass[i] for i in sequence)
+    try:
+        mass = sum(aa_mass[i] for i in sequence)
+    except KeyError as e:
+        raise PyteomicsError('No mass data for residue: ' + e.message)
 
     mass_data = kwargs.get('mass_data', nist_mass)
     mass += mass_data['H'][0][0] * 2.0 + mass_data['O'][0][0]

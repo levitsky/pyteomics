@@ -46,18 +46,15 @@ from lxml import etree
 from functools import wraps
 from warnings import warn
 import numpy
-try: # Python 2.7
-    from urllib import urlopen
-except ImportError: # Python 3.x
-    from urllib.request import urlopen
-from .auxiliary import PyteomicsError, _keepstate, _local_name
+
+from . import auxiliary as aux
 
 # 'keys' should contain keys whose value is a dict
 def _make_get_info(env):
     def _get_info(source, element, recursive=False, retrieve_refs=False):
         """Extract info from element's attributes, possibly recursive.
         <cvParam> and <userParam> elements are treated in a special way."""
-        name = _local_name(element)
+        name = aux._local_name(element)
         kwargs = dict(recursive=recursive, retrieve_refs=retrieve_refs)
         if name in {'cvParam', 'userParam'}:
             if 'value' in element.attrib:
@@ -73,7 +70,7 @@ def _make_get_info(env):
         # process subelements
         if recursive:
             for child in element.iterchildren():
-                cname = _local_name(child)
+                cname = aux._local_name(child)
                 if cname in {'cvParam', 'userParam'}:
                     info.update(_get_info(source, child))
                 else:
@@ -95,7 +92,7 @@ def _make_get_info(env):
         def str_to_bool(s):
             if s.lower() in {'true', '1'}: return True
             if s.lower() in {'false', '0'}: return False
-            raise PyteomicsError('Cannot convert string to bool: ' + s)
+            raise aux.PyteomicsError('Cannot convert string to bool: ' + s)
 
         converters = {'ints': int, 'floats': float, 'bools': str_to_bool,
                 'intlists': lambda x: numpy.fromstring(x, dtype=int, sep=' '),
@@ -103,7 +100,7 @@ def _make_get_info(env):
                 'charlists': list}
         for k, v in info.items():
             for t, a in converters.items():
-                if (_local_name(element), k) in env['schema_info'](source, t):
+                if (aux._local_name(element), k) in env['schema_info'](source, t):
                     info[k] = a(v)
         # resolve refs
         # loop is needed to resolve refs pulled from other refs
@@ -136,7 +133,7 @@ def _make_get_info(env):
 
 def _get_info_smart(source, element, **kw):
     """Extract the info in a smart way depending on the element type"""
-    name = _local_name(element)
+    name = aux._local_name(element)
     kwargs = dict(kw)
     rec = kwargs.pop('recursive', None)
     if name == 'MzIdentML':
@@ -146,7 +143,7 @@ def _get_info_smart(source, element, **kw):
         return _get_info(source, element, rec if rec is not None else True,
                 **kwargs)
 
-@_keepstate
+@aux._keepstate
 def get_by_id(source, elem_id):
     """Parse ``source`` and return the element with `id` attribute equal to
     ``elem_id``. Returns :py:const:`None` if no such element is found.
@@ -178,7 +175,7 @@ def get_by_id(source, elem_id):
     return None
 
 def _make_itertag(env):
-    @_keepstate
+    @aux._keepstate
     def _itertag(source, localname, **kwargs):
         """Parse ``source`` and yield info on elements with specified local name.
         Case-insensitive. Namespace-aware."""
@@ -186,37 +183,15 @@ def _make_itertag(env):
         for ev, elem in etree.iterparse(source, events=('start', 'end'),
                 remove_comments=True):
             if ev == 'start':
-                if _local_name(elem).lower() == localname.lower():
+                if aux._local_name(elem).lower() == localname.lower():
                     found = True
             else:
-                if _local_name(elem).lower() == localname.lower():
+                if aux._local_name(elem).lower() == localname.lower():
                     yield env['get_info_smart'](source, elem, **kwargs)
                     found = False
                     if not found:
                         elem.clear()
     return _itertag
-
-@_keepstate
-def version_info(source):
-    """
-    Provide version information about the mzIdentML file.
-
-    Parameters:
-    -----------
-    source : str or file
-        mzIdentML file object or path to file
-
-    Returns:
-    --------
-    out : tuple
-        A (version, schema URL) tuple, both elements are strings or None.
-    """
-    for _, elem in etree.iterparse(source, events=('start',),
-            remove_comments=True):
-        if _local_name(elem) == 'MzIdentML':
-            return elem.attrib.get('version'), elem.attrib.get((
-                '{{{}}}'.format(elem.nsmap['xsi'])
-                if 'xsi' in elem.nsmap else '') + 'schemaLocation')
 
 _schema_defaults = {'ints': {('DBSequence', 'length'),
                      ('IonType', 'charge'),
@@ -263,71 +238,17 @@ _schema_defaults = {'ints': {('DBSequence', 'length'),
             'charlists': {('Modification', 'residues'),
                     ('SearchModification', 'residues')}}
 
-def _make_schema_info(env):
-    _schema_info_cache = {}
-    def _schema_info(source, key):
-        '''Stores defaults for version {}, tries to retrieve the schema for
-        other versions. Keys are: 'floats', 'ints', 'bools', 'lists',
-        'intlists', 'floatlists', 'charlists'.'''.format(env['default_version'])
-
-        if source in _schema_info_cache:
-            return _schema_info_cache[source][key]
-        
-        version, schema = env['version_info'](source)
-        if version == env['default_version']:
-            ret = env['defaults']
-        else:
-            ret = {}
-            try:
-                if not schema:
-                    schema_url = ''
-                    raise PyteomicsError(
-                            'Schema information not found in {}.'.format(source))
-                schema_url = schema.split()[-1]
-                schema_file = urlopen(schema_url)
-                schema_tree = etree.parse(schema_file)
-                types = {'ints': {'xsd:int', 'xsd:long'},
-                        'floats': {'xsd:float', 'xsd:double'},
-                        'bools': {'xsd:boolean'},
-                        'intlists': {'listOfIntegers'},
-                        'floatlists': {'listOfFloats'},
-                        'charlists': {'listOfChars', 'listOfCharsOrAny'}}
-                for k, val in types.items():
-                    tuples = set()
-                    for elem in schema_tree.iter():
-                        if elem.attrib.get('type') in val:
-                            anc = elem.getparent()
-                            while not _local_name(anc) == 'complexType':
-                                anc = anc.getparent()
-                                if anc is None:
-                                    break
-                            else:
-                                elname = schema_tree.find('//*[@type="{}"]'.format(
-                                    anc.attrib['name'])).attrib['name']
-                                tuples.add(
-                                        (elname, elem.attrib['name']))
-                    ret[k] = tuples
-                ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
-                    '//*[local-name()="element"]') if elem.attrib.get(
-                        'maxOccurs', '1') != '1')
-            except Exception as e:
-                warn("Unknown {} version `{}`. Attempt to use schema\n"
-                        "information from <{}> failed. Reason:\n{}: {}\n"
-                        "Falling back to defaults for {}".format(
-                            env['format'],
-                            version, schema_url, type(e).__name__, e.message,
-                            env['default_version']))
-                ret = env['defaults']
-        _schema_info_cache[source] = ret
-        return ret[key]
-    return _schema_info
+_version_info_env = {'format': 'mzIdentML', 'element': 'MzIdentML'}
+version_info = aux._make_version_info(_version_info_env)
 
 _schema_env = {'format': 'MzIdentML', 'version_info': version_info,
         'default_version': '1.1.0', 'defaults': _schema_defaults}
-_schema_info = _make_schema_info(_schema_env)
+_schema_info = aux._make_schema_info(_schema_env)
+
 _get_info_env = {'keys':  {'Fragmentation',},
         'schema_info': _schema_info}
 _get_info = _make_get_info(_get_info_env)
+
 _itertag_env = {'get_info_smart': _get_info_smart}
 _itertag = _make_itertag(_itertag_env)
 
