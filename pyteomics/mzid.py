@@ -12,10 +12,10 @@ Standard Initiative.
 This module provides a minimalistic way to extract information from mzIdentML
 files. The main idea is the same as in :py:mod:`pyteomics.pepxml`: the top-level
 function :py:func:`read` allows iterating over entries in
-`<SpectrumIdentificationResult>` tags, i.e. groups of identifications
+`<SpectrumIdentificationResult>` elements, i.e. groups of identifications
 for a certain spectrum. Note that each entry can contain more than one PSM
-(peptide-spectrum match). They are accessible with `"search_hits"` key, just
-like in :py:mod:`pyteomics.pepxml`.
+(peptide-spectrum match). They are accessible with "SpectrumIdentificationItem"
+key.
 
 Data access
 -----------
@@ -24,6 +24,8 @@ Data access
   file. Data from a single PSM group are converted to a human-readable dict. 
 
   :py:func:`get_by_id` - get an element by its ID and extract the data from it.
+
+  :py:func:`version_info` - get information about mzIdentML version and schema.
 
 -------------------------------------------------------------------------------
 """
@@ -43,10 +45,7 @@ Data access
 #   limitations under the License.
 
 from lxml import etree
-from functools import wraps
-from warnings import warn
 import numpy
-
 from . import auxiliary as aux
 
 def _get_info_smart(source, element, **kw):

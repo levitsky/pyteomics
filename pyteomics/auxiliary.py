@@ -154,7 +154,8 @@ def _make_schema_info(env):
                 schema_file = urlopen(schema_url)
                 p = etree.XMLParser(remove_comments=True)
                 schema_tree = etree.parse(schema_file, parser=p)
-                types = {'ints': {'int', 'long', 'nonNegativeInteger'},
+                types = {'ints': {'int', 'long', 'nonNegativeInteger',
+                            'positiveInt', 'integer', 'unsignedInt'},
                         'floats': {'float', 'double'},
                         'bools': {'boolean'},
                         'intlists': {'listOfIntegers'},

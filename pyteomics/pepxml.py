@@ -47,6 +47,7 @@ Data access
 #   limitations under the License.
 
 from lxml import etree
+import numpy
 from . import mzid
 from . import auxiliary as aux
 try:
@@ -54,200 +55,233 @@ try:
 except NameError: # Python 3.x
     from functools import reduce
 
-# spectrum_query attributes which contain float values.
-float_keys = {
-    'calc_neutral_pep_mass',
-    'precursor_neutral_mass',
-    'massdiff',
-    'start_scan',
-    'end_scan',
-    'assumed_charge',
-    'num_tot_proteins',
-    'num_missed_cleavages',
-    'retention_time_sec',
-    'tot_num_ions',
-    'num_matched_ions',
-    'index',
-    'hit_rank',
-    'is_rejected'
-    }
-
-# Default namespace of pepXML.
-xmlns = 'http://regis-web.systemsbiology.net/pepXML'
-
 def _peptide_length(psm):
     return len(psm['peptide'])
 
-def _insert_default_ns(xpath, ns_key = 'd'):
-    """Inserts the key for the default namespace before each node name.
-    Does not modify a nodename if it already has a namespace.
+#def _insert_default_ns(xpath, ns_key = 'd'):
+#    """Inserts the key for the default namespace before each node name.
+#    Does not modify a nodename if it already has a namespace.
+#    
+#    Parameters
+#    ----------
+#    xpath : str
+#        An original XPath
+#    ns_key : str
+#        A key for the default namespace.
+#        If empty string, `xpath` will be returned unchanged.
+#
+#    Returns
+#    -------
+#    out : str
+#        A modified XPath.
+#    """
+#    if not ns_key: return xpath
+#    return '/'.join(
+#        [(ns_key + ':' + node if (node and node.count(':') == 0) else node)
+#         for node in xpath.split('/')])
+
+#def get_node(source, xpath, namespaces={'d':xmlns}):
+#    """Retrieves arbitrary nodes from a pepXML file by their xpath.
+#    Each node in the xpath is assigned to the default namespace 
+#    'http://regis-web.systemsbiology.net/pepXML' unless specified else.
+#
+#    Parameters
+#    ----------
+#    source : str or file
+#        A path to a target pepXML file or the file object itself.
+#    xpath : str
+#        An XPath to target nodes. 
+#    namespaces : dict, optional
+#        A dictionary of namespaces. The default namespace key is 'd'.
+#        If the XML document does not have a specified namespace,
+#        supply an empty dictionary.
+#    
+#    Returns
+#    -------
+#    out : list of lxml.Element 
+#        List of target nodes.
+#
+#    Examples
+#    --------
+#    >> get_node('/msms_pipeline_analysis/msms_run_summary[0]'
+#                '/search_summary/aminoacid_modification')
+#
+#    """
+#    parser = etree.XMLParser(remove_comments=True, ns_clean=True)
+#    tree = etree.parse(source, parser=parser)
+#
+#    if not namespaces: ns_key = ''
+#    else: ns_key = 'd'
+#
+#    xpath_w_namespace = _insert_default_ns(xpath, ns_key)
+#    kwargs = {}
+#    if namespaces: kwargs['namespaces'] = namespaces
+#       
+#    return tree.xpath(xpath_w_namespace, **kwargs)
     
-    Parameters
-    ----------
-    xpath : str
-        An original XPath
-    ns_key : str
-        A key for the default namespace.
-        If empty string, `xpath` will be returned unchanged.
-
-    Returns
-    -------
-    out : str
-        A modified XPath.
-    """
-    if not ns_key: return xpath
-    return '/'.join(
-        [(ns_key + ':' + node if (node and node.count(':') == 0) else node)
-         for node in xpath.split('/')])
-
-def get_node(source, xpath, namespaces={'d':xmlns}):
-    """Retrieves arbitrary nodes from a pepXML file by their xpath.
-    Each node in the xpath is assigned to the default namespace 
-    'http://regis-web.systemsbiology.net/pepXML' unless specified else.
-
-    Parameters
-    ----------
-    source : str or file
-        A path to a target pepXML file or the file object itself.
-    xpath : str
-        An XPath to target nodes. 
-    namespaces : dict, optional
-        A dictionary of namespaces. The default namespace key is 'd'.
-        If the XML document does not have a specified namespace,
-        supply an empty dictionary.
+#def _psm_from_query(query):
+#    """Analyze a spectrum query Element object and generate a dictionary with 
+#    its properties.
+#
+#    Parameters
+#    ----------
+#    element : lxml.Element
+#        A parent element with a spectrum query.
+#
+#    Returns
+#    -------
+#    out : dict
+#    """
+#
+#    # A psm stores the properties of the spectrum query...
+#    psm = dict(query.attrib)
+#    # ... and the info about all search hits (in a list).
+#    search_hit_elements = query.xpath(
+#        "*[local-name()='search_result']"
+#        "/*[local-name()='search_hit']")
+#    if not search_hit_elements:
+#        return {}
+#
+#    # Convert str values to float.
+#    for key in float_keys:
+#            if key in psm:
+#                psm[key] = float(psm[key])
+#
+#    psm['search_hits'] = []
+#    for search_hit in search_hit_elements:
+#        # form a dictionary with search hit info, then add it to the list
+#        search_hit_info = {}
+#        search_hit_info.update(search_hit.attrib)
+#
+#        # Use non-modified sequence of a peptide as a modified one if
+#        # there are no modifications.
+#        search_hit_info['modified_peptide'] = search_hit_info['peptide']
+#
+#        # Convert str values to float in search hit.
+#        for key in float_keys:
+#            if key in search_hit_info:
+#                search_hit_info[key] = float(search_hit_info[key])    
+#
+#        # Store alternative proteins as a list of dictionaries.
+#        proteins = []
+#        proteins.append(
+#            {"protein":         search_hit_info.pop("protein"),
+#             "protein_descr":   search_hit_info.pop("protein_descr", ""),
+#             "num_tol_term":    float(search_hit_info.pop("num_tol_term"))
+#                                if "num_tol_term" in search_hit_info else None,
+#             "peptide_prev_aa": search_hit_info.pop("peptide_prev_aa"),
+#             "peptide_next_aa": search_hit_info.pop("peptide_next_aa")})
+#
+#        for subelement in search_hit.xpath("*[local-name()='search_score']"):
+#            search_hit_info[subelement.attrib['name']] = float(
+#                    subelement.attrib['value'])
+#        for subelement in search_hit.xpath("*[local-name()='analysis_result']"
+#            "/*[local-name()='peptideprophet_result']"):
+#            search_hit_info['peptideprophet'] = float(
+#                    subelement.attrib['probability'])
+#        for subelement in search_hit.xpath(
+#                "*[local-name()='alternative_protein']"):
+#            proteins.append(subelement.attrib)
+#
+#        # Store a list of modifications.
+#        modifications = []
+#        for subelement in search_hit.xpath(
+#                "*[local-name()='modification_info']"):
+#            search_hit_info['modified_peptide'] = subelement.attrib.get(
+#                'modified_peptide', '')
+#            if 'mod_nterm_mass' in subelement.attrib:
+#                modifications.append(
+#                    {'position' : 0,
+#                     'mass': float(subelement.attrib['mod_nterm_mass'])})
+#            if 'mod_cterm_mass' in subelement.attrib:
+#                modifications.append(
+#                    {'position' : _peptide_length(search_hit_info) + 1,
+#                     'mass': float(subelement.attrib['mod_cterm_mass'])})
+#            for mod_element in subelement.xpath(
+#                    "*[local-name()='mod_aminoacid_mass']"):
+#                modification = dict(mod_element.attrib)
+#                modification['position'] = int(modification['position'])
+#                modification['mass'] = float(modification['mass'])
+#                modifications.append(modification)
+#        
+#        if modifications and ((not search_hit_info['modified_peptide']) or 
+#                search_hit_info['modified_peptide'] == 
+#                search_hit_info['peptide']):
+#            seq = list(search_hit_info['peptide'])
+#            splitseq = []
+#            indices = sorted([x['position'] for x in modifications])
+#            reduce(lambda x, y: splitseq.append(seq[x:y]) or y,
+#                    indices + [len(seq)], 0)
+#            mods = ['[%d]' % int(round(x['mass'])) for x in sorted(
+#                modifications, key=lambda y: y['position'])]
+#            modseq = ''.join(splitseq[0])
+#            for i in range(len(mods)):
+#                modseq += mods[i] + ''.join(splitseq[i+1])
+#            search_hit_info['modified_peptide'] = modseq
+#
+#        search_hit_info["proteins"] = proteins
+#        search_hit_info["modifications"] = modifications
+#
+#        psm['search_hits'].append(search_hit_info)
+#
+#    psm['search_hits'].sort(key = lambda x: x['hit_rank'])
+#    return psm
     
-    Returns
-    -------
-    out : list of lxml.Element 
-        List of target nodes.
-
-    Examples
-    --------
-    >> get_node('/msms_pipeline_analysis/msms_run_summary[0]'
-                '/search_summary/aminoacid_modification')
-
-    """
-    parser = etree.XMLParser(remove_comments=True, ns_clean=True)
-    tree = etree.parse(source, parser=parser)
-
-    if not namespaces: ns_key = ''
-    else: ns_key = 'd'
-
-    xpath_w_namespace = _insert_default_ns(xpath, ns_key)
-    kwargs = {}
-    if namespaces: kwargs['namespaces'] = namespaces
-       
-    return tree.xpath(xpath_w_namespace, **kwargs)
-
+def _get_info_smart(source, element, **kw):
+    """Extract the info in a smart way depending on the element type"""
+    name = aux._local_name(element)
+    kwargs = dict(kw)
+    rec = kwargs.pop('recursive', None)
+    if name == 'msms_pipeline_analysis':
+        info = _get_info(source, element, rec if rec is not None else False,
+                **kwargs)
+    else:
+        info = _get_info(source, element, rec if rec is not None else True,
+                **kwargs)
     
-def _psm_from_query(query):
-    """Analyze a spectrum query Element object and generate a dictionary with 
-    its properties.
+    # attributes which contain unconverted values.
+    convert = {'float':  {'calc_neutral_pep_mass', 'massdiff'},
+        'int': {'start_scan', 'end_scan', 'index'},
+        'bool': {'is_rejected'},
+        'floatarray': {'all_ntt_prob'}}
+    converters = {'float': float, 'int': int, 
+            'bool': lambda x: x.lower() in {'1', 'true'},
+            'floatarray': lambda x: numpy.fromstring(x[1:-1], sep=',')}
+    for k, v in dict(info).items():
+        for t, s in convert.items():
+            if k in s:
+                del info[k]
+                info[k] = converters[t](v)
+    for k in {'search_score', 'parameter'}:
+        if k in info and isinstance(info[k], list) and all(
+                isinstance(x, dict) and len(x) == 1 for x in info[k]):
+            scores = {}
+            for score in info[k]:
+                name, value = score.popitem()
+                scores[name] = float(value)
+            info[k] = scores
+    if 'search_result' in info and len(info['search_result']) == 1:
+        info.update(info['search_result'][0])
+        del info['search_result']
+    if 'protein' in info and 'peptide' in info:
+        info['proteins'] = [{'protein': info.pop('protein'),
+            'protein_descr': info.pop('protein_descr', None)}]
+        for add_key in {'peptide_prev_aa', 'peptide_next_aa', 'num_tol_term',
+                'protein_mw'}:
+            if add_key in info:
+                info['proteins'][0][add_key] = info.pop(add_key)
+        if 'alternative_protein' in info:
+            info['proteins'].extend(info['alternative_protein'])
+            del info['alternative_protein']
+    if 'peptide' in info and not 'modified_peptide' in info:
+        info['modified_peptide'] = info['peptide']
+    if 'mod_aminoacid_mass' in info:
+        info['modifications'] = info.pop('mod_aminoacid_mass')
+    if 'search_hit' in info:
+        info['search_hit'].sort(key=lambda x: x['hit_rank'])
+    return info
 
-    Parameters
-    ----------
-    element : lxml.Element
-        A parent element with a spectrum query.
 
-    Returns
-    -------
-    out : dict
-    """
-
-    # A psm stores the properties of the spectrum query...
-    psm = dict(query.attrib)
-    # ... and the info about all search hits (in a list).
-    search_hit_elements = query.xpath(
-        "*[local-name()='search_result']"
-        "/*[local-name()='search_hit']")
-    if not search_hit_elements:
-        return {}
-
-    # Convert str values to float.
-    for key in float_keys:
-            if key in psm:
-                psm[key] = float(psm[key])
-
-    psm['search_hits'] = []
-    for search_hit in search_hit_elements:
-        # form a dictionary with search hit info, then add it to the list
-        search_hit_info = {}
-        search_hit_info.update(search_hit.attrib)
-
-        # Use non-modified sequence of a peptide as a modified one if
-        # there are no modifications.
-        search_hit_info['modified_peptide'] = search_hit_info['peptide']
-
-        # Convert str values to float in search hit.
-        for key in float_keys:
-            if key in search_hit_info:
-                search_hit_info[key] = float(search_hit_info[key])    
-
-        # Store alternative proteins as a list of dictionaries.
-        proteins = []
-        proteins.append(
-            {"protein":         search_hit_info.pop("protein"),
-             "protein_descr":   search_hit_info.pop("protein_descr", ""),
-             "num_tol_term":    float(search_hit_info.pop("num_tol_term"))
-                                if "num_tol_term" in search_hit_info else None,
-             "peptide_prev_aa": search_hit_info.pop("peptide_prev_aa"),
-             "peptide_next_aa": search_hit_info.pop("peptide_next_aa")})
-
-        for subelement in search_hit.xpath("*[local-name()='search_score']"):
-            search_hit_info[subelement.attrib['name']] = float(
-                    subelement.attrib['value'])
-        for subelement in search_hit.xpath("*[local-name()='analysis_result']"
-            "/*[local-name()='peptideprophet_result']"):
-            search_hit_info['peptideprophet'] = float(
-                    subelement.attrib['probability'])
-        for subelement in search_hit.xpath(
-                "*[local-name()='alternative_protein']"):
-            proteins.append(subelement.attrib)
-
-        # Store a list of modifications.
-        modifications = []
-        for subelement in search_hit.xpath(
-                "*[local-name()='modification_info']"):
-            search_hit_info['modified_peptide'] = subelement.attrib.get(
-                'modified_peptide', '')
-            if 'mod_nterm_mass' in subelement.attrib:
-                modifications.append(
-                    {'position' : 0,
-                     'mass': float(subelement.attrib['mod_nterm_mass'])})
-            if 'mod_cterm_mass' in subelement.attrib:
-                modifications.append(
-                    {'position' : _peptide_length(search_hit_info) + 1,
-                     'mass': float(subelement.attrib['mod_cterm_mass'])})
-            for mod_element in subelement.xpath(
-                    "*[local-name()='mod_aminoacid_mass']"):
-                modification = dict(mod_element.attrib)
-                modification['position'] = int(modification['position'])
-                modification['mass'] = float(modification['mass'])
-                modifications.append(modification)
-        
-        if modifications and ((not search_hit_info['modified_peptide']) or 
-                search_hit_info['modified_peptide'] == 
-                search_hit_info['peptide']):
-            seq = list(search_hit_info['peptide'])
-            splitseq = []
-            indices = sorted([x['position'] for x in modifications])
-            reduce(lambda x, y: splitseq.append(seq[x:y]) or y,
-                    indices + [len(seq)], 0)
-            mods = ['[%d]' % int(round(x['mass'])) for x in sorted(
-                modifications, key=lambda y: y['position'])]
-            modseq = ''.join(splitseq[0])
-            for i in range(len(mods)):
-                modseq += mods[i] + ''.join(splitseq[i+1])
-            search_hit_info['modified_peptide'] = modseq
-
-        search_hit_info["proteins"] = proteins
-        search_hit_info["modifications"] = modifications
-
-        psm['search_hits'].append(search_hit_info)
-
-    psm['search_hits'].sort(key = lambda x: x['hit_rank'])
-    return psm
-    
 def read(source):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
@@ -262,10 +296,7 @@ def read(source):
        An iterator over the dicts with PSM properties.
     """
 
-    for _, tag in etree.iterparse(source):
-        if tag.tag.endswith('spectrum_query'):
-            yield _psm_from_query(tag)
-            tag.clear()
+    return _itertag(source, 'spectrum_query')
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.
@@ -302,38 +333,64 @@ _version_info_env = {'format': 'pepXML', 'element': 'msms_pipeline_analysis'}
 version_info = aux._make_version_info(_version_info_env)
 
 _schema_defaults = {'ints': 
-    {('distribution_point', 'obs_5_distr'),
+    {('xpressratio_summary', 'xpress_light'),
+     ('distribution_point', 'obs_5_distr'),
      ('distribution_point', 'obs_2_distr'),
      ('enzymatic_search_constraint', 'max_num_internal_cleavages'),
      ('asapratio_lc_heavypeak', 'right_valley'),
      ('libra_summary', 'output_type'),
      ('distribution_point', 'obs_7_distr'),
+     ('spectrum_query', 'index'),
      ('data_filter', 'number'),
+     ('roc_data_point', 'num_incorr'),
      ('search_hit', 'num_tol_term'),
+     ('search_hit', 'num_missed_cleavages'),
      ('asapratio_lc_lightpeak', 'right_valley'),
+     ('libra_summary', 'normalization'),
      ('specificity', 'min_spacing'),
      ('database_refresh_timestamp', 'min_num_enz_term'),
      ('enzymatic_search_constraint', 'min_number_termini'),
+     ('xpressratio_result', 'light_lastscan'),
      ('distribution_point', 'obs_3_distr'),
+     ('spectrum_query', 'end_scan'),
+     ('analysis_result', 'id'),
      ('search_database', 'size_in_db_entries'),
+     ('search_hit', 'hit_rank'),
      ('alternative_protein', 'num_tol_term'),
+     ('search_hit', 'num_tot_proteins'),
+     ('asapratio_summary', 'elution'),
      ('search_hit', 'tot_num_ions'),
+     ('error_point', 'num_incorr'),
      ('mixture_model', 'precursor_ion_charge'),
+     ('roc_data_point', 'num_corr'),
      ('search_hit', 'num_matched_ions'),
      ('dataset_derivation', 'generation_no'),
+     ('xpressratio_result', 'heavy_firstscan'),
+     ('xpressratio_result', 'heavy_lastscan'),
+     ('error_point', 'num_corr'),
      ('spectrum_query', 'assumed_charge'),
+     ('analysis_timestamp', 'id'),
+     ('xpressratio_result', 'light_firstscan'),
      ('distribution_point', 'obs_4_distr'),
-     ('libra_summary', 'normalization'),
      ('asapratio_lc_heavypeak', 'left_valley'),
+     ('fragment_masses', 'channel'),
      ('distribution_point', 'obs_6_distr'),
+     ('affected_channel', 'channel'),
+     ('search_result', 'search_id'),
+     ('contributing_channel', 'channel'),
      ('asapratio_lc_lightpeak', 'left_valley'),
+     ('asapratio_peptide_data', 'area_flag'),
      ('search_database', 'size_of_residues'),
      ('asapratio_peptide_data', 'cidIndex'),
      ('mixture_model', 'num_iterations'),
      ('mod_aminoacid_mass', 'position'),
+     ('spectrum_query', 'start_scan'),
      ('asapratio_summary', 'area_flag'),
      ('mixture_model', 'tot_num_spectra'),
+     ('search_summary', 'search_id'),
+     ('xpressratio_timestamp', 'xpress_light'),
      ('distribution_point', 'obs_1_distr'),
+     ('intensity', 'channel'),
      ('asapratio_contribution', 'charge'),
      ('libra_summary', 'centroiding_preference')},
     'floats':
@@ -429,19 +486,7 @@ _schema_env = {'format': 'pepXML', 'version_info': version_info,
         'default_version': '1.15', 'defaults': _schema_defaults}
 _schema_info = aux._make_schema_info(_schema_env)
 
-def _get_info_smart(source, element, **kw): # maybe add something smarter here
-    """Extract the info in a smart way depending on the element type"""
-    name = aux._local_name(element)
-    kwargs = dict(kw)
-    rec = kwargs.pop('recursive', None)
-    if name == 'msms_pipeline_analysis':
-        return _get_info(source, element, rec if rec is not None else False,
-                **kwargs)
-    else:
-        return _get_info(source, element, rec if rec is not None else True,
-                **kwargs)
-
-_getinfo_env = {'keys': [], 'schema_info': _schema_info,
+_getinfo_env = {'keys': {'search_score_summary', 'modification_info'}, 'schema_info': _schema_info,
         'get_info_smart': _get_info_smart}
 _get_info = aux._make_get_info(_getinfo_env)
 
