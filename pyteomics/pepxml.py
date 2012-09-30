@@ -277,6 +277,9 @@ def _get_info_smart(source, element, **kw):
         info['modified_peptide'] = info['peptide']
     if 'mod_aminoacid_mass' in info:
         info['modifications'] = info.pop('mod_aminoacid_mass')
+#   if 'modified_peptide' in info and info['modified_peptide'
+#           ] == info['peptide']:
+#       info['modifications'] = []
     if 'search_hit' in info:
         info['search_hit'].sort(key=lambda x: x['hit_rank'])
     return info
