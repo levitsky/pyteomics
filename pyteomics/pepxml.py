@@ -47,16 +47,7 @@ Data access
 #   limitations under the License.
 
 from lxml import etree
-import numpy
-from . import mzid
 from . import auxiliary as aux
-try:
-    reduce # Python 2.7
-except NameError: # Python 3.x
-    from functools import reduce
-
-def _peptide_length(psm):
-    return len(psm['peptide'])
 
 #def _insert_default_ns(xpath, ns_key = 'd'):
 #    """Inserts the key for the default namespace before each node name.
@@ -246,7 +237,7 @@ def _get_info_smart(source, element, **kw):
         'floatarray': {'all_ntt_prob'}}
     converters = {'float': float, 'int': int, 
             'bool': lambda x: x.lower() in {'1', 'true'},
-            'floatarray': lambda x: numpy.fromstring(x[1:-1], sep=',')}
+            'floatarray': lambda x: list(map(float, x[1:-1].split(',')))}
     for k, v in dict(info).items():
         for t, s in convert.items():
             if k in s:
@@ -266,10 +257,10 @@ def _get_info_smart(source, element, **kw):
     if 'protein' in info and 'peptide' in info:
         info['proteins'] = [{'protein': info.pop('protein'),
             'protein_descr': info.pop('protein_descr', None)}]
-        for add_key in {'peptide_prev_aa', 'peptide_next_aa', 'num_tol_term',
-                'protein_mw'}:
+        for add_key in {'peptide_prev_aa', 'peptide_next_aa', 'protein_mw'}:
             if add_key in info:
                 info['proteins'][0][add_key] = info.pop(add_key)
+        info['proteins'][0]['num_tol_term'] = info.pop('num_tol_term', 0)
         if 'alternative_protein' in info:
             info['proteins'].extend(info['alternative_protein'])
             del info['alternative_protein']
@@ -277,11 +268,31 @@ def _get_info_smart(source, element, **kw):
         info['modified_peptide'] = info['peptide']
     if 'mod_aminoacid_mass' in info:
         info['modifications'] = info.pop('mod_aminoacid_mass')
-#   if 'modified_peptide' in info and info['modified_peptide'
-#           ] == info['peptide']:
-#       info['modifications'] = []
+        if 'mod_nterm_mass' in info:
+            info['modifications'].insert(0, {'position': 0,
+                'mass': float(info.pop('mod_nterm_mass'))})
+        if 'mod_cterm_mass' in info:
+            info['modifications'].append({'position': 1 + len(info['peptide']),
+                'mass': float(info.pop('mod_cterm_mass'))})
+    if 'modified_peptide' in info and info['modified_peptide'] == info.get(
+            'peptide') and not 'modifications' in info:
+        info['modifications'] = []
     if 'search_hit' in info:
         info['search_hit'].sort(key=lambda x: x['hit_rank'])
+#        if modifications and ((not search_hit_info['modified_peptide']) or 
+#                search_hit_info['modified_peptide'] == 
+#                search_hit_info['peptide']):
+#            seq = list(search_hit_info['peptide'])
+#            splitseq = []
+#            indices = sorted([x['position'] for x in modifications])
+#            reduce(lambda x, y: splitseq.append(seq[x:y]) or y,
+#                    indices + [len(seq)], 0)
+#            mods = ['[%d]' % int(round(x['mass'])) for x in sorted(
+#                modifications, key=lambda y: y['position'])]
+#            modseq = ''.join(splitseq[0])
+#            for i in range(len(mods)):
+#                modseq += mods[i] + ''.join(splitseq[i+1])
+#            search_hit_info['modified_peptide'] = modseq
     return info
 
 
