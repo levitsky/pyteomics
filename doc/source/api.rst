@@ -15,6 +15,7 @@ Contents:
    api/mzml
    api/mgf
    api/pepxml
+   api/mzid
 
    api/auxiliary
    api/pylab_aux

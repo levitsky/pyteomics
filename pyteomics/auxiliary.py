@@ -264,7 +264,7 @@ def _make_get_info(env):
                 for k, v in dict(info).items():
                     if k.endswith('_ref'):
                         refs = True
-                        info.update(get_by_id(source, v))
+                        info.update(env['get_by_id'](source, v))
                         del info[k]
                         del info['id']
                 if not refs:
