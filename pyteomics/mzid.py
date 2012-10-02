@@ -145,7 +145,7 @@ _schema_info = aux._make_schema_info(_schema_env)
 
 # 'keys' should contain keys whose value is a dict
 _get_info_env = {'keys':  {'Fragmentation',}, 'schema_info': _schema_info,
-        'get_info_smart': _get_info_smart}
+        'get_info_smart': _get_info_smart, 'get_by_id': get_by_id}
 _get_info = aux._make_get_info(_get_info_env)
 
 _itertag_env = {'get_info_smart': _get_info_smart}

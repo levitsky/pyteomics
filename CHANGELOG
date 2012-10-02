@@ -1,4 +1,4 @@
-1.3.0
+2.0.0
 -----
 
 Added **mzid** module for parsing of mzIdentML files.
@@ -12,6 +12,8 @@ API changes
   as **mzid**, are now called **read**.
   
   - **mgf.write_mgf** and **fasta.write_fasta** renamed to **write**.
+
+  - the output format of all **read** functions has changed.
 
 1.2.5
 -----
