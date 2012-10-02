@@ -312,8 +312,12 @@ def _get_info_smart(source, element, **kw):
         else:
             compressed = False
             info.pop('no compression', None)
-        array = _decode_base64_data_array(
-                        info.pop('binary'), dtype, compressed)
+        b = info.pop('binary')
+        if b:
+            array = _decode_base64_data_array(
+                            b, dtype, compressed)
+        else:
+            array = numpy.array([], dtype=dtype)
         for k in info:
             if k.endswith(' array') and not info[k]:
                 info = {k: array}
