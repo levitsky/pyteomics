@@ -1,0 +1,637 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2011 (http://www.altova.com) by Gerhard Mayer (MPC Bochum) -->
+<MzIdentML id="MPC_use_case_handcrafted" name="MPC_example" creationDate="2011-03-25T16:15:00" version="1.1.0" 
+	xsi:schemaLocation="http://psidev.info/psi/pi/mzIdentML/1.1 ../../schema/mzIdentML1.1.0.xsd"
+	xmlns="http://psidev.info/psi/pi/mzIdentML/1.1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<!-- CAUTION: ALL experimentalMassToCharge, peptide scores, protein scores and sequence coverage and spectrumID values are only placeholders for the real values, because file is handcrafted and shows only principle structure of mzIdentML! -->
+	<cvList>
+		<cv id="PSI-MS" fullName="Proteomics Standards Initiative Mass Spectrometry Vocabularies" uri=" http://psidev.cvs.sourceforge.net/viewvc/*checkout*/psidev/psi/psi-ms/mzML/controlledVocabulary/psi-ms.obo" version="2.25.0"/>
+		<cv id="BTO" fullName="BRENDA tissue 7 enzyme source" uri="http://www.brenda-enzymes.info/" version="12/2007"/>
+		<cv id="UNIMOD" fullName="UNIMOD CV for modifications" uri="http://www.unimod.org/obo/unimod.obo"/>
+		<cv id="UO" fullName="Unit Ontology" uri="http://obo.cvs.sourceforge.net/*checkout*/obo/obo/ontology/phenotype/unit.obo"/>
+	</cvList>
+	<AnalysisSoftwareList>
+		<AnalysisSoftware id="SEQUEST_SW" name="ThermoFisher TurboSequest" version="PVM Slave v.27 (rev. 12)" uri="http://www.thermo.com/com/cda/product/detail/1,,16483,00.html">
+			<ContactRole contact_ref="THERMO">
+				<Role>
+					<cvParam accession="MS:1001267" name="software vendor" cvRef="PSI-MS"/>
+				</Role>
+			</ContactRole>
+			<SoftwareName>
+				<cvParam accession="MS:1001208" name="Sequest" cvRef="PSI-MS"/>
+			</SoftwareName>
+		</AnalysisSoftware>
+		<AnalysisSoftware id="Mascot_SW" name="Mascot" version="2.2.0" uri="http://www.matrixscience.com/">
+			<ContactRole contact_ref="MATRIXSCIENCE">
+				<Role>
+					<cvParam accession="MS:1001267" name="software vendor" cvRef="PSI-MS"/>
+				</Role>
+			</ContactRole>
+			<SoftwareName>
+				<cvParam accession="MS:1001207" name="Mascot" cvRef="PSI-MS"/>
+			</SoftwareName>
+		</AnalysisSoftware>
+		<AnalysisSoftware id="ProteinExtractor_SW" name="ProteinExtractor">
+			<ContactRole contact_ref="BRUKER">
+				<Role>
+					<cvParam accession="MS:1001267" name="software vendor" cvRef="PSI-MS"/>
+				</Role>
+			</ContactRole>
+			<SoftwareName>
+				<cvParam accession="MS:1000734" name="ProteinScape" cvRef="PSI-MS"/>
+			</SoftwareName>
+		</AnalysisSoftware>
+	</AnalysisSoftwareList>
+	<Provider id="MPCProvider">
+		<ContactRole contact_ref="MPCMEYER">
+			<Role>
+				<cvParam accession="MS:1001271" name="researcher" cvRef="PSI-MS"/>
+			</Role>
+		</ContactRole>
+	</Provider>
+	<AuditCollection>
+		<Organization id="BRUKER" name="Bruker Daltonics GmbH">
+			<cvParam accession="MS:1000587" name="contact address" cvRef="PSI-MS" value="Bremen, Germany"/>
+		</Organization>
+		<Organization id="MATRIXSCIENCE" name="MatrixScience">
+			<cvParam accession="MS:1000587" name="contact address" cvRef="PSI-MS" value="UK"/>
+		</Organization>
+		<Organization id="THERMO" name="Thermo Corp.">
+			<cvParam accession="MS:1000587" name="contact address" cvRef="PSI-MS" value="USA"/>
+		</Organization>
+		<Person id="MPCMEYER" name="Prof. Dr. Helmut E. Meyer">
+			<cvParam accession="MS:1000587" name="contact address" cvRef="PSI-MS" value="Universitaetsstr. 150, D-44795 Bochum, Germany"/>
+			<cvParam accession="MS:1000589" name="contact email" cvRef="PSI-MS" value="helmut.e.meyer@rub.de"/>
+			<Affiliation organization_ref="MPCINSTITUTE"/>
+		</Person>
+		<Organization id="MPCINSTITUTE" name="Medizinisches Proteom-Center">
+			<cvParam accession="MS:1000587" name="contact address" cvRef="PSI-MS" value="Bremen, Germany"/>
+			<Parent organization_ref="RUB"/>
+		</Organization>
+		<Organization id="RUB" name="Ruhr-Universitaet Bochum">
+			<cvParam accession="MS:1000587" name="contact address" cvRef="PSI-MS" value="Universitaetsstr. 150, D-44795 Bochum, Germany"/>
+		</Organization>
+	</AuditCollection>
+	<AnalysisSampleCollection>
+		<Sample id="sample1">
+			<cvParam accession="MS:1001467" name="taxonomy: NCBI TaxID" cvRef="PSI-MS" value="9606"/>
+			<cvParam accession="BTO:0000255" name="brain cell line" cvRef="BTO"/>
+		</Sample>
+	</AnalysisSampleCollection>
+	<SequenceCollection>
+		<DBSequence id="prot1_IPI" accession="IPI00013808.1" searchDatabase_ref="ipi.HUMAN_decoy">
+			<Seq>MVDYHAANQSYQYGPSSAGNGAGGGGSMGDYMAQEDDWDRDLLLDPAWEKQQRKTFTAWCNSHLRKAGTQIENIDEDFRDGLKLMLLLEVISGERLPKPERGKMRVHKINNVNKALDFIASKGVKLVSIGAEEIVDGNAKMTLGMIWTIILRFAIQDISVEETSAKEGLLLWCQRKTAPYKNVNVQNFHISWKDGLAFNALIHRHRPELIEYDKLRKDDPVTNLNNAFEVAEKYLDIPKMLDAEDIVNTARPDEKAIMTYVSSFYHAFSGAQKAETAANRICKVLAVNQENEHLMEDYEKLASDLLEWIRRTIPWLEDRVPQKTIQEMQQKLEDFRDYRRVHKPPKVQEKCQLEINFNTLQTKLRLSNRPAFMPSEGKMVSDINNGWQHLEQAEKGYEEWLLNEIRRLERLDHLAEKFRQKASIHEAWTDGKEAMLKHRDYETATLSDIKALIRKHEAFESDLAAHQDRVEQIAAIAQELNELDYYDSHNVNTRCQKICDQWDALGSLTHSRREALEKTEKQLEAIDQLHLEYAKRAAPFNNWMESAMEDLQDMFIVHTIEEIEGLISAHDQFKSTLPDADREREAILAIHKEAQRIAESNHIKLSGSNPYTTVTPQIINSKWEKVQQLVPKRDHALLEEQSKQQSNEHLRRQFASQANVVGPWIQTKMEEIGRISIEMNGTLEDQLSHLKQYERSIVDYKPNLDLLEQQHQLIQEALIFDNKHTNYTMEHIRVGWEQLLTTIARTINEVENQILTRDAKGISQEQMQEFRASFNHFDKDHGGALGPEEFKACLISLGYDVENDRQGEAEFNRIMSLVDPNHSGLVTFQAFIDFMSRETTDTDTADQVIASFKVLAGDKNFITAEELRRELPPDQAEYCIARMAPYQGPDAVPGALDYKSFSTALYGESDL</Seq>
+			<cvParam accession="MS:1001088" name="protein description" cvRef="PSI-MS" value="IPI:IPI00013808.1|SWISS-PROT:O43707|TREMBL:Q96BG6|ENSEMBL:ENSP00000252699|REFSEQ:NP_004915|H-INV:HIT000032172|VEGA:OTTHUMP00000076071;OTTHUMP00000174445 Tax_Id=9606 Gene_Symbol=ACTN4 Alpha-actinin-4"/>
+		</DBSequence>
+		<DBSequence id="prot2_IPI" accession="IPI00554648.1" searchDatabase_ref="ipi.HUMAN_decoy">
+			<Seq>SIRVTQKSYKVSTSGPRAFSSRSYTSGPGSRISSSSFSRVGSSNFRGGLGGGYGGASGMGGITAVTVNQSLLSPLVLEVDPNIQAVRTQEKEQIKTLNNKFASFIDKVRFLEQQNKMLETKWSLLQQQKTARSNMDNMFESYINNLRRQLETLGQEKLKLEAELGNMQGLVEDFKNKYEDEINKRTEMENEFVLIKKDVDEAYMNKVELESRLEGLTDEINFLRQLYEEEIRELQSQISDTSVVLSMDNSRSLDMDSIIAEVKAQYEDIANRSRAEAESMYQIKYEELQSLAGKHGDDLRRTKTEISEMNRNISRLQAEIEGLKGQRASLEAAIADAEQRGELAIKDANAKLSELEAALQRAKQDMARQLREYQELMNVKLALDIEIATYRKLLEGEESRLESGMQNMSIHTKTTGGYAGGLSSAYGGLTSPGLSYSLGSSFGSGAGSSSFSRTSSSRAVVVKKIETRDGKLVSESSDVLPK</Seq>
+			<cvParam accession="MS:1001088" name="protein description" cvRef="PSI-MS" value=">IPI:IPI00554648.1|SWISS-PROT:P05787 Tax_Id=9606 Keratin, type II cytoskeletal 8"/>
+		</DBSequence>
+		<DBSequence id="prot3_IPI" accession="IPI00414676.5" searchDatabase_ref="ipi.HUMAN_decoy">
+			<Seq>PEEVHHGEEEVETFAFQAEIAQLMSLIINTFYSNKEIFLRELISNASDALDKIRYESLTDPSKLDSGKELKIDIIPNPQERTLTLVDTGIGMTKADLINNLGTIAKSGTKAFMEALQAGADISMIGQFGVGFYSAYLVAEKVVVITKHNDDEQYAWESSAGGSFTVRADHGEPIGRGTKVILHLKEDQTEYLEERRVKEVVKKHSQFIGYPITLYLEKEREKEISDDEAEEEKGEKEEEDKDDEEKPKIEDVGSDEEDDSGKDKKKKTKKIKEKYIDQEELNKTKPIWTRNPDDITQEEYGEFYKSLTNDWEDHLAVKHFSVEGQLEFRALLFIPRRAPFDLFENKKKKNNIKLYVRRVFIMDSCDELIPEYLNFIRGVVDSEDLPLNISREMLQQSKILKVIRKNIVKKCLELFSELAEDKENYKKFYEAFSKNLKLGIHEDSTNRRRLSELLRYHTSQSGDEMTSLSEYVSRMKETQKSIYYITGESKEQVANSAFVERVRKRGFEVVYMTEPIDEYCVQQLKEFDGKSLVSVTKEGLELPEDEEEKKKMEESKAKFENLCKLMKEILDKKVEKVTISNRLVSSPCCIVTSTYGWTANMERIMKAQALRDNSTMGYMMAKKHLEINPDHPIVETLRQKAEADKNDKAVKDLVVLLFETALLSSGFSLEDPQTHSNRIYRMIKLGLGIDEDEVAAEEPNAAVPDEIPPLEGDEDASRMEEVD</Seq>
+			<cvParam accession="MS:1001088" name="protein description" cvRef="PSI-MS" value=">IPI:IPI00414676.5|SWISS-PROT:P08238|TREMBL:Q5T9W7;Q6PK50;Q9H6X9|ENSEMBL:ENSP00000325875|REFSEQ:NP_031381|H-INV:HIT000008644;HIT000032091;HIT000034201;HIT000035963;HIT000036733;HIT000049765;HIT000057726|VEGA:OTTHUMP00000016517;OTTHUMP00000016518;OTTHUMP00000016519 Tax_Id=9606 Heat shock protein HSP 90-beta"/>
+		</DBSequence>
+		<DBSequence id="prot4_SHD" accession="SHD00382470.3" searchDatabase_ref="ipi.HUMAN_decoy">
+			<Seq>YQQKTRHDAFPRIQLALRAGAKSKEDLFSEPKLYEDKEQRISSELPEEALDDSSPSDTSLIAVEREISSNLRHSSTNYEEHLRKLKKDKYSEAVDPSGKPLGLLVILGNQYMREDEIATEERMPENKSTDISTYIKEFDGKEIAFPTENSYFPARGDKSKAVTAKWKRFTPFPLQTDDNSAAKLTEVFKIQLTTVGKLGKCSEGGENKEDKCTDNLCLNPPDELTEHREAPVTDTKPIMPEQIIITTKEISDSQLENRDETAPIALDLIALVSVNSLTGETNRKMEEYKSKKRRTTRLEETGFHILHNREVNMDNGECVFPIHYDAAQEMQPHTDSSKVMKASEFQKDIILMELIEKFDHNVKLLSKDCVEVQNSMANLELDKESEEQAVGDGSCLTRGTLVIKAQNGKNTGENDSTKETREYLRKKMDEAEDYGLVLKDDTYIEVWDVAVQITYLLKRSIEWPESECIDIEPFVHKAKSYINVEKETESHKLVQHKYKCRPLFRGENKDVTKRLLYGKILLEDKLSSASGLKSTELWDLDEDYEVTWRQEILLNKNKKVAPDEKETYIVLQNNLYPMQPVVMPSIPARMMSLENDILKMPIAAVRVKVVDITINKFLMGEINADDMEFPTSGFLEQHSDFGGLANGESQNDKPTEGQAREIEPIAKEEYVIDLEWGLRITQPTSEYGYDGELVVYVTKGMGKQTEPESLSYVCVVEGFAKAQLPERQITGKEDSGFIRRQQRLLEDDFSMKKKIFEGLDPILSEKKLDMQFRKFSMKWQYLKDILPADFDKEKEIFREFHKIEIKVSFGHKGMESKAALYIKFYETFERELKQFLSAEPRYRDDACEGLQLEV</Seq>
+			<cvParam accession="MS:1001088" name="protein description" cvRef="PSI-MS" value=">SHD:SHD00382470.3|SWISS-PROT:P07900-2|TREMBL:Q86SX1|ENSEMBL:ENSP00000335153|REFSEQ:NP_001017963|VEGA:OTTHUMP00000041671 Tax_Id=9606 Gene_Symbol=HSP90AA1 heat shock protein 90kDa alpha (cytosolic), class A member 1 isoform 1"/>
+		</DBSequence>
+		<DBSequence id="prot5_IPI" accession="IPI00398776.3" searchDatabase_ref="ipi.HUMAN_decoy">
+			<Seq>MKIVPDERDRVQKKTFTKWVNKHLIKAQRHISDLYEDLRDGHNLISLLEVLSGDSLPREKGRMRFHKLQNVQIALDYLRHRQVKLVNIRNDDIADGNPKLTLGLIWTIILHFQISDIQVSGQSEDMTAKEKLLLWSQRMVEGYQGLRCDNFTSSWRDGRLFNAIIHRHKPLLIDMNKVYRQTNLENLDQAFSVAERDLGVTRLLDPEDVDVPQPDEKSIITYVSSLYDAMPRVPDVQDGVRANELQLRWQEYRELVLLLLQWMRHHTAAFEERRFPSSFEEIEILWSQFLKFKEMELPAKEADKNRSKGIYQSLEGAVQAGQLKVPPGYHPLDVEKEWGKLHVAILEREKQLRSEFERLECLQRIVTKLQMEAGLCEEQLNQADALLQSDVRLLAAGKVPQRAGEVERDLDKADSMIRLLFNDVQTLKDGRHPQGEQMYRRVYRLHERLVAIRTEYNLRLKAGVAAPATQVAQVTLQSVQRRPELEDSTLRYLQDLLAWVEENQHRVDGAEWGVDLPSVEAQLGSHRGLHQSIEEFRAKIERARSDEGQLSPATRGAYRDCLGRLDLQYAKLLNSSKARLRSLESLHSFVAAATKELMWLNEKEEEEVGFDWSDRNTNMTAKKESYSALMRELELKEKKIKELQNAGDRLLREDHPARPTVESFQAALQTQWSWMLQLCCCIEAHLKENAAYFQFFSDVREAEGQLQKLQEALRRKYSCDRSATVTRLEDLLQDAQDEKEQLNEYKGHLSGLAKRAKAVVQLKPRHPAHPMRGRLPLLAVCDYKQVEVTVHKGDECQLVGPAQPSHWKVLSSSGSEAAVPSVCFLVPPPNQEAQEAVTRLEAQHQALVTLWHQLHVDMKSLLAWQSLRRDVQLIRSWSLATFRTLKPEEQRQALHSLELHYQAFLRDSQDAGGFGPEDRLMAEREYGSCSHHYQQLLQSLEQGAQEESRCQRCISELKDIRLQLEACETRTVHRLRLPLDKEPARECAQRIAEQQKAQAEVEGLGKGVARLSAEAEKVLALPEPSPAAPTLRSELELTLGKLEQVRSLSAIYLEKLKTISLVIRGTQGAEEVLRAHEEQLKEAQAVPATLPELEATKASLKKLRAQAEAQQPTFDALRDELRGAQEVGERLQQRHGERDVEVERWRERVAQLLERWQAVLAQTDVRQRELEQLGRQLRYYRESADPLGAWLQDARRRQEQIQAMPLADSQAVREQLRQEQALLEEIERHGEKVEECQRFAKQYINAIKDYELQLVTYKAQLEPVASPAKKPKVQSGSESVIQEYVDLRTHYSELTTLTSQYIKFISETLRRMEEEERLAEQQRAEERERLAEVEAALEKQRQLAEAHAQAKAQAEREAKELQQRMQEEVVRREEAAVDAQQQKRSIQEELQQLRQSSEAEIQAKARQAEAAERSRLRIEEEIRVVRLQLEATERQRGGAEGELQALRARAEEAEAQKRQAQEEAERLRRQVQDESQRKRQAEVELASRVKAEAEAAREKQRALQALEELRLQAEEAERRLRQAEVERARQVQVALETAQRSAEAELQSKRASFAEKTAQLERSLQEEHVAVAQLREEAERRAQQQAEAERAREEAERELERWQLKANEALRLRLQAEEVAQQKSLAQAEAEKQKEEAEREARRRGKAEEQAVRQRELAEQELEKQRQLAEGTAQQRLAAEQELIRLRAETEQGEQQRQLLEEELARLQREAAAATQKRQELEAELAKVRAEMEVLLASKARAEEESRSTSEKSKQRLEAEAGRFRELAEEAARLRALAEEAKRQRQLAEEDAARQRAEAERVLAEKLAAIGEATRLKTEAEIALKEKEAENERLRRLAEDEAFQRRRLEEQAAQHKADIEERLAQLRKASDSELERQKGLVEDTLRQRRQVEEEILALKASFEKAAAGKAELELELGRIRSNAEDTLRSKEQAELEAARQRQLAAEEERRRREAEERVQKSLAAEEEAARQRKAALEEVERLKAKVEEARRLRERAEQESARQLQLAQEAAQKRLQAEEKAHAFAVQQKEQELQQTLQQEQSVLDQLRGEAEAARRAAEEAEEARVQAEREAAQSRRQVEEAERLKQSAEEQAQARAQAQAAAEKLRKEAEQEAARRAQAEQAALRQKQAADAEMEKHKKFAEQTLRQKAQVEQELTTLRLQLEETDHQKNLLDEELQRLKAEATEAARQRSQVEEELFSVRVQMEELSKLKARIEAENRALILRDKDNTQRFLQEEAEKMKQVAEEAARLSVAAQEAARLRQLAEEDLAQQRALAEKMLKEKMQAVQEATRLKAEAELLQQQKELAQEQARRLQEDKEQMAQQLAEETQGFQRTLEAERQRQLEMSAEAERLKLRVAEMSRAQARAEEDAQRFRKQAEEIGEKLHRTELATQEKVTLVQTLEIQRQQSDHDAERLREAIAELEREKEKLQQEAKLLQLKSEEMQTVQQEQLLQETQALQQSFLSEKDSLLQRERFIEQEKAKLEQLFQDEVAKAQQLREEQQRQQQQMEQERQRLVASMEEARRRQHEAEEGVRRKQEELQQLEQQRRQQEELLAEENQRLREQLQLLEEQHRAALAHSEEVTASQVAATKTLPNGRDALDGPAAEAEPEHSFDGLRRKVSAQRLQEAGILSAEELQRLAQGHTTVDELARREDVRHYLQGRSSIAGLLLKATNEKLSVYAALQRQLLSPGTALILLEAQAASGFLLDPVRNRRLTVNEAVKEGVVGPELHHKLLSAERAVTGYKDPYTGQQISLFQAMQKGLIVREHGIRLLEAQIATGGVIDPVHSHRVPVDVAYRRGYFDEEMNRVLADPSDDTKGFFDPNTHENLTYLQLLERCVEDPETGLCLLPLTDKAAKGGELVYTDSEARDVFEKATVSAPFGKFQGKTVTIWEIINSEYFTAEQRRDLLRQFRTGRITVEKIIKIIITVVEEQEQKGRLCFEGLRSLVPAAELLESRVIDRELYQQLQRGERSVRDVAEVDTVRRALRGANVIAGVWLEEAGQKLSIYNALKKDLLPSDMAVALLEAQAGTGHIIDPATSARLTVDEAVRAGLVGPEFHEKLLSAEKAVTGYRDPYTGQSVSLFQALKKGLIPREQGLRLLDAQLSTGGIVDPSKSHRVPLDVACARGCLDEETSRALSAPRADAKAYSDPSTGEPATYGELQQRCRPDQLTGLSLLPLSEKAARARQEELYSELQARETFEKTPVEVPVGGFKGRTVTVWELISSEYFTAEQRQELLRQFRTGKVTVEKVIKILITIVEEVETLRQERLSFSGLRAPVPASELLASGVLSRAQFEQLKDGKTTVKDLSELGSVRTLLQGSGCLAGIYLEDTKEKVSIYEAMRRGLLRATTAALLLEAQAATGFLVDPVRNQRLYVHEAVKAGVVGPELHEQLLSAEKAVTGYRDPYSGSTISLFQAMQKGLVLRQHGIRLLEAQIATGGIIDPVHSHRVPVDVAYQRGYFSEEMNRVLADPSDDTKGFFDPNTHENLTYRQLLERCVEDPETGLRLLPLKGAEKAEVVETTQVYTEEETRRAFEETQIDIPGGGSHGGSTMSLWEVMQSDLIPEEQRAQLMADFQAGRVTKERMIIIIIEIIEKTEIIRQQGLASYDYVRRRLTAEDLFEARIISLETYNLLREGTRSLREALEAESAWCYLYGTGSVAGVYLPGSRQTLSIYQALKKGLLSAEVARLLLEAQAATGFLLDPVKGERLTVDEAVRKGLVGPELHDRLLSAERAVTGYRDPYTEQTISLFQAMKKELIPTEEALRLLDAQLATGGIVDPRLGFHLPLEVAYQRGYLNKDTHDQLSEPSEVRSYVDPSTDERLSYTQLLRRCRRDDGTGQLLLPLSDARKLTFRGLRKQITMEELVRSQVMDEATALQLREGLTSIEEVTKNLQKFLEGTSCIAGVFVDATKERLSVYQAMKKGIIRPGTAFELLEAQAATGYVIDPIKGLKLTVEEAVRMGIVGPEFKDKLLSAERAVTGYKDPYSGKLISLFQAMKKGLILKDHGIRLLEAQIATGGIIDPEESHRLPVEVAYKRGLFDEEMNEILTDPSDDTKGFFDPNTEENLTYLQLMERCITDPQTGLCLLPLKEKKRERKTSSKSSVRKRRVVIVDPETGKEMSVYEAYRKGLIDHQTYLELSEQECEWEEITISSSDGVVKSMIIDRRSGRQYDIDDAIAKNLIDRSALDQYRAGTLSITEFADMLSGNAGGFRSRSSSVGSSSSYPISPAVSRTQLASWSDPTEETGPVAGILDTETLEKVSITEAMHRNLVDNITGQRLLEAQACTGGIIDPSTGERFPVTDAVNKGLVDKIMVDRINLAQKAFCGFEDPRTKTKMSAAQALKKGWLYYEAGQRFLEVQYLTGGLIEPDTPGRVPLDEALQRGTVDARTAQKLRDVGAYSKYLTCPKTKLKISYKDALDRSMVEEGTGLRLLEAAAQSTKGYYSPYSVSGSGSTAGSRTGSRTGSRAGSRRGSFDATGSGFSMTFSSSSYSSSGYGRRYASGSSASLGGPESAVA</Seq>
+			<cvParam accession="MS:1001088" name="protein description" cvRef="PSI-MS" value=">IPI:IPI00398776.3|TREMBL:Q6S379;Q96IE3|REFSEQ:NP_958783 Tax_Id=9606 plectin 1 isoform 7"/>
+		</DBSequence>
+		<DBSequence id="prot6_IPI" accession="IPI00554788.5" searchDatabase_ref="ipi.HUMAN_decoy">
+			<Seq>MSFTTRSTFSTNYRSLGSVQAPSYGARPVSSAASVYAGAGGSGSRISVSRSTSFRGGMGSGGLATGIAGGLAGMGGIQNEKETMQSLNDRLASYLDRVRSLETENRRLESKIREHLEKKGPQVRDWSHYFKIIEDLRAQIFANTVDNARIVLQIDNARLAADDFRVKYETELAMRQSVENDIHGLRKVIDDTNITRLQLETEIEALKEELLFMKKNHEEEVKGLQAQIASSGLTVEVDAPKSQDLAKIMADIRAQYDELARKNREELDKYWSQQIEESTTVVTTQSAEVGAAETTLTELRRTVQSLEIDLDSMRNLKASLENSLREVEARYALQMEQLNGILLHLESELAQTRAEGQRQAQEYEALLNIKVKLEAEIATYRRLLEDGEDFNLGDALDSSNSMQTIQKTTTRRIVDGKVVSETNDTKVLRH</Seq>
+			<cvParam accession="MS:1001088" name="protein description" cvRef="PSI-MS" value=">IPI:IPI00554788.5|SWISS-PROT:P05783|ENSEMBL:ENSP00000373487;ENSP00000373489|REFSEQ:NP_000215;NP_954657|H-INV:HIT000280941|VEGA:OTTHUMP00000167632 Tax_Id=9606 Gene_Symbol=KRT18 Keratin, type I cytoskeletal 18"/>
+		</DBSequence>
+		<DBSequence id="prot7_SHD" accession="SHD00644576.1" searchDatabase_ref="ipi.HUMAN_decoy">
+			<Seq>PSKYTHAFFHGGTVLFTYVDGLIAESLQLVTQSPPAAGVAGMYDGTSPTTTDIADFEGGPVKEDDEQKLLSSCPRVKGSEPKSPDHGACPSKGLNCKEAHAACCAVFYDYGVEVELVSALSATGAVVHKTASCTLDVTYPEDTIDGDPTAGRKTKKCKGSKATPPDYVRGEKVEIAARGPNDKLYYFEVVSREKPLGAFKCGNQKVNIVYEGVVVVGELEAKILDEVQGTTDGVVGSKDTTQINVIVFNLPCKTGSFVCNRAYKCDKPMDAEGPVVAKLNPGRAALVLHHPEQDKGLNLTGGVHNDTPDGVQKGLDITPTSVAPPMKQQVHNVVMRKKDTLDSKAQIATPETAFVNADAEPVSPWSELIVSEKLGENALGTLQPFHQAVDTTVAKPYRAPLAPWGAVVVNEQFVPAVSVNIGAERESEYILQTAGKCIADDLEGITETNKAVTTREDGPSISYIPSGGDAVSYDTQNRVGTTSLSPWKVDRGVSLSVGALKLLRIVWNDFCADTPVCVAGEVSYSTVGRGVSAGVAAPNPPVKAMVSRPIGTVSRIGGSDTRAGMKFSMHTGGIHTTKSKDDGESGSSYGGDTTVIEYGVEGGSTTVQELAIAPVGAYNLSAQPFGVKGRNEETKKTYSFQVAFVFGVLIFPESPRSREIQNPPAPIVYFVKSGDAQDKGGKEKAGTALIPFMVDPASGLKMYGPMGTRNQNDLGQESQGGTPSKTSEDDVSYNETKQLRATGGAGEETSDADSPKRLSEHGASASPMVQMGIGVINLEYGAPSVTPTVEPCRVTEYVSSSDSEGYAGTRVSAGVDQIDVKPLITLQIYPRSLYQVQENKCLATQAAIVYSSADVVPVVVLNKSGHGKFKVDRTDRKQHEVHYGNKCDDTNGDKNIGGNPSTVLESKDCCGISCVPLKVKTGKGVGPVTMSPPMGPAVHGGDIVHSLREVVVVSAVGKSDVVRGAGVAESKVISKRVAVTMADFSYVEKGIGRKGFSETDFGHKGPGDGRVVGSSRKVSSFFVIFQPAGGWKVIEVILHDAIIGGDGQIGGTANPFVGYTLKEASGVDYADVPVIGVLAYYVAELYRDQHGTDQGPGPEGNEITADPGVGTGAEDGRASGYGAGIVTTKTTDSTGCPHRPVQAERLGRKLRSEPVMGVKPGVGGTHCNEDINEKTGIALDVVRAPPAFQPSISGVHTKSSATDVGPDVFDTGGVALVCQPVVGSVVSPYYCPPFGAGVIECYPMSTDPADSSRRNFKPPQRVVTTTEAGDDSGAYVYRYFGPGADMKLPKDSSDVVGNGDCESDPPKLSGNVPQHPEQYSTPAESMRGDPAVSDSLVMANVEFPKCEPDQNYGGHDGKVAPFFDRENEQVDVGLPNDSKGPCVRGVFPLFHYIGSVAPRAVIKCPTTLGPIGQTGGFPGFKSIAYLLIGTGCFQKLLKYVITELVDNCDGCRAKYGSDSTGSFVMEAKGLPIQGFKGKSGTDKCNHEKVDIELTTSGKRPRPPANQAKIEDVLPNAVTDVKECTAVYVDREIELDEIDPHTAQGHRYKRGPKEPIAWSIELSPSGRYMVELLVEISVAFVPPIPIFGTEVAPVGAPAISTSGSPGPAIGRVTLGQKAALPTEPEPSNSYARVDRQEEKRTPEGCGEAAKAHHPPFGINPLAQVIEDQDAYHFDHVGARIGLERGTSCDGESEAIEGPVLYAAPAKAAPSGEVHIARQDVKDPLAGGELHTVLDRCDAVSYESSKSQPLHTITFSKPEPGKSDAMITPPVIEPIVFIWIQRAHFPNGETSLGSSRAFAGKRVSKTYGGSDLRECWIGGGPKKNLKPCQPGEGTGKPITGEPLGMVIVRTLPRWELVKHFLVAPGTVIGTTGHADHVSRPGKPVLIPTERANWPVPRHYTELHDGREVKCTREGVKFHRLDTVNAAVHKNYRHPSSKSSCLWHGVVTKEQAGQISIREFVEDVSPGSIIVDIVNLVAVQGPSSTGSGLGVVHAYPLTYYTVKDIVVALKLSSASFIMVNKKAVVTVCFSDVQSGFKKNVASPPGVLSVSIGLDTYEGDPGIATNWWPSTDEKPCGNVLEDSGPDENHSNPNTAWEFTGLGDTKEGRPNTAFVESEMVLLPVAYVLEQKHPGQGQVGNTMLKDGICEGSTSHVGAVDPSEVQPLGFPGRLITKKFLETFIFCYPSEPIGKGKKVDGKLTSSYSSELAERELVLALAVGIGDAVYYYAFGAGPKIHVFTGDGGGVKNGILVLEGPFHGDEPDLGPFNPGPTQGVERGYSGGEKLATPTVTTYVPELVGLVVVGGTDGIGVHAAVVERWGTYDGKVSPQSVYTTKPGPLSGSDDIHLNVKTVKYLHDEGYTFTIPPHGEKVVEVVEAEQVGRQSDGTTYVTQNNAQAIPVKLRRTAPYGELGHVKLDQVGEEYFGIKFHVNGCDGPGTGPENATYVEQTSGVPPRTPVFGFSVEGTLIQSPQIALNKGRHAVTTIIKQARPFLGGVKGTTDQTPDAFVPHKQTEPLVAACKYVGGWYNHVVPKGKAGEGQGQHRPAVKRANPSDEQAMQSMKKPSPPTPQGEEVSTSVKDLEPESYFQQNVYVNVPAHIGKKLPGIECNQND</Seq>
+			<cvParam accession="MS:1001088" name="protein description" cvRef="PSI-MS" value=">SHD:SHD00644576.1|TREMBL:Q5HY54;Q86TQ3;Q96C61|ENSEMBL:ENSP00000358863|VEGA:OTTHUMP00000064890 Tax_Id=9606 Gene_Symbol=FLNA Filamin A, alpha"/>
+		</DBSequence>
+		<Peptide id="prot1_pep1">
+			<PeptideSequence>AGTQIENIDEDFR</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot1_pep2">
+			<PeptideSequence>AGTQIENIDEDFRDGLK</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot1_pep3">
+			<PeptideSequence>ALDFIASK</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot1_pep4">
+			<PeptideSequence>MLDAEDIVNTARPDEK</PeptideSequence>
+			<Modification location="1">
+				<cvParam accession="UNIMOD:35" name="Oxidation" cvRef="UNIMOD"/>
+			</Modification>
+		</Peptide>
+		<Peptide id="prot2_pep1">
+			<!-- identified in two spectra with different scores! -->
+			<PeptideSequence>SYTSGPGSR</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot2_pep2">
+			<PeptideSequence>GGLGGGYGGASGMGGITAVTVNQSLLSPLVLEVDPNIQAVR</PeptideSequence>
+			<Modification location="13">
+				<cvParam accession="UNIMOD:35" name="Oxidation" cvRef="UNIMOD"/>
+			</Modification>
+		</Peptide>
+		<Peptide id="prot3_pep1">
+			<PeptideSequence>TLTLVDTGIGMTK</PeptideSequence>
+			<Modification location="11">
+				<cvParam accession="UNIMOD:35" name="Oxidation" cvRef="UNIMOD"/>
+			</Modification>
+		</Peptide>
+		<Peptide id="prot3_pep2">
+			<PeptideSequence>HNDDEQYAWESSAGGSFTVR</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot3_pep3">
+			<PeptideSequence>YHTSQSGDEMTSLSEYVSR</PeptideSequence>
+			<Modification location="10">
+				<cvParam accession="UNIMOD:35" name="Oxidation" cvRef="UNIMOD"/>
+			</Modification>
+		</Peptide>
+		<Peptide id="prot4_pep1">
+			<PeptideSequence>ENDILKMPIAAVR</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot4_pep2">
+			<PeptideSequence>LLEDDFSMKK</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot5_pep1">
+			<PeptideSequence>DGHNLISLLEVLSGDSLPR</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot5_pep2">
+			<PeptideSequence>QTNLENLDQAFSVAER</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot5_pep3">
+			<PeptideSequence>HHTAAFEER</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot6_pep1">
+			<PeptideSequence>STFSTNYR</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot6_pep2">
+			<PeptideSequence>GGMGSGGLATGIAGGLAGMGGIQNEK</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot7_pep1">
+			<PeptideSequence>MYGPMGTR</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot7_pep2">
+			<PeptideSequence>LRSEPVMGVK</PeptideSequence>
+		</Peptide>
+		<Peptide id="prot7_pep3">
+			<PeptideSequence>QSDGTTYVTQNNAQAIPVK</PeptideSequence>
+		</Peptide>
+		<PeptideEvidence id="PE1_SEQ_spec1_pep1" peptide_ref="prot1_pep1" start="67" end="79" pre="K" post="D" isDecoy="false" dBSequence_ref="prot1_IPI" />
+		<PeptideEvidence id="PE1_SEQ_spec2a_pep1" peptide_ref="prot1_pep2" start="67" end="83" pre="K" post="L" isDecoy="false" dBSequence_ref="prot1_IPI" />
+		<PeptideEvidence id="PE1_SEQ_spec3a_pep1" peptide_ref="prot1_pep3" start="115" end="122" pre="K" post="G" isDecoy="false" dBSequence_ref="prot1_IPI" />
+		<PeptideEvidence id="PE1_SEQ_spec10_pep1" peptide_ref="prot1_pep4" start="240" end="255" pre="K" post="A" isDecoy="false" dBSequence_ref="prot1_IPI" />
+		<PeptideEvidence id="PE1_SEQ_spec11a_pep1" peptide_ref="prot2_pep1" start="23" end="31" pre="R" post="I" isDecoy="false" dBSequence_ref="prot2_IPI" />
+		<PeptideEvidence id="PE1_SEQ_spec11a_pep2" peptide_ref="prot3_pep1" start="82" end="94" pre="R" post="A" isDecoy="false" dBSequence_ref="prot3_IPI" />
+		<PeptideEvidence id="PE1_SEQ_spec12_pep1" peptide_ref="prot3_pep2" start="148" end="167" pre="K" post="A" isDecoy="false" dBSequence_ref="prot3_IPI" />
+		<PeptideEvidence id="PE1_SEQ_spec12_pep2" peptide_ref="prot2_pep2" start="47" end="87" pre="R" post="T" isDecoy="false" dBSequence_ref="prot2_IPI" />
+		<PeptideEvidence id="PE1_SEQ_spec13_pep1" peptide_ref="prot2_pep1" start="23" end="31" pre="R" post="I" isDecoy="false" dBSequence_ref="prot2_IPI" />
+		<PeptideEvidence id="PE1_SEQ_spec13_pep2" peptide_ref="prot3_pep3" start="456" end="474" pre="R" post="M" isDecoy="false" dBSequence_ref="prot3_IPI" />
+		<PeptideEvidence id="PE1_SEQ_spec15_pep1" peptide_ref="prot4_pep1" start="183" end="191" pre="L" post="V" isDecoy="true" dBSequence_ref="prot4_SHD" />
+		<PeptideEvidence id="PE1_SEQ_spec20_pep1" peptide_ref="prot4_pep2" start="223" end="234" pre="R" post="K" isDecoy="true" dBSequence_ref="prot4_SHD" />
+		<PeptideEvidence id="PE1_Mas_spec2b_pep1" peptide_ref="prot5_pep1" start="40" end="59" pre="R" post="E" isDecoy="false" dBSequence_ref="prot5_IPI" />
+		<PeptideEvidence id="PE1_Mas_spec3b_pep1" peptide_ref="prot5_pep2" start="181" end="197" pre="R" post="D" isDecoy="false" dBSequence_ref="prot5_IPI" />
+		<PeptideEvidence id="PE1_Mas_spec4_pep1"  peptide_ref="prot5_pep3" start="265" end="274" pre="R" post="R" isDecoy="false" dBSequence_ref="prot5_IPI" />
+		<PeptideEvidence id="PE1_Mas_spec6_pep1" peptide_ref="prot6_pep1" start="7" end="15" pre="R" post="S" isDecoy="false" dBSequence_ref="prot6_IPI" />
+		<PeptideEvidence id="PE1_Mas_spec6_pep2" peptide_ref="prot7_pep1" start="702" end="710" pre="K" post="N" isDecoy="true" dBSequence_ref="prot7_SHD" />
+		<PeptideEvidence id="PE1_Mas_spec11b_pep1" peptide_ref="prot3_pep1" start="41" end="50" pre="R" post="A" isDecoy="false" dBSequence_ref="prot3_IPI" />
+		<PeptideEvidence id="PE1_Mas_spec12_pep1" peptide_ref="prot3_pep2" start="41" end="50" pre="K" post="A" isDecoy="false" dBSequence_ref="prot3_IPI" />
+		<PeptideEvidence id="PE1_Mas_spec35_pep1" peptide_ref="prot6_pep2" start="55" end="81" pre="R" post="E" isDecoy="false" dBSequence_ref="prot6_IPI" />
+		<PeptideEvidence id="PE1_Mas_spec36b1_pep1" peptide_ref="prot7_pep2" start="1150" end="1159" pre="K" post="P" isDecoy="true" dBSequence_ref="prot7_SHD" />
+		<PeptideEvidence id="PE1_Mas_spec40_pep1" peptide_ref="prot7_pep3" start="2378" end="2397" pre="R" post="L" isDecoy="true" dBSequence_ref="prot7_SHD" />
+	</SequenceCollection>
+	<AnalysisCollection>
+		<SpectrumIdentification id="SEQUEST_analysis" spectrumIdentificationProtocol_ref="SEQUEST_proto" spectrumIdentificationList_ref="SEQUEST_results" activityDate="2007-05-12T13:00:00">
+			<InputSpectra spectraData_ref="LCMALDI_spectra"/>
+			<SearchDatabaseRef searchDatabase_ref="ipi.HUMAN_decoy"/>
+		</SpectrumIdentification>
+		<SpectrumIdentification id="Mascot_analysis" spectrumIdentificationProtocol_ref="Mascot_proto" spectrumIdentificationList_ref="Mascot_results" activityDate="2007-05-12T14:00:00">
+			<InputSpectra spectraData_ref="LCMALDI_spectra"/>
+			<SearchDatabaseRef searchDatabase_ref="ipi.HUMAN_decoy"/>
+		</SpectrumIdentification>
+		<ProteinDetection id="ProteinExtractor_analysis" proteinDetectionProtocol_ref="ProteinExtractor_proto" proteinDetectionList_ref="ProteinExtractor_results" activityDate="2007-05-12T15:30:00">
+			<InputSpectrumIdentifications spectrumIdentificationList_ref="SEQUEST_results"/>
+			<InputSpectrumIdentifications spectrumIdentificationList_ref="Mascot_results"/>
+		</ProteinDetection>
+	</AnalysisCollection>
+	<AnalysisProtocolCollection>
+		<SpectrumIdentificationProtocol id="SEQUEST_proto" analysisSoftware_ref="SEQUEST_SW">
+			<SearchType>
+				<cvParam accession="MS:1001083" name="ms-ms search" cvRef="PSI-MS"/>
+			</SearchType>
+			<AdditionalSearchParams>
+				<cvParam accession="MS:1001211" name="parent mass type mono" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001256" name="fragment mass type mono" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001259" name="param: immonium ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001108" name="param: a ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001146" name="param: a ion-NH3" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001148" name="param: a ion-H2O" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001118" name="param: b ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001149" name="param: b ion-NH3" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001150" name="param: b ion-H2O" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001262" name="param: y ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001151" name="param: y ion-NH3" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001152" name="param: y ion-H2O" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001406" name="param: internal yb ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001407" name="param: internal ya ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001258" name="param: d ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001257" name="param: v ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001260" name="param: w ion" cvRef="PSI-MS"/>
+			</AdditionalSearchParams>
+			<ModificationParams>
+				<SearchModification fixedMod="false" massDelta="15.994914622" residues="M">
+					<cvParam accession="UNIMOD:35" name="Oxidation" cvRef="UNIMOD"/>
+				</SearchModification>
+			</ModificationParams>
+			<Enzymes>
+				<Enzyme id="Trypsin_SEQUEST_proto" >
+					<EnzymeName>
+						<cvParam accession="MS:1001251" name="Trypsin" cvRef="PSI-MS"/>
+					</EnzymeName>
+				</Enzyme>
+			</Enzymes>
+			<FragmentTolerance>
+				<cvParam accession="MS:1001412" name="search tolerance plus value" cvRef="PSI-MS" value="0.9" unitAccession="UO:0000221" unitName="dalton" unitCvRef="UO"/>
+				<cvParam accession="MS:1001413" name="search tolerance minus value" cvRef="PSI-MS" value="0.9" unitAccession="UO:0000221" unitName="dalton" unitCvRef="UO"/>
+			</FragmentTolerance>
+			<ParentTolerance>
+				<cvParam accession="MS:1001412" name="search tolerance plus value" cvRef="PSI-MS" value="75.0" unitAccession="UO:0000169" unitName="parts per million" unitCvRef="UO"/>
+				<cvParam accession="MS:1001413" name="search tolerance minus value" cvRef="PSI-MS" value="75.0" unitAccession="UO:0000169" unitName="parts per million" unitCvRef="UO"/>
+			</ParentTolerance>
+			<Threshold>
+				<cvParam accession="MS:1001494" name="no threshold" cvRef="PSI-MS"/>
+			</Threshold>
+		</SpectrumIdentificationProtocol>
+		<SpectrumIdentificationProtocol id="Mascot_proto" analysisSoftware_ref="Mascot_SW">
+			<SearchType>
+				<cvParam accession="MS:1001083" name="ms-ms search" cvRef="PSI-MS"/>
+			</SearchType>
+			<AdditionalSearchParams>
+				<cvParam accession="MS:1001211" name="parent mass type mono" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001256" name="fragment mass type mono" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001259" name="param: immonium ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001108" name="param: a ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001146" name="param: a ion-NH3" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001148" name="param: a ion-H2O" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001118" name="param: b ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001149" name="param: b ion-NH3" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001150" name="param: b ion-H2O" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001262" name="param: y ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001151" name="param: y ion-NH3" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001152" name="param: y ion-H2O" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001406" name="param: internal yb ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001407" name="param: internal ya ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001258" name="param: d ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001257" name="param: v ion" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001260" name="param: w ion" cvRef="PSI-MS"/>
+			</AdditionalSearchParams>
+			<ModificationParams>
+				<SearchModification fixedMod="false" residues="M" massDelta="15.994914622">
+					<cvParam accession="UNIMOD:35" name="Oxidation" cvRef="UNIMOD"/>
+				</SearchModification>
+			</ModificationParams>
+			<Enzymes>
+				<Enzyme id="Trypsin_Mascot_proto" >
+					<EnzymeName>
+						<cvParam accession="MS:1001251" name="Trypsin" cvRef="PSI-MS"/>
+					</EnzymeName>
+				</Enzyme>
+			</Enzymes>
+			<FragmentTolerance>
+				<cvParam accession="MS:1001412" name="search tolerance plus value" cvRef="PSI-MS" value="0.9" unitAccession="UO:0000221" unitName="dalton" unitCvRef="UO"/>
+				<cvParam accession="MS:1001413" name="search tolerance minus value" cvRef="PSI-MS" value="0.9" unitAccession="UO:0000221" unitName="dalton" unitCvRef="UO"/>
+			</FragmentTolerance>
+			<ParentTolerance>
+				<cvParam accession="MS:1001412" name="search tolerance plus value" cvRef="PSI-MS" value="75.0" unitAccession="UO:0000169" unitName="parts per million" unitCvRef="UO"/>
+				<cvParam accession="MS:1001413" name="search tolerance minus value" cvRef="PSI-MS" value="75.0" unitAccession="UO:0000169" unitName="parts per million" unitCvRef="UO"/>
+			</ParentTolerance>
+			<Threshold>
+				<cvParam accession="MS:1001494" name="no threshold" cvRef="PSI-MS"/>
+			</Threshold>
+		</SpectrumIdentificationProtocol>
+		<ProteinDetectionProtocol id="ProteinExtractor_proto" analysisSoftware_ref="ProteinExtractor_SW">
+			<AnalysisParams>
+				<cvParam accession="MS:1001424" name="ProteinExtractor:Methodname" cvRef="PSI-MS" value="SEQUEST_2.5"/>
+				<cvParam accession="MS:1001425" name="ProteinExtractor:GenerateNonRedundant" cvRef="PSI-MS" value="true"/>
+				<cvParam accession="MS:1001426" name="ProteinExtractor:IncludeIdentified" cvRef="PSI-MS" value="false"/>
+				<cvParam accession="MS:1001427" name="ProteinExtractor:MaxNumberOfProteins" cvRef="PSI-MS" value="3000"/>
+				<cvParam accession="MS:1001429" name="ProteinExtractor:MinNumberOfPeptides" cvRef="PSI-MS" value="2"/>
+				<cvParam accession="MS:1001430" name="ProteinExtractor:UseMascot" cvRef="PSI-MS" value="false"/>
+				<cvParam accession="MS:1001431" name="ProteinExtractor:MascotPeptideScoreThreshold" cvRef="PSI-MS" value="0.0"/>
+				<cvParam accession="MS:1001432" name="ProteinExtractor:MascotUniqueScore" cvRef="PSI-MS" value="0.0"/>
+				<cvParam accession="MS:1001433" name="ProteinExtractor:MascotUseIdentityScore" cvRef="PSI-MS" value="false"/>
+				<cvParam accession="MS:1001434" name="ProteinExtractor:MascotWeighting" cvRef="PSI-MS" value="0.0"/>
+				<cvParam accession="MS:1001435" name="ProteinExtractor:UseSequest" cvRef="PSI-MS" value="true"/>
+				<cvParam accession="MS:1001436" name="ProteinExtractor:SequestPeptideScoreThreshold" cvRef="PSI-MS" value="2.5"/>
+				<cvParam accession="MS:1001437" name="ProteinExtractor:SequestUniqueScore" cvRef="PSI-MS" value="2.5"/>
+				<cvParam accession="MS:1001438" name="ProteinExtractor:SequestWeighting" cvRef="PSI-MS" value="1.0"/>
+				<cvParam accession="MS:1001439" name="ProteinExtractor:UseProteinSolver" cvRef="PSI-MS" value="false"/>
+				<cvParam accession="MS:1001440" name="ProteinExtractor:ProteinSolverPeptideScoreThreshold" cvRef="PSI-MS" value="0.0"/>
+				<cvParam accession="MS:1001441" name="ProteinExtractor:ProteinSolverUniqueScore" cvRef="PSI-MS" value="0.0"/>
+				<cvParam accession="MS:1001442" name="ProteinExtractor:ProteinSolverWeighting" cvRef="PSI-MS" value="0.0"/>
+				<cvParam accession="MS:1001443" name="ProteinExtractor:UsePhenyx" cvRef="PSI-MS" value="false"/>
+				<cvParam accession="MS:1001444" name="ProteinExtractor:PhenyxPeptideScoreThreshold" cvRef="PSI-MS" value="0.0"/>
+				<cvParam accession="MS:1001445" name="ProteinExtractor:PhenyxUniqueScore" cvRef="PSI-MS" value="0.0"/>
+				<cvParam accession="MS:1001446" name="ProteinExtractor:PhenyxWeighting" cvRef="PSI-MS" value="0.0"/>
+			</AnalysisParams>
+			<Threshold>
+				<cvParam accession="MS:1001447" name="prot:FDR threshold" cvRef="PSI-MS" value="0.05"/>
+			</Threshold>
+		</ProteinDetectionProtocol>
+	</AnalysisProtocolCollection>
+	<DataCollection>
+		<Inputs>
+			<SourceFile id="SF1" location="proteinscape://www.medizinisches-proteom-center.de/PSServer/Project/Sample/Separation_1D_LC/Fraction_X/SpectraData/Results1">
+				<FileFormat>
+					<cvParam accession="MS:1001275" name="ProteinScape SearchEvent" cvRef="PSI-MS"/>
+				</FileFormat>
+			</SourceFile>
+			<SearchDatabase id="ipi.HUMAN_decoy" location="file://www.medizinisches-proteom-center.de/DBServer/ipi.HUMAN/3.15/ipi.HUMAN_decoy.fasta" version="3.15" releaseDate="2006-02-22T09:30:47Z" numDatabaseSequences="58099">
+				<DatabaseName>
+					<cvParam accession="MS:1001142" name="database IPI_human" cvRef="PSI-MS"/>
+				</DatabaseName>
+				<cvParam accession="MS:1001300" name="decoy DB from IPI_human" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001197" name="DB composition target+decoy" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001452" name="decoy DB type shuffle" cvRef="PSI-MS"/>
+				<cvParam accession="MS:1001451" name="decoy DB generation algorithm" cvRef="PSI-MS" value="PeakQuant.DecoyDatabaseBuilder"/>
+				<cvParam accession="MS:1001283" name="decoy DB accession regexp" cvRef="PSI-MS" value="^SHD"/>
+			</SearchDatabase>
+			<SpectraData id="LCMALDI_spectra" location="proteinscape://www.medizinisches-proteom-center.de/PSServer/Project/Sample/Separation_1D_LC/Fraction_X">
+				<FileFormat>
+					<cvParam accession="MS:1001527" name="Proteinscape spectra" cvRef="PSI-MS"/>
+				</FileFormat>
+				<SpectrumIDFormat>
+					<cvParam accession="MS:1001526" name="spectrum from database nativeID format" cvRef="PSI-MS"/>
+				</SpectrumIDFormat>
+			</SpectraData>
+		</Inputs>
+		<AnalysisData>
+			<SpectrumIdentificationList id="SEQUEST_results">
+				<SpectrumIdentificationResult id="SEQ_spec1" spectrumID="databasekey=1" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="SEQ_spec1_pep1" peptide_ref="prot1_pep1" chargeState="1" calculatedMassToCharge="1507.6950" experimentalMassToCharge="1507.696" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_SEQ_spec1_pep1"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.3919545603809718"/>
+						<cvParam accession="MS:1001506" name="ProteinScape:SequestMetaScore" cvRef="PSI-MS" value="7.59488518903425"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="SEQ_spec2a" spectrumID="databasekey=2" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="SEQ_spec2a_pep1" peptide_ref="prot1_pep2" chargeState="1" calculatedMassToCharge="1920.9224" experimentalMassToCharge="1920.923" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_SEQ_spec2a_pep1"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.5070386909133888"/>
+						<cvParam accession="MS:1001506" name="ProteinScape:SequestMetaScore" cvRef="PSI-MS" value="10.8810331335713"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="SEQ_spec3a" spectrumID="databasekey=3" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="SEQ_spec3a_pep1" peptide_ref="prot1_pep3" chargeState="1" calculatedMassToCharge="864.4752" experimentalMassToCharge="864.474" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_SEQ_spec3a_pep1"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.43376827663349576"/>
+						<cvParam accession="MS:1001506" name="ProteinScape:SequestMetaScore" cvRef="PSI-MS" value="6.1021771936508955"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="SEQ_spec10" spectrumID="databasekey=10" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="SEQ_spec10_pep1" peptide_ref="prot1_pep4" chargeState="1" calculatedMassToCharge="1832.862115" experimentalMassToCharge="1832.863" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_SEQ_spec10_pep1"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.16164593872706742"/>
+						<cvParam accession="MS:1001506" name="ProteinScape:SequestMetaScore" cvRef="PSI-MS" value="5.635013787097159"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="SEQ_spec11a" spectrumID="databasekey=11" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="SEQ_spec11a_pep1" peptide_ref="prot2_pep1" chargeState="1" calculatedMassToCharge="911.4144" experimentalMassToCharge="911.413" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_SEQ_spec11a_pep1"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.6146634530945828"/>
+						<cvParam accession="MS:1001506" name="ProteinScape:SequestMetaScore" cvRef="PSI-MS" value="10.17510605321669"/>
+					</SpectrumIdentificationItem>
+					<SpectrumIdentificationItem id="SEQ_spec11a_pep2" peptide_ref="prot3_pep1" chargeState="1" calculatedMassToCharge="1365.722015" experimentalMassToCharge="1365.721" passThreshold="true" rank="2">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_SEQ_spec11a_pep2"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.2517734933944088"/>
+						<cvParam accession="MS:1001506" name="ProteinScape:SequestMetaScore" cvRef="PSI-MS" value="6.005532583410669"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="SEQ_spec12" spectrumID="databasekey=12" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="SEQ_spec12_pep1" peptide_ref="prot3_pep2" chargeState="1" calculatedMassToCharge="2255.9515" experimentalMassToCharge="2255.950" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_SEQ_spec12_pep1"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.4884754815768041"/>
+						<cvParam accession="MS:1001506" name="ProteinScape:SequestMetaScore" cvRef="PSI-MS" value="12.042955809241318"/>
+					</SpectrumIdentificationItem>
+					<SpectrumIdentificationItem id="SEQ_spec12_pep2" peptide_ref="prot2_pep2" chargeState="1" calculatedMassToCharge="3941.036315" experimentalMassToCharge="3941.081" passThreshold="true" rank="2">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_SEQ_spec12_pep2"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.554279316913958"/>
+						<cvParam accession="MS:1001506" name="ProteinScape:SequestMetaScore" cvRef="PSI-MS" value="3.1184106313104283"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="SEQ_spec13" spectrumID="databasekey=13" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="SEQ_spec13_pep1" peptide_ref="prot2_pep1" chargeState="1" calculatedMassToCharge="911.4144" experimentalMassToCharge="911.415" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_SEQ_spec13_pep1"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.39717937427768873"/>
+						<cvParam accession="MS:1001506" name="ProteinScape:SequestMetaScore" cvRef="PSI-MS" value="4.159878401845841"/>
+					</SpectrumIdentificationItem>
+					<SpectrumIdentificationItem id="SEQ_spec13_pep2" peptide_ref="prot3_pep3" chargeState="1" calculatedMassToCharge="2192.932715" experimentalMassToCharge="2192.90" passThreshold="true" rank="2">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_SEQ_spec13_pep2"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.136423966822031"/>
+						<cvParam accession="MS:1001506" name="ProteinScape:SequestMetaScore" cvRef="PSI-MS" value="5.725397508852668"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="SEQ_spec15" spectrumID="databasekey=15" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="SEQ_spec15_pep1" peptide_ref="prot4_pep1" chargeState="1" calculatedMassToCharge="1469.8071" experimentalMassToCharge="1469.806" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_SEQ_spec15_pep1"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.2854129700126088"/>
+						<cvParam accession="MS:1001506" name="ProteinScape:SequestMetaScore" cvRef="PSI-MS" value="6.181682868401155"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="SEQ_spec20" spectrumID="databasekey=20" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="SEQ_spec20_pep1" peptide_ref="prot4_pep2" chargeState="1" calculatedMassToCharge="1225.6059" experimentalMassToCharge="1225.604" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_SEQ_spec20_pep1"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.29049959198538566"/>
+						<cvParam accession="MS:1001506" name="ProteinScape:SequestMetaScore" cvRef="PSI-MS" value="6.669916225794168"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+			</SpectrumIdentificationList>
+			<SpectrumIdentificationList id="Mascot_results">
+				<SpectrumIdentificationResult id="Mas_spec2b" spectrumID="databasekey=2" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="Mas_spec2b_pep1" peptide_ref="prot5_pep1" chargeState="1" calculatedMassToCharge="2035.0745" experimentalMassToCharge="2035.075" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_Mas_spec2b_pep1"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="Mas_spec3b" spectrumID="databasekey=3" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="Mas_spec3b_pep1" peptide_ref="prot5_pep2" chargeState="1" calculatedMassToCharge="1834.8856" experimentalMassToCharge="1834.884" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_Mas_spec3b_pep1"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="Mas_spec4" spectrumID="databasekey=4" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="Mas_spec4_pep1" peptide_ref="prot5_pep3" chargeState="1" calculatedMassToCharge="1097.5049" experimentalMassToCharge="1097.503" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_Mas_spec4_pep1"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="Mas_spec6" spectrumID="databasekey=6" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="Mas_spec6_pep1" peptide_ref="prot6_pep1" chargeState="1" calculatedMassToCharge="975.4457" experimentalMassToCharge="975.446" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_Mas_spec6_pep1"/>
+					</SpectrumIdentificationItem>
+					<SpectrumIdentificationItem id="Mas_spec6_pep2" peptide_ref="prot7_pep1" chargeState="1" calculatedMassToCharge="912.3993" experimentalMassToCharge="912.29" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_Mas_spec6_pep2"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="Mas_spec11b" spectrumID="databasekey=11" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="Mas_spec11b_pep1" peptide_ref="prot3_pep1" chargeState="1" calculatedMassToCharge="1365.722015" experimentalMassToCharge="1365.721" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_Mas_spec11b_pep1"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.0"/>
+						<userParam name="ProteinScape:MascotScore" value="33.82"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="Mas_spec12" spectrumID="databasekey=12" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="Mas_spec12_pep1" peptide_ref="prot3_pep2" chargeState="1" calculatedMassToCharge="2256.9515" experimentalMassToCharge="2256.952" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_Mas_spec12_pep1"/>
+						<cvParam accession="MS:1001505" name="ProteinScape:IntensityCoverage" cvRef="PSI-MS" value="0.0"/>
+						<userParam name="ProteinScape:MascotScore" value="39.0"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="Mas_spec35" spectrumID="databasekey=35" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="Mas_spec35_pep1" peptide_ref="prot6_pep2" chargeState="1" calculatedMassToCharge="2261.0939" experimentalMassToCharge="2261.092" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_Mas_spec35_pep1"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="Mas_spec36b1" spectrumID="databasekey=36" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="Mas_spec36b1_pep1" peptide_ref="prot7_pep2" chargeState="1" calculatedMassToCharge="1115.6168" experimentalMassToCharge="1115.617" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_Mas_spec36b1_pep1"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+				<SpectrumIdentificationResult id="Mas_spec40" spectrumID="databasekey=40" spectraData_ref="LCMALDI_spectra">
+					<SpectrumIdentificationItem id="Mas_spec40_pep1" peptide_ref="prot7_pep3" chargeState="1" calculatedMassToCharge="2035.0017" experimentalMassToCharge="2035.002" passThreshold="true" rank="1">
+						<PeptideEvidenceRef peptideEvidence_ref="PE1_Mas_spec40_pep1"/>
+					</SpectrumIdentificationItem>
+				</SpectrumIdentificationResult>
+			</SpectrumIdentificationList>
+			<ProteinDetectionList id="ProteinExtractor_results">
+				<ProteinAmbiguityGroup id="group1">
+					<ProteinDetectionHypothesis id="id_prot1" passThreshold="true" dBSequence_ref="prot1_IPI">
+						<PeptideHypothesis peptideEvidence_ref="PE1_SEQ_spec1_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="SEQ_spec1_pep1"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_SEQ_spec2a_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="SEQ_spec2a_pep1"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_SEQ_spec3a_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="SEQ_spec3a_pep1"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_SEQ_spec10_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="SEQ_spec10_pep1"/>
+						</PeptideHypothesis>
+						<cvParam accession="MS:1001093" name="sequence coverage" cvRef="PSI-MS" value="0.13"/>
+						<cvParam accession="MS:1001301" name="protein rank" cvRef="PSI-MS" value="1"/>
+						<cvParam accession="MS:1001097" name="distinct peptide sequences" cvRef="PSI-MS" value="4"/>
+						<cvParam accession="MS:1001250" name="local FDR" cvRef="PSI-MS" value="0.0" unitAccession="UO:0000187" unitName="percent" unitCvRef="UO"/>
+						<cvParam accession="MS:1001507" name="ProteinExtractor:Score" cvRef="PSI-MS" value="200.4"/>
+					</ProteinDetectionHypothesis>
+				</ProteinAmbiguityGroup>
+				<ProteinAmbiguityGroup id="group2">
+					<ProteinDetectionHypothesis id="id_prot2" passThreshold="true">
+						<PeptideHypothesis peptideEvidence_ref="PE1_SEQ_spec11a_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="SEQ_spec11a_pep1"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_SEQ_spec13_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="SEQ_spec13_pep1"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_SEQ_spec12_pep2">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="SEQ_spec12_pep2"/>
+						</PeptideHypothesis>
+						<cvParam accession="MS:1001093" name="sequence coverage" cvRef="PSI-MS" value="0.69"/>
+						<cvParam accession="MS:1001301" name="protein rank" cvRef="PSI-MS" value="2"/>
+						<cvParam accession="MS:1001097" name="distinct peptide sequences" cvRef="PSI-MS" value="3"/>
+						<cvParam accession="MS:1001250" name="local FDR" cvRef="PSI-MS" value="0.0" unitAccession="UO:0000187" unitName="percent" unitCvRef="UO"/>
+						<cvParam accession="MS:1001507" name="ProteinExtractor:Score" cvRef="PSI-MS" value="150.3"/>
+					</ProteinDetectionHypothesis>
+				</ProteinAmbiguityGroup>
+				<ProteinAmbiguityGroup id="group3">
+					<ProteinDetectionHypothesis id="id_prot3" passThreshold="false">
+						<PeptideHypothesis peptideEvidence_ref="PE1_SEQ_spec15_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="SEQ_spec15_pep1"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_SEQ_spec20_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="SEQ_spec20_pep1"/>
+						</PeptideHypothesis>
+						<cvParam accession="MS:1001093" name="sequence coverage" cvRef="PSI-MS" value="0.59"/>
+						<cvParam accession="MS:1001301" name="protein rank" cvRef="PSI-MS" value="3"/>
+						<cvParam accession="MS:1001097" name="distinct peptide sequences" cvRef="PSI-MS" value="2"/>
+						<cvParam accession="MS:1001250" name="local FDR" cvRef="PSI-MS" value="33.33" unitAccession="UO:0000187" unitName="percent" unitCvRef="UO"/>
+						<cvParam accession="MS:1001507" name="ProteinExtractor:Score" cvRef="PSI-MS" value="110.2"/>
+					</ProteinDetectionHypothesis>
+				</ProteinAmbiguityGroup>
+				<ProteinAmbiguityGroup id="group4">
+					<ProteinDetectionHypothesis id="id_prot4" passThreshold="false">
+						<PeptideHypothesis peptideEvidence_ref="PE1_SEQ_spec11a_pep2">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="SEQ_spec11a_pep2"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_SEQ_spec12_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="SEQ_spec12_pep1"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_SEQ_spec13_pep2">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="SEQ_spec13_pep2"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_Mas_spec11b_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="Mas_spec11b_pep1"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_Mas_spec12_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="Mas_spec12_pep1"/>
+						</PeptideHypothesis>
+						<cvParam accession="MS:1001093" name="sequence coverage" cvRef="PSI-MS" value="0.34"/>
+						<cvParam accession="MS:1001301" name="protein rank" cvRef="PSI-MS" value="4"/>
+						<cvParam accession="MS:1001097" name="distinct peptide sequences" cvRef="PSI-MS" value="4"/>
+						<cvParam accession="MS:1001250" name="local FDR" cvRef="PSI-MS" value="25.0" unitAccession="UO:0000187" unitName="percent" unitCvRef="UO"/>
+						<cvParam accession="MS:1001507" name="ProteinExtractor:Score" cvRef="PSI-MS" value="50.7"/>
+					</ProteinDetectionHypothesis>
+				</ProteinAmbiguityGroup>
+				<ProteinAmbiguityGroup id="group5">
+					<ProteinDetectionHypothesis id="id_prot5" passThreshold="false">
+						<PeptideHypothesis peptideEvidence_ref="PE1_Mas_spec2b_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="Mas_spec2b_pep1"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_Mas_spec3b_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="Mas_spec3b_pep1"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_Mas_spec4_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="Mas_spec4_pep1"/>
+						</PeptideHypothesis>
+						<cvParam accession="MS:1001093" name="sequence coverage" cvRef="PSI-MS" value="0.50"/>
+						<cvParam accession="MS:1001301" name="protein rank" cvRef="PSI-MS" value="5"/>
+						<cvParam accession="MS:1001097" name="distinct peptide sequences" cvRef="PSI-MS" value="3"/>
+						<cvParam accession="MS:1001250" name="local FDR" cvRef="PSI-MS" value="20.0" unitAccession="UO:0000187" unitName="percent" unitCvRef="UO"/>
+						<cvParam accession="MS:1001507" name="ProteinExtractor:Score" cvRef="PSI-MS" value="45.2"/>
+					</ProteinDetectionHypothesis>
+				</ProteinAmbiguityGroup>
+				<ProteinAmbiguityGroup id="group6">
+					<ProteinDetectionHypothesis id="id_prot6" passThreshold="false">
+						<PeptideHypothesis peptideEvidence_ref="PE1_Mas_spec6_pep2">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="Mas_spec6_pep2"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_Mas_spec36b1_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="Mas_spec36b1_pep1"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_Mas_spec40_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="Mas_spec40_pep1"/>
+						</PeptideHypothesis>
+						<cvParam accession="MS:1001093" name="sequence coverage" cvRef="PSI-MS" value="0.43"/>
+						<cvParam accession="MS:1001301" name="protein rank" cvRef="PSI-MS" value="6"/>
+						<cvParam accession="MS:1001097" name="distinct peptide sequences" cvRef="PSI-MS" value="3"/>
+						<cvParam accession="MS:1001250" name="local FDR" cvRef="PSI-MS" value="33.33" unitAccession="UO:0000187" unitName="percent" unitCvRef="UO"/>
+						<cvParam accession="MS:1001507" name="ProteinExtractor:Score" cvRef="PSI-MS" value="40.9"/>
+					</ProteinDetectionHypothesis>
+				</ProteinAmbiguityGroup>
+				<ProteinAmbiguityGroup id="group7">
+					<ProteinDetectionHypothesis id="id_prot7" passThreshold="false">
+						<PeptideHypothesis peptideEvidence_ref="PE1_Mas_spec6_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="Mas_spec6_pep1"/>
+						</PeptideHypothesis>
+						<PeptideHypothesis peptideEvidence_ref="PE1_Mas_spec35_pep1">
+							<SpectrumIdentificationItemRef spectrumIdentificationItem_ref="Mas_spec35_pep1"/>
+						</PeptideHypothesis>
+						<cvParam accession="MS:1001093" name="sequence coverage" cvRef="PSI-MS" value="0.53"/>
+						<cvParam accession="MS:1001301" name="protein rank" cvRef="PSI-MS" value="7"/>
+						<cvParam accession="MS:1001097" name="distinct peptide sequences" cvRef="PSI-MS" value="2"/>
+						<cvParam accession="MS:1001250" name="local FDR" cvRef="PSI-MS" value="28.57" unitAccession="UO:0000187" unitName="percent" unitCvRef="UO"/>
+						<cvParam accession="MS:1001507" name="ProteinExtractor:Score" cvRef="PSI-MS" value="40.9"/>
+					</ProteinDetectionHypothesis>
+				</ProteinAmbiguityGroup>
+			</ProteinDetectionList>
+		</AnalysisData>
+	</DataCollection>
+</MzIdentML>
