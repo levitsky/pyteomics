@@ -49,67 +49,6 @@ Data access
 from lxml import etree
 from . import auxiliary as aux
 
-def _insert_default_ns(xpath, ns_key = 'd'):
-    """Inserts the key for the default namespace before each node name.
-    Does not modify a nodename if it already has a namespace.
-    
-    Parameters
-    ----------
-    xpath : str
-        An original XPath
-    ns_key : str
-        A key for the default namespace.
-        If empty string, `xpath` will be returned unchanged.
-
-    Returns
-    -------
-    out : str
-        A modified XPath.
-    """
-    if not ns_key: return xpath
-    return '/'.join(
-        [(ns_key + ':' + node if (node and node.count(':') == 0) else node)
-         for node in xpath.split('/')])
-
-def get_node(source, xpath, namespaces={'d':'http://regis-web.systemsbiology.net/pepXML'}):
-    """Retrieves arbitrary nodes from a pepXML file by their xpath.
-    Each node in the xpath is assigned to the default namespace 
-    'http://regis-web.systemsbiology.net/pepXML' unless specified else.
-
-    Parameters
-    ----------
-    source : str or file
-        A path to a target pepXML file or the file object itself.
-    xpath : str
-        An XPath to target nodes. 
-    namespaces : dict, optional
-        A dictionary of namespaces. The default namespace key is 'd'.
-        If the XML document does not have a specified namespace,
-        supply an empty dictionary.
-    
-    Returns
-    -------
-    out : list of lxml.Element 
-        List of target nodes.
-
-    Examples
-    --------
-    >> get_node('/msms_pipeline_analysis/msms_run_summary[0]'
-                '/search_summary/aminoacid_modification')
-
-    """
-    parser = etree.XMLParser(remove_comments=True, ns_clean=True)
-    tree = etree.parse(source, parser=parser)
-
-    if not namespaces: ns_key = ''
-    else: ns_key = 'd'
-
-    xpath_w_namespace = _insert_default_ns(xpath, ns_key)
-    kwargs = {}
-    if namespaces: kwargs['namespaces'] = namespaces
-       
-    return tree.xpath(xpath_w_namespace, **kwargs)
-    
 def _get_info_smart(source, element, **kw):
     """Extract the info in a smart way depending on the element type"""
     name = aux._local_name(element)
