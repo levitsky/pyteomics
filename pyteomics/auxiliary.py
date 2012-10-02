@@ -176,17 +176,19 @@ def _make_schema_info(env):
                                     break
                             else:
                                 if _local_name(anc) == 'complexType':
-                                    elname = schema_tree.find(
-                                            '//*[@type="{}"]'.format(
-                                        anc.attrib['name'])).attrib['name']
+                                    elnames = [x.attrib['name'] for x in
+                                        schema_tree.iter() if x.attrib.get(
+                                            'type', '').split(':')[-1] ==
+                                        anc.attrib['name']]
                                 else:
-                                    elname = anc.attrib['name']
-                                tuples.add(
+                                    elname = (anc.attrib['name'],)
+                                for elname in elnames:
+                                    tuples.add(
                                         (elname, elem.attrib['name']))
                     ret[k] = tuples
                 ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
                     '//*[local-name()="element"]') if 'name' in elem.attrib and
-                    elem.attrib.get( 'maxOccurs', '1') != '1')
+                    elem.attrib.get('maxOccurs', '1') != '1')
             except Exception as e:
                 warn("Unknown {} version `{}`. Attempt to use schema\n"
                         "information from <{}> failed.\n{}\n"
