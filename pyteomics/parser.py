@@ -182,9 +182,9 @@ def _split_label(label):
         else:
             return (label[:-1], label[-1])
 
-
 def parse_sequence(sequence,               
                    show_unmodified_termini=False, split=False,
+                   allow_unknown_modifications=False,
                    **kwargs):
     """Parse a sequence string written in modX notation into a list of
     labels or (if `split` argument is :py:const:`True`) into a list of
@@ -201,10 +201,14 @@ def parse_sequence(sequence,
         If :py:const:`True` then the result will be a list of tuples with 1 to 3
         elements: terminal modification, modification, residue. Default value is
         :py:const:`False`.
+    allow_unknown_modifications : bool, optional
+        If :py:const:`True` then do not raise an exception when an unknown 
+        modification of a known amino acid residue is found in the sequence.
+        Default value is :py:const:`False`.
     labels : list, optional
-        A list of allowed labels for amino acids and terminal modifications
-        (default is the 20 standard amino acids, N-terminal H- and C-terminal
-        -OH). 
+        A list of allowed labels for amino acids, modifications and terminal
+        modifications (default is the 20 standard amino acids, N-terminal H- 
+        and C-terminal -OH). 
 
         New in ver. 1.2.2: separate labels for modifications (such as 'p' or 'ox')
         are now allowed.
@@ -267,7 +271,9 @@ def parse_sequence(sequence,
                 except PyteomicsError:
                     pass
                 else:
-                    if mod in labels and res in labels:
+                    if ((mod in labels and res in labels) or 
+                        (allow_unknown_modifications and res in labels)):
+
                         parsed_sequence.append(backbone_sequence[i:j])
                         amino_acid_found = True
                         break
@@ -342,10 +348,10 @@ def tostring(parsed_sequence, show_unmodified_termini=True):
             labels.append(''.join(group_l))
     return ''.join(labels)
             
-
 def amino_acid_composition(sequence,
                            show_unmodified_termini=False,
                            term_aa=False,
+                           allow_unknown_modifications=False,
                            **kwargs):
     """Calculate amino acid composition of a polypeptide.
 
@@ -359,6 +365,10 @@ def amino_acid_composition(sequence,
     term_aa : bool, optional
         If :py:const:`True` then the terminal amino acid residues are
         artificially modified with `nterm` or `cterm` modification.
+        Default value is :py:const:`False`.
+    allow_unknown_modifications : bool, optional
+        If :py:const:`True` then do not raise an exception when an unknown 
+        modification of a known amino acid residue is found in the sequence.
         Default value is :py:const:`False`.
     labels : list, optional
         A list of allowed labels for amino acids and terminal modifications
@@ -384,7 +394,8 @@ def amino_acid_composition(sequence,
 
     if isinstance(sequence, str):
         parsed_sequence = parse_sequence(sequence, show_unmodified_termini,
-                                         labels=labels)
+            allow_unknown_modifications=allow_unknown_modifications,
+            labels=labels)
     elif isinstance(sequence, list):
         parsed_sequence = sequence
     else:

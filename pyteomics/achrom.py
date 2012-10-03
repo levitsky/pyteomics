@@ -251,7 +251,7 @@ References
 
 import operator
 import numpy
-from . import auxiliary
+from .auxiliary import linear_regression, PyteomicsError
 from .parser import std_labels, peptide_length, amino_acid_composition, std_nterm, std_cterm
 
 def get_RCs(sequences, RTs, lcp = -0.21,
@@ -306,7 +306,9 @@ def get_RCs(sequences, RTs, lcp = -0.21,
 
     # Make a list of all amino acids present in the sample.
     peptide_dicts = [
-        amino_acid_composition(peptide, False, term_aa, labels=labels)
+        amino_acid_composition(peptide, False, term_aa, 
+                               allow_unknown_modifications=True, 
+                               labels=labels)
         for peptide in sequences]
 
     detected_amino_acids = set([aa for peptide_dict in peptide_dicts
@@ -373,7 +375,7 @@ def get_RCs(sequences, RTs, lcp = -0.21,
                               if not aa[1:].startswith('term')
                               and term_label + aa in RC_dict['aa']]
             
-            a, b, r, stderr = auxiliary.linear_regression(
+            a, b, r, stderr = linear_regression(
                 [RC_dict['aa'][aa] for aa in defined_term_RCs],
                 [RC_dict['aa'][term_label+aa] for aa in defined_term_RCs])
 
@@ -444,7 +446,7 @@ def get_RCs_vary_lcp(sequences, RTs,
                                 (max_lcp - min_lcp) / 10.0)
         for lcp in lcp_grid:
             RC_dict = get_RCs(sequences, RTs, lcp, term_aa, labels=labels)
-            regression_coeffs = auxiliary.linear_regression(
+            regression_coeffs = linear_regression(
                 RTs, 
                 [calculate_RT(peptide, RC_dict) for peptide in sequences])
             if regression_coeffs[2] > best_r:
@@ -456,7 +458,7 @@ def get_RCs_vary_lcp(sequences, RTs,
 
     return best_RC_dict
 
-def calculate_RT(peptide, RC_dict):
+def calculate_RT(peptide, RC_dict, raise_no_mod=True):
     """Calculate the retention time of a peptide using a given set
     of retention coefficients.
 
@@ -467,6 +469,11 @@ def calculate_RT(peptide, RC_dict):
     RC_dict : dict
         A set of retention coefficients, length correction parameter and
         a fixed retention time shift.
+    raise_no_mod : bool, optional
+        If True than an exception is raised when a modified amino acid from 
+        `peptides` is not found in `RC_dict`. If False, than the retention 
+        coefficient for the non-modified amino acid residue is used instead. 
+        True by default.
 
     Returns
     -------
@@ -497,17 +504,25 @@ def calculate_RT(peptide, RC_dict):
 
     # Calculate retention time.
     peptide_dict = amino_acid_composition(peptide, False, term_aa,
-                                          labels=amino_acids)
-    length_correction_term = (
-        1.0 + RC_dict['lcp'] * numpy.log(peptide_length(peptide_dict)))
+        allow_unknown_modifications=True, labels=amino_acids)
     RT = 0.0
     for aa in peptide_dict:
-        # if (aa not in RC_dict['aa'] and
-        #     (aa.startswith('nterm') or aa.startswith('cterm'))):
-        #     RT += peptide_dict[aa] * RC_dict['aa'][aa[5:]]
-        # else:
+        if aa not in RC_dict['aa']:
+            if (not raise_no_mod) and aa[-1] in RC_dict['aa']:
+                RT += peptide_dict[aa] * RC_dict['aa'][aa[-1]]
+            else:
+                raise PyteomicsError(
+                    'The amino acid residue ' + 
+                    '{0} in the supplied RC_dict. '.format(aa) +
+                    'Set raise_no_mod=False to ignore this error ' +
+                    'and use the RC for {0} instead'.format(aa[-1]))
+        else:
             RT += peptide_dict[aa] * RC_dict['aa'][aa]
+
+    length_correction_term = (
+        1.0 + RC_dict['lcp'] * numpy.log(peptide_length(peptide_dict)))
     RT *= length_correction_term
+
     RT += RC_dict['const']
 
     return RT
