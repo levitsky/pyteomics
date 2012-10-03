@@ -68,14 +68,19 @@ def linear_regression(x, y, a=None, b=None):
         stderr -- standard deviation.
     """
 
+    if not issubclass(type(x), numpy.ndarray):
+        x = numpy.array(x)
+    if not issubclass(type(y), numpy.ndarray):
+        y = numpy.array(y)
+
     if (a!=None and b==None):
-        b = numpy.mean([y[i] - a * x[i] for i in range(len(x))])
+        b = (y - a * x).mean()
     elif (a!=None and b!= None):
         pass
     else:
         a, b = numpy.polyfit(x, y, 1)
 
     r = numpy.corrcoef(x, y)[0, 1]
-    stderr = numpy.std([y[i] - a * x[i] - b for i in range(len(x))])
+    stderr = (y - a * x - b).mean()
 
     return (a, b, r, stderr)
