@@ -79,16 +79,25 @@ Data
   I.D.) packed in-house with C18 ODS-AQ; solvent A = 0.5% aq. HAc,
   B = 0.5% HAc in acetonitrile.
   
-  :py:data:`RCs_yoshida` - a set of RCs from [#Yoshida]_. Conditions:
+  :py:data:`RCs_yoshida` - a set of RCs for a normal phase chromatography
+  from [#Yoshida]_. Conditions:
   TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A = 0.1% TFA
   in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at 0.6%
   water/min, flow rate 1.0 ml/min, 40 centigrades.
 
-  :py:data:`RCs_yoshida_lc` - a set of length-corrected RCs calculated in 
-  [#Moskovets]_ for the data from [#Yoshida]_. Conditions:
+  :py:data:`RCs_yoshida_lc` - a set of length-corrected RCs for a normal phase
+  chromatography. The set was calculated in [#Moskovets]_ for the data from 
+  [#Yoshida]_. 
+  Conditions:
   TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A = 0.1% TFA
   in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at 0.6%
   water/min, flow rate 1.0 ml/min, 40 centigrades.
+
+  :py:data:`RCs_zubarev` - a set of length-corrected RCs calculated 
+  on a dataset used in [#Goloborodko]_. 
+  Conditions: Reprosil-Pur C18-AQ column (150 x 0.075 mm I.D.), gradient (A =
+  0.5% AA in water; B = 0.5% AA in ACN-water (90:10)) at
+  0.5% water/min, flow rate 200.0 nl/min, room temperature.
 
 Theory
 ------
@@ -231,8 +240,14 @@ References
 .. [#Moskovets] Moskovets, E.; Goloborodko A. A.; Gorshkov A. V.; Gorshkov M.V.
    `Limitation of predictive 2-D liquid chromatography in reducing the database 
    search space in shotgun proteomics: In silico studies.
-   <http://dx.doi.org/10.1002/jssc.201100798>`_
+   <http://dx.doi.org/10.1002/jssc.201100798>`_ 
    Journal of Separation Science, 2012, 35 (14), 1771-1778. 
+
+.. [#Goloborodko] Goloborodko A. A.; Mayerhofer C.; Zubarev A. R.; 
+   Tarasova I. A.; Gorshkov A. V.; Zubarev, R. A.; Gorshkov, M. V.
+   `Empirical approach to false discovery rate 
+   estimation in shotgun proteomics. <http://dx.doi.org/10.1002/rcm.4417>`_
+   Rapid communications in mass spectrometry, 2010, 24(4), 454-62.
 """
 
 #   Copyright 2012 Anton Goloborodko, Lev Levitsky
@@ -845,6 +860,44 @@ Journal of Separation Science, 2012, 35 (14), 1771-1778.
 Conditions: TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A =
 0.1% TFA in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at
 0.6% water/min, flow rate 1.0 ml/min, 40 centigrades.
+"""
+
+RCs_zubarev = {'aa': {'A': 6.73,
+                      'E': 5.66,
+                      'C': 3.25,
+                      'D': 5.64,
+                      'G': 2.35,
+                      'F': 27.43,
+                      'I': 20.50,
+                      'H': -0.66,
+                      'K': -4.47,
+                      'M': 17.39,
+                      'L': 23.38,
+                      'N': 2.57,
+                      'Q': 2.93,
+                      'P': 5.66,
+                      'S': 3.58,
+                      'R': -2.55,
+                      'T': 4.88,
+                      'Y': 13.22,
+                      'W': 31.27,
+                      'V': 13.05,
+                      'camC': 3.25,
+                      'oxM': -7.61,
+                      '-OH': 0.0,
+                      'H-': 0.0},
+                  'const': 0.53,
+                  'lcp': -0.21}
+"""A set of retention coefficients from the length-corrected model
+of reversed-phase peptide chromatography. The dataset was taken from
+Goloborodko A. A.; Mayerhofer C.; Zubarev A. R.; Tarasova I. A.; Gorshkov A. V.;
+Zubarev, R. A.; Gorshkov, M. V. Empirical approach to false discovery rate 
+estimation in shotgun proteomics. Rapid communications in mass spectrometry, 
+2010, 24(4), 454-62.
+
+Conditions: Reprosil-Pur C18-AQ column (150 x 0.075 mm I.D.), gradient (A =
+0.5% AA in water; B = 0.5% AA in ACN-water (90:10)) at
+0.5% water/min, flow rate 200.0 nl/min, room temperature.
 """
 
 if __name__ == "__main__":
