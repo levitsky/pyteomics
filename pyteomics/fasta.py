@@ -9,9 +9,9 @@ for the most detailed information on the format.
 Data manipulation
 -----------------
 
-  :py:func:`read_fasta` - iterate through entries in a FASTA database
+  :py:func:`read` - iterate through entries in a FASTA database
 
-  :py:func:`write_fasta` - write entries to a FASTA database
+  :py:func:`write` - write entries to a FASTA database
 
 Decoy database generation
 -------------------------
@@ -45,7 +45,7 @@ import sys
 import random
 from .auxiliary import PyteomicsError
 
-def read_fasta(fasta_file, ignore_comments=False):
+def read(fasta_file, ignore_comments=False):
     """Read a FASTA file and return entries iteratively.
 
     Parameters
@@ -98,7 +98,7 @@ def read_fasta(fasta_file, ignore_comments=False):
         else:
             accumulated_strings.append(stripped_string)
 
-def write_fasta(entries, output=None, close=True):
+def write(entries, output=None, close=True):
     """
     Create a FASTA file with ``entries``.
 
@@ -219,14 +219,14 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
         output_file = output
 
     if not decoy_only:
-        write_fasta(read_fasta(source_file, False), output_file, False)
+        write(read(source_file, False), output_file, False)
 
     # return to the beginning of the source file to read again
     source_file.seek(0)
 
     decoy_entries = ((prefix + protein[0],
         decoy_sequence(protein[1], mode))
-        for protein in read_fasta(source_file, False))
+        for protein in read(source_file, False))
 
-    write_fasta(decoy_entries, output_file, close=(close if output else False))
+    write(decoy_entries, output_file, close=(close if output else False))
     return output_file

@@ -1,3 +1,23 @@
+2.0.0
+-----
+
+Added **mzid** module for parsing of mzIdentML files.
+
+Fixed bugs, improved tests.
+
+API changes
+...........
+
+  - top-module functions in **fasta**, **mgf**, **mzml**, **pepxml**, as well
+  as **mzid**, are now called **read**.
+
+  - in **parser**, **parse_sequence** renamed to **parse**. It now accepts
+  an optional parameter `allow_unknown_modifications`.
+  
+  - **mgf.write_mgf** and **fasta.write_fasta** renamed to **write**.
+
+  - the output format of all **read** functions has changed.
+
 1.2.5
 -----
 

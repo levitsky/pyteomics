@@ -217,7 +217,7 @@ class Composition(defaultdict):
         self._from_dict(comp)
 
     def _from_sequence(self, sequence, aa_comp):
-        parsed_sequence = parser.parse_sequence(
+        parsed_sequence = parser.parse(
             sequence,
             labels=list(aa_comp.keys()),
             show_unmodified_termini=True)
@@ -326,7 +326,7 @@ class Composition(defaultdict):
             A polypeptide sequence parsed into a list of amino acids.
         split_sequence : list of tuples of str, optional
             A polypeptyde sequence parsed into a list of tuples
-            (as returned be :py:func:`pyteomics.parser.parse_sequence` with
+            (as returned be :py:func:`pyteomics.parser.parse` with
             'split=True').
         aa_comp : dict, optional
             A dict with the elemental composition of the amino acids (the
@@ -732,7 +732,10 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         Monoisotopic mass or m/z of a peptide molecule/ion.
     """
     aa_mass = kwargs.get('aa_mass', std_aa_mass)
-    mass = sum(aa_mass[i] for i in sequence)
+    try:
+        mass = sum(aa_mass[i] for i in sequence)
+    except KeyError as e:
+        raise PyteomicsError('No mass data for residue: ' + e.message)
 
     mass_data = kwargs.get('mass_data', nist_mass)
     mass += mass_data['H'][0][0] * 2.0 + mass_data['O'][0][0]

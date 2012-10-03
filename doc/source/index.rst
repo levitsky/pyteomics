@@ -26,6 +26,7 @@ Contents:
    parser
    properties
    data
+   examples
    api
    changelog
 

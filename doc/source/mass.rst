@@ -30,7 +30,7 @@ and dictionaries of chemical compositions:
     799.359964027207
 
     >>> from pyteomics import parser
-    >>> ps = parser.parse_sequence('PEPTIDE', show_unmodified_termini=True)
+    >>> ps = parser.parse('PEPTIDE', show_unmodified_termini=True)
     >>> mass.calculate_mass(parsed_sequence=ps)
     799.359964027207
 

@@ -10,23 +10,23 @@ human-readable format for MS/MS data. It allows storing MS/MS peak lists and
 exprimental parameters.
 
 This module provides minimalistic infrastructure for access to data stored in
-MGF files. The most important function is :py:func:`iter_spectrum`, which 
+MGF files. The most important function is :py:func:`read`, which 
 reads spectra and related information as saves them into human-readable
 :py:class:`dict`'s.
 Also, common parameters can be read from MGF file header with
-:py:func:`read_header` function. :py:func:`write_mgf` allows creation of MGF
+:py:func:`read_header` function. :py:func:`write` allows creation of MGF
 files.
 
 Functions
 ---------
 
-  :py:func:`iter_spectrum` - iterate through spectra in MGF file. Data from a
+  :py:func:`read` - iterate through spectra in MGF file. Data from a
   single spectrum are converted to a human-readable dict.
 
   :py:func:`read_header` - get a dict with common parameters for all spectra
   from the beginning of MGF file.
 
-  :py:func:`write_mgf` - write an MGF file.
+  :py:func:`write` - write an MGF file.
 
 -------------------------------------------------------------------------------
 
@@ -54,7 +54,7 @@ import numpy
 
 _comments = '#;!/'
 
-def iter_spectrum(source, use_header=True):
+def read(source, use_header=True):
     """Read an MGF file and return entries iteratively.
     
     Read the specified MGF file, **yield** spectra one by one.
@@ -83,16 +83,17 @@ def iter_spectrum(source, use_header=True):
         header = read_header(source, False)
         source.seek(pos)
         MGF = source
-    elif type(source) == str:
+    elif isinstance(source, str):
         header = read_header(source)
         MGF = open(source)
     else:
-        raise PyteomicsError("Unsupported argument type in `pyteomics.mgf.iter_spectrum`."
+        raise PyteomicsError("Unsupported argument type in `pyteomics.mgf.read`."
                 "'source' must be a file object or a path (string), %s given." % type(source))
     reading_spectrum = False
     params = {}
     masses = []
     intensities = []
+    charges = []
     if use_header: params.update(header)
     for line in MGF:
         if not reading_spectrum:
@@ -100,13 +101,14 @@ def iter_spectrum(source, use_header=True):
                 reading_spectrum = True
             # otherwise we are not interested; do nothing, just move along
         else:
-            if line.strip() == '' or \
-                any([line.startswith(c) for c in _comments]):
+            if line.strip() == '' or any(
+                line.startswith(c) for c in _comments):
                     pass
             elif line.strip() == 'END IONS':
                 reading_spectrum = False
                 yield {'params': params, 'masses': numpy.array(masses),
-                        'intensities': numpy.array(intensities)}
+                        'intensities': numpy.array(intensities),
+                        'charges': numpy.array(charges)}
                 params = {}
                 if use_header: params.update(header)
                 masses = []
@@ -115,13 +117,21 @@ def iter_spectrum(source, use_header=True):
             else: 
                 l = line.split('=')
                 if len(l) == 2:
-                    params[l[0].lower()] = l[1].strip()
+                    params[l[0].lower()] = l[1].strip().split()[0]
                 elif len(l) == 1: # this must be a peak list
                     l = line.split()
-                    if len(l) == 2:
-                        masses.append(float(l[0]))            # this may cause
-                        intensities.append(float(l[1]))       # exceptions...
-                        # ... if this is not a peak list
+                    if len(l) >= 2:
+                        try:
+                            masses.append(float(l[0]))            # this may cause
+                            intensities.append(float(l[1]))       # exceptions...
+                            if len(l) > 2:
+                                charges.append(l[2])
+                            else:
+                                charges.append(None)
+                        except ValueError:
+                            raise PyteomicsError(
+                                 'Error when parsing %s. Line:\n%s' %
+                                 (source, line))
     MGF.close()
 
 def read_header(source, close=True):
@@ -143,7 +153,7 @@ def read_header(source, close=True):
 
     header : dict
     """
-    if type(source) == str:
+    if isinstance(source, str):
         MGF = open(source)
     else:
         MGF = source
@@ -158,7 +168,7 @@ def read_header(source, close=True):
     if close: MGF.close()
     return header
 
-def write_mgf(output=None, spectra=None, header='', close=True):
+def write(output=None, spectra=None, header='', close=True):
     """
     Create a file in MGF format.
 
@@ -203,32 +213,33 @@ def write_mgf(output=None, spectra=None, header='', close=True):
     """
     if hasattr(output, 'write'):
         MGF = output
-    elif type(output) == str:
+    elif isinstance(output, str):
         if not os.path.isdir(os.path.split(mgf)[0]):
             os.makedirs(os.path.split(mgf)[0])
         MGF = open(output, 'a')
-    elif output == None:
+    elif output is None:
         MGF = sys.stdout
     else:
-        raise PyteomicsError("Unsupported argument `output` in `pyteomics.mgf.write_mgf`."
-                "Must be a file object or a path (string) or None, not %s" % type(output))
+        raise PyteomicsError("Unsupported type of `output`."
+                "Must be a file object or a path (string) or None, not %s"
+                % type(output))
 
-    if type(header) == dict:
+    if isinstance(header, dict):
         head_dict = header
-        head_str = '\n'.join(
-                ['%s=%s' % (x.upper(), str(header[x])) for x in header])
+        head_lines = ['%s=%s' % (x.upper(), str(header[x])) for x in header]
+        head_str = '\n'.join(head_lines)
     else:
-        if type(header) == str:
+        if isinstance(header, str):
             head_str = header
             head_lines = header.split('\n')
-        elif type(header) == list:
-            head_lines = header
+        else:
+            head_lines = list(header)
             head_str = '\n'.join(header)
         head_dict = {}
-        for line in head_lines:
-            if line.strip() == '' or \
-                any([line.startswith(c) for c in _comments]):
-                   continue 
+    for line in head_lines:
+        if not line.strip() or any(
+                line.startswith(c) for c in _comments):
+               continue
         l = line.split('=')
         if len(l) == 2:
             head_dict[l[0].lower()] = l[1].strip()
@@ -237,14 +248,14 @@ def write_mgf(output=None, spectra=None, header='', close=True):
     if spectra:
         for spectrum in spectra:
             MGF.write('\n\nBEGIN IONS\n')
-            MGF.write('\n'.join(['%s=%s' % (x.upper(), str(spectrum['params'][x]))
+            MGF.write('\n'.join('%s=%s' % (x.upper(), str(spectrum['params'][x]))
                 for x in spectrum['params'] if not
-                (x in head_dict and spectrum['params'][x] == head_dict[x])]))
-            if 'masses' in spectrum and 'intensities' in spectrum:
+                (x in head_dict and spectrum['params'][x] == head_dict[x])))
+            if all(key in spectrum for key in ('masses', 'intensities', 'charges')):
                 for i in range(min(map(len,
-                    (spectrum['masses'], spectrum['intensities'])))):
-                        MGF.write('\n%s %s' % (str(spectrum['masses'][i]),
-                            str(spectrum['intensities'][i])))
+                    (spectrum['masses'], spectrum['intensities'], spectrum['charges'])))):
+                        MGF.write('\n%s %s %s' % (str(spectrum['masses'][i]),
+                            str(spectrum['intensities'][i]), str(spectrum['charges'][i])))
 
             MGF.write('\nEND IONS')
     MGF.write('\n')

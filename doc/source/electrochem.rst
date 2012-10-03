@@ -23,7 +23,7 @@ a parsed sequence or a dict with amino acid composition.
     >>> electrochem.charge('PEPTIDE', 7)
     -2.9980189709606284
     >>> from pyteomics import parser
-    >>> parsed_seq = parser.parse_sequence('PEPTIDE', show_unmodified_termini=True)
+    >>> parsed_seq = parser.parse('PEPTIDE', show_unmodified_termini=True)
     >>> electrochem.charge(parsed_seq, 7)
     -2.9980189709606284
     >>> aa_composition = parser.amino_acid_composition('PEPTIDE', show_unmodified_termini=True)
@@ -39,8 +39,11 @@ a parsed sequence or a dict with amino acid composition.
 Customization
 -------------
 
-The pK\ :sub:`a`\ s of individual amino acids are stored in dicts in the following format:
-{`modX label` : (`pKa`, `charge`)}. The module contains several datasets 
-published in scientific journals: :py:data:`pyteomics.electrochem.pK_lehninger` (used by default), 
-:py:data:`pyteomics.electrochem.pK_sillero`, :py:data:`pyteomics.electrochem.pK_dawson`, :py:data:`pyteomics.electrochem.pK_rodwell`. 
+The pK\ :sub:`a`\ s of individual amino acids are stored in dicts in the 
+following format: {`modX label` : (`pKa`, `charge`)}. The module contains 
+several datasets published in scientific journals: 
+:py:data:`pyteomics.electrochem.pK_lehninger` (used by default), 
+:py:data:`pyteomics.electrochem.pK_sillero`, 
+:py:data:`pyteomics.electrochem.pK_dawson`,
+:py:data:`pyteomics.electrochem.pK_rodwell`. 
 

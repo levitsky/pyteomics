@@ -28,7 +28,7 @@ Therefore, the valid examples of peptide sequences in modX are: "GAGA",
 Operations on polypeptide sequences
 -----------------------------------
 
-  :py:func:`parse_sequence` - convert a sequence string into a list of
+  :py:func:`parse` - convert a sequence string into a list of
   amino acid residues.
 
   :py:func:`tostring` - convert a parsed sequence to a string.
@@ -158,7 +158,7 @@ def peptide_length(sequence, **kwargs):
 
     if isinstance(sequence, str) or isinstance(sequence, list):
         if isinstance(sequence, str):
-            parsed_sequence = parse_sequence(sequence, labels=labels)
+            parsed_sequence = parse(sequence, labels=labels)
         else:
             parsed_sequence = sequence            
         num_term_groups = 0
@@ -182,7 +182,7 @@ def _split_label(label):
         else:
             return (label[:-1], label[-1])
 
-def parse_sequence(sequence,               
+def parse(sequence,               
                    show_unmodified_termini=False, split=False,
                    allow_unknown_modifications=False,
                    **kwargs):
@@ -198,7 +198,7 @@ def parse_sequence(sequence,
         If :py:const:`True` then the unmodified N- and C-termini are explicitly
         shown in the returned list. Default value is :py:const:`False`.
     split : bool, optional
-        If :py:const:`True` then the result will be a list of tuples with 1 to 3
+        If :py:const:`True` then the result will be a list of tuples with 1 to 4
         elements: terminal modification, modification, residue. Default value is
         :py:const:`False`.
     allow_unknown_modifications : bool, optional
@@ -220,16 +220,16 @@ def parse_sequence(sequence,
 
     Examples
     --------
-    >>> parse_sequence('PEPTIDE', split=True)
+    >>> parse('PEPTIDE', split=True)
     [('P',), ('E',), ('P',), ('T',), ('I',), ('D',), ('E',)]
-    >>> parse_sequence('H-PEPTIDE')
+    >>> parse('H-PEPTIDE')
     ['P', 'E', 'P', 'T', 'I', 'D', 'E']
-    >>> parse_sequence('PEPTIDE', show_unmodified_termini=True)
+    >>> parse('PEPTIDE', show_unmodified_termini=True)
     ['H-', 'P', 'E', 'P', 'T', 'I', 'D', 'E', '-OH']
-    >>> parse_sequence('TEpSToxM', labels=std_labels + ['pS', 'oxM'])
+    >>> parse('TEpSToxM', labels=std_labels + ['pS', 'oxM'])
     ['T', 'E', 'pS', 'T', 'oxM']
-    >>> parse_sequence('zPEPzTIDzE', True, True, labels=std_labels+['z'])
-    [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',), ('z', 'E'), ('z', 'E', '-OH')]
+    >>> parse('zPEPzTIDzE', True, True, labels=std_labels+['z'])
+    [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',), ('z', 'E', '-OH')]
     """
     labels = kwargs.get('labels', std_labels)
     backbone_sequence = str(sequence)
@@ -323,7 +323,7 @@ def tostring(parsed_sequence, show_unmodified_termini=True):
     ----------
     parsed_sequence : iterable
         Expected to be in one of the formats returned by
-        :py:func:`parse_sequence`, i.e. list of labels or list of tuples.
+        :py:func:`parse`, i.e. list of labels or list of tuples.
     show_unmodified_termini : bool, optional
         Defines the behavior towards standard terminal groups in the input.
         :py:const:`True` means that they will be preserved if present (default).
@@ -393,7 +393,7 @@ def amino_acid_composition(sequence,
     labels = kwargs.get('labels', std_labels)
 
     if isinstance(sequence, str):
-        parsed_sequence = parse_sequence(sequence, show_unmodified_termini,
+        parsed_sequence = parse(sequence, show_unmodified_termini,
             allow_unknown_modifications=allow_unknown_modifications,
             labels=labels)
     elif isinstance(sequence, list):
@@ -559,7 +559,7 @@ def isoforms(sequence, **kwargs):
         return temp[0], group[temp[0]]
 
     def apply_mod(label, mod):
-    # `label` is assumed to be a tuple (see split option of parse_sequence)
+    # `label` is assumed to be a tuple (see split option of parse)
     # unmodified termini are assumed shown
     # if the modification is not applicable, `label` is returned
         group = list(label)
@@ -581,7 +581,7 @@ def isoforms(sequence, **kwargs):
     fixed_mods = kwargs.get('fixed_mods', {})
     labels = kwargs.get('labels', std_labels)
     length = peptide_length(sequence, labels=labels)
-    parsed = parse_sequence(sequence, True, True,
+    parsed = parse(sequence, True, True,
             labels=labels+list(fixed_mods.keys()))
     override = kwargs.get('override', False)
     show_unmodified_termini = kwargs.get('show_unmodified_termini', False)

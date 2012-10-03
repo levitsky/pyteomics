@@ -1,5 +1,6 @@
 import unittest
 from pyteomics.electrochem import charge, pI
+from pyteomics.auxiliary import PyteomicsError
 
 class ElectrochemTest(unittest.TestCase):
     def setUp(self):
@@ -12,6 +13,7 @@ class ElectrochemTest(unittest.TestCase):
             abs(charge('H-AAA-OH', 14.0) + 1.0) < 0.01)
         self.assertTrue(
             abs(charge('H-AAA-OH', (2.34 + 9.69) / 2.0)) < 0.01)
+        self.assertRaises(PyteomicsError, charge, 'O', 7)
         
     def test_charge_input(self):
         for i in range(0, 14):
@@ -27,6 +29,13 @@ class ElectrochemTest(unittest.TestCase):
     def test_pI_calculations(self):
         self.assertTrue(
             abs(pI('H-AAA-OH') - (2.34 + 9.69) / 2.0) < 0.01)
+
+    def test_pI_precision(self):
+        pI_best = pI('PEPTIDE', precision_pI = 1e-15)
+        for i in range(16):
+            precision = 10**(-i)
+            self.assertTrue(
+                abs(pI('PEPTIDE', precision_pI = precision) - pI_best) < precision)
 
 if __name__ == '__main__':
     unittest.main()
