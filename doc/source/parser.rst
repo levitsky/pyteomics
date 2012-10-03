@@ -36,16 +36,16 @@ a terminal modification: :py:func:`pyteomics.parser.is_modX` and
 
 
 A *modX* sequence can be translated to a list of amino acid residues with
-:py:func:`pyteomics.parser.parse_sequence` function:
+:py:func:`pyteomics.parser.parse` function:
 
 .. code-block:: python
 
     >>> from pyteomics import parser
-    >>> parser.parse_sequence('PEPTIDE')
+    >>> parser.parse('PEPTIDE')
     ['P', 'E', 'P', 'T', 'I', 'D', 'E']
-    >>> parser.parse_sequence('PEPTIDE', show_unmodified_termini=True)
+    >>> parser.parse('PEPTIDE', show_unmodified_termini=True)
     ['H-', 'P', 'E', 'P', 'T', 'I', 'D', 'E', '-OH']
-    >>> parser.parse_sequence('Ac-PEpTIDE', labels=parser.std_labels+['Ac-', 'pT'])
+    >>> parser.parse('Ac-PEpTIDE', labels=parser.std_labels+['Ac-', 'pT'])
     ['Ac-', 'P', 'E', 'pT', 'I', 'D', 'E']
 
 In the last example we supplied two arguments, the sequence itself
@@ -57,11 +57,11 @@ phosphorylated threonine and N-terminal acetylation. The same 'labels' argument
 should be supplied to the other functions in this module if a sequence has
 modifications.
 
-:py:func:`parse_sequence` has another mode, in which it returns tuples:
+:py:func:`parse` has another mode, in which it returns tuples:
 
 .. code-block:: python
 
-    >>> parser.parse_sequence('Ac-PEpTIDE', labels=parser.std_labels+['Ac-', 'p'], split=True)
+    >>> parser.parse('Ac-PEpTIDE', labels=parser.std_labels+['Ac-', 'p'], split=True)
     [('Ac-', 'P'), ('E',), ('p', 'T'), ('I',), ('D',), ('E',)]
 
 Also, note what we supply as `labels` here: 'p' instead of 'pT'. That means that

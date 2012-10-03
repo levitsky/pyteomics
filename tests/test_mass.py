@@ -161,7 +161,7 @@ class MassTest(unittest.TestCase):
                 sequence=pep, aa_comp=self.aa_comp, mass_data=self.mass_data,
                 ion_comp=self.ion_comp),
                 mass.calculate_mass(
-                    parsed_sequence=parser.parse_sequence(
+                    parsed_sequence=parser.parse(
                         pep, labels=['X', 'Y', 'Z'], show_unmodified_termini=True),
                     aa_comp=self.aa_comp, mass_data=self.mass_data,
                     ion_comp=self.ion_comp))

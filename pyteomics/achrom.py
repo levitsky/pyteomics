@@ -5,7 +5,7 @@ achrom - additive model of polypeptide chromatography
 Summary
 -------
 
-The additive model of polypeptide chromatography, or achrom is the most basic
+The additive model of polypeptide chromatography, or achrom, is the most basic
 model for peptide retention time prediction. The main equation behind
 achrom has the following form:
 
@@ -79,13 +79,13 @@ Data
   I.D.) packed in-house with C18 ODS-AQ; solvent A = 0.5% aq. HAc,
   B = 0.5% HAc in acetonitrile.
   
-  :py:data:`RCs_yoshida` - a set of RCs for a normal phase chromatography
+  :py:data:`RCs_yoshida` - a set of RCs for normal phase chromatography
   from [#Yoshida]_. Conditions:
   TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A = 0.1% TFA
   in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at 0.6%
   water/min, flow rate 1.0 ml/min, 40 centigrades.
 
-  :py:data:`RCs_yoshida_lc` - a set of length-corrected RCs for a normal phase
+  :py:data:`RCs_yoshida_lc` - a set of length-corrected RCs for normal phase
   chromatography. The set was calculated in [#Moskovets]_ for the data from 
   [#Yoshida]_. 
   Conditions:
@@ -113,7 +113,7 @@ retention time (RT) during a gradient elution is then calculated as:
 
     RT = \sum_{i=1}^{i=N}{RC_i \cdot n_i} + RT_0,
 
-which is a sum of retention coefficients of all amino acid residues in a
+which is the sum of retention coefficients of all amino acid residues in a
 polypeptide. This equation can also be expressed in terms of linear
 algebra:
 

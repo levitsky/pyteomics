@@ -13,14 +13,14 @@ setups. **Pyteomics** offers you the functionality of :py:mod:`pyteomics.mzml` m
 to gain access to the information contained in .mzML files from Python.
 
 The main function in this module is
-:py:func:`pyteomics.mzml.iter_spectrum`. It allows the user to iterate through MS/MS spectra
+:py:func:`pyteomics.mzml.read`. It allows the user to iterate through MS/MS spectra
 contained in an mzML file. Here is an example of its output:
 
 .. code-block:: python
 
     >>> from pyteomics import mzml
-    >>> reader = mzml.iter_spectrum('tests/test.mzML')
-    >>> print reader.next() # Retrieve the first spectrum from the file and print it.
+    >>> reader = mzml.read('tests/test.mzML')
+    >>> print next(reader) # Retrieve the first spectrum from the file and print it.
     {'MSn spectrum': '',
      'base peak intensity': 1471973.875,
      'base peak m/z': 810.415283203125,
@@ -32,7 +32,7 @@ contained in an mzML file. Here is an example of its output:
      'lowest observed m/z': 200.00018816645022,
      'm/z array': array([  200.00018817,   200.00043034,   200.00067252, ...,  1999.96151259,
                           1999.98572931,  2000.00994662]),
-     'ms level': 1.0,
+     'ms level': 1,
      'no combination': '',
      'positive scan': '',
      'precursorList': [],
@@ -45,7 +45,7 @@ contained in an mzML file. Here is an example of its output:
                                        'scan window upper limit': '2000'}]}],
      'total ion current': 15245068.0}
    
-At the moment, the interface of :py:func:`pyteomics.mzml.iter_spectrum` is
+At the moment, the interface of :py:func:`pyteomics.mzml.read` is
 relatively low-level. It iterates through the spectra in the file and returns
 each one as a dict with selected fields stored. The interface is relatively
 raw and can be modified in the subsequent releases of Pyteomics.
@@ -60,7 +60,7 @@ exprimental parameters. :py:mod:`pyteomics.mgf` is a module that implements
 reading and writing MGF files.
 
 Similar to :py:mod:`pyteomics.mzml`, :py:mod:`pyteomics.mgf` has a 
-:py:func:`iter_spectrum` function. It allows iterating through spectrum entries.
+:py:func:`read` function. It allows iterating through spectrum entries.
 Spectra are represented as :py:class:`dictionaries`. MS/MS peak lists are stored
 as :py:class:`numpy.array` objects :py:obj:`masses` and :py:obj:`intensities`.
 Parameters are stored as a :py:class:`dict` under 'params' key.
@@ -70,8 +70,8 @@ Here is an example of use:
 .. code-block:: python
 
     >>> from pyteomics import mgf
-    >>> reader = mgf.iter_spectrum('tests/test.mgf')
-    >>> print reader.next() # Retrieve the first spectrum from the file and print it.
+    >>> reader = mgf.read('tests/test.mgf')
+    >>> print next(reader) # Retrieve the first spectrum from the file and print it.
     {'intensities': array([  73.,   44.,   67.,  291.,   54.,   49.]), 
     'masses': array([  846.6,   846.8,   847.6,  1640.1,  1640.6,  1895.5]), 
     'params': {'username': 'Lou Scene', 'useremail': 'leu@altered-state.edu',
@@ -94,14 +94,14 @@ a :py:class:`dict`.
     'com': 'Taken from http://www.matrixscience.com/help/data_file_help.html'}
 
 
-Creation of MGF files is implemented in :py:func:`write_mgf` function. The user
+Creation of MGF files is implemented in :py:func:`write` function. The user
 can specify the header, list of spectra in the same format as returned by
-:py:func:`iter_spectrum` and the output path.
+:py:func:`read` and the output path.
 
 .. code-block:: python
 
     >>> spectra = [s for s in mgf.iter_spectrum('tests/test.mgf')]
-    >>> mgf.write_mgf(spectra=spectra, header=header)
+    >>> mgf.write(spectra=spectra, header=header)
     USERNAME=Lou Scene
     ITOL=1
     USEREMAIL=leu@altered-state.edu
@@ -147,55 +147,102 @@ used and the assigned sequences. To access these data, use :py:mod:`pyteomics.pe
 module.
 
 :py:mod:`pyteomics.pepxml` has the same structure as :py:mod:`pyteomics.mzml`. The function
-:py:func:`pyteomics.pepxml.iter_psm` iterates through Peptide-Spectrum matches in a .pepXML file 
+:py:func:`pyteomics.pepxml.read` iterates through Peptide-Spectrum matches in a .pepXML file 
 and returns them as a custom dict.
 
 .. code-block:: python
 
     >>> from pyteomics import pepxml
-    >>> reader = pepxml.iter_psm('tests/test.pep.xml')
-    >>> print reader.next()
-    {'end_scan': 100.0,
-    'search_hits': [{'hit_rank': 1.0,
-    'calc_neutral_pep_mass': 860.892,
-    'deltacn': 0.081,
-    'modified_peptide': 'SLNGEWR',
-    'peptide': 'SLNGEWR',
-    'num_matched_ions': 11.0,
-    'modifications': [],
-    'peptideprophet': 0.96,
-    'proteins': [{'num_tol_term': 2.0,
-    'protein': 'sp|P00722|BGAL_ECOLI',
-    'peptide_prev_aa': 'R',
-    'protein_descr': 'BETA-GALACTOSIDASE (EC 3.2.1.23) (LACTASE) - Escherichia coli.',
-    'peptide_next_aa': 'F'}],
-    'sprank': 1.0,
-    'num_missed_cleavages': 0.0,
-    'tot_num_ions': 12.0,
-    'num_tot_proteins': 1.0,
-    'deltacnstar': 0.0,
-    'is_rejected': '0',
-    'spscore': 894.0,
-    'xcorr': 1.553,
-    'massdiff': -0.5}],
-    'index': 1.0,
-    'assumed_charge': 1.0,
+    >>> reader = pepxml.read('tests/test.pep.xml')
+    >>> print next(reader)
+    {'end_scan': 100,
+    'index': 1,
+    'assumed_charge': 1,
     'spectrum': 'pps_sl20060731_18mix_25ul_r1_1154456409.0100.0100.1',
+    'search_hit': [
+        {'hit_rank': 1,
+        'calc_neutral_pep_mass': 860.892,
+        'modifications': [],
+        'modified_peptide': 'SLNGEWR',
+        'peptide': 'SLNGEWR',
+        'num_matched_ions': 11,
+        'search_score': {
+            'spscore': 894.0,
+            'sprank': 1.0,
+            'deltacnstar': 0.0,
+            'deltacn': 0.081,
+            'xcorr': 1.553},
+        'proteins': [
+            {'num_tol_term': 2,
+            'protein': 'sp|P00722|BGAL_ECOLI',
+            'peptide_next_aa': 'F',
+            'protein_descr': 'BETA-GALACTOSIDASE (EC 3.2.1.23) (LACTASE) - Escherichia coli.',
+            'peptide_prev_aa': 'R'}],
+        'num_missed_cleavages': 0,
+        'analysis_result': [
+            {'peptideprophet_result':
+                {'parameter': {'massd': -0.5, 'nmc': 0.0, 'ntt': 2.0, 'fval': 1.4723},
+                'all_ntt_prob': [0.0422, 0.509, 0.96],
+                'probability': 0.96},
+                'analysis': 'peptideprophet'}],
+        'tot_num_ions': 12,
+        'num_tot_proteins': 1,
+        'is_rejected': False,
+        'massdiff': -0.5}],
     'precursor_neutral_mass': 860.392,
-    'start_scan': 100.0}
+    'start_scan': 100}
+
+mzIdentML
+---------
+
+`mzIdentML <http://www.psidev.info/mzidentml>`_  is one of the standards
+developed by the Proteomics Informatics working group of the HUPO Proteomics
+Standard Initiative.
+
+The module interface is similar to that of the other reader modules.
+
+.. code-block:: python
+
+    >>> from pyteomics import mzid
+    >>> reader = mzid.read('tests/test.mzid')
+    >>> print next(reader)
+    {'SpectrumIdentificationItem': [
+        {'ProteinScape:IntensityCoverage': 0.3919545603809718,
+        'PeptideEvidenceRef': [
+            {'peptideEvidence_ref': 'PE1_SEQ_spec1_pep1'}],
+        'passThreshold': True,
+        'rank': 1,
+        'chargeState': 1,
+        'calculatedMassToCharge': 1507.695,
+        'peptide_ref': 'prot1_pep1',
+        'experimentalMassToCharge': 1507.696,
+        'id': 'SEQ_spec1_pep1',
+        'ProteinScape:SequestMetaScore': 7.59488518903425}],
+    'spectrumID': 'databasekey=1',
+    'id': 'SEQ_spec1',
+    'spectraData_ref': 'LCMALDI_spectra'}
+
+You can tune the amount of information you get from the file. The available
+options to the :py:func:`read` function are `recursive` (:py:const:`True` by
+default) and `retrieve_refs` (:py:const:`False` by default). The latter pulls
+additional info from the file that is present only as references in the example
+above.
+
+Additional function :py:func:`get_by_id` allows to extract info from any element
+using its unique ID.
                                                                                        
 FASTA
 -----
 
-To extract data from FASTA databases, use the :py:func:`pyteomics.fasta.read_fasta` 
+To extract data from FASTA databases, use the :py:func:`pyteomics.fasta.read` 
 function.
 
 .. code-block:: python
 
     >>> from pyteomics import fasta
-    >>> proteins = list(fasta.read_fasta('/path/to/file/my.fasta'))
+    >>> proteins = list(fasta.read('/path/to/file/my.fasta'))
 
-:py:func:`pyteomics.fasta.read_fasta` returns a *generator object* instead of a
+:py:func:`pyteomics.fasta.read` returns a *generator object* instead of a
 :py:class:`list` to prevent excessive memory use. 
 
 You can also create a FASTA file using a list of (description, sequence)
@@ -205,7 +252,7 @@ You can also create a FASTA file using a list of (description, sequence)
 
     >>> from pyteomics import fasta
     >>> entries = [('Protein 1', 'PEPTIDE'*1000), ('Protein 2', 'PEPTIDE'*2000)]
-    >>> fasta.write_fasta(entries, 'target-file.fasta')
+    >>> fasta.write(entries, 'target-file.fasta')
 
 Another common task is to generate a *decoy database*. **Pyteomics** allows
 that by means of the :py:func:`pyteomics.fasta.decoy_db` function. 

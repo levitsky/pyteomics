@@ -10,7 +10,7 @@ Please refer to http://www.psidev.info/index.php?q=node/257 for the detailed
 specification of the format and the structure of mzML files.
 
 This module provides minimalistic infrastructure for access to data stored in
-mzML files. The most important function is :py:func:`iter_spectrum`, which 
+mzML files. The most important function is :py:func:`read`, which 
 reads spectra and related information as saves them into human-readable dicts.
 The rest of data can be obtained via a combination of :py:func:`get_node` and
 :py:func:`read_params` functions. These functions rely on the terminology of 
@@ -19,7 +19,7 @@ the underlying `lxml library <http://lxml.de/>`_.
 Data access
 -----------
 
-  :py:func:`iter_spectrum` - iterate through spectra in mzML file. Data from a
+  :py:func:`read` - iterate through spectra in mzML file. Data from a
   single spectrum are converted to a human-readable dict. Spectra themselves are 
   stored under 'm/z array' and 'intensity array' keys.
 
@@ -49,74 +49,7 @@ import numpy
 import zlib
 import base64
 from lxml import etree
-
-# A list of the spectrum attributes which contain float values.
-float_keys = [
-    'base peak m/z',
-    'base peak intensity',
-    'total ion current',
-    'lowest observed m/z',
-    'highest observed m/z',
-    'scan start time',
-    'ion injection time',
-    'scan window lower limit',
-    'scan window upper limit',
-    'ms level'
-    ]
-
-# Default mzML namespace.
-xmlns = 'http://psi.hupo.org/ms/mzml'
-
-def _insert_default_ns(xpath, ns_key = 'd'):
-    """Inserts the key for the default namespace before each node name.
-    Does not modify a nodename if it already has a namespace.
-
-    Parameters
-    ----------
-    xpath : str
-        An original XPath
-    ns_key : str
-        A key for the default namespace.
-
-    Returns
-    -------
-    out : str
-        A modified XPath.
-    """
-    return '/'.join(
-        [(ns_key + ':' + node if (node and node.count(':') == 0) else node)
-         for node in xpath.split('/')])
-
-def get_node(source, xpath, namespaces={'d':xmlns}):
-    """Retrieves arbitrary nodes from an mzml file by their xpath.
-    Each node in the xpath is assigned to the default namespace 
-    'http://psi.hupo.org/ms/mzml' unless specified else.
-
-    Parameters
-    ----------
-    source : str or file
-        A path or an URL to a target mzML file or the file object itself.
-    xpath : str
-        An XPath to target nodes. 
-    namespaces : dict, optional
-        A dictionary of namespaces. The default namespace key is 'd'.
-    
-    Returns
-    -------
-    out : list of lxml.Element 
-        List of target nodes.
-
-    Examples
-    --------
-    >> get_node('/indexedmzML/mzML/run/spectrumList/spectrum')
-
-    """
-    parser = etree.XMLParser(remove_comments=True, ns_clean=True)
-    tree = etree.parse(source, parser=parser)
-
-    xpath_w_namespace = _insert_default_ns(xpath)
-
-    return tree.xpath(xpath_w_namespace, namespaces=namespaces)
+from . import auxiliary as aux
 
 def _decode_base64_data_array(source, dtype, is_compressed):
     """Read a base64-encoded binary array.
@@ -141,155 +74,115 @@ def _decode_base64_data_array(source, dtype, is_compressed):
     output = numpy.frombuffer(decoded_source, dtype=dtype)
     return output
 
-def read_params(element, xpath, namespaces):
-    """
-    Obtain children nodes of a given node by their xpath and read their
-    children cvParam and userParam.
-
-    Parameters
-    ----------
-    element : lxml.Element
-        A parent element.
-    xpath : str
-        An XPath of children nodes relative to the parent element.
-    namespaces : dict
-        A dictionary of namespaces. The default namespace key is 'd'.
-
-    Returns
-    -------
-    out : dict
-    """
-
-    output = {}
-    for subelement in element.xpath(xpath, namespaces=namespaces):
-        for param_element in subelement.xpath('d:cvParam | d:userParam',
-                                              namespaces=namespaces):
-            output[param_element.attrib['name']] = (
-                param_element.attrib['value'])
-
-    return output
-
-def _spectrum_from_element(element, namespaces):
-    """Analyze a spectrum Element object and generate a dictionary with its 
-    properties.
-
-    Parameters
-    ----------
-    element : lxml.Element
-        A parent element with a spectrum.
-    namespaces : dict
-        A dictionary of namespaces. The default namespace key is 'd'.
-
-    Returns
-    -------
-    out : dict
-    """
-
-    spectrum = {}
-    spectrum.update(element.attrib)    
-    spectrum.update(read_params(element, 'self::*', namespaces=namespaces))
-
-    # Read the scan list.
-    spectrum.update(
-        read_params(element, 'd:scanList', namespaces=namespaces))
-    spectrum['scanList'] = []
-
-    for scan_elem in element.xpath('d:scanList/d:scan', namespaces=namespaces):
-        scan = read_params(scan_elem, 'self::*', namespaces=namespaces)
-        scan['scanWindowList'] = []
-        for scan_window_elem in scan_elem.xpath('d:scanWindowList/'
-                                                'd:scanWindow',
-                                                namespaces=namespaces):
-            scan_window = read_params(
-                scan_window_elem, 'self::*', namespaces=namespaces) 
-            scan['scanWindowList'].append(scan_window)
-        spectrum['scanList'].append(scan)                    
-
-    # Read the list of precursors.
-    spectrum['precursorList'] = []
-    for precursor_elem in element.xpath('d:precursorList/d:precursor',
-                                        namespaces=namespaces):
-        precursor = {}
-        precursor.update(precursor_elem.attrib)
-        precursor.update(
-            read_params(precursor_elem, 'self::*', namespaces=namespaces))
-        precursor.update(
-            read_params(precursor_elem, 'd:isolationWindow',
-                         namespaces=namespaces))
-        precursor.update(
-            read_params(precursor_elem, 'd:activation', namespaces=namespaces))
-
-        # Read the list of selected ions for given precursor.
-        precursor['selectedIonList'] = []
-        for selectedIon_elem in precursor_elem.xpath('d:selectedIonList/'
-                                                     'd:selectedIon',
-                                                     namespaces=namespaces):
-            selectedIon = read_params(
-                selectedIon_elem, 'self::*', namespaces=namespaces)
-            precursor['selectedIonList'].append(selectedIon)        
-        spectrum['precursorList'].append(precursor)
-
-    # Read binary arrays with m/zs and intensities.
-    for array_element in element.xpath(
-        'd:binaryDataArrayList/d:binaryDataArray', namespaces=namespaces): 
-        
-        # Define the contents of the array.
-        array_type = None
-        for cvParam in array_element.xpath(
-            'd:cvParam[@name=\'m/z array\'] | '
-            'd:cvParam[@name=\'intensity array\']',
-            namespaces=namespaces):
-            
-            array_type = cvParam.attrib['name']
-
-        # Define the type of an array element.
-        type_code = None
-        for cvParam in array_element.xpath(
-            'd:cvParam[@name=\'64-bit float\'] | '
-            'd:cvParam[@name=\'32-bit float\']',
-            namespaces=namespaces):
-            
-            type_code = {'32-bit float': 'f',
-                         '64-bit float': 'd'
-                         }[cvParam.attrib['name']]
-            
-        # Decode, decompress and read the array.
-        is_compressed = bool(
-            array_element.xpath('d:cvParam[@name=\'zlib compression\']',
-                                namespaces=namespaces))
-        
-        if array_element.attrib['encodedLength'] != '0':
-            spectrum[array_type] = _decode_base64_data_array(
-                array_element.xpath('d:binary/text()', namespaces=namespaces)[0],
-                type_code,
-                is_compressed)
-        else:
-            spectrum[array_type] = []
-
-    # Convert selected values to float.
-    for key in spectrum:
-        if key in float_keys:
-            spectrum[key] = float(spectrum[key])
-
-    return spectrum
-
-def iter_spectrum(source):
+def read(source):
     """Parse ``source`` and iterate through spectra.
 
     Parameters
     ----------
     source : str or file
-        A path or an URL to a target mzML file or the file object itself.
+        A path to a target mzML file or the file object itself.
 
     Returns
     -------
     out : iterator
        An iterator over the dicts with spectra properties.
     """
+    
+    return _itertag(source, 'spectrum')
 
-    namespaces = {'d': xmlns}
+def _get_info_smart(source, element, **kw):
+    name = aux._local_name(element)
+    kwargs = dict(kw)
+    rec = kwargs.pop('recursive', None)
+    if name in {'indexedmzML', 'mzML'}:
+        info =  _get_info(source, element, rec if rec is not None else False,
+                **kwargs)
+    else:
+        info = _get_info(source, element, rec if rec is not None else True,
+                **kwargs)
+    if 'binary' in info:
+        types = {'32-bit float': 'f', '64-bit float': 'd'}
+        for t, code in types.items():
+            if t in info:
+                dtype = code
+                del info[t]
+        if 'zlib compression' in info:
+            compressed = True
+            del info['zlib compression']
+        else:
+            compressed = False
+            info.pop('no compression', None)
+        b = info.pop('binary')
+        if b:
+            array = _decode_base64_data_array(
+                            b, dtype, compressed)
+        else:
+            array = numpy.array([], dtype=dtype)
+        for k in info:
+            if k.endswith(' array') and not info[k]:
+                info = {k: array}
+                break
+        else:
+            info['binary'] == array
+    if 'binaryDataArray' in info:
+        for array in info.pop('binaryDataArray'):
+            info.update(array)
+    intkeys = {'ms level'}
+    for k in intkeys:
+        if k in info:
+            info[k] = int(info[k])
 
-    for _, spectrum_element in etree.iterparse(
-            source, tag='{%s}spectrum' % xmlns, huge_tree=True):
-        yield _spectrum_from_element(spectrum_element, namespaces=namespaces)
-        spectrum_element.clear()
+    return info
+
+_version_info_env = {'format': 'mzML', 'element': 'mzML'}
+version_info = aux._make_version_info(_version_info_env)
+
+_schema_defaults = {'ints': {
+    ('spectrum', 'index'),
+     ('instrumentConfigurationList', 'count'),
+     ('binaryDataArray', 'encodedLength'),
+     ('cvList', 'count'),
+     ('binaryDataArray', 'arrayLength'),
+     ('scanWindowList', 'count'),
+     ('componentList', 'count'),
+     ('sourceFileList', 'count'),
+     ('productList', 'count'),
+     ('referenceableParamGroupList', 'count'),
+     ('scanList', 'count'),
+     ('spectrum', 'defaultArrayLength'),
+     ('dataProcessingList', 'count'),
+     ('sourceFileRefList', 'count'),
+     ('scanSettingsList', 'count'),
+     ('selectedIonList', 'count'),
+     ('chromatogram', 'defaultArrayLength'),
+     ('precursorList', 'count'),
+     ('chromatogram', 'index'),
+     ('processingMethod', 'order'),
+     ('targetList', 'count'),
+     ('sampleList', 'count'),
+     ('softwareList', 'count'),
+     ('binaryDataArrayList', 'count'),
+     ('spectrumList', 'count'),
+     ('chromatogramList', 'count')},
+        'floats': {},
+        'bools': {},
+        'lists': {'scan', 'spectrum', 'sample', 'cv', 'dataProcessing',
+            'cvParam', 'source', 'userParam', 'detector', 'product',
+            'referenceableParamGroupRef', 'selectedIon', 'sourceFileRef',
+            'binaryDataArray', 'analyzer', 'scanSettings',
+            'instrumentConfiguration', 'chromatogram', 'target',
+            'processingMethod', 'precursor', 'sourceFile',
+            'referenceableParamGroup', 'contact', 'scanWindow', 'software'},
+        'intlists': {},
+        'floatlists': {},
+        'charlists': {}}
+_schema_env = {'format': 'mzML', 'version_info': version_info,
+        'default_version': '1.1.0', 'defaults': _schema_defaults}
+_schema_info = aux._make_schema_info(_schema_env)
+
+_getinfo_env = {'keys': {'binaryDataArrayList'}, 'schema_info': _schema_info,
+        'get_info_smart': _get_info_smart}
+_get_info = aux._make_get_info(_getinfo_env)
+
+_itertag_env = {'get_info_smart': _get_info_smart}
+_itertag = aux._make_itertag(_itertag_env)
