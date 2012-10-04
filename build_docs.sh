@@ -1,5 +1,5 @@
 cd doc
-make html
+make clean html
 cd build/html
 zip -r ../../../docs.zip *
 cd ../../../
