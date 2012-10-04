@@ -27,7 +27,9 @@ Contents:
    properties
    data
    api
+   tutorials
    changelog
+
 
 Indices and tables
 ==================
