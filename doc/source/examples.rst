@@ -9,4 +9,4 @@ Contents:
 .. toctree::
     :maxdepth: 1
 
-    examples/example1
+    examples/example_fasta

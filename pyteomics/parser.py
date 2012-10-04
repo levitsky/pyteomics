@@ -45,7 +45,7 @@ Operations on polypeptide sequences
 Auxiliary commands
 ------------------
 
-  :py:func:`peptide_length` - calculate the number of amino acid
+  :py:func:`length` - calculate the number of amino acid
   residues in a polypeptide.
 
   :py:func:`is_modX` - check if supplied code corresponds to a modX label.
@@ -133,7 +133,7 @@ def is_modX(label):
     return label and ((len(label) == 1 and label[0].isupper()) or
             (label[:-1].islower() and label[-1].isupper()))
 
-def peptide_length(sequence, **kwargs):
+def length(sequence, **kwargs):
     """Calculate the number of amino acid residues in a polypeptide
     written in modX notation.
 
@@ -149,9 +149,9 @@ def peptide_length(sequence, **kwargs):
 
     Examples
     --------
-    >>> peptide_length('PEPTIDE')
+    >>> length('PEPTIDE')
     7
-    >>> peptide_length('H-PEPTIDE-OH')
+    >>> length('H-PEPTIDE-OH')
     7
     """    
     labels = kwargs.get('labels', std_labels)
@@ -580,7 +580,6 @@ def isoforms(sequence, **kwargs):
     variable_mods = kwargs.get('variable_mods', {})
     fixed_mods = kwargs.get('fixed_mods', {})
     labels = kwargs.get('labels', std_labels)
-    length = peptide_length(sequence, labels=labels)
     parsed = parse(sequence, True, True,
             labels=labels+list(fixed_mods.keys()))
     override = kwargs.get('override', False)
