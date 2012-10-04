@@ -267,7 +267,7 @@ References
 import operator
 import numpy
 from .auxiliary import linear_regression, PyteomicsError
-from .parser import std_labels, peptide_length, amino_acid_composition, std_nterm, std_cterm
+from .parser import std_labels, length, amino_acid_composition, std_nterm, std_cterm
 
 def get_RCs(sequences, RTs, lcp = -0.21,
             term_aa = False, **kwargs):
@@ -333,7 +333,7 @@ def get_RCs(sequences, RTs, lcp = -0.21,
     # regression. 
     composition_array = [
         [peptide_dicts[i].get(aa, 0.0) 
-         * (1.0 + lcp * numpy.log(peptide_length(peptide_dicts[i])))
+         * (1.0 + lcp * numpy.log(length(peptide_dicts[i])))
            for aa in detected_amino_acids]
         + [1.0] # Add free term to each peptide.
         for i in range(len(sequences))]
@@ -535,7 +535,7 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
             RT += peptide_dict[aa] * RC_dict['aa'][aa]
 
     length_correction_term = (
-        1.0 + RC_dict['lcp'] * numpy.log(peptide_length(peptide_dict)))
+        1.0 + RC_dict['lcp'] * numpy.log(length(peptide_dict)))
     RT *= length_correction_term
 
     RT += RC_dict['const']

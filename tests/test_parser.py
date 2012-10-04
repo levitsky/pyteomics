@@ -84,7 +84,7 @@ class ParserTest(unittest.TestCase):
             if pp[-1] == 'C': N += 1
             for p in modseqs:
                 self.assertEqual(len(pp),
-                        peptide_length(p, labels=self.extlabels))
+                        length(p, labels=self.extlabels))
             self.assertEqual(forms, (3**pp.count('A')) *
                     (2**(pp.count('X')+pp.count('C'))) * 2**N)
 
