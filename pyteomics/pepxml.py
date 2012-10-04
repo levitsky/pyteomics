@@ -29,6 +29,8 @@ Data access
 
   :py:func:`version_info` - get version information about the pepXML file.
 
+  :py:func:`iterfind` - iterate over elements in a pepXML file.
+
 -------------------------------------------------------------------------------
 """
 
@@ -127,7 +129,7 @@ def read(source):
        An iterator over the dicts with PSM properties.
     """
 
-    return _itertag(source, 'spectrum_query')
+    return iterfind(source, 'spectrum_query')
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.
@@ -321,5 +323,5 @@ _getinfo_env = {'keys': {'search_score_summary', 'modification_info'}, 'schema_i
         'get_info_smart': _get_info_smart}
 _get_info = aux._make_get_info(_getinfo_env)
 
-_itertag_env = {'get_info_smart': _get_info_smart}
-_itertag = aux._make_itertag(_itertag_env)
+_iterfind_env = {'get_info_smart': _get_info_smart}
+iterfind = aux._make_iterfind(_iterfind_env)

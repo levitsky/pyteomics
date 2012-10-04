@@ -25,6 +25,8 @@ Data access
 
   :py:func:`version_info` - get version information about the mzML file
 
+  :py:func:`iterfind` - iterate over elements in the mzML file.
+
 -------------------------------------------------------------------------------
 
 """
@@ -86,7 +88,7 @@ def read(source):
        An iterator over the dicts with spectra properties.
     """
     
-    return _itertag(source, 'spectrum')
+    return iterfind(source, 'spectrum')
 
 def _get_info_smart(source, element, **kw):
     name = aux._local_name(element)
@@ -182,5 +184,5 @@ _getinfo_env = {'keys': {'binaryDataArrayList'}, 'schema_info': _schema_info,
         'get_info_smart': _get_info_smart}
 _get_info = aux._make_get_info(_getinfo_env)
 
-_itertag_env = {'get_info_smart': _get_info_smart}
-_itertag = aux._make_itertag(_itertag_env)
+_iterfind_env = {'get_info_smart': _get_info_smart}
+iterfind = aux._make_iterfind(_iterfind_env)

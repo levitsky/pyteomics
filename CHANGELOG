@@ -1,3 +1,8 @@
+2.0.2
+-----
+
+Added new method **iterfind** in **mzid**, **pepxml** and **mzml**.
+
 2.0.1
 -----
 

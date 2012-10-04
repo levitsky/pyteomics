@@ -2,3 +2,4 @@
    :members:
 
    .. autofunction:: version_info
+   .. autofunction:: iterfind
