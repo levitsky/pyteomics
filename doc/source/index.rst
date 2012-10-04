@@ -28,7 +28,9 @@ Contents:
    data
    examples
    api
+   tutorials
    changelog
+
 
 Indices and tables
 ==================

@@ -24,10 +24,7 @@ Data access
   :py:func:`read` - iterate through peptide-spectrum matches in a pep.XML 
   file. Data for a single spectrum are converted to an easy-to-use dict. 
 
-  :py:func:`get_node` - get arbitrary nodes of pepXML file by their xpath.
-
-  :py:func:`roc_curve` - get a receiver-operator curve (min peptideprophet
-  probability is a sample vs. false discovery rate) of peptideprophet analysis.
+  :py:func:`version_info` - get version information about the pepXML file.
 
 -------------------------------------------------------------------------------
 """
