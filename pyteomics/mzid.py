@@ -27,6 +27,8 @@ Data access
 
   :py:func:`version_info` - get information about mzIdentML version and schema.
 
+  :py:func:`iterfind` - iterate over elements in an mzIdentML file.
+
 -------------------------------------------------------------------------------
 """
 
@@ -148,8 +150,8 @@ _get_info_env = {'keys':  {'Fragmentation',}, 'schema_info': _schema_info,
         'get_info_smart': _get_info_smart, 'get_by_id': get_by_id}
 _get_info = aux._make_get_info(_get_info_env)
 
-_itertag_env = {'get_info_smart': _get_info_smart}
-_itertag = aux._make_itertag(_itertag_env)
+_iterfind_env = {'get_info_smart': _get_info_smart}
+iterfind = aux._make_iterfind(_iterfind_env)
 
 def read(source, **kwargs):
     """Parse ``source`` and iterate through peptide-spectrum matches.
@@ -172,4 +174,4 @@ def read(source, **kwargs):
        An iterator over the dicts with PSM properties.
     """
     
-    return _itertag(source, 'SpectrumIdentificationResult', **kwargs)
+    return iterfind(source, 'SpectrumIdentificationResult', **kwargs)

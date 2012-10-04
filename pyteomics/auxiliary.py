@@ -298,22 +298,51 @@ def _make_get_info(env):
         return info
     return _get_info
 
-def _make_itertag(env):
+def _make_iterfind(env):
     @_keepstate
-    def _itertag(source, localname, **kwargs):
-        """Parse ``source`` and yield info on elements with specified local name.
-        Case-insensitive. Namespace-aware."""
+    def iterfind(source, path, **kwargs):
+        """Parse ``source`` and yield info on elements with specified local name
+        or by specified "XPath". Only local names separated with slashes are
+        accepted. The path can be absolute or "free". Please don't specify
+        namespaces. Letter case is ignored."""
+        def get_rel_path(element, names):
+            if not names:
+                yield element
+            else:
+                for child in element.iterchildren():
+                    if _local_name(child).lower() == names[0].lower():
+                        if len(names) == 1:
+                            yield child
+                        else:
+                            for gchild in get_rel_path(child, names[1:]):
+                                yield gchild
+
+        if path.startswith('//') or not path.startswith('/'):
+            absolute = False
+            if path.startswith('//'):
+                path = path[2:]
+                if path.startswith('/') or '//' in path:
+                    raise ValueError("Too many /'s in a row.")
+        else:
+            absolute = True
+            path = path[1:]
+        nodes = path.rstrip('/').lower().split('/')
+        localname = nodes[0]
         found = False
         for ev, elem in etree.iterparse(source, events=('start', 'end'),
                 remove_comments=True):
+            name_lc = _local_name(elem).lower()
             if ev == 'start':
-                if _local_name(elem).lower() == localname.lower():
+                if name_lc == localname:
                     found = True
             else:
-                if _local_name(elem).lower() == localname.lower():
-                    yield env['get_info_smart'](source, elem, **kwargs)
+                if name_lc == localname:
+                    if (absolute and elem.getparent() is None
+                            ) or not absolute:
+                        for child in get_rel_path(elem, nodes[1:]):
+                            yield env['get_info_smart'](source, child, **kwargs)
                     found = False
-                    if not found:
-                        elem.clear()
-    return _itertag
+                if not found:
+                    elem.clear()
+    return iterfind
 
