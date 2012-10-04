@@ -1,3 +1,11 @@
+2.0.1
+-----
+
+API changes
+...........
+
+  - **parser.peptide_length** is renamed to **length**.
+
 2.0.0
 -----
 
@@ -12,9 +20,8 @@ API changes
   as **mzid**, are now called **read**.
 
   - in **parser**, **parse_sequence** renamed to **parse**. It now accepts
-  an optional parameter `allow_unknown_modifications`. **peptide_length** is
-  renamed to **length**.
-  
+  an optional parameter `allow_unknown_modifications`.   
+
   - **mgf.write_mgf** and **fasta.write_fasta** renamed to **write**.
 
   - the output format of all **read** functions has changed.
