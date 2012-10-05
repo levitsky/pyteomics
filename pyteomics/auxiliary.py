@@ -35,6 +35,8 @@ from functools import wraps
 from lxml import etree
 from warnings import warn
 from traceback import format_exc
+import re
+import operator
 try: # Python 2.7
     from urllib2 import urlopen
 except ImportError: # Python 3.x
@@ -299,24 +301,44 @@ def _make_get_info(env):
     return _get_info
 
 def _make_iterfind(env):
+    pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}\w+)\])?')
+    pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*(\w+)$')
+    def get_rel_path(element, names):
+        if not names:
+            yield element
+        else:
+            for child in element.iterchildren():
+                if _local_name(child).lower() == names[0].lower(
+                        ) or names[0] == '*':
+                    if len(names) == 1:
+                        yield child
+                    else:
+                        for gchild in get_rel_path(child, names[1:]):
+                            yield gchild
+    def satisfied(d, cond):
+        func = {'<': 'lt', '<=': 'le', '=': 'eq', '==': 'eq',
+                '!=': 'ne', '<>': 'ne', '>': 'gt', '>=': 'ge'}
+        try:
+            lhs, sign, rhs = re.match(pattern_cond, cond).groups()
+            return getattr(operator, func[sign])(d[lhs], type(d[lhs])(rhs))
+        except (AttributeError, KeyError, ValueError):
+            raise PyteomicsError('Invalid condition: ' + cond)
+
     @_keepstate
     def iterfind(source, path, **kwargs):
         """Parse ``source`` and yield info on elements with specified local name
         or by specified "XPath". Only local names separated with slashes are
-        accepted. The path can be absolute or "free". Please don't specify
-        namespaces. Letter case is ignored."""
-        def get_rel_path(element, names):
-            if not names:
-                yield element
-            else:
-                for child in element.iterchildren():
-                    if _local_name(child).lower() == names[0].lower(
-                            ) or names[0] == '*':
-                        if len(names) == 1:
-                            yield child
-                        else:
-                            for gchild in get_rel_path(child, names[1:]):
-                                yield gchild
+        accepted. An asterisk (`*`) means any element.
+        You can specify a single condition in the end, such as:
+        "/path/to/element[some_value>1.5]"
+        Note: you can do much more powerful filtering using plain Python.
+        The path can be absolute or "free". Please don't specify
+        namespaces."""
+
+        try:
+            path, _, cond = re.match(pattern_path, path).groups()
+        except AttributeError:
+            raise PyteomicsError('Invalid path: ' + path)
 
         if path.startswith('//') or not path.startswith('/'):
             absolute = False
@@ -341,7 +363,9 @@ def _make_iterfind(env):
                     if (absolute and elem.getparent() is None
                             ) or not absolute:
                         for child in get_rel_path(elem, nodes[1:]):
-                            yield env['get_info_smart'](source, child, **kwargs)
+                            info = env['get_info_smart'](source, child, **kwargs)
+                            if cond is None or satisfied(info, cond):
+                                yield info
                     if not localname == '*':
                         found = False
                 if not found:
