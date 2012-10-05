@@ -1,3 +1,8 @@
+Required Python versions
+------------------------
+
+Pyteomics supports Python 2.7 and Python 3. Python 2.6 and older are not supported.
+
 Project dependencies
 --------------------
 
