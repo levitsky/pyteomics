@@ -310,7 +310,8 @@ def _make_iterfind(env):
                 yield element
             else:
                 for child in element.iterchildren():
-                    if _local_name(child).lower() == names[0].lower():
+                    if _local_name(child).lower() == names[0].lower(
+                            ) or names[0] == '*':
                         if len(names) == 1:
                             yield child
                         else:
@@ -333,15 +334,16 @@ def _make_iterfind(env):
                 remove_comments=True):
             name_lc = _local_name(elem).lower()
             if ev == 'start':
-                if name_lc == localname:
+                if name_lc == localname or localname == '*':
                     found = True
             else:
-                if name_lc == localname:
+                if name_lc == localname or localname == '*':
                     if (absolute and elem.getparent() is None
                             ) or not absolute:
                         for child in get_rel_path(elem, nodes[1:]):
                             yield env['get_info_smart'](source, child, **kwargs)
-                    found = False
+                    if not localname == '*':
+                        found = False
                 if not found:
                     elem.clear()
     return iterfind
