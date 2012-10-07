@@ -372,3 +372,9 @@ def _make_iterfind(env):
                     elem.clear()
     return iterfind
 
+def _xpath(tree, path):
+    """Return the results of XPath query with added namespaces.
+    Assumes the ns declaration is on the root element or absent."""
+    ns = tree.getroot().nsmap.get(None)
+    return tree.xpath(re.sub('(?<!\/)\/', '/d:' if ns else '/', path),
+            namespaces=({'d': ns} if ns else None))

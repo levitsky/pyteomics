@@ -73,9 +73,16 @@ Data
 
 import math
 from . import parser
-from .auxiliary import PyteomicsError
+from .auxiliary import PyteomicsError, _xpath
 from itertools import chain
 from collections import defaultdict
+try:
+    from urllib import urlopen
+except ImportError:
+    from urllib.request import urlopen
+from lxml import etree
+from datetime import datetime
+import re
 
 nist_mass = {
     'H': {1: (1.0078250320710, 0.99988570),
@@ -173,6 +180,12 @@ class Composition(defaultdict):
             result[elem] -= cnt
         return result
 
+    def __mul__(self, other):
+        if not isinstance(other, int):
+            raise PyteomicsError('Cannot multiply Composition by non-integer',
+                    other)
+        return Composition(dict((k, v*other) for k, v in self.items()))
+
     def copy(self):
         return Composition(self)
     
@@ -235,7 +248,7 @@ class Composition(defaultdict):
                 continue
             
             else:
-                # If the number of atoms is omitted than it is 1.
+                # If the number of atoms is omitted then it is 1.
                 if i+1 == prev_chem_symbol_start:
                     num_atoms = 1
                 else:
@@ -245,7 +258,7 @@ class Composition(defaultdict):
                         raise PyteomicsError(
                             'Badly-formed number of atoms: %s' % formula)
 
-                # Read isotope number if specified else it is undefined (=0).
+                # Read isotope number if specified, else it is undefined (=0).
                 if formula[i] == ']':
                     bra_pos = formula.rfind('[', 0, i)
                     if bra_pos == -1:
@@ -262,7 +275,9 @@ class Composition(defaultdict):
 
                 # Match the element name to the mass_data.
                 element_found = False
-                for element_name in mass_data:
+                # Sort the keys from longest to shortest to resolve overlapping
+                # keys issue
+                for element_name in sorted(mass_data, key=len, reverse=True):
                     if formula.endswith(element_name, 0, i+1):
                         isotope_string = _make_isotope_string(
                             element_name, isotope_num)
@@ -750,4 +765,80 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         mass = (mass + mass_data['H+'][0][0] * charge) / charge
 
     return mass
- 
+
+class Unimod():
+    """A class for Unimod database of modifications."""
+    def __init__(self, url='http://www.unimod.org/xml/unimod_tables.xml'):
+        """Create a database and fill it from XML file retrieved from `url`.
+
+        Parameters:
+        -----------
+
+        url : str, optional
+            A URL to read from. Don't forget the 'file://' prefix when pointing
+            to local files.
+        """
+        def process_mod(d):
+            new_d = {}
+            for key in ('avge_mass', 'mono_mass'):
+                new_d[key] = float(d.pop(key))
+            for key in ('date_time_modified', 'date_time_posted'):
+                new_d[key] = datetime.strptime(d.pop(key),
+                        '%Y-%m-%d %H:%M:%S')
+            comp = Composition()
+            for part in d.pop('composition').split():
+                brick, _, n = re.match('^(\w+)(\((-?\d+)\))?$', part).groups()
+                if n: num = int(n)
+                else: num = 1
+                comp += self._brickdata[brick] * num
+            new_d['composition'] = comp
+            new_d['record_id'] = int(d.pop('record_id'))
+            new_d['approved'] = (d.pop('approved') == '1')
+            new_d.update(d)
+            return new_d
+
+        self._tree = etree.parse(urlopen(url))
+        self._massdata = self._mass_data()
+        self._brickdata = self._brick_data()
+        self._mods = []
+        for mod in self._xpath('/unimod/modifications/modifications_row'):
+            self._mods.append(process_mod(mod.attrib))
+
+    def _xpath(self, path):
+        return _xpath(self._tree, path)
+
+    def _brick_data(self):
+        def isotope_str(label):
+            i, label = re.match('^(\d*)(\w+)$', label).groups()
+            if i: num = int(i)
+            else: num = 0
+            return _make_isotope_string(label, num)
+        return {br.attrib['brick']:
+            Composition({isotope_str(x.attrib['element']): int(x.attrib['num_element'])
+                for x in self._xpath(
+                    '/unimod/brick2element/brick2element_row[@brick_key={}]'
+                    ''.format(br.attrib['record_id']))})
+                for br in self._xpath('/unimod/bricks/bricks_row')}
+        
+    def _mass_data(self):
+        massdata = defaultdict(dict)
+        elements = {x.attrib['element']: float(x.attrib['mono_mass'])
+                for x in self._xpath('/unimod/elements/elements_row')}
+        for elem, mass in elements.items():
+            i, label = re.match('^(\d*)(\D+)$', elem).groups()
+            if not i:
+                iso = 0
+            else:
+                iso = int(i)
+            massdata[label][iso] = (mass, float(iso == 0))
+        return massdata
+    
+    @property
+    def mods(self):
+        """Get the list of Unimod modifications."""
+        return self._mods
+
+    @property
+    def mass_data(self):
+        """Get element mass data extracted from the database"""
+        return self._massdata
