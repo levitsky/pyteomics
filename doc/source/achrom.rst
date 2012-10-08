@@ -97,11 +97,11 @@ or you can disable length correction completely by setting lcp=0:
     
 Another considerable improvement over the standard additive model is to treat
 terminal amino acid residues as separate chemical entities. This behavior
-is disabled by default, but can be enabled by setting term_add=True:
+is disabled by default, but can be enabled by setting `term_aa=True`:
 
 .. code-block:: python
 
-    >>> RCs = achrom.get_RCs(sequences, RTs, term_aa = True) 
+    >>> RCs = achrom.get_RCs(sequences, RTs, term_aa=True) 
 
 This correction is implemented by addition of the 'nterm' and 'cterm' prefixes
 to the labels of terminal amino acid residues of the training peptides. In order 
