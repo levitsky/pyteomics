@@ -285,12 +285,13 @@ def get_RCs(sequences, RTs, lcp = -0.21,
         A multiplier before ln(L) term in the equation for the retention
         time of a peptide. Set to -0.21 by default.
     term_aa : bool, optional
-        If True, terminal amino acids are treated as being
-        modified with 'ntermX'/'ctermX' modifications. False by default.
+        If :py:const:`True`, terminal amino acids are treated as being
+        modified with 'ntermX'/'ctermX' modifications. :py:const:`False`
+        by default.
     labels : list of str, optional
         List of all possible amino acids and terminal groups
-        (default: 20 standard amino acids, N-terminal NH2- and
-        C-terminal -OH);
+        (default: 20 standard amino acids, N-terminal 'NH2-' and
+        C-terminal '-OH');
 
     Returns
     -------
