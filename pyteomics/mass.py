@@ -83,6 +83,7 @@ except ImportError:
 from lxml import etree
 from datetime import datetime
 import re
+import operator
 
 nist_mass = {
     'H': {1: (1.0078250320710, 0.99988570),
@@ -773,7 +774,11 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
     return mass
 
 class Unimod():
-    """A class for Unimod database of modifications."""
+    """A class for Unimod database of modifications.
+    The list of all modifications can be retrieved via `mods` attribute.
+    Methods for convenient searching are `by_title` and `by_name`.
+    For more elaborate filtering, iterate manually over the list."""
+
     def __init__(self, url='http://www.unimod.org/xml/unimod.xml'):
         """Create a database and fill it from XML file retrieved from `url`.
 
@@ -887,3 +892,53 @@ class Unimod():
     def mass_data(self):
         """Get element mass data extracted from the database"""
         return self._massdata
+
+    def by_title(self, title, strict=True):
+        """Search modifications by title. If a single modification is found,
+        it is returned. Otherwise, a list will be returned.
+
+        Parameters:
+        -----------
+        title : str
+            The modification title.
+        strict : bool, optional
+            If :py:const:`False`, the search will return all modifications
+            whose title **contains** `title`, otherwise equality is required.
+            :py:const:`True` by default.
+
+        Returns:
+        --------
+        out : dict or list
+            A single modification or a list of modifications.
+        """
+        f = {True: operator.eq, False: operator.contains}
+        func = f[strict]
+        result = [m for m in self._mods if func(m['title'], title)]
+        if len(result) == 1:
+            return result[0]
+        return result
+
+    def by_name(self, name, strict=True):
+        """Search modifications by name. If a single modification is found,
+        it is returned. Otherwise, a list will be returned.
+
+        Parameters:
+        -----------
+        name : str
+            The full name of the modification(s).
+        strict : bool, optional
+            If :py:const:`False`, the search will return all modifications
+            whose full name **contains** `title`, otherwise equality is
+            required. :py:const:`True` by default.
+
+        Returns:
+        --------
+        out : dict or list
+            A single modification or a list of modifications.
+        """
+        f = {True: operator.eq, False: operator.contains}
+        func = f[strict]
+        result = [m for m in self._mods if func(m['full_name'], name)]
+        if len(result) == 1:
+            return result[0]
+        return result
