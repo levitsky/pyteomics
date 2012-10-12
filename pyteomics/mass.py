@@ -168,6 +168,12 @@ class Composition(defaultdict):
     adding and subtraction.
     """
         
+    def __str__(self):
+        return 'Composition({})'.format(dict.__repr__(self))
+
+    def __repr__(self):
+        return str(self)
+
     def __add__(self, other):
         result = self.copy()
         for elem, cnt in other.items():
@@ -768,7 +774,7 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
 
 class Unimod():
     """A class for Unimod database of modifications."""
-    def __init__(self, url='http://www.unimod.org/xml/unimod_tables.xml'):
+    def __init__(self, url='http://www.unimod.org/xml/unimod.xml'):
         """Create a database and fill it from XML file retrieved from `url`.
 
         Parameters:
@@ -778,64 +784,81 @@ class Unimod():
             A URL to read from. Don't forget the 'file://' prefix when pointing
             to local files.
         """
-        def process_mod(d):
+        def process_mod(mod):
+            d = mod.attrib
             new_d = {}
-            for key in ('avge_mass', 'mono_mass'):
-                new_d[key] = float(d.pop(key))
             for key in ('date_time_modified', 'date_time_posted'):
                 new_d[key] = datetime.strptime(d.pop(key),
-                        '%Y-%m-%d %H:%M:%S')
+                    '%Y-%m-%d %H:%M:%S')
             comp = Composition()
-            for part in d.pop('composition').split():
-                brick, _, n = re.match('^(\w+)(\((-?\d+)\))?$', part).groups()
-                if n: num = int(n)
-                else: num = 1
-                comp += self._brickdata[brick] * num
+            for delta in self._xpath('delta', mod): # executed 1 time
+                for key in ('avge_mass', 'mono_mass'):
+                    new_d[key] = float(delta.attrib.pop(key))
+                for elem in self._xpath('element', delta):
+                    e_d = elem.attrib
+                    amount = int(e_d.pop('number'))
+                    label = e_d.pop('symbol')
+                    isotope, symbol = re.match('^(\d*)(\D+)$', label).groups()
+                    if not isotope: isotope = 0
+                    else: isotope = int(isotope)
+                    comp += Composition(
+                            formula = _make_isotope_string(symbol, isotope),
+                            mass_data = self._massdata) * amount
             new_d['composition'] = comp
             new_d['record_id'] = int(d.pop('record_id'))
             new_d['approved'] = (d.pop('approved') == '1')
             new_d.update(d)
+            spec = []
+            for sp in self._xpath('specificity', mod):
+                sp_d = sp.attrib
+                sp_new_d = {}
+                sp_new_d['hidden'] = (sp_d.pop('hidden') == '1')
+                sp_new_d['spec_group'] = int(sp_d.pop('spec_group'))
+                sp_new_d.update(sp_d)
+                spec.append(sp_new_d)
+            new_d['specificity'] = spec
+
             return new_d
 
         self._tree = etree.parse(urlopen(url))
         self._massdata = self._mass_data()
-        self._brickdata = self._brick_data()
         self._mods = []
-        for mod in self._xpath('/unimod/modifications/modifications_row'):
-            self._mods.append(process_mod(mod.attrib))
+        for mod in self._xpath('/unimod/modifications/mod'):
+            self._mods.append(process_mod(mod))
 
-    def _xpath(self, path):
-        return _xpath(self._tree, path)
+    def _xpath(self, path, element=None):
+        if element is None:
+            return _xpath(self._tree, path, 'umod')
+        return _xpath(element, path, 'umod')
 
-    def _brick_data(self):
-        def isotope_str(label):
-            i, label = re.match('^(\d*)(\w+)$', label).groups()
-            if i: num = int(i)
-            else: num = 0
-            return _make_isotope_string(label, num)
-        return {br.attrib['brick']:
-            Composition({isotope_str(x.attrib['element']): int(x.attrib['num_element'])
-                for x in self._xpath(
-                    '/unimod/brick2element/brick2element_row[@brick_key={}]'
-                    ''.format(br.attrib['record_id']))})
-                for br in self._xpath('/unimod/bricks/bricks_row')}
-        
     def _mass_data(self):
         massdata = defaultdict(dict)
-        elements = {x.attrib['element']: float(x.attrib['mono_mass'])
-                for x in self._xpath('/unimod/elements/elements_row')}
-        for elem, mass in elements.items():
-            i, label = re.match('^(\d*)(\D+)$', elem).groups()
+        elements = [x.attrib for x in self._xpath('/unimod/elements/elem')]
+        avg = {}
+        for elem in elements:
+            i, label = re.match('^(\d*)(\D+)$', elem['title']).groups()
             if not i:
                 iso = 0
             else:
                 iso = int(i)
-            massdata[label][iso] = (mass, float(iso == 0))
+            massdata[label][iso] = (float(elem['mono_mass']), float(iso == 0))
+            if not iso:
+                avg[label] = float(elem['avge_mass'])
+        for elem, isotopes in massdata.items():
+            isotopes[int(round(isotopes[0][0]))] = isotopes[0]
+            if len(isotopes) == 3:
+                m1, m2 = (x[1][0] for x in sorted(isotopes.items())[1:])
+                m_avg = avg[elem]
+                a = (m2 - m_avg) / (m2 - m1)
+                b = (m_avg - m1) / (m2 - m1)
+                for state, abundance in zip(sorted(isotopes)[1:], (a, b)):
+                    isotopes[state] = (isotopes[state][0], abundance)
+
         return massdata
-    
+
     @property
     def mods(self):
-        """Get the list of Unimod modifications."""
+        """Get the list of Unimod modifications"""
         return self._mods
 
     @property
