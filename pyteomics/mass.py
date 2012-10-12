@@ -73,7 +73,7 @@ Data
 
 import math
 from . import parser
-from .auxiliary import PyteomicsError, _xpath
+from .auxiliary import PyteomicsError, _xpath, _local_name
 from itertools import chain
 from collections import defaultdict
 try:
@@ -805,9 +805,11 @@ class Unimod():
                             formula = _make_isotope_string(symbol, isotope),
                             mass_data = self._massdata) * amount
             new_d['composition'] = comp
+            
             new_d['record_id'] = int(d.pop('record_id'))
             new_d['approved'] = (d.pop('approved') == '1')
             new_d.update(d)
+            
             spec = []
             for sp in self._xpath('specificity', mod):
                 sp_d = sp.attrib
@@ -815,9 +817,30 @@ class Unimod():
                 sp_new_d['hidden'] = (sp_d.pop('hidden') == '1')
                 sp_new_d['spec_group'] = int(sp_d.pop('spec_group'))
                 sp_new_d.update(sp_d)
+                notes = []
+                for note in self._xpath('*', sp):
+                    if note.text:
+                        notes.append(note.text)
+                if notes:
+                    sp_new_d['note'] = '\n'.join(notes)
                 spec.append(sp_new_d)
             new_d['specificity'] = spec
+            
+            alt_names = []
+            for alt_name in self._xpath('alt_name', mod):
+                alt_names.append(alt_name.text)
+            new_d['alt_names'] = alt_names
 
+            refs = []
+            for ref in self._xpath('xref', mod):
+                ref_d = {}
+                for sub in ref.iterchildren():
+                    ref_d[_local_name(sub)] = sub.text
+                for key in ('text', 'source', 'url'):
+                    if key not in ref_d:
+                        ref_d[key] = None
+                refs.append(ref_d)
+            new_d['refs'] = refs
             return new_d
 
         self._tree = etree.parse(urlopen(url))
@@ -853,7 +876,6 @@ class Unimod():
                 b = (m_avg - m1) / (m2 - m1)
                 for state, abundance in zip(sorted(isotopes)[1:], (a, b)):
                     isotopes[state] = (isotopes[state][0], abundance)
-
         return massdata
 
     @property
