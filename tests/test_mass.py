@@ -208,5 +208,11 @@ class MassTest(unittest.TestCase):
                 (self.mass_data['A'][1][1]
                  * self.mass_data['F'][6][1] ) ** peplen)
 
+    def test_Unimod(self):
+        db = mass.Unimod()
+        self.assertGreater(0.00001,
+                max(abs(x['mono_mass'] - mass.calculate_mass(x['composition'],
+                    mass_data=db.mass_data)) for x in db.mods))
+
 if __name__ == '__main__':
     unittest.main()
