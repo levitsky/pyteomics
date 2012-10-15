@@ -18,6 +18,9 @@ Classes
   :py:func:`Composition <Composition.__init__>` - a class storing chemical
   composition of a substance.
 
+  :py:class:`Unimod` - a class representing a Python interface to the
+  `Unimod database <http://unimod.org/>`_.
+
 Mass calculations
 -----------------
 
@@ -824,8 +827,8 @@ class Unimod():
                 sp_new_d.update(sp_d)
                 notes = []
                 for note in self._xpath('*', sp):
-                    if note.text:
-                        notes.append(note.text)
+                    if note.text and note.text.strip():
+                        notes.append(note.text.strip())
                 if notes:
                     sp_new_d['note'] = '\n'.join(notes)
                 spec.append(sp_new_d)
@@ -834,7 +837,8 @@ class Unimod():
             alt_names = []
             for alt_name in self._xpath('alt_name', mod):
                 alt_names.append(alt_name.text)
-            new_d['alt_names'] = alt_names
+            if alt_names:
+                new_d['alt_names'] = alt_names
 
             refs = []
             for ref in self._xpath('xref', mod):

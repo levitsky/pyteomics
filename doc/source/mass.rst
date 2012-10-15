@@ -114,6 +114,16 @@ modification on a specific residue:
 `Unimod database <http://www.unimod.org>`_ is an 
 excellent resource for the information on the chemical compositions of 
 known protein modifications.
+Version 2.0.3 introduces :py:class:`pyteomics.mass.Unimod` class that can serve as Python
+interface to Unimod:
+
+.. code-block:: python
+
+    >>> db = mass.Unimod()
+    >>> aa_comp = dict(mass.std_aa_comp)
+    >>> aa_comp['p'] = db.by_title('Phospho')['composition']
+    >>> mass.calculate_mass('PEpTIDE', aa_comp=aa_comp)
+    782.2735307010443
 
 Chemical compositions
 ---------------------
@@ -124,7 +134,7 @@ In :py:mod:`pyteomics.mass` there are two ways to approach these problems.
 
 * There is a :py:class:`pyteomics.mass.Composition` class intended to store chemical formulas.
   :py:class:`pyteomics.mass.Composition` objects are dicts that can be added or subtracted
-  from one another.
+  from one another or multiplied by integers.
 
   .. code-block:: python
 
