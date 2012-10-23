@@ -91,7 +91,7 @@ def linear_regression(x, y, a=None, b=None):
         a, b = numpy.polyfit(x, y, 1)
 
     r = numpy.corrcoef(x, y)[0, 1]
-    stderr = (y - a * x - b).mean()
+    stderr = (y - a * x - b).std()
 
     return (a, b, r, stderr)
 
