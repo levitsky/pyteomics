@@ -105,6 +105,10 @@ def scatter_trend(x, y, **kwargs):
 def plot_function_3d(x, y, function, **kwargs):
     """Plot values of a function of two variables in 3D.
 
+    More on 3D plotting in pylab:
+
+    http://www.scipy.org/Cookbook/Matplotlib/mplot3D
+
     Parameters
     ----------
     x, y : array_like of float
@@ -121,12 +125,6 @@ def plot_function_3d(x, y, function, **kwargs):
         The axes labels. Empty by default.
     title : str, optional
         The title. Empty by default.
-
-    See also
-    --------
-    More on 3D plotting in pylab:
-
-    http://www.scipy.org/Cookbook/Matplotlib/mplot3D
 
     """
     import mpl_toolkits.mplot3d.axes3d as pylab3d
