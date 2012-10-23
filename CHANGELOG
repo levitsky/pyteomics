@@ -1,7 +1,14 @@
 2.0.3
 -----
 
-Added new class **Unimod** in **mass**.
+Added new class **Unimod** in **mass**. The interface is experimental and may
+change.
+
+Improved **iterfind** function in XML-reading modules.
+
+**mass.Composition** objects now support multiplication by int.
+
+Bugfix in **auxiliary.linear_regression**.
 
 2.0.2
 -----
