@@ -129,12 +129,12 @@ def write(entries, output=None, close=True):
         `output` must be file-like or str or None, not %s (%s)""" % (
             type(output), output))
     
-    for protein in entries:
+    for descr, seq in entries:
         # write the description
-        output_file.write('>' + protein[0].replace('\n', '\n;') + '\n')
+        output_file.write('>' + descr.replace('\n', '\n;') + '\n')
         # write the sequence; it should be interrupted with \n every 70 characters
-        output_file.write(''.join([('%s\n' % protein[1][i:i+70])
-            for i in range(0, len(protein[1]), 70)]) + '\n')
+        output_file.write(''.join([('%s\n' % seq[i:i+70])
+            for i in range(0, len(seq), 70)]) + '\n')
 
     if close and output: output_file.close()
     return output_file
@@ -224,9 +224,9 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
     # return to the beginning of the source file to read again
     source_file.seek(0)
 
-    decoy_entries = ((prefix + protein[0],
-        decoy_sequence(protein[1], mode))
-        for protein in read(source_file, False))
+    decoy_entries = ((prefix + descr,
+        decoy_sequence(seq, mode))
+        for descr, seq in read(source_file, False))
 
     write(decoy_entries, output_file, close=(close if output else False))
     return output_file
