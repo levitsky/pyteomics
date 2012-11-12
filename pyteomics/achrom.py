@@ -257,9 +257,9 @@ References
    Rapid communications in mass spectrometry, 2010, 24(4), 454-62.
 
 .. [#Gilar] Gilar, M., & Jaworski, A. (2011). `Retention behavior of peptides in
-    hydrophilic-interaction chromatography. 
+    hydrophilic-interaction chromatography.
     <http://dx.doi.org/10.1016/j.chroma.2011.04.005>`_
-    Journal of chromatography A, 1218(49), 8890–6.   
+    Journal of chromatography A, 1218(49), 8890-6.
 """
 
 #   Copyright 2012 Anton Goloborodko, Lev Levitsky
@@ -938,7 +938,7 @@ RCs_gilar_ph3_0 = {'aa': {'K': 15.90,
 """A set of retention coefficients for normal phase chromatography obtained in
 Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
 hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
-8890–6.
+8890-6.
 
 Conditions: Atlantis HILIC silica column, (150 x 2.1 mm I.D.), 3 um, 100 A,
 gradient (A = water, B = ACN, C = 200 mM ammonium formate):
