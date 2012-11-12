@@ -99,6 +99,13 @@ Data
   0.5% AA in water; B = 0.5% AA in ACN-water (90:10)) at
   0.5% water/min, flow rate 200.0 nl/min, room temperature.
 
+  :py:data:`RCs_gilar_ph3_0` - a set of retention coefficients obtained in
+  [#Gilar]_.
+  Conditions: Atlantis HILIC silica column, (150 x 2.1 mm I.D.), 3 um, 100 A,
+  gradient (A = water, B = ACN, C = 200 mM ammonium formate):
+  0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
+  at 0.2 ml/min, temperature 40 C, pH 3.0
+
 Theory
 ------
 
@@ -248,6 +255,11 @@ References
    `Empirical approach to false discovery rate 
    estimation in shotgun proteomics. <http://dx.doi.org/10.1002/rcm.4417>`_
    Rapid communications in mass spectrometry, 2010, 24(4), 454-62.
+
+.. [#Gilar] Gilar, M., & Jaworski, A. (2011). `Retention behavior of peptides in
+    hydrophilic-interaction chromatography. 
+    <http://dx.doi.org/10.1016/j.chroma.2011.04.005>`_
+    Journal of chromatography A, 1218(49), 8890–6.   
 """
 
 #   Copyright 2012 Anton Goloborodko, Lev Levitsky
@@ -900,6 +912,38 @@ Conditions: Reprosil-Pur C18-AQ column (150 x 0.075 mm I.D.), gradient (A =
 0.5% AA in water; B = 0.5% AA in ACN-water (90:10)) at
 0.5% water/min, flow rate 200.0 nl/min, room temperature.
 """
+
+RCs_gilar_ph3_0 = {'aa': {'K': 15.90,
+    'R': 13.64,
+    'H': 12.94,
+    'E': 2.97,
+    'P': 4.77,
+    'Q': 5.43,
+    'D': 3.20,
+    'camC': 4.87,
+    'N': 3.91,
+    'A': 3.34,
+    'G': 3.33,
+    'S': 3.04,
+    'T': 2.71,
+    'V': 1.75,
+    'I': 0.65,
+    'M': 1.13,
+    'L': 0.13,
+    'F': -1.17,
+    'Y': -0.22,
+    'W': -2.47},
+        'lcp': 0.0,
+        'const': 21.33}
+"""A set of retention coefficients for normal phase chromatography obtained in
+Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
+hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
+8890–6.
+
+Conditions: Atlantis HILIC silica column, (150 x 2.1 mm I.D.), 3 um, 100 A,
+gradient (A = water, B = ACN, C = 200 mM ammonium formate):
+0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
+at 0.2 ml/min, temperature 40 C, pH 3.0"""
 
 if __name__ == "__main__":
     import doctest
