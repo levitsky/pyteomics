@@ -620,23 +620,23 @@ def most_probable_isotopic_composition(*args, **kwargs):
 
     return isotopic_composition
 
-def factorial_stirling(n):
-    return math.sqrt(2 * math.pi / n) * (n / math.e) ** float(n)
-
-def factorial_s3(n):
-    # Calculate factorial using Stieltjes' third-order approximation.
-    # http://www.luschny.de/math/factorial/approx/SimpleCases.html
-    # The accuracy is ~1e-7 even for n=2. 
-    
-    N = n + 1.0
-    return (factorial_stirling(N)
-            * math.exp((1/12.0)/(N+(1/30.0)/(N+(53.0/210.0)/N))))
-
-def binomial_coeff(n, k):
-    return factorial_s3(n) / factorial_s3(k) / factorial_s3(n-k)
-
-def binomial_dist(k, n, p):
-    return binomial_coeff(n, k) * (p ** k) * (1.0 - p) ** (n - k)
+#def factorial_stirling(n):
+#    return math.sqrt(2 * math.pi / n) * (n / math.e) ** float(n)
+#
+#def factorial_s3(n):
+#    # Calculate factorial using Stieltjes' third-order approximation.
+#    # http://www.luschny.de/math/factorial/approx/SimpleCases.html
+#    # The accuracy is ~1e-7 even for n=2. 
+#    
+#    N = n + 1.0
+#    return (factorial_stirling(N)
+#            * math.exp((1/12.0)/(N+(1/30.0)/(N+(53.0/210.0)/N))))
+#
+#def binomial_coeff(n, k):
+#    return factorial_s3(n) / factorial_s3(k) / factorial_s3(n-k)
+#
+#def binomial_dist(k, n, p):
+#    return binomial_coeff(n, k) * (p ** k) * (1.0 - p) ** (n - k)
 
 def isotopic_composition_abundance(*args, **kwargs):
     """Calculate the relative abundance of a given isotopic composition
@@ -662,7 +662,7 @@ def isotopic_composition_abundance(*args, **kwargs):
                    if 'composition' in kwargs
                    else Composition(*args, **kwargs))
 
-    isotopic_composition = {}
+    isotopic_composition = defaultdict(dict)
 
     # Check if there are default and non-default isotopes of the same
     # element and rearrange the elements.
@@ -679,8 +679,6 @@ def isotopic_composition_abundance(*args, **kwargs):
                 'Please specify the isotopic states of all atoms of '
                 '%s or do not specify them at all.' % element_name)
         else:
-            if element_name not in isotopic_composition:
-                isotopic_composition[element_name] = {}
             isotopic_composition[element_name][isotope_num] = (
                 composition[element])
 
@@ -688,9 +686,11 @@ def isotopic_composition_abundance(*args, **kwargs):
     mass_data = kwargs.get('mass_data', nist_mass)
     relative_abundance = 1.0
     for element_name, isotope_dict in isotopic_composition.items():
-        relative_abundance *= factorial_s3(sum(isotope_dict.values()))
+#       relative_abundance *= factorial_s3(sum(isotope_dict.values()))
+        relative_abundance *= math.factorial(sum(isotope_dict.values()))
         for isotope_num, isotope_content in isotope_dict.items():
-            relative_abundance /= factorial_s3(isotope_content)            
+#           relative_abundance /= factorial_s3(isotope_content)            
+            relative_abundance /= math.factorial(isotope_content)
             if isotope_num:
                 relative_abundance *= (
                     mass_data[element_name][isotope_num][1]
