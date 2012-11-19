@@ -191,7 +191,7 @@ def _make_schema_info(env):
                                             'type', '').split(':')[-1] ==
                                         anc.attrib['name']]
                                 else:
-                                    elname = (anc.attrib['name'],)
+                                    elnames = (anc.attrib['name'],)
                                 for elname in elnames:
                                     tuples.add(
                                         (elname, elem.attrib['name']))
