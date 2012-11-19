@@ -607,8 +607,8 @@ def most_probable_isotopic_composition(*args, **kwargs):
             
             # Write the number of isotopes of the most abundant type.
             first_iso_str = _make_isotope_string(element_name, first_iso[0])
-            isotopic_composition[first_iso_str] = math.floor(
-                (composition[element_name] + 1) * first_iso[1])
+            isotopic_composition[first_iso_str] = int(math.floor(
+                (composition[element_name] + 1) * first_iso[1]))
 
             # Write the number of the second isotopes.
             second_iso_str = _make_isotope_string(element_name, second_iso[0])
@@ -619,24 +619,6 @@ def most_probable_isotopic_composition(*args, **kwargs):
             isotopic_composition[element_name] = composition[element_name]
 
     return isotopic_composition
-
-#def factorial_stirling(n):
-#    return math.sqrt(2 * math.pi / n) * (n / math.e) ** float(n)
-#
-#def factorial_s3(n):
-#    # Calculate factorial using Stieltjes' third-order approximation.
-#    # http://www.luschny.de/math/factorial/approx/SimpleCases.html
-#    # The accuracy is ~1e-7 even for n=2. 
-#    
-#    N = n + 1.0
-#    return (factorial_stirling(N)
-#            * math.exp((1/12.0)/(N+(1/30.0)/(N+(53.0/210.0)/N))))
-#
-#def binomial_coeff(n, k):
-#    return factorial_s3(n) / factorial_s3(k) / factorial_s3(n-k)
-#
-#def binomial_dist(k, n, p):
-#    return binomial_coeff(n, k) * (p ** k) * (1.0 - p) ** (n - k)
 
 def isotopic_composition_abundance(*args, **kwargs):
     """Calculate the relative abundance of a given isotopic composition
@@ -686,10 +668,8 @@ def isotopic_composition_abundance(*args, **kwargs):
     mass_data = kwargs.get('mass_data', nist_mass)
     relative_abundance = 1.0
     for element_name, isotope_dict in isotopic_composition.items():
-#       relative_abundance *= factorial_s3(sum(isotope_dict.values()))
         relative_abundance *= math.factorial(sum(isotope_dict.values()))
         for isotope_num, isotope_content in isotope_dict.items():
-#           relative_abundance /= factorial_s3(isotope_content)            
             relative_abundance /= math.factorial(isotope_content)
             if isotope_num:
                 relative_abundance *= (
