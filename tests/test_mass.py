@@ -171,14 +171,14 @@ class MassTest(unittest.TestCase):
             mass.most_probable_isotopic_composition(
                 formula='F',
                 mass_data=self.mass_data),
-            mass.Composition({'F[6]': 1.0, 'F[7]': 0.0},
+            mass.Composition({'F[6]': 1, 'F[7]': 0},
                              mass_data=self.mass_data))
         
         self.assertEqual(
             mass.most_probable_isotopic_composition(
                 formula='F10',
                 mass_data=self.mass_data),
-            mass.Composition({'F[6]': 7.0, 'F[7]': 3.0},
+            mass.Composition({'F[6]': 7, 'F[7]': 3},
                              mass_data=self.mass_data))
 
         self.assertEqual(
@@ -186,7 +186,7 @@ class MassTest(unittest.TestCase):
                 formula='A20F10',
                 elements_with_isotopes = ['F'],
                 mass_data=self.mass_data),
-            mass.Composition({'A': 20.0, 'F[6]': 7.0, 'F[7]': 3.0},
+            mass.Composition({'A': 20, 'F[6]': 7, 'F[7]': 3},
                              mass_data=self.mass_data))
                         
     def test_isotopic_composition_abundance(self):
