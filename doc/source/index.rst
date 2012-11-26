@@ -8,6 +8,13 @@ Welcome to Pyteomics tutorial!
 
 .. include:: ../../README
 
+Citation
+--------
+
+Pyteomics is distributed under `Apache License version 2.0 <http://opensource.org/licenses/Apache-2.0>`_.
+
+.. include:: ../../NOTICE
+
 Relation to the other proteomics data analysis tools
 ----------------------------------------------------
 Our goal is to create an infrastructure for proteomics data analysis within
@@ -17,6 +24,7 @@ that. Pyteomics does not aim to substitute any of these, but rather to coexist
 and complement them.
 
 Contents:
+---------
 
 .. toctree::
    :maxdepth: 2
