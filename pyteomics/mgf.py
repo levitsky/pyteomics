@@ -54,7 +54,7 @@ import numpy
 
 _comments = '#;!/'
 
-def read(source, use_header=True):
+def read(source, use_header=True, close=True):
     """Read an MGF file and return entries iteratively.
     
     Read the specified MGF file, **yield** spectra one by one.
@@ -72,11 +72,16 @@ def read(source, use_header=True):
     use_header : bool, optional
         Add the info from file header to each dict. Spectrum-specific parameters
         override those from the header in case of conflict.
-        Default is True.
+        Default is :py:const:`True`.
 
-    Returns
-    -------
-    dict : {'masses': mumpy.array, 'intensities': numpy.asrray, 'params': dict} 
+    close : bool, optional
+        Close the MGF file after reading the spectra. :py:const:`True`
+        by default.
+
+
+    Yields
+    ------
+    dict : {'masses': mumpy.array, 'intensities': numpy.array, 'params': dict} 
     """
     if all(hasattr(source, x) for x in ('tell', 'seek', 'close')):
         pos = source.tell()
@@ -87,8 +92,9 @@ def read(source, use_header=True):
         header = read_header(source)
         MGF = open(source)
     else:
-        raise PyteomicsError("Unsupported argument type in `pyteomics.mgf.read`."
-                "'source' must be a file object or a path (string), %s given." % type(source))
+        raise PyteomicsError("Unsupported argument type in pyteomics.mgf.read:"
+                "'source' must be a file object or a path (string), "
+                "%s given." % type(source))
     reading_spectrum = False
     params = {}
     masses = []
@@ -101,22 +107,37 @@ def read(source, use_header=True):
                 reading_spectrum = True
             # otherwise we are not interested; do nothing, just move along
         else:
-            if line.strip() == '' or any(
+            if not line.strip() or any(
                 line.startswith(c) for c in _comments):
                     pass
             elif line.strip() == 'END IONS':
                 reading_spectrum = False
+                if 'pepmass' in params:
+                    try:
+                        pepmass, intty = params['pepmass'].split(' ', 1)
+                    except ValueError:
+                        try:
+                            params['pepmass'] = float(params['pepmass'])
+                        except ValueError:
+                            raise PyteomicsError('PEPMASS is not a number. File: {}\n'
+                                    'Value: {}'.format(source, params['pepmass']))
+                    else:
+                        try:
+                            params['pepmass'] = float(pepmass)
+                            params['intensity'] = float(intty)
+                        except ValueError:
+                            raise PyteomicsError('PEPMASS format is incorrect.'
+                                    'Don\'t know what to do with {} and {}'
+                                    ''.format(pepmass, innty))
                 yield {'params': params, 'masses': numpy.array(masses),
                         'intensities': numpy.array(intensities),
                         'charges': numpy.array(charges)}
-                params = {}
-                if use_header: params.update(header)
+                params = dict(header) if use_header else {}
                 masses = []
                 intensities = []
-                continue
             else: 
-                l = line.split('=')
-                if len(l) == 2:
+                l = line.split('=', 1)
+                if len(l) > 1: # spectrum-specific parameters!
                     params[l[0].lower()] = l[1].strip().split()[0]
                 elif len(l) == 1: # this must be a peak list
                     l = line.split()
