@@ -1,12 +1,6 @@
-When using or redistributing Pyteomics, or parts of it, please link to at least
-one of the following pages:
+When using or redistributing Pyteomics, or parts of it, please cite the following paper:
 
-- http://packages.python.org/pyteomics
-- http://pypi.python.org/pypi/pyteomics
-- http://theorchromo.ru/
-
-... and cite the following paper:
-Goloborodko, A.A.; Levitsky, L.I.; Ivanov, M.V.; and Gorshkov, M.V.
+Goloborodko, A.A.; Levitsky, L.I.; Ivanov, M.V.; and Gorshkov, M.V. (2013)
 "Pyteomics - a Python Framework for Exploratory Data Analysis and Rapid Software
-Prototyping in Proteomics", Journal of The American Society for Mass Spectrometry
-(in print). Available at http://dx.doi.org/10.1007/s13361-012-0516-6
+Prototyping in Proteomics", Journal of The American Society for Mass Spectrometry.
+DOI `10.1007/s13361-012-0516-6 <http://dx.doi.org/10.1007/s13361-012-0516-6>`_
