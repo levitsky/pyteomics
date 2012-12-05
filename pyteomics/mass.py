@@ -173,7 +173,8 @@ class Composition(defaultdict):
     """
         
     def __str__(self):
-        return 'Composition({})'.format(dict.__repr__(self))
+        return 'Composition({})'.format(repr(
+            {e: c for e, c in self.items() if c}))
 
     def __repr__(self):
         return str(self)
@@ -195,6 +196,13 @@ class Composition(defaultdict):
             raise PyteomicsError('Cannot multiply Composition by non-integer',
                     other)
         return Composition(dict((k, v*other) for k, v in self.items()))
+
+    def __eq__(self, other):
+        if not isinstance(other, dict):
+            return False
+        self_items = {i for i in self.items() if i[1]}
+        other_items = {i for i in other.items() if i[1]}
+        return self_items == other_items
 
     def copy(self):
         return Composition(self)

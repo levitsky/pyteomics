@@ -208,8 +208,9 @@ def _make_schema_info(env):
                         "decent results.\nLook here for suppressing warnings:\n"
                         "http://docs.python.org/library/warnings.html#"
                         "temporarily-suppressing-warnings\n"
-                        "If you think this shouldn't have happenned, report the"
-                        " message to http://theorchromo.ru/pyteomics/issues\n"
+                        "If you think this shouldn't have happenned, you can "
+                        "report this to\n"
+                        "http://theorchromo.ru/pyteomics/issues\n"
                         "".format(
                             env['format'], version, schema_url,
                             format_exc(), env['default_version']))
