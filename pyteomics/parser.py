@@ -328,7 +328,7 @@ def tostring(parsed_sequence, show_unmodified_termini=True):
         Defines the behavior towards standard terminal groups in the input.
         :py:const:`True` means that they will be preserved if present (default).
         :py:const:`False` means that they will be removed. Standard terminal
-        modifications will not be added if not shown in `parsed_sequence`,
+        groups will not be added if not shown in `parsed_sequence`,
         regardless of this setting.
 
     Returns
@@ -336,18 +336,20 @@ def tostring(parsed_sequence, show_unmodified_termini=True):
     sequence : str
     """
     labels = []
+    if isinstance(parsed_sequence, str): # regular sequence, not parsed
+        parsed_sequence = parse(parsed_sequence)
     for group in parsed_sequence:
-        if type(group) == str:
+        if isinstance(group, str):
             if (group not in (std_cterm, std_nterm)) or show_unmodified_termini:
                 labels.append(group)
-        else: #treat `group` as a tuple
+        else: # treat `group` as a tuple
             group_l = list(group)
             if not show_unmodified_termini:
                 if std_cterm in group_l: group_l.remove(std_cterm)
                 if std_nterm in group_l: group_l.remove(std_nterm)
             labels.append(''.join(group_l))
     return ''.join(labels)
-            
+
 def amino_acid_composition(sequence,
                            show_unmodified_termini=False,
                            term_aa=False,

@@ -336,13 +336,13 @@ class Composition(defaultdict):
         If none of these are specified, the constructor will look at the first
         positional argument and try to build the object from it.
         
-        If there's in an ambiguity, i.e. the argument is both a valid sequence
+        If there's an ambiguity, i.e. the argument is both a valid sequence
         and a formula (such as 'HCN'), it will be treated as a sequence. You
         need to provide the 'formula' keyword to override this.
          
         .. warning::
          
-            Be cafeful when supplying a list with a parsed sequence or a split
+            Be careful when supplying a list with a parsed sequence or a split
             sequence as a keyword argument. It must be
             obtained with enabled `show_unmodified_termini` option.
             When supplying it as a positional argument, the option doesn't
@@ -373,35 +373,38 @@ class Composition(defaultdict):
         aa_comp=kwargs.get('aa_comp', std_aa_comp)
         mass_data=kwargs.get('mass_data', nist_mass)
         
-        if len(args) == 0 and len(kwargs) == 0:
-            pass
-        elif 'sequence' in kwargs:
-            self._from_sequence(kwargs['sequence'], aa_comp)
-            
-        elif 'parsed_sequence' in kwargs:
-            self._from_parsed_sequence(kwargs['parsed_sequence'], aa_comp)
-            
-        elif 'split_sequence' in kwargs:
-            self._from_split_sequence(kwargs['split_sequence'], aa_comp)
-            
-        elif 'formula' in kwargs:
-            self._from_formula(kwargs['formula'], mass_data)
-            
-        elif isinstance(args[0], dict):
-            self._from_dict(args[0])
-        else:
-            try:
-                sequence = parser.tostring(args[0], True)
-                self._from_sequence(sequence, aa_comp)
-            except:
+        kw_sources = {'formula', 'sequence', 'parsed_sequence',
+                'split_sequence'}
+        kw_given = kw_sources.intersection(kwargs)
+        if len(kw_given) > 1:
+            raise PyteomicsError('Only one of {} can be specified!\n'
+                    'Given: {}'.format(', '.join(kw_sources),
+                        ', '.join(kw_given)))
+        elif kw_given:
+            kwa = kw_given.pop()
+            getattr(self, '_from_' + kwa)(kwargs[kwa],
+                    mass_data if kwa == 'formula' else aa_comp)
+        
+        # can't build from kwargs
+        elif args:
+            if isinstance(args[0], dict):
+                self._from_dict(args[0])
+            else:
                 try:
-                    self._from_formula(args[0], mass_data)
+                    sequence = parser.tostring(args[0], True)
+                    self._from_sequence(sequence, aa_comp)
                 except:
-                    raise PyteomicsError(
-                            'Could not create a Composition object from `%s`. '
-                            'A Composition object must be specified by '
-                            'a sequence, parsed sequence, formula or '
-                            'a dict' % args[0])
+                    try:
+                        self._from_formula(args[0], mass_data)
+                    except:
+                        raise PyteomicsError(
+                                'Could not create a Composition object from `{}`. '
+                                'A Composition object must be specified by '
+                                'a sequence, parsed sequence, formula or '
+                                'a dict'.format(args[0]))
+        else:
+            self._from_dict(dict(**kwargs))
+
     
 std_aa_comp.update({
     'A':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1}),
@@ -469,7 +472,7 @@ def calculate_mass(*args, **kwargs):
 
     .. warning::
 
-        Be cafeful when supplying a list with a parsed sequence. It must be
+        Be careful when supplying a list with a parsed sequence. It must be
         obtained with enabled `show_unmodified_termini` option.
 
     Parameters
@@ -768,17 +771,18 @@ class Unimod():
     """A class for Unimod database of modifications.
     The list of all modifications can be retrieved via `mods` attribute.
     Methods for convenient searching are `by_title` and `by_name`.
-    For more elaborate filtering, iterate manually over the list."""
+    For more elaborate filtering, iterate manually over the list.
+    """
 
-    def __init__(self, url='http://www.unimod.org/xml/unimod.xml'):
+    def __init__(self, source='http://www.unimod.org/xml/unimod.xml'):
         """Create a database and fill it from XML file retrieved from `url`.
 
         Parameters:
         -----------
 
-        url : str, optional
-            A URL to read from. Don't forget the 'file://' prefix when pointing
-            to local files.
+        source : str or file, optional
+            A file-like object or a URL to read from. Don't forget the 'file://'
+            prefix when pointing to local files.
         """
         def process_mod(mod):
             d = mod.attrib
@@ -840,7 +844,10 @@ class Unimod():
             new_d['refs'] = refs
             return new_d
 
-        self._tree = etree.parse(urlopen(url))
+        if isinstance(source, str):
+            self._tree = etree.parse(urlopen(source))
+        else:
+            self._tree = etree.parse(source)
         self._massdata = self._mass_data()
         self._mods = []
         for mod in self._xpath('/unimod/modifications/mod'):
