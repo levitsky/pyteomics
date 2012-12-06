@@ -1,6 +1,7 @@
 import unittest
 import random
 from pyteomics import mass, auxiliary, parser
+import gzip
 
 class MassTest(unittest.TestCase):
     def setUp(self):
@@ -209,7 +210,7 @@ class MassTest(unittest.TestCase):
                  * self.mass_data['F'][6][1] ) ** peplen)
 
     def test_Unimod(self):
-        db = mass.Unimod()
+        db = mass.Unimod(gzip.open('unimod.xml.gz'))
         self.assertGreater(0.00001,
                 max(abs(x['mono_mass'] - mass.calculate_mass(x['composition'],
                     mass_data=db.mass_data)) for x in db.mods))
