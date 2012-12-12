@@ -269,7 +269,7 @@ def write(output=None, spectra=None, header='', close=True):
                 if key.lower() == 'pepmass' and not isinstance(val,
                         (str, int, float)): # assume iterable
                     try:
-                        MGF.write('\n' + ' '.join(
+                        MGF.write('\nPEPMASS=' + ' '.join(
                             str(x) for x in val if x is not None) + '\n')
                     except TypeError:
                         raise PyteomicsError('Cannot handle parameter:'
