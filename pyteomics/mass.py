@@ -521,13 +521,15 @@ def calculate_mass(*args, **kwargs):
         composition += ion_comp[kwargs['ion_type']]
 
     # Get charge.
-    charge = composition['H+']
+    charge = 0
+    if 'H+' in composition:
+        charge = composition['H+']
     if 'charge' in kwargs:
         if charge:
             raise PyteomicsError(
                 'Charge is specified both by the number of protons and '
                 '`charge` in kwargs')
-        charge = kwargs['charge' ]
+        charge = kwargs['charge']
         composition['H+'] = charge
 
     # Calculate mass.
