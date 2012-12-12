@@ -173,8 +173,7 @@ class Composition(defaultdict):
     """
         
     def __str__(self):
-        return 'Composition({})'.format(repr(
-            {e: c for e, c in self.items() if c}))
+        return 'Composition({})'.format(dict.__repr__(self))
 
     def __repr__(self):
         return str(self)
@@ -203,6 +202,17 @@ class Composition(defaultdict):
         self_items = {i for i in self.items() if i[1]}
         other_items = {i for i in other.items() if i[1]}
         return self_items == other_items
+
+    # override default behavior:
+    # we don't want to add 0's to the dictionary
+    def __missing__(self, key):
+        return 0 
+    
+    def __setitem__(self, key, value):
+        if value != 0: # reject 0's
+            super(Composition, self).__setitem__(key, value)
+        elif key in self:
+            del self[key]
 
     def copy(self):
         return Composition(self)
@@ -293,14 +303,14 @@ class Composition(defaultdict):
 
                 # Match the element name to the mass_data.
                 element_found = False
-                # Sort the keys from longest to shortest to resolve overlapping
-                # keys issue
+                # Sort the keys from longest to shortest to workaround
+                # the overlapping keys issue
                 for element_name in sorted(mass_data, key=len, reverse=True):
                     if formula.endswith(element_name, 0, i+1):
                         isotope_string = _make_isotope_string(
                             element_name, isotope_num)
-                        self[isotope_string] = (
-                            self.get(isotope_string, 0) + num_atoms)
+                        if num_atoms:
+                            self[isotope_string] += num_atoms
                         i -= len(element_name)
                         prev_chem_symbol_start = i + 1
                         element_found = True
@@ -521,9 +531,7 @@ def calculate_mass(*args, **kwargs):
         composition += ion_comp[kwargs['ion_type']]
 
     # Get charge.
-    charge = 0
-    if 'H+' in composition:
-        charge = composition['H+']
+    charge = composition['H+']
     if 'charge' in kwargs:
         if charge:
             raise PyteomicsError(
