@@ -114,41 +114,30 @@ def read(source, use_header=True, close=True):
                 reading_spectrum = False
                 if 'pepmass' in params:
                     try:
-                        pepmass, intty = params['pepmass'].split(' ', 1)
+                        pepmass = tuple(map(float, params['pepmass'].split()))
                     except ValueError:
-                        try:
-                            params['pepmass'] = float(params['pepmass'])
-                        except ValueError:
-                            raise PyteomicsError('PEPMASS is not a number. File: {}\n'
-                                    'Value: {}'.format(source, params['pepmass']))
+                        raise PyteomicsError('MGF format error: cannot parse '
+                                'PEPMASS = {}'.format(params['pepmass']))
                     else:
-                        try:
-                            params['pepmass'] = float(pepmass)
-                            params['intensity'] = float(intty)
-                        except ValueError:
-                            raise PyteomicsError('PEPMASS format is incorrect.'
-                                    'Don\'t know what to do with {} and {}'
-                                    ''.format(pepmass, innty))
+                        params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
                 yield {'params': params, 'masses': numpy.array(masses),
                         'intensities': numpy.array(intensities),
                         'charges': numpy.array(charges)}
                 params = dict(header) if use_header else {}
                 masses = []
                 intensities = []
+                charges = []
             else: 
                 l = line.split('=', 1)
                 if len(l) > 1: # spectrum-specific parameters!
-                    params[l[0].lower()] = l[1].strip().split()[0]
+                    params[l[0].lower()] = l[1].strip()
                 elif len(l) == 1: # this must be a peak list
                     l = line.split()
                     if len(l) >= 2:
                         try:
                             masses.append(float(l[0]))            # this may cause
                             intensities.append(float(l[1]))       # exceptions...
-                            if len(l) > 2:
-                                charges.append(l[2])
-                            else:
-                                charges.append(None)
+                            charges.append(l[2] if len(l) > 2 else None)
                         except ValueError:
                             raise PyteomicsError(
                                  'Error when parsing %s. Line:\n%s' %
@@ -269,9 +258,23 @@ def write(output=None, spectra=None, header='', close=True):
     if spectra:
         for spectrum in spectra:
             MGF.write('\n\nBEGIN IONS\n')
-            MGF.write('\n'.join('%s=%s' % (x.upper(), str(spectrum['params'][x]))
-                for x in spectrum['params'] if not
-                (x in head_dict and spectrum['params'][x] == head_dict[x])))
+            MGF.write('\n'.join('{}={}'.format(key.upper(), val)
+                for key, val in spectrum['params'].items() if not
+                ((key in head_dict and val == head_dict[x]) or
+                # handle PEPMASS tuple later
+                (key.lower() == 'pepmass' and 
+                    not isinstance(val, (str, int, float))))))
+            # time to handle PEPMASS tuple
+            for key, val in spectrum['params'].items():
+                if key.lower() == 'pepmass' and not isinstance(val,
+                        (str, int, float)): # assume iterable
+                    try:
+                        MGF.write('\n' + ' '.join(
+                            str(x) for x in val if x is not None) + '\n')
+                    except TypeError:
+                        raise PyteomicsError('Cannot handle parameter:'
+                                ' {} = {}'.format(key, val))
+
             if all(key in spectrum for key in ('masses', 'intensities', 'charges')):
                 for i in range(min(map(len,
                     (spectrum['masses'], spectrum['intensities'], spectrum['charges'])))):

@@ -195,7 +195,7 @@ class Composition(defaultdict):
         if not isinstance(other, int):
             raise PyteomicsError('Cannot multiply Composition by non-integer',
                     other)
-        return Composition(dict((k, v*other) for k, v in self.items()))
+        return Composition({k: v*other for k, v in self.items()})
 
     def __eq__(self, other):
         if not isinstance(other, dict):
@@ -521,24 +521,23 @@ def calculate_mass(*args, **kwargs):
         composition += ion_comp[kwargs['ion_type']]
 
     # Get charge.
-    charge = 0
-    if 'H+' in composition:
-        charge = composition['H+']
+    charge = composition['H+']
     if 'charge' in kwargs:
         if charge:
             raise PyteomicsError(
                 'Charge is specified both by the number of protons and '
-                '`charge` in kwargs: %s' % str(kwargs))
-        charge = kwargs['charge']
+                '`charge` in kwargs')
+        charge = kwargs['charge' ]
         composition['H+'] = charge
 
     # Calculate mass.
     mass = 0.0
+    average = kwargs.get('average', False)
     for isotope_string in composition:
         element_name, isotope_num = _parse_isotope_string(isotope_string)
         # Calculate average mass if required and the isotope number is
         # not specified.
-        if (not isotope_num) and kwargs.get('average', False):
+        if (not isotope_num) and average:
             for isotope in mass_data[element_name]:
                 if isotope != 0:
                     mass += (composition[element_name]
@@ -550,7 +549,7 @@ def calculate_mass(*args, **kwargs):
 
     # Calculate m/z if required.
     if charge:
-        mass = mass / charge
+        mass /= charge
     return mass
  
 def most_probable_isotopic_composition(*args, **kwargs):
@@ -601,11 +600,10 @@ def most_probable_isotopic_composition(*args, **kwargs):
     for isotope_string in composition:
         element_name, isotope_num = _parse_isotope_string(isotope_string)
         if isotope_num:
-            composition[element_name] = (composition.get(element_name, 0)
-                                         + composition.pop(isotope_string))
+            composition[element_name] += composition.pop(isotope_string)
 
     mass_data = kwargs.get('mass_data', nist_mass)
-    elements_with_isotopes = kwargs.get('elements_with_isotopes', None)
+    elements_with_isotopes = kwargs.get('elements_with_isotopes')
     isotopic_composition = Composition()
     
     for element_name in composition:
