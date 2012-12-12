@@ -309,8 +309,7 @@ class Composition(defaultdict):
                     if formula.endswith(element_name, 0, i+1):
                         isotope_string = _make_isotope_string(
                             element_name, isotope_num)
-                        if num_atoms:
-                            self[isotope_string] += num_atoms
+                        self[isotope_string] += num_atoms
                         i -= len(element_name)
                         prev_chem_symbol_start = i + 1
                         element_found = True
