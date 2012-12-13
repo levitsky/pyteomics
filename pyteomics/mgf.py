@@ -260,7 +260,7 @@ def write(output=None, spectra=None, header='', close=True):
             MGF.write('\n\nBEGIN IONS\n')
             MGF.write('\n'.join('{}={}'.format(key.upper(), val)
                 for key, val in spectrum['params'].items() if not
-                ((key in head_dict and val == head_dict[x]) or
+                (val == head_dict.get(key) or
                 # handle PEPMASS tuple later
                 (key.lower() == 'pepmass' and 
                     not isinstance(val, (str, int, float))))))

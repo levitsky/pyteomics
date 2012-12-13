@@ -209,7 +209,11 @@ class Composition(defaultdict):
         return 0 
     
     def __setitem__(self, key, value):
-        if value != 0: # reject 0's
+        if isinstance(value, float): value = int(round(value))
+        elif not isinstance(value, int):
+            raise PyteomicsError('Only integers allowed as values in '
+                    'Composition, got {}.'.format(type(value).__name__))
+        if value: # reject 0's
             super(Composition, self).__setitem__(key, value)
         elif key in self:
             del self[key]
@@ -414,7 +418,6 @@ class Composition(defaultdict):
         else:
             self._from_dict(dict(**kwargs))
 
-    
 std_aa_comp.update({
     'A':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1}),
     'C':   Composition({'H': 5, 'C': 3, 'S': 1, 'O': 1, 'N': 1}),
@@ -625,8 +628,8 @@ def most_probable_isotopic_composition(*args, **kwargs):
             
             # Write the number of isotopes of the most abundant type.
             first_iso_str = _make_isotope_string(element_name, first_iso[0])
-            isotopic_composition[first_iso_str] = int(math.floor(
-                (composition[element_name] + 1) * first_iso[1]))
+            isotopic_composition[first_iso_str] = int(math.ceil(
+                composition[element_name])) * first_iso[1]
 
             # Write the number of the second isotopes.
             second_iso_str = _make_isotope_string(element_name, second_iso[0])
