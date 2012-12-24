@@ -48,26 +48,28 @@ Functions
 
 import sys
 import os
-from .auxiliary import PyteomicsError
+from .auxiliary import PyteomicsError, _file_obj
 import numpy
 
 
 _comments = '#;!/'
 
-def read(source, use_header=True, close=True):
+def read(source=None, use_header=True, close=True):
     """Read an MGF file and return entries iteratively.
     
     Read the specified MGF file, **yield** spectra one by one.
-    Each 'spectrum' is a :py:class:`dict` with three keys: 'masses', 'intensities'
-    and 'params'. 'masses' and 'intensities' store :py:class:`numpy.array`'s of
-    floats, and 'params' stores a :py:class:`dict` of parameters (keys and values are
+    Each 'spectrum' is a :py:class:`dict` with three keys: 'masses',
+    'intensities' and 'params'. 'masses' and 'intensities' store
+    :py:class:`numpy.array`'s of floats, and 'params' stores a
+    :py:class:`dict` of parameters (keys and values are
     :py:class:`str`, keys corresponding to MGF, lowercased).
 
     Parameters
     ----------
 
-    source : str or file
-        A file object (or file name) with data in MGF format.
+    source : str or file or None, optional
+        A file object (or file name) with data in MGF format. Default is
+        :py:const:`None`, which means read standard input.
     
     use_header : bool, optional
         Add the info from file header to each dict. Spectrum-specific parameters
@@ -78,30 +80,22 @@ def read(source, use_header=True, close=True):
         Close the MGF file after reading the spectra. :py:const:`True`
         by default.
 
-
     Yields
     ------
+
     dict : {'masses': mumpy.array, 'intensities': numpy.array, 'params': dict} 
     """
-    if all(hasattr(source, x) for x in ('tell', 'seek', 'close')):
-        pos = source.tell()
-        header = read_header(source, False)
-        source.seek(pos)
-        MGF = source
-    elif isinstance(source, str):
-        header = read_header(source)
-        MGF = open(source)
-    else:
-        raise PyteomicsError("Unsupported argument type in pyteomics.mgf.read:"
-                "'source' must be a file object or a path (string), "
-                "%s given." % type(source))
+    source = _file_obj(source, 'r')
+    pos = source.tell()
+    header = read_header(source, False)
+    source.seek(pos)
     reading_spectrum = False
     params = {}
     masses = []
     intensities = []
     charges = []
     if use_header: params.update(header)
-    for line in MGF:
+    for line in source:
         if not reading_spectrum:
             if line.strip() == 'BEGIN IONS':
                 reading_spectrum = True
@@ -142,7 +136,7 @@ def read(source, use_header=True, close=True):
                             raise PyteomicsError(
                                  'Error when parsing %s. Line:\n%s' %
                                  (source, line))
-    MGF.close()
+    if close: source.close()
 
 def read_header(source, close=True):
     """
@@ -163,19 +157,15 @@ def read_header(source, close=True):
 
     header : dict
     """
-    if isinstance(source, str):
-        MGF = open(source)
-    else:
-        MGF = source
-    
+    source = _file_obj(source, 'r')
     header = {}
-    for line in MGF:
+    for line in source:
         if line.strip() == 'BEGIN IONS':
             break
         l = line.split('=')
         if len(l) == 2:
             header[l[0].lower()] = l[1].strip()
-    if close: MGF.close()
+    if close: source.close()
     return header
 
 def write(output=None, spectra=None, header='', close=True):
@@ -185,13 +175,13 @@ def write(output=None, spectra=None, header='', close=True):
     Parameters
     ----------
 
-    output : str or file, optional
+    output : str or file or None, optional
         Path or a file-like object open for writing. If an existing file is
         specified by file name, it will be opened for appending. In this case
         writing with a header can result in violation of format conventions.
-        Default value is None, which means using standard output.
+        Default value is :py:const:`None`, which means using standard output.
 
-    spectra : a list of dicts, optional
+    spectra : iterable of dicts, optional
         A list of dictionaries with keys 'masses', 'intensities', and 'params'.
         'masses' and 'intensities' should be sequences of :py:class:`int`,
         :py:class:`float`, or :py:class:`str`. Strings will be written 'as is'.
@@ -221,18 +211,7 @@ def write(output=None, spectra=None, header='', close=True):
 
     output : file
     """
-    if hasattr(output, 'write'):
-        MGF = output
-    elif isinstance(output, str):
-        if not os.path.isdir(os.path.split(mgf)[0]):
-            os.makedirs(os.path.split(mgf)[0])
-        MGF = open(output, 'a')
-    elif output is None:
-        MGF = sys.stdout
-    else:
-        raise PyteomicsError("Unsupported type of `output`."
-                "Must be a file object or a path (string) or None, not %s"
-                % type(output))
+    output = _file_obj(output, 'a')
 
     if isinstance(header, dict):
         head_dict = header
@@ -253,12 +232,12 @@ def write(output=None, spectra=None, header='', close=True):
         l = line.split('=')
         if len(l) == 2:
             head_dict[l[0].lower()] = l[1].strip()
-    MGF.write(head_str)
+    output.write(head_str)
 
     if spectra:
         for spectrum in spectra:
-            MGF.write('\n\nBEGIN IONS\n')
-            MGF.write('\n'.join('{}={}'.format(key.upper(), val)
+            output.write('\n\nBEGIN IONS\n')
+            output.write('\n'.join('{}={}'.format(key.upper(), val)
                 for key, val in spectrum['params'].items() if not
                 (val == head_dict.get(key) or
                 # handle PEPMASS tuple later
@@ -269,7 +248,7 @@ def write(output=None, spectra=None, header='', close=True):
                 if key.lower() == 'pepmass' and not isinstance(val,
                         (str, int, float)): # assume iterable
                     try:
-                        MGF.write('\nPEPMASS=' + ' '.join(
+                        output.write('\nPEPMASS=' + ' '.join(
                             str(x) for x in val if x is not None) + '\n')
                     except TypeError:
                         raise PyteomicsError('Cannot handle parameter:'
@@ -278,11 +257,10 @@ def write(output=None, spectra=None, header='', close=True):
             if all(key in spectrum for key in ('masses', 'intensities', 'charges')):
                 for i in range(min(map(len,
                     (spectrum['masses'], spectrum['intensities'], spectrum['charges'])))):
-                        MGF.write('\n%s %s %s' % (str(spectrum['masses'][i]),
+                        output.write('\n%s %s %s' % (str(spectrum['masses'][i]),
                             str(spectrum['intensities'][i]), str(spectrum['charges'][i])))
 
-            MGF.write('\nEND IONS')
-    MGF.write('\n')
-    if close and output:
-        MGF.close()
-    return MGF
+            output.write('\nEND IONS')
+    output.write('\n')
+    if close: output.close()
+    return output
