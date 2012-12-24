@@ -192,17 +192,17 @@ class MassTest(unittest.TestCase):
                         
     def test_isotopic_composition_abundance(self):
         for peplen in range(1,10):
-            self.assertEqual(
+            self.assertAlmostEqual(
                 mass.isotopic_composition_abundance(formula='F[6]' * peplen,
                                                     mass_data=self.mass_data),
                 self.mass_data['F'][6][1] ** peplen)
             
-            self.assertEqual(
+            self.assertAlmostEqual(
                 mass.isotopic_composition_abundance(formula='AF[6]' * peplen,
                                                     mass_data=self.mass_data),
                 self.mass_data['F'][6][1] ** peplen)
             
-            self.assertEqual(
+            self.assertAlmostEqual(
                 mass.isotopic_composition_abundance(
                     formula='A[1]F[6]' * peplen,
                     mass_data=self.mass_data),
