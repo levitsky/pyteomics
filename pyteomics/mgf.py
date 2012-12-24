@@ -168,7 +168,7 @@ def read_header(source, close=True):
     if close: source.close()
     return header
 
-def write(output=None, spectra=None, header='', close=True):
+def write(output=None, spectra=(), header='', close=True):
     """
     Create a file in MGF format.
 
@@ -181,8 +181,8 @@ def write(output=None, spectra=None, header='', close=True):
         writing with a header can result in violation of format conventions.
         Default value is :py:const:`None`, which means using standard output.
 
-    spectra : iterable of dicts, optional
-        A list of dictionaries with keys 'masses', 'intensities', and 'params'.
+    spectra : iterable, optional
+        A sequence of dictionaries with keys 'masses', 'intensities', and 'params'.
         'masses' and 'intensities' should be sequences of :py:class:`int`,
         :py:class:`float`, or :py:class:`str`. Strings will be written 'as is'.
         The sequences should be of equal length, otherwise excessive values will
@@ -193,8 +193,8 @@ def write(output=None, spectra=None, header='', close=True):
         without any format consistency tests. Values can be of any type allowing
         string representation.
 
-        Default value is :py:const:`None`, which means no spectra will be written, only a
-        header.
+        Default value is :py:const:`()`, an empty tuple, which means no spectra
+        will be written, only a header.
 
     header : dict or (multiline) str or list of str, optional
         In case of a single string or a list of strings, the header will be
@@ -234,33 +234,32 @@ def write(output=None, spectra=None, header='', close=True):
             head_dict[l[0].lower()] = l[1].strip()
     output.write(head_str)
 
-    if spectra:
-        for spectrum in spectra:
-            output.write('\n\nBEGIN IONS\n')
-            output.write('\n'.join('{}={}'.format(key.upper(), val)
-                for key, val in spectrum['params'].items() if not
-                (val == head_dict.get(key) or
-                # handle PEPMASS tuple later
-                (key.lower() == 'pepmass' and 
-                    not isinstance(val, (str, int, float))))))
-            # time to handle PEPMASS tuple
-            for key, val in spectrum['params'].items():
-                if key.lower() == 'pepmass' and not isinstance(val,
-                        (str, int, float)): # assume iterable
-                    try:
-                        output.write('\nPEPMASS=' + ' '.join(
-                            str(x) for x in val if x is not None) + '\n')
-                    except TypeError:
-                        raise PyteomicsError('Cannot handle parameter:'
-                                ' {} = {}'.format(key, val))
+    for spectrum in spectra:
+        output.write('\n\nBEGIN IONS\n')
+        output.write('\n'.join('{}={}'.format(key.upper(), val)
+            for key, val in spectrum['params'].items() if not
+            (val == head_dict.get(key) or
+            # handle PEPMASS tuple later
+            (key.lower() == 'pepmass' and 
+                not isinstance(val, (str, int, float))))))
+        # time to handle PEPMASS tuple
+        for key, val in spectrum['params'].items():
+            if key.lower() == 'pepmass' and not isinstance(val,
+                    (str, int, float)): # assume iterable
+                try:
+                    output.write('\nPEPMASS=' + ' '.join(
+                        str(x) for x in val if x is not None) + '\n')
+                except TypeError:
+                    raise PyteomicsError('Cannot handle parameter:'
+                            ' {} = {}'.format(key, val))
 
-            if all(key in spectrum for key in ('masses', 'intensities', 'charges')):
-                for i in range(min(map(len,
-                    (spectrum['masses'], spectrum['intensities'], spectrum['charges'])))):
-                        output.write('\n%s %s %s' % (str(spectrum['masses'][i]),
-                            str(spectrum['intensities'][i]), str(spectrum['charges'][i])))
+        if all(key in spectrum for key in ('masses', 'intensities', 'charges')):
+            for i in range(min(map(len,
+                (spectrum['masses'], spectrum['intensities'], spectrum['charges'])))):
+                    output.write('\n%s %s %s' % (str(spectrum['masses'][i]),
+                        str(spectrum['intensities'][i]), str(spectrum['charges'][i])))
 
-            output.write('\nEND IONS')
+        output.write('\nEND IONS')
     output.write('\n')
     if close: output.close()
     return output
