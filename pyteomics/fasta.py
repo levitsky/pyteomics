@@ -43,27 +43,33 @@ Decoy database generation
 import itertools
 import sys
 import random
-from .auxiliary import PyteomicsError
+from .auxiliary import PyteomicsError, _file_obj
 
-def read(fasta_file, ignore_comments=False):
+def read(source=None, ignore_comments=False, close=True):
     """Read a FASTA file and return entries iteratively.
 
     Parameters
     ----------
 
-    fasta_file : str or file
-        A file object (or file name) with a FASTA database.
+    source : str or file or None, optional
+        A file object (or file name) with a FASTA database. Default is 
+        :py:const:`None`, which means read standard input.
     ignore_comments : bool, optional
         If True then ignore the second and subsequent lines of description.
         Default is :py:const:`False`.
+    close : bool, optional
+        Defines whether the file should be closed after reading all entries.
+        Default is :py:const:`True`.
 
-    Yield a tuple (description, sequence).
+    Yields
+    ------
+    
+    description, sequence
+        A 2-tuple with FASTA header (str) and sequence (str).
     """
     accumulated_strings = []
-    if type(fasta_file) == str:
-        source = open(fasta_file)
-    else:
-        source = fasta_file
+
+    source = _file_obj(source, 'r')
     # Iterate through '>' after the file is over to retrieve the last entry.
     for string in itertools.chain(source, '>'):
         stripped_string = string.strip()
@@ -89,7 +95,7 @@ def read(fasta_file, ignore_comments=False):
                 # Drop the translation stop sign.
                 if sequence.endswith('*'):
                     sequence = sequence[:-1]
-                yield (description, sequence)
+                yield description, sequence
                 accumulated_strings = [stripped_string[1:], ]
             else:
                 # accumulated_strings is empty; we're probably reading
@@ -97,6 +103,9 @@ def read(fasta_file, ignore_comments=False):
                 accumulated_strings.append(stripped_string[1:])
         else:
             accumulated_strings.append(stripped_string)
+    if close:
+        source.close()
+
 
 def write(entries, output=None, close=True):
     """
@@ -108,7 +117,7 @@ def write(entries, output=None, close=True):
         An iterable of 2-tuples in the form (description, sequence).
     output : file-like or str, optional
         A file open for writing or a path to write to. If the file exists,
-        it will be open for appending. Default is :py:const:`None`, which
+        it will be opened for appending. Default is :py:const:`None`, which
         means write to standard output.
     close : bool, optional
         If True, the file will be closed after writing. Defaults to True.
@@ -118,26 +127,17 @@ def write(entries, output=None, close=True):
     output_file : file object
         The file where the FASTA is written.
     """
-    if hasattr(output, 'write'):
-        output_file = output
-    elif isinstance(output, str):
-        output_file = open(output, 'a')
-    elif output is None:
-        output_file = sys.stdout
-    else:
-        raise PyteomicsError("""Wrong argument type:
-        `output` must be file-like or str or None, not %s (%s)""" % (
-            type(output), output))
-    
+    output = _file_obj(output, 'a')
+   
     for descr, seq in entries:
         # write the description
-        output_file.write('>' + descr.replace('\n', '\n;') + '\n')
+        output.write('>' + descr.replace('\n', '\n;') + '\n')
         # write the sequence; it should be interrupted with \n every 70 characters
-        output_file.write(''.join([('%s\n' % seq[i:i+70])
+        output.write(''.join([('%s\n' % seq[i:i+70])
             for i in range(0, len(seq), 70)]) + '\n')
 
-    if close and output: output_file.close()
-    return output_file
+    if close: output.close()
+    return output
 
 def decoy_sequence(sequence, mode):
     """
@@ -156,31 +156,30 @@ def decoy_sequence(sequence, mode):
         The modified sequence.
     """
     if mode == 'reverse':
-        modified_sequence = sequence[::-1]
-    elif mode == 'shuffle':
+        return sequence[::-1]
+    if mode == 'shuffle':
         modified_sequence = list(sequence)
         random.shuffle(modified_sequence)
-        modified_sequence = ''.join(modified_sequence)
-    else:
-        raise PyteomicsError(
-                """`fasta.decoy_sequence`: `mode` must be 'reverse' or
-                'shuffle', not '%s'""" % mode)
-    return modified_sequence
+        return ''.join(modified_sequence)
+    raise PyteomicsError(
+            """`fasta.decoy_sequence`: `mode` must be 'reverse' or
+            'shuffle', not {}""".format(mode))
 
-def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
+def decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
              decoy_only=False, close=True):
     """Generate a decoy database out of a given ``source``.
     
     If 'output' is a path, the file will be open for appending, so no information
     will be lost if the file exists. Although, the user should be careful when
-    providing open file streams as 'source' and 'output'. The reading and writing
+    providing open file streams as `source` and `output`. The reading and writing
     will start from the current position in the files, which is where the last I/O
     operation finished. One can use the :py:func:`file.seek` method to change it.
 
     Parameters
     ----------
-    source : file-like object or str
-        A path to a FASTA database or a file object itself.
+    source : file-like object or str or None, optional
+        A path to a FASTA database or a file object itself. Default is
+        :py:const:`None`, which means read standard input.
     output : file-like object or str, optional
         A path to the output database or a file open for writing.
         Defaults to :py:const:`None`, the results go to the standard output.
@@ -194,39 +193,31 @@ def decoy_db(source, output=None, mode='reverse', prefix='DECOY_',
         If False, the entries from 'source' will be written as well.
         False by default.
     close : bool, optional
-        If :py:const:`True`, the target file will be closed in the end (default).
-        Set to False, if you need to perform I/O operations with the file
-        from your Python script after it's created.
+        If :py:const:`True`, the target file will be closed in the end
+        (default). Set to :py:const:`False`, if you need to perform I/O
+        operations with the file after it's created. The input file will be
+        closed if given as file name and left open otherwise.
     
     Returns
     -------
-    output_file : file
-        A file object with the created file.
+    output : file
+        A file object for the created file.
     """
-    if hasattr(source, 'seek'):
-        source_file = source
-    elif isinstance(source, str):
-        source_file = open(source)
-    else:
-        raise PyteomicsError("""Wrong argument type:
-        `source` must be file or str, not %s""" % type(source))
+    close_source = isinstance(source, str)
+    source = _file_obj(source, 'r')
+    output = _file_obj(output, 'a')
 
-    if isinstance(output, str):
-        output_file = open(output, 'a')
-    elif output is None:
-        output_file = sys.stdout
-    else:
-        output_file = output
-
+    # store the initial position
+    pos = source.tell()
     if not decoy_only:
-        write(read(source_file, False), output_file, False)
+        write(read(source, False, False), output, False)
 
-    # return to the beginning of the source file to read again
-    source_file.seek(0)
+    # return to the initial position the source file to read again
+    source.seek(pos)
 
     decoy_entries = ((prefix + descr,
         decoy_sequence(seq, mode))
-        for descr, seq in read(source_file, False))
+        for descr, seq in read(source, False, close=close_source))
 
-    write(decoy_entries, output_file, close=(close if output else False))
-    return output_file
+    write(decoy_entries, output, close=close)
+    return output

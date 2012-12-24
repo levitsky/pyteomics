@@ -19,9 +19,9 @@ class FastaTest(unittest.TestCase):
             TEST
             ''')
         self.fasta_file.seek(0)
-        self.fasta_entries_short = [i for i in read(self.fasta_file, True)]
+        self.fasta_entries_short = [i for i in read(self.fasta_file, True, False)]
         self.fasta_file.seek(0)
-        self.fasta_entries_long = [i for i in read(self.fasta_file, False)]
+        self.fasta_entries_long = [i for i in read(self.fasta_file, False, False)]
 
     def test_simple_read_long_comments(self):
         self.assertEqual(self.fasta_entries_long,
@@ -56,7 +56,7 @@ class FastaTest(unittest.TestCase):
     def test_read_and_write_fasta_short(self):
         self.fasta_file.seek(0)
         new_fasta_file = tempfile.TemporaryFile(mode='r+')
-        write(read(self.fasta_file, True), new_fasta_file, False)
+        write(read(self.fasta_file, True, False), new_fasta_file, False)
         new_fasta_file.seek(0)
         new_entries = [i for i in read(new_fasta_file, True)]
         self.fasta_file.seek(0)
@@ -66,7 +66,7 @@ class FastaTest(unittest.TestCase):
     def test_read_and_write_long(self):
         self.fasta_file.seek(0)
         new_fasta_file = tempfile.TemporaryFile(mode='r+')
-        write(read(self.fasta_file, False), new_fasta_file, False)
+        write(read(self.fasta_file, False, False), new_fasta_file, False)
         new_fasta_file.seek(0)
         new_entries = [i for i in read(new_fasta_file, False)]
         self.fasta_file.seek(0)

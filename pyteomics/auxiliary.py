@@ -110,6 +110,15 @@ def _keepstate(func):
             return func(source, *args, **kwargs)
     return wrapped
 
+def _file_obj(f, mode):
+    """Check if `f` is a file name and open the file in `mode`."""
+    if f is None:
+        return {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout}[mode]
+    elif isinstance(f, str):
+        return open(f, mode)
+    else:
+        return f
+
 def _local_name(element):
     """Strip namespace from the XML element's name"""
     if element.tag.startswith('{'):
