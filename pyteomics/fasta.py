@@ -13,12 +13,20 @@ Data manipulation
 
   :py:func:`write` - write entries to a FASTA database
 
+  :py:func:`parse` - parse a FASTA header
+
 Decoy database generation
 -------------------------
 
   :py:func:`decoy_sequence` - generate a decoy sequence from a given sequence
 
   :py:func:`decoy_db` - generate a decoy database from a given FASTA database
+
+Auxiliary
+----------
+
+:py:data:`std_parsers` - a dictionary with parsers for known FASTA header
+formats.
 
 -------------------------------------------------------------------------------
 """
@@ -37,15 +45,12 @@ Decoy database generation
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-#   The FASTA format description can be found at
-#   http://www.ncbi.nlm.nih.gov/blast/fasta.shtml 
-
 import itertools
 import random
 import re
 from .auxiliary import PyteomicsError, _file_obj
 
-def read(source=None, ignore_comments=False, close=True):
+def read(source=None, ignore_comments=False, parser=None, close=True):
     """Read a FASTA file and return entries iteratively.
 
     Parameters
@@ -57,6 +62,12 @@ def read(source=None, ignore_comments=False, close=True):
     ignore_comments : bool, optional
         If True then ignore the second and subsequent lines of description.
         Default is :py:const:`False`.
+    parser : function or None, optional
+        Defines whether the fasta descriptions should be parsed. If it is a
+        function, that function will be given the description string, and
+        the returned value will be yielded together with the sequence.
+        The :py:data:`std_parsers` dict has parsers for several formats.
+        Default is :py:const:`None`, which means return the header "as is".
     close : bool, optional
         Defines whether the file should be closed after reading all entries.
         Default is :py:const:`True`.
@@ -67,6 +78,7 @@ def read(source=None, ignore_comments=False, close=True):
     description, sequence
         A 2-tuple with FASTA header (str) and sequence (str).
     """
+    f = parser or (lambda x: x)
     accumulated_strings = []
 
     source = _file_obj(source, 'r')
@@ -95,7 +107,7 @@ def read(source=None, ignore_comments=False, close=True):
                 # Drop the translation stop sign.
                 if sequence.endswith('*'):
                     sequence = sequence[:-1]
-                yield description, sequence
+                yield f(description), sequence
                 accumulated_strings = [stripped_string[1:], ]
             else:
                 # accumulated_strings is empty; we're probably reading
@@ -105,7 +117,6 @@ def read(source=None, ignore_comments=False, close=True):
             accumulated_strings.append(stripped_string)
     if close:
         source.close()
-
 
 def write(entries, output=None, close=True):
     """
@@ -210,14 +221,14 @@ def decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
     # store the initial position
     pos = source.tell()
     if not decoy_only:
-        write(read(source, False, False), output, False)
+        write(read(source, close=False), output, False)
 
     # return to the initial position the source file to read again
     source.seek(pos)
 
     decoy_entries = ((prefix + descr,
         decoy_sequence(seq, mode))
-        for descr, seq in read(source, False, close=close_source))
+        for descr, seq in read(source, close=close_source))
 
     write(decoy_entries, output, close=close)
     return output
@@ -243,7 +254,7 @@ def _parse_uniprotkb(header):
     return info
 
 def _parse_uniref(header):
-    assert 'Tax' in header
+    assert 'Tax' in header and 'RepID=' in header
     ID, cluster, pairs, _ = re.match(
             r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$',
             header).groups()
@@ -256,13 +267,23 @@ def _parse_uniparc(header):
     ID, status = re.match(r'(\S+)\s+status=(\w+)\s*$', header).groups()
     return {'id': ID, 'status': status}
 
-header_parsers = {'uniprotkb': _parse_uniprotkb, 'uniref': _parse_uniref,
-        'uniparc': _parse_uniparc}
+def _parse_unimes(header):
+    assert 'OS=' in header and 'SV=' in header
+    ID, name, pairs, _ = re.match(
+            r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$',
+            header).groups()
+    info = {'id': ID, 'name': name}
+    info.update(_split_pairs(pairs))
+    _intify(info, ('SV',))
+    return info
+
+std_parsers = {'uniprotkb': _parse_uniprotkb, 'uniref': _parse_uniref,
+        'uniparc': _parse_uniparc, 'unimes': _parse_unimes}
 """A dictionary with parsers for known FASTA header formats. For now, supported
 formats are those described at 
 `UniProt help page <http://www.uniprot.org/help/fasta-headers>`_."""
 
-def parse_header(header, flavour='auto', parsers=None):
+def parse(header, flavour='auto', parsers=None):
     """Parse the FASTA header and return a nice dictionary.
 
     Parameters
@@ -271,15 +292,15 @@ def parse_header(header, flavour='auto', parsers=None):
     header : str
         FASTA header to parse
     flavour : str, optional
-        Short name of the header format (case-insensitive). Known formats are:
-        :py:const:`'UniprotKB'`. Default is :py:const:`auto`, which means try
-        all formats in turn and return the first result that can be obtained
-        without an exception.
+        Short name of the header format (case-insensitive). Valid values are
+        :py:const:`'auto'` and keys of the `parsers` dict. Default is 
+        :py:const:`'auto'`, which means try all formats in turn and return the
+        first result that can be obtained without an exception.
     parsers : dict, optional
         A dict where keys are format names (lowercased) and values are functions
         that take a header string and return the parsed header. Default is
         :py:const:`None`, which means use the default dictionary
-        :py:data:`header_parsers`.
+        :py:data:`std_parsers`.
 
     Returns
     -------
@@ -293,7 +314,7 @@ def parse_header(header, flavour='auto', parsers=None):
         header = header[1:]
 
     # choose the format
-    known = parsers or header_parsers
+    known = parsers or std_parsers
     if flavour.lower() == 'auto':
         for fl, parser in known.items():
             try:
