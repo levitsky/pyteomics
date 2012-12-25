@@ -41,8 +41,8 @@ Decoy database generation
 #   http://www.ncbi.nlm.nih.gov/blast/fasta.shtml 
 
 import itertools
-import sys
 import random
+import re
 from .auxiliary import PyteomicsError, _file_obj
 
 def read(source=None, ignore_comments=False, close=True):
@@ -221,3 +221,90 @@ def decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
 
     write(decoy_entries, output, close=close)
     return output
+
+# auxiliary functions for parsing of FASTA headers
+def _split_pairs(s):
+    return dict(map(lambda x: x.strip(), x.split('='))
+            for x in re.split(' (?=\w+=)', s.strip()))
+
+def _intify(d, keys):
+    for k in keys:
+        if k in d:
+            d[k] = int(d[k])
+
+# definitions for custom parsers
+def _parse_uniprotkb(header):
+    db, ID, entry, name, pairs, _ = re.match(
+           r'^(\w+)\|([-\w]+)\|(\w+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$',
+           header).groups()
+    info = {'db': db, 'id': ID, 'entry': entry, 'name': name}
+    info.update(_split_pairs(pairs))
+    _intify(info, ('PE', 'SV'))
+    return info
+
+def _parse_uniref(header):
+    assert 'Tax' in header
+    ID, cluster, pairs, _ = re.match(
+            r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$',
+            header).groups()
+    info = {'id': ID, 'cluster': cluster}
+    info.update(_split_pairs(pairs))
+    _intify(info, ('n',))
+    return info
+
+def _parse_uniparc(header):
+    ID, status = re.match(r'(\S+)\s+status=(\w+)\s*$', header).groups()
+    return {'id': ID, 'status': status}
+
+header_parsers = {'uniprotkb': _parse_uniprotkb, 'uniref': _parse_uniref,
+        'uniparc': _parse_uniparc}
+"""A dictionary with parsers for known FASTA header formats. For now, supported
+formats are those described at 
+`UniProt help page <http://www.uniprot.org/help/fasta-headers>`_."""
+
+def parse_header(header, flavour='auto', parsers=None):
+    """Parse the FASTA header and return a nice dictionary.
+
+    Parameters
+    ----------
+
+    header : str
+        FASTA header to parse
+    flavour : str, optional
+        Short name of the header format (case-insensitive). Known formats are:
+        :py:const:`'UniprotKB'`. Default is :py:const:`auto`, which means try
+        all formats in turn and return the first result that can be obtained
+        without an exception.
+    parsers : dict, optional
+        A dict where keys are format names (lowercased) and values are functions
+        that take a header string and return the parsed header. Default is
+        :py:const:`None`, which means use the default dictionary
+        :py:data:`header_parsers`.
+
+    Returns
+    -------
+    
+    out : dict
+        A dictionary with the info from the header. The format depends on the
+        flavour."""
+
+    # accept strings with and without leading '>'
+    if header.startswith('>'):
+        header = header[1:]
+
+    # choose the format
+    known = parsers or header_parsers
+    if flavour.lower() == 'auto':
+        for fl, parser in known.items():
+            try:
+                return parser(header)
+            except:
+                pass
+        raise PyteomicsError('Unknown FASTA header format.')
+    elif flavour.lower() in known:
+        try:
+            return known[flavour.lower()](header)
+        except Exception as e:
+            raise PyteomicsError('Could not parse as {}. '
+                    'The error message was: {}'.format(
+                        flavour, e.message))
