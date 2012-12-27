@@ -165,20 +165,14 @@ def read_header(source, close=True):
     if close: source.close()
     return header
 
-def write(output=None, spectra=(), header='', close=True):
+def write(spectra, output=None, header='', close=True):
     """
     Create a file in MGF format.
 
     Parameters
     ----------
 
-    output : str or file or None, optional
-        Path or a file-like object open for writing. If an existing file is
-        specified by file name, it will be opened for appending. In this case
-        writing with a header can result in violation of format conventions.
-        Default value is :py:const:`None`, which means using standard output.
-
-    spectra : iterable, optional
+    spectra : iterable
         A sequence of dictionaries with keys 'masses', 'intensities', and 'params'.
         'masses' and 'intensities' should be sequences of :py:class:`int`,
         :py:class:`float`, or :py:class:`str`. Strings will be written 'as is'.
@@ -190,8 +184,11 @@ def write(output=None, spectra=(), header='', close=True):
         without any format consistency tests. Values can be of any type allowing
         string representation.
 
-        Default value is :py:const:`()`, an empty tuple, which means no spectra
-        will be written, only a header.
+    output : str or file or None, optional
+        Path or a file-like object open for writing. If an existing file is
+        specified by file name, it will be opened for appending. In this case
+        writing with a header can result in violation of format conventions.
+        Default value is :py:const:`None`, which means using standard output.
 
     header : dict or (multiline) str or list of str, optional
         In case of a single string or a list of strings, the header will be
@@ -250,12 +247,13 @@ def write(output=None, spectra=(), header='', close=True):
                     raise PyteomicsError('Cannot handle parameter:'
                             ' {} = {}'.format(key, val))
 
-        if all(key in spectrum for key in ('masses', 'intensities', 'charges')):
-            for i in range(min(map(len,
-                (spectrum['masses'], spectrum['intensities'], spectrum['charges'])))):
-                    output.write('\n%s %s %s' % (str(spectrum['masses'][i]),
-                        str(spectrum['intensities'][i]), str(spectrum['charges'][i])))
-
+        try:
+            for m, i, c in zip(spectrum['masses'], spectrum['intensities'],
+                    spectrum['charges']):
+                output.write('\n{} {} {}'.format(m, i, c if c is not None else ''))
+        except KeyError:
+            raise PyteomicsError("'masses', 'intensities' and 'charges' must be"
+                    " present in all spectra.")
         output.write('\nEND IONS')
     output.write('\n')
     if close: output.close()
