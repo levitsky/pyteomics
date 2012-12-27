@@ -41,6 +41,7 @@ try: # Python 2.7
     from urllib2 import urlopen
 except ImportError: # Python 3.x
     from urllib.request import urlopen
+import sys
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
