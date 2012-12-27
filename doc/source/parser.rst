@@ -69,12 +69,12 @@ Also, note what we supply as `labels` here: 'p' instead of 'pT'. That means that
 
 In modX, standard :py:func:`len` function cannot be used to determine the length
 of a peptide because of the modifications.
-Use :py:func:`pyteomics.parser.peptide_length` instead:
+Use :py:func:`pyteomics.parser.length` instead:
 
 .. code-block:: python
 
     >>> from pyteomics import parser
-    >>> parser.peptide_length('aVRILLaVIGNE', labels=parser.std_labels+['aV'])
+    >>> parser.length('aVRILLaVIGNE', labels=parser.std_labels+['aV'])
     10
 
 The :py:func:`pyteomics.parser.amino_acid_composition` function accepts a sequence

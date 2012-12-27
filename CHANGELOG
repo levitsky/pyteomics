@@ -1,3 +1,25 @@
+2.0.4
+-----
+
+New sets of retention coefficients in **achrom**.
+
+**mass.Composition** now only stores non-zero ints.
+
+**fasta** now has tools for parsing of FASTA headers.
+
+API changes
+...........
+
+ - 'pepmass' is now a tuple in the output of **mgf.read** (to allow reading
+precursor intensities).
+
+ - new function **fasta.parse** for convenient parsing of FASTA headers.
+
+ - **fasta.std_parsers** stores parsers for common UniProt header formats.
+
+ - new parameter *parser* in **fasta.read** allows to apply parsing while
+reading a FASTA file.
+
 2.0.3
 -----
 

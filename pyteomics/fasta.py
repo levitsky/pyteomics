@@ -67,6 +67,8 @@ def read(source=None, ignore_comments=False, parser=None, close=True):
         function, that function will be given the description string, and
         the returned value will be yielded together with the sequence.
         The :py:data:`std_parsers` dict has parsers for several formats.
+        Hint: specify :py:func:`parse` as the parser to apply automatic
+        format guessing.
         Default is :py:const:`None`, which means return the header "as is".
     close : bool, optional
         Defines whether the file should be closed after reading all entries.
