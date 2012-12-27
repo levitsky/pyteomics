@@ -1,6 +1,9 @@
 Pyteomics API documentation
 ===========================
 
+This section documents all user functions and data available in **Pyteomics**.
+You can access all of this info off-line from your Python interpreter.
+
 Contents:
 
 .. toctree::

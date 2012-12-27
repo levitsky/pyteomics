@@ -100,7 +100,7 @@ can specify the header, list of spectra in the same format as returned by
 
 .. code-block:: python
 
-    >>> spectra = [s for s in mgf.iter_spectrum('tests/test.mgf')]
+    >>> spectra = mgf.read('tests/test.mgf')
     >>> mgf.write(spectra=spectra, header=header)
     USERNAME=Lou Scene
     ITOL=1
@@ -243,9 +243,19 @@ function.
     >>> proteins = list(fasta.read('/path/to/file/my.fasta'))
 
 :py:func:`pyteomics.fasta.read` returns a *generator object* instead of a
-:py:class:`list` to prevent excessive memory use. 
+:py:class:`list` to prevent excessive memory use. The generator yields
+(description, sequence) tuples, so it's natural to use it as follows:
 
-You can also create a FASTA file using a list of (description, sequence)
+.. code-block:: python
+
+    >>> from pyteomics import fasta
+    >>> for descr, seq in fasta.read('my.fasta'):
+
+You can specify a function that will be applied to the FASTA headers for
+your convenience. :py:data:`pyteomics.fasta.std_parsers` has some pre-defined
+parsers that can be used for this purpose.
+
+You can also create a FASTA file using a sequence of (description, sequence)
 :py:class:`tuples`.
 
 .. code-block:: python

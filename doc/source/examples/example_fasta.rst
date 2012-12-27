@@ -66,7 +66,7 @@ the length less than 100 residues.
    :lines: 34
 
 We use :py:func:`pyteomics.electrochem.charge` to calculate the charge at pH=2.0.
-The neural mass and m/z of an ion is found via 
+The neutral mass and m/z of an ion is found with 
 :py:func:`pyteomics.mass.calculate_mass`.
 
 .. literalinclude:: example_fasta.py
@@ -108,7 +108,7 @@ The standard approach would be to use a scatter plot.
 However, with a sample of our size that would be uninformative. Instead,
 we will plot a 2d-histogram. There is no standard matplotlib command for that
 and we have to use a combination of numpy and matplotlib. The function 
-`numpy.histogram2d()` bins a set of (x,y) points on a plane and returns 
+:py:func:`numpy.histogram2d()` bins a set of (x,y) points on a plane and returns 
 the matrix of numbers in each individual bin and the borders of the bins.
 We also use a trick of replacing zeros in this matrix with the not-a-number 
 value so that on the final figure empty bins are highlighted with white color 
@@ -121,7 +121,7 @@ m/z and retention time.
    :language: python
    :lines: 69-73
 
-The obtained heatmap is plotted with `matplotlib.pyplot.imshow()` function
+The obtained heatmap is plotted with :py:func:`matplotlib.pyplot.imshow()` function
 that visualizes matrices. 
 
 .. literalinclude:: example_fasta.py
