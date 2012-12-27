@@ -113,7 +113,7 @@ def _keepstate(func):
 def _file_obj(f, mode):
     """Check if `f` is a file name and open the file in `mode`."""
     if f is None:
-        return {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout}[mode]
+        return {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout}[mode[0]]
     elif isinstance(f, str):
         return open(f, mode)
     else:
@@ -127,14 +127,19 @@ def _local_name(element):
         return element.tag
 
 def _make_version_info(env):
-    @_keepstate
+#   @_keepstate
     def version_info(source):
+        s = _file_obj(source, 'rb')
+        source = s if source is not s else open(s.name, 'rb')
         for _, elem in etree.iterparse(source, events=('start',),
                 remove_comments=True):
             if _local_name(elem) == env['element']:
-                return elem.attrib.get('version'), elem.attrib.get((
+                vinfo = elem.attrib.get('version'), elem.attrib.get((
                     '{{{}}}'.format(elem.nsmap['xsi'])
                     if 'xsi' in elem.nsmap else '') + 'schemaLocation')
+                break
+        source.close()
+        return vinfo
     version_info.__doc__ = """
         Provide version information about the {0} file.
 
