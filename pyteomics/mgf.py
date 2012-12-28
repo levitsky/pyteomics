@@ -48,6 +48,8 @@ Functions
 
 from .auxiliary import PyteomicsError, _file_obj
 import numpy
+from itertools import cycle
+import sys
 
 _comments = '#;!/'
 
@@ -59,7 +61,8 @@ def read(source=None, use_header=True, close=True):
     'intensities' and 'params'. 'masses' and 'intensities' store
     :py:class:`numpy.array`'s of floats, and 'params' stores a
     :py:class:`dict` of parameters (keys and values are
-    :py:class:`str`, keys corresponding to MGF, lowercased).
+    :py:class:`str`, keys corresponding to MGF, lowercased). Another array of
+    'charges' can be present in the output.
 
     Parameters
     ----------
@@ -80,7 +83,7 @@ def read(source=None, use_header=True, close=True):
     Yields
     ------
 
-    dict : {'masses': mumpy.array, 'intensities': numpy.array, 'params': dict} 
+    spectrum : dict
     """
     source = _file_obj(source, 'r')
     pos = source.tell()
@@ -111,9 +114,14 @@ def read(source=None, use_header=True, close=True):
                                 'PEPMASS = {}'.format(params['pepmass']))
                     else:
                         params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
-                yield {'params': params, 'masses': numpy.array(masses),
-                        'intensities': numpy.array(intensities),
-                        'charges': numpy.array(charges)}
+                out = {'params': params, 
+                       'masses': numpy.array(masses),
+                       'intensities': numpy.array(intensities)}
+
+                if not all(c is None for c in charges):
+                    out['charges'] = numpy.array(charges, dtype=numpy.float)
+                yield out
+                del out
                 params = dict(header) if use_header else {}
                 masses = []
                 intensities = []
@@ -249,12 +257,13 @@ def write(spectra, output=None, header='', close=True):
 
         try:
             for m, i, c in zip(spectrum['masses'], spectrum['intensities'],
-                    spectrum['charges']):
-                output.write('\n{} {} {}'.format(m, i, c if c is not None else ''))
+                    spectrum.get('charges', cycle((None,)))):
+                output.write('\n{} {} {}'.format(
+                    m, i, c if c not in {None, numpy.nan} else ''))
         except KeyError:
             raise PyteomicsError("'masses', 'intensities' and 'charges' must be"
                     " present in all spectra.")
         output.write('\nEND IONS')
     output.write('\n')
-    if close: output.close()
+    if close and output is not sys.stdout: output.close()
     return output
