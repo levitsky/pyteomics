@@ -48,9 +48,10 @@ formats.
 import itertools
 import random
 import re
-from .auxiliary import PyteomicsError, _file_obj
+from .auxiliary import PyteomicsError, _file_obj, _file_reader
 
-def read(source=None, ignore_comments=False, parser=None, close=True):
+@_file_reader()
+def read(source=None, ignore_comments=False, parser=None, **kwargs):
     """Read a FASTA file and return entries iteratively.
 
     Parameters
@@ -80,6 +81,7 @@ def read(source=None, ignore_comments=False, parser=None, close=True):
     description, sequence
         A 2-tuple with FASTA header (str) and sequence (str).
     """
+    close = kwargs.get('close', True)
     f = parser or (lambda x: x)
     accumulated_strings = []
 

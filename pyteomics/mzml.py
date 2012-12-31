@@ -74,6 +74,7 @@ def _decode_base64_data_array(source, dtype, is_compressed):
     output = numpy.frombuffer(decoded_source, dtype=dtype)
     return output
 
+@aux._file_reader('rb')
 def read(source):
     """Parse ``source`` and iterate through spectra.
 
