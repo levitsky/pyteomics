@@ -46,14 +46,15 @@ Functions
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from .auxiliary import PyteomicsError, _file_obj
+from .auxiliary import PyteomicsError, _file_obj, _file_reader
 import numpy
 from itertools import cycle
 import sys
 
 _comments = '#;!/'
 
-def read(source=None, use_header=True, close=True):
+@_file_reader()
+def read(source=None, use_header=True, **kwargs):
     """Read an MGF file and return entries iteratively.
     
     Read the specified MGF file, **yield** spectra one by one.
@@ -85,6 +86,7 @@ def read(source=None, use_header=True, close=True):
 
     spectrum : dict
     """
+    close = kwargs.get('close', True)
     source = _file_obj(source, 'r')
     pos = source.tell()
     header = read_header(source, False)

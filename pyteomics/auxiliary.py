@@ -96,6 +96,9 @@ def linear_regression(x, y, a=None, b=None):
 
     return (a, b, r, stderr)
 
+### Public API ends here ###
+
+### Next section: File-reading helpers 
 def _keepstate(func):
     """Decorator to help keep the position in open file passed as first argument
     to functions"""
@@ -119,6 +122,48 @@ def _file_obj(f, mode):
         return open(f, mode)
     else:
         return f
+
+def _file_reader(mode='r'):
+    def decorator(func):
+        """A decorator implementing the context manager protocol for functions
+        that read files.
+        
+        Note: 'close' must be in kwargs! Otherwise it won't be respected."""
+        class CManager:
+            def __init__(self, source, *args, **kwargs):
+                self.close = kwargs.get('close', True)
+                self.fsource = _file_obj(source, kwargs.pop('__mode', 'r'))
+                self.reader = func(self.fsource, *args, **kwargs)
+
+            def __enter__(self):
+                return self.reader
+
+            def __iter__(self):
+                return self.reader
+
+            def __next__(self):
+                return next(self.reader)
+
+            def next(self):
+                return next(self.reader)
+
+            def __exit__(self, exc_type, exc_value, traceback):
+                if self.close and not self.fsource.closed:
+                    self.fsource.close()
+                return False
+
+        @wraps(func)
+        def helper(*args, **kwargs):
+            if '__mode' in kwargs:
+                raise PyteomicsError("You used the internally "
+                    "reserverd keyword '__mode'. Please don't do that.")
+            kwargs['__mode'] = mode
+            return CManager(*args, **kwargs)
+        return helper
+    return decorator
+
+### End of file helpers section ###
+### XML-related stuff below ###
 
 def _local_name(element):
     """Strip namespace from the XML element's name"""

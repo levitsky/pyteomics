@@ -1,41 +1,44 @@
 2.0.4
 -----
 
-New sets of retention coefficients in **achrom**.
+New sets of retention coefficients in :py:mod:`achrom`.
 
-**mass.Composition** now only stores non-zero ints.
+:py:class:`mass.Composition` now only stores non-zero ints.
 
-**fasta** now has tools for parsing of FASTA headers.
+:py:mod:`fasta` now has tools for parsing of FASTA headers.
+
+File parsers now implement the `context manager protocol 
+<http://docs.python.org/reference/datamodel.html#with-statement-context-managers>`_.
 
 API changes
 ...........
 
- - 'pepmass' is now a tuple in the output of **mgf.read** (to allow reading
+ - 'pepmass' is now a tuple in the output of :py:func:`mgf.read` (to allow reading
 precursor intensities).
 
- - new function **fasta.parse** for convenient parsing of FASTA headers.
+ - new function :py:func:`fasta.parse` for convenient parsing of FASTA headers.
 
- - **fasta.std_parsers** stores parsers for common UniProt header formats.
+ - :py:data:`fasta.std_parsers` stores parsers for common UniProt header formats.
 
- - new parameter *parser* in **fasta.read** allows to apply parsing while
+ - new parameter *parser* in :py:func:`fasta.read` allows to apply parsing while
 reading a FASTA file.
 
 2.0.3
 -----
 
-Added new class **Unimod** in **mass**. The interface is experimental and may
+Added new class :py:class:`Unimod` in :py:mod:`mass`. The interface is experimental and may
 change.
 
-Improved **iterfind** function in XML-reading modules.
+Improved :py:func:`iterfind` function in XML-reading modules.
 
-**mass.Composition** objects now support multiplication by int.
+:py:class:`mass.Composition` objects now support multiplication by int.
 
-Bugfix in **auxiliary.linear_regression**.
+Bugfix in :py:func:`auxiliary.linear_regression`.
 
 2.0.2
 -----
 
-Added new method **iterfind** in **mzid**, **pepxml** and **mzml**.
+Added new function :py:func:`iterfind` in :py:mod:`mzid`, :py:mod:`pepxml` and :py:mod:`mzml`.
 
 2.0.1
 -----
@@ -43,27 +46,27 @@ Added new method **iterfind** in **mzid**, **pepxml** and **mzml**.
 API changes
 ...........
 
-  - **parser.peptide_length** is renamed to **length**.
+  - :py:func:`parser.peptide_length` is renamed to :py:func:`length`.
 
 2.0.0
 -----
 
-Added **mzid** module for parsing of mzIdentML files.
+Added :py:mod:`mzid` module for parsing of mzIdentML files.
 
 Fixed bugs, improved tests.
 
 API changes
 ...........
 
-  - top-module functions in **fasta**, **mgf**, **mzml**, **pepxml**, as well
-  as **mzid**, are now called **read**.
+  - top-module functions in :py:mod:`fasta`, :py:mod:`mgf`, :py:mod:`mzml`, :py:mod:`pepxml`, as well
+  as :py:mod:`mzid`, are now called :py:func:`read`.
 
-  - in **parser**, **parse_sequence** renamed to **parse**. It now accepts
+  - in :py:mod:`parser`, :py:func:`parse_sequence` renamed to :py:func:`parse`. It now accepts
   an optional parameter `allow_unknown_modifications`.   
 
-  - **mgf.write_mgf** and **fasta.write_fasta** renamed to **write**.
+  - :py:func:`mgf.write_mgf` and :py:func:`fasta.write_fasta` renamed to :py:func:`write`.
 
-  - the output format of all **read** functions has changed.
+  - the output format of all :py:func:`read` functions has changed.
 
 1.2.5
 -----
@@ -71,55 +74,55 @@ API changes
 Include Apache license version 2.0:
 http://www.opensource.org/licenses/Apache-2.0
 
-Minor bugfix in **fasta**.
+Minor bugfix in :py:mod:`fasta`.
 
 1.2.4
 -----
 
-Changes in **mass**.
+Changes in :py:mod:`mass`.
 
 API changes
 ...........
 
-    - **Composition** objects can be created using positional first argument,
+    - :py:class:`Composition` objects can be created using positional first argument,
     which will be treated as a sequence or (upon failure) as a formula. That
-    means that all functions relying on Composition (**calculate_mass**,
-    **most_probable_isotopic_composition**, **isotopic_composition_abundance**)
+    means that all functions relying on Composition (:py:func:`calculate_mass`,
+    :py:func:`most_probable_isotopic_composition`, :py:func:`isotopic_composition_abundance`)
     allow that as well. However, it's of no use for the latter.
 
-    - **Composition** entries for modifications can be added to *aa_comp* and
+    - :py:class:`Composition` entries for modifications can be added to *aa_comp* and
     used in composition and mass calculations. This way the specified group will
     be added to any residue bearing this modification.
 
-    - That being said, the **add_modifications** function is not needed anymore
+    - That being said, the :py:func:`add_modifications` function is not needed anymore
     and has been removed.
 
-    - Addition and subtraction of **Composition** objects now produces a
-    **Composition** object, allowing addition/subtraction of multiple objects.
+    - Addition and subtraction of :py:class:`Composition` objects now produces a
+    :py:class:`Composition` object, allowing addition/subtraction of multiple objects.
 
-    - **Composition** is now a subclass of **collections.defaultdict** so one
+    - :py:class:`Composition` is now a subclass of :py:class:`collections.defaultdict` so one
     can safely retrieve values without checking if a key exists.
 
 1.2.3
 -----
 
-**parser.isoforms** now allows terminal modifications.
+:py:func:`parser.isoforms` now allows terminal modifications.
 
-Bugfixes in **parser.parse_sequence**.
+Bugfixes in :py:func:`parser.parse_sequence`.
 
-New function **parser.tostring** converts parsed sequences to strings.
-Helper function **parser.is_modX** added to check *modX* labels.
+New function :py:func:`parser.tostring` converts parsed sequences to strings.
+Helper function :py:func:`parser.is_modX` added to check *modX* labels.
 
 API changes
 ...........
 
-    - **parser.isoforms** now returns a generator object
+    - :py:func:`parser.isoforms` now returns a generator object
 
 1.2.2
 -----
 
-Bugfix in **pepxml**: modification info is now extracted.
-New optional bool argument 'split' in **parser.parse_sequence()** allows to
+Bugfix in :py:mod:`pepxml`: modification info is now extracted.
+New optional bool argument 'split' in :py:func:`parser.parse_sequence()` allows to
 generate a list of tuples where modifications are separated from the residues
 instead of a regular list of labels. In *labels* not only *modX* labels are
 now allowed, but also separate *mod* prefixes. Such modificatiuons are assumed
@@ -140,34 +143,34 @@ Added support for Python 3. Python 2.7 is still supported, Python 2.6 is not.
 1.1.1
 -----
 
-New function called **add_modifications()** added in
-**pyteomics.mass**. It updates *aa_comp*. Also,
-**isoforms()** is a new method in **parser** to get all possible modified
-sequences of a peptide.
+New function called :py:func:`add_modifications()` added in
+:py:mod:`pyteomics.mass`. It updates *aa_comp*. Also,
+:py:func:`isoforms()` is a new function in :py:mod:`parser` to get all possible
+modified sequences of a peptide.
 
 1.1.0
 -----
 
-New module added - **pyteomics.mgf**. It is intended for reading and writing
+New module added - :py:mod:`pyteomics.mgf`. It is intended for reading and writing
 files in Mascot Generic Format.
 
 1.0.2
 -----
 
-In **pepxml** module, now all search hits are read from file (not only the top
+In :py:mod:`pepxml` module, now all search hits are read from file (not only the top
 hit).
 
 API changes:
 ............
 
-    - *pepxml*: information specific to search hits is now stored in a list
+    - :py:func:`pepxml.read`: information specific to search hits is now stored in a list
     under the 'search_hits' key. The list is sorted by hit rank.
 
 
 1.0.1
 -----
 
-Fix compatibility issues in **pepxml** module.
+Fix compatibility issues in :py:mod:`pepxml` module.
 
 1.0.0
 -----
@@ -177,7 +180,7 @@ The first public release of Pyteomics.
 API changes:
 ............
 
-    - *achrom*: rename 'length correction factor' to 'length correction parameter'.
+    - :py:mod:`achrom`: rename 'length correction factor' to 'length correction parameter'.
       achrom.get_RCs_vary_lcf() was renamed to achrom.get_RCs_vary_lcp(),
       'length_correction_factor' keyword argument of achrom.get_RCs() was 
       renamed to 'lcp'.

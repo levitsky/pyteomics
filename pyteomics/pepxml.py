@@ -114,7 +114,7 @@ def _get_info_smart(source, element, **kw):
         info['search_hit'].sort(key=lambda x: x['hit_rank'])
     return info
 
-
+@aux._file_reader('rb')
 def read(source):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
