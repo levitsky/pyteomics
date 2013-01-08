@@ -99,12 +99,48 @@ Data
   0.5% AA in water; B = 0.5% AA in ACN-water (90:10)) at
   0.5% water/min, flow rate 200.0 nl/min, room temperature.
 
-  :py:data:`RCs_gilar_ph3_0` - a set of retention coefficients obtained in
+  :py:data:`RCs_gilar_atlantis_ph3_0` - a set of retention coefficients obtained in
   [#Gilar]_.
   Conditions: Atlantis HILIC silica column, (150 x 2.1 mm I.D.), 3 um, 100 A,
   gradient (A = water, B = ACN, C = 200 mM ammonium formate):
   0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
   at 0.2 ml/min, temperature 40 C, pH 3.0
+
+  :py:data:`RCs_gilar_atlantis_ph4_5` - a set of retention coefficients obtained in
+  [#Gilar]_.
+  Conditions: Atlantis HILIC silica column, (150 x 2.1 mm I.D.), 3 um, 100 A,
+  gradient (A = water, B = ACN, C = 200 mM ammonium formate):
+  0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
+  at 0.2 ml/min, temperature 40 C, pH 4.5
+
+  :py:data:`RCs_gilar_atlantis_ph10_0` - a set of retention coefficients obtained in
+  [#Gilar]_.
+  Conditions: Atlantis HILIC silica column, (150 x 2.1 mm I.D.), 3 um, 100 A,
+  gradient (A = water, B = ACN, C = 200 mM ammonium formate):
+  0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
+  at 0.2 ml/min, temperature 40 C, pH 10.0
+
+  :py:data:`RCs_gilar_beh` - a set of retention coefficients obtained in
+  [#Gilar]_.
+  Conditions: ACQUITY UPLC BEH HILIC column (150 x 2.1 mm I.D.), 1.7 um, 130 A,
+  Mobile phase A: 10 mM ammonium formate buffer, pH 4.5 prepared by
+  titrating 10 mM solution of FA with ammonium hydroxide. Mobile phase B:
+  90% ACN, 10% mobile phase A (v:v).
+  Gradient: 90-60% B in 50 min.
+
+  :py:data:`RCs_gilar_beh_amide` - a set of retention coefficients obtained in
+  [#Gilar]_.
+  Conditions: ACQUITY UPLC BEH glycan column (150 x 2.1 mm I.D.), 1.7 um, 130 A,
+  Mobile phase A: 10 mM ammonium formate buffer, pH 4.5 prepared by
+  titrating 10 mM solution of FA with ammonium hydroxide. Mobile phase B:
+  90% ACN, 10% mobile phase A (v:v).
+  Gradient: 90-60% B in 50 min.
+
+  :py:data:`RCs_gilar_rp` - a set of retention coefficients obtained in
+  [#Gilar]_.
+  Conditions: ACQUITY UPLC BEH C18 column (100 mm x 2.1 mm I.D.), 1.7 um, 130 A.
+  Mobile phase A: 0.02% TFA in water, mobile phase B: 0.018% TFA in ACN.
+  Gradient: 0 to 50% B in 50 min, flow rate 0.2 ml/min, temperature 40 C., pH 2.6.
 
 Theory
 ------
@@ -913,14 +949,14 @@ Conditions: Reprosil-Pur C18-AQ column (150 x 0.075 mm I.D.), gradient (A =
 0.5% water/min, flow rate 200.0 nl/min, room temperature.
 """
 
-RCs_gilar_ph3_0 = {'aa': {'K': 15.90,
+RCs_gilar_atlantis_ph3_0 = {'aa': {'K': 15.90,
     'R': 13.64,
     'H': 12.94,
     'E': 2.97,
     'P': 4.77,
     'Q': 5.43,
     'D': 3.20,
-    'camC': 4.87,
+    'C*': 4.87,
     'N': 3.91,
     'A': 3.34,
     'G': 3.33,
@@ -940,10 +976,172 @@ Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
 hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
 8890-6.
 
-Conditions: Atlantis HILIC silica column, (150 x 2.1 mm I.D.), 3 um, 100 A,
+Conditions: Atlantis HILIC silica column (150 x 2.1 mm I.D.), 3 um, 100 A,
 gradient (A = water, B = ACN, C = 200 mM ammonium formate):
 0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
 at 0.2 ml/min, temperature 40 C, pH 3.0"""
+
+RCs_gilar_atlantis_ph4_5 = {'aa': {'K': 15.49,
+    'R': 13.33,
+    'H': 12.19,
+    'E': 6.93,
+    'P': 5.89,
+    'Q': 5.68,
+    'D': 5.31,
+    'C*': 5.23,
+    'N': 4.07,
+    'A': 3.6,
+    'G': 3.46,
+    'S': 2.62,
+    'T': 2.33,
+    'V': 1.42,
+    'I': 0.84,
+    'M': 0.34,
+    'L': 0.29,
+    'F': -1.21,
+    'Y': -1.62,
+    'W': -2.08},
+        'lcp': 0.0,
+        'const': 23.95}
+"""A set of retention coefficients for normal phase chromatography obtained in
+Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
+hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
+8890-6.
+
+Conditions: Atlantis HILIC silica column (150 x 2.1 mm I.D.), 3 um, 100 A,
+gradient (A = water, B = ACN, C = 200 mM ammonium formate):
+0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
+at 0.2 ml/min, temperature 40 C, pH 4.5"""
+
+RCs_gilar_atlantis_ph10_0 = {'aa': {'K': 25.23,
+    'R': 23.38,
+    'H': 5.94,
+    'E': 0.59,
+    'P': 4.00,
+    'Q': 3.53,
+    'D': -0.84,
+    'C*': 3.52,
+    'N': 3.26,
+    'A': 3.64,
+    'G': 3.02,
+    'S': 2.28,
+    'T': 1.74,
+    'V': 1.05,
+    'I': 1.51,
+    'M': -0.61,
+    'L': 0.25,
+    'F': -0.17,
+    'Y': -0.79,
+    'W': 0.23},
+        'lcp': 0.0,
+        'const': 13.78}
+"""A set of retention coefficients for normal phase chromatography obtained in
+Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
+hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
+8890-6.
+
+Conditions: Atlantis HILIC silica column (150 x 2.1 mm I.D.), 3 um, 100 A,
+gradient (A = water, B = ACN, C = 200 mM ammonium formate):
+0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
+at 0.2 ml/min, temperature 40 C, pH 10.0"""
+
+RCs_gilar_beh = {'aa': {'K': 9.49,
+    'R': 8.56,
+    'H': 8.40,
+    'E': 5.95,
+    'P': 4.73,
+    'Q': 4.65,
+    'D': 4.97,
+    'C*': 3.47,
+    'N': 3.50,
+    'A': 2.90,
+    'G': 2.63,
+    'S': 2.14,
+    'T': 2.19,
+    'V': 1.71,
+    'I': 1.30,
+    'M': 1.40,
+    'L': 0.73,
+    'F': -0.09,
+    'Y': -0.40,
+    'W': 0.11},
+        'lcp': 0.0,
+        'const': 18.41}
+"""A set of retention coefficients for normal phase chromatography obtained in
+Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
+hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
+8890-6.
+
+Conditions: ACQUITY UPLC BEH HILIC column (150 x 2.1 mm I.D.), 1.7 um, 130 A,
+Mobile phase A: 10 mM ammonium formate buffer, pH 4.5 prepared by
+titrating 10 mM solution of FA with ammonium hydroxide. Mobile phase B:
+90% ACN, 10% mobile phase A (v:v).
+Gradient: 90-60% B in 50 min."""
+
+RCs_gilar_beh_amide = {'aa': {'K': 7.19,
+    'R': 6.68,
+    'H': 6.16,
+    'E': 6.11,
+    'P': 3.18,
+    'Q': 5.19,
+    'D': 6.02,
+    'C*': 3.71,
+    'N': 4.16,
+    'A': 2.64,
+    'G': 3.12,
+    'S': 3.17,
+    'T': 3.41,
+    'V': 0.83,
+    'I': -0.69,
+    'M': -0.12,
+    'L': -1.24,
+    'F': -1.93,
+    'Y': 0.46,
+    'W': -2.11},
+        'lcp': 0.0,
+        'const': 24.26}
+"""A set of retention coefficients for normal phase chromatography obtained in
+Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
+hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
+8890-6.
+
+Conditions: ACQUITY UPLC BEH glycan column (150 x 2.1 mm I.D.), 1.7 um, 130 A,
+Mobile phase A: 10 mM ammonium formate buffer, pH 4.5 prepared by
+titrating 10 mM solution of FA with ammonium hydroxide. Mobile phase B:
+90% ACN, 10% mobile phase A (v:v).
+Gradient: 90-60% B in 50 min."""
+
+RCs_gilar_rp = {'aa': {'K': -1.015,
+    'R': -0.681,
+    'H': -1.937,
+    'E': 1.475,
+    'P': 3.496,
+    'Q': 1.228,
+    'D': 1.326,
+    'C*': 1.832,
+    'N': 0.299,
+    'A': 2.322,
+    'G': 1.172,
+    'S': 1.165,
+    'T': 1.894,
+    'V': 5.695,
+    'I': 8.343,
+    'M': 5.128,
+    'L': 9.069,
+    'F': 10.877,
+    'Y': 5.603,
+    'W': 12.183},
+        'lcp': 0.0,
+        'const': -3.696}
+"""A set of retention coefficients for normal phase chromatography obtained in
+Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
+hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
+8890-6.
+
+Conditions: ACQUITY UPLC BEH C18 column (100 mm x 2.1 mm I.D.), 1.7 um, 130 A.
+Mobile phase A: 0.02% TFA in water, mobile phase B: 0.018% TFA in ACN.
+Gradient: 0 to 50% B in 50 min, flow rate 0.2 ml/min, temperature 40 C., pH 2.6.
+"""
 
 if __name__ == "__main__":
     import doctest
