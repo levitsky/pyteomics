@@ -51,7 +51,7 @@ import re
 from .auxiliary import PyteomicsError, _file_obj, _file_reader
 
 @_file_reader()
-def read(source=None, ignore_comments=False, parser=None, **kwargs):
+def read(source=None, ignore_comments=False, parser=None):
     """Read a FASTA file and return entries iteratively.
 
     Parameters
@@ -71,9 +71,6 @@ def read(source=None, ignore_comments=False, parser=None, **kwargs):
         Hint: specify :py:func:`parse` as the parser to apply automatic
         format guessing.
         Default is :py:const:`None`, which means return the header "as is".
-    close : bool, optional
-        Defines whether the file should be closed after reading all entries.
-        Default is :py:const:`True`.
 
     Yields
     ------
@@ -81,11 +78,9 @@ def read(source=None, ignore_comments=False, parser=None, **kwargs):
     description, sequence
         A 2-tuple with FASTA header (str) and sequence (str).
     """
-    close = kwargs.get('close', True)
     f = parser or (lambda x: x)
     accumulated_strings = []
 
-    source = _file_obj(source, 'r')
     # Iterate through '>' after the file is over to retrieve the last entry.
     for string in itertools.chain(source, '>'):
         stripped_string = string.strip()
@@ -119,10 +114,8 @@ def read(source=None, ignore_comments=False, parser=None, **kwargs):
                 accumulated_strings.append(stripped_string[1:])
         else:
             accumulated_strings.append(stripped_string)
-    if close:
-        source.close()
 
-def write(entries, output=None, close=True):
+def write(entries, output=None):
     """
     Create a FASTA file with ``entries``.
 
@@ -134,25 +127,26 @@ def write(entries, output=None, close=True):
         A file open for writing or a path to write to. If the file exists,
         it will be opened for appending. Default is :py:const:`None`, which
         means write to standard output.
-    close : bool, optional
-        If True, the file will be closed after writing. Defaults to True.
 
     Returns
     -------
     output_file : file object
         The file where the FASTA is written.
     """
-    output = _file_obj(output, 'a')
+
+    foutput, close = _file_obj(output, 'a')
    
     for descr, seq in entries:
         # write the description
-        output.write('>' + descr.replace('\n', '\n;') + '\n')
+        foutput.write('>' + descr.replace('\n', '\n;') + '\n')
         # write the sequence; it should be interrupted with \n every 70 characters
-        output.write(''.join([('%s\n' % seq[i:i+70])
+        foutput.write(''.join([('%s\n' % seq[i:i+70])
             for i in range(0, len(seq), 70)]) + '\n')
 
-    if close: output.close()
-    return output
+    if close:
+        foutput.close()
+        
+    return foutput
 
 def decoy_sequence(sequence, mode):
     """
@@ -181,7 +175,7 @@ def decoy_sequence(sequence, mode):
             'shuffle', not {}""".format(mode))
 
 def decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
-             decoy_only=False, close=True):
+             decoy_only=False):
     """Generate a decoy database out of a given ``source``.
     
     If 'output' is a path, the file will be open for appending, so no information
@@ -207,35 +201,31 @@ def decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
         If set to True, only the decoy entries will be written to 'output'.
         If False, the entries from 'source' will be written as well.
         False by default.
-    close : bool, optional
-        If :py:const:`True`, the target file will be closed in the end
-        (default). Set to :py:const:`False`, if you need to perform I/O
-        operations with the file after it's created. The input file will be
-        closed if given as file name and left open otherwise.
-    
+   
     Returns
     -------
     output : file
         A file object for the created file.
     """
-    close_source = isinstance(source, str)
-    source = _file_obj(source, 'r')
-    output = _file_obj(output, 'a')
+    fsource, close_source = _file_obj(source, 'r+')
+    foutput, close = _file_obj(output, 'a')
 
     # store the initial position
-    pos = source.tell()
+    pos = fsource.tell()
     if not decoy_only:
-        write(read(source, close=False), output, False)
+        write(read(fsource), foutput)
 
     # return to the initial position the source file to read again
-    source.seek(pos)
+    fsource.seek(pos)
 
-    decoy_entries = ((prefix + descr,
-        decoy_sequence(seq, mode))
-        for descr, seq in read(source, close=close_source))
+    decoy_entries = ((prefix + descr, decoy_sequence(seq, mode))
+        for descr, seq in read(fsource))
 
-    write(decoy_entries, output, close=close)
-    return output
+    write(decoy_entries, foutput)
+    if close: foutput.close()
+    if close_source:
+        fsource.close()
+    return foutput
 
 # auxiliary functions for parsing of FASTA headers
 def _split_pairs(s):

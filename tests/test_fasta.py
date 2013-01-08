@@ -19,9 +19,9 @@ class FastaTest(unittest.TestCase):
             TEST
             ''')
         self.fasta_file.seek(0)
-        self.fasta_entries_short = [i for i in read(self.fasta_file, ignore_comments=True, close=False)]
+        self.fasta_entries_short = list(read(self.fasta_file, ignore_comments=True))
         self.fasta_file.seek(0)
-        self.fasta_entries_long = [i for i in read(self.fasta_file, close=False)]
+        self.fasta_entries_long = list(read(self.fasta_file))
 
     def test_simple_read_long_comments(self):
         self.assertEqual(self.fasta_entries_long,
@@ -56,10 +56,10 @@ class FastaTest(unittest.TestCase):
     def test_read_and_write_fasta_short(self):
         self.fasta_file.seek(0)
         new_fasta_file = tempfile.TemporaryFile(mode='r+')
-        write(read(self.fasta_file, ignore_comments=True, close=False),
-                new_fasta_file, False)
+        write(read(self.fasta_file, ignore_comments=True),
+                new_fasta_file)
         new_fasta_file.seek(0)
-        new_entries = [i for i in read(new_fasta_file, ignore_comments=True)]
+        new_entries = list(read(new_fasta_file, ignore_comments=True))
         self.fasta_file.seek(0)
         self.assertEqual(new_entries, self.fasta_entries_short)
         new_fasta_file.close()
@@ -67,9 +67,9 @@ class FastaTest(unittest.TestCase):
     def test_read_and_write_long(self):
         self.fasta_file.seek(0)
         new_fasta_file = tempfile.TemporaryFile(mode='r+')
-        write(read(self.fasta_file, close=False), new_fasta_file, close=False)
+        write(read(self.fasta_file), new_fasta_file)
         new_fasta_file.seek(0)
-        new_entries = [i for i in read(new_fasta_file)]
+        new_entries = list(read(new_fasta_file))
         self.fasta_file.seek(0)
         self.assertEqual(new_entries, self.fasta_entries_long)
         new_fasta_file.close()
@@ -77,9 +77,9 @@ class FastaTest(unittest.TestCase):
     def test_decoy_db(self):
         self.fasta_file.seek(0)
         decdb = tempfile.TemporaryFile(mode='r+')
-        decoy_db(self.fasta_file, decdb, decoy_only=False, prefix='PREFIX_', close=False)
+        decoy_db(self.fasta_file, decdb, decoy_only=False, prefix='PREFIX_')
         decdb.seek(0)
-        all_entries = [i for i in read(decdb, False)]
+        all_entries = list(read(decdb, False))
         decdb.close()
         self.assertEqual(all_entries, self.fasta_entries_long + 
                 [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long])

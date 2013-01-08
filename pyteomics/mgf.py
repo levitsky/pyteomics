@@ -54,7 +54,7 @@ import sys
 _comments = '#;!/'
 
 @_file_reader()
-def read(source=None, use_header=True, **kwargs):
+def read(source=None, use_header=True):
     """Read an MGF file and return entries iteratively.
     
     Read the specified MGF file, **yield** spectra one by one.
@@ -77,19 +77,13 @@ def read(source=None, use_header=True, **kwargs):
         override those from the header in case of conflict.
         Default is :py:const:`True`.
 
-    close : bool, optional
-        Close the MGF file after reading the spectra. :py:const:`True`
-        by default.
-
     Yields
     ------
 
     spectrum : dict
     """
-    close = kwargs.get('close', True)
-    source = _file_obj(source, 'r')
     pos = source.tell()
-    header = read_header(source, False)
+    header = read_header(source)
     source.seek(pos)
     reading_spectrum = False
     params = {}
@@ -143,9 +137,8 @@ def read(source=None, use_header=True, **kwargs):
                             raise PyteomicsError(
                                  'Error when parsing %s. Line:\n%s' %
                                  (source, line))
-    if close: source.close()
 
-def read_header(source, close=True):
+def read_header(source):
     """
     Read the specified MGF file, get search parameters specified in the header
     as a :py:class:`dict`, the keys corresponding to MGF format (lowercased).
@@ -156,15 +149,12 @@ def read_header(source, close=True):
     source : str or file
         File name or file object representing an file in MGF format.
 
-    close : bool, optional
-        Defines whether the output file should be closed in the end. 
-
     Returns
     -------
 
     header : dict
     """
-    source = _file_obj(source, 'r')
+    source, close = _file_obj(source, 'r')
     header = {}
     for line in source:
         if line.strip() == 'BEGIN IONS':
@@ -175,7 +165,7 @@ def read_header(source, close=True):
     if close: source.close()
     return header
 
-def write(spectra, output=None, header='', close=True):
+def write(spectra, output=None, header=''):
     """
     Create a file in MGF format.
 
@@ -205,17 +195,12 @@ def write(spectra, output=None, header='', close=True):
         written 'as is'. In case of dict, the keys (must be strings) will be
         uppercased, the values will be written as strings, also uppercased.
 
-    close : bool, optional
-        Defines whether the output file should be closed in the end. If `output`
-        is None, the `close` option is ignored (standard output will not be
-        closed).
-
     Returns
     -------
 
     output : file
     """
-    output = _file_obj(output, 'a')
+    output, close = _file_obj(output, 'a')
 
     if isinstance(header, dict):
         head_dict = header

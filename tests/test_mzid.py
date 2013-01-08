@@ -3,8 +3,9 @@ from pyteomics.mzid import *
 
 class MzidTest(unittest.TestCase):
     def testReadPSM(self):
-        psms = [psm for psm in read('test.mzid')][0:4]
-        self.assertEqual(psms, [
+        with read('test.mzid') as reader:
+            psms = list(reader)[0:4]
+            self.assertEqual(psms, [
            {'SpectrumIdentificationItem': [
                {'ProteinScape:IntensityCoverage': 0.3919545603809718, 
                 'PeptideEvidenceRef': [{'peptideEvidence_ref': 'PE1_SEQ_spec1_pep1'}],
