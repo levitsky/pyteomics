@@ -1,4 +1,4 @@
-2.0.4
+2.1.0
 -----
 
 New sets of retention coefficients in :py:mod:`achrom`.
@@ -9,6 +9,7 @@ New sets of retention coefficients in :py:mod:`achrom`.
 
 File parsers now implement the `context manager protocol 
 <http://docs.python.org/reference/datamodel.html#with-statement-context-managers>`_.
+We recommend using `with` statements to avoid resource leaks.
 
 API changes
 ...........
@@ -22,6 +23,11 @@ precursor intensities).
 
  - new parameter *parser* in :py:func:`fasta.read` allows to apply parsing while
 reading a FASTA file.
+
+ - `close` parameter removed in all functions that do file I/O. The unified behavior
+ is: if the parameter is a file object, it won't be closed by the function. If a file
+ path is given, the file object will be created and closed inside the corresponding
+ function.
 
 2.0.3
 -----

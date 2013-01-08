@@ -4,19 +4,26 @@ from pyteomics.mgf import *
 
 class MGFTest(unittest.TestCase):
     def setUp(self):
-        path = 'test.mgf'
-        self.header = read_header(path)
-        self.spectra = [s for s in read(path)]
+        self.path = 'test.mgf'
+        self.header = read_header(self.path)
+        self.spectra = list(read(self.path))
         self.tmpfile = tempfile.TemporaryFile(mode='r+')
         write(header=self.header, spectra=self.spectra,
-                output=self.tmpfile, close=False)
+                output=self.tmpfile)
         self.tmpfile.seek(0)
-        self.header2 = read_header(self.tmpfile, close=False)
+        self.header2 = read_header(self.tmpfile)
         self.tmpfile.seek(0)
         tmpreader = read(self.tmpfile)
-        self.spectra2 = [x for x in tmpreader]
+        self.spectra2 = list(tmpreader)
         self.tmpfile.close()
         self.ns = len(self.spectra)
+
+    def test_with(self):
+        with read(self.path) as reader:
+            # can't compare lists of spectra because of numpy arrays
+            # will fix later
+            self.assertEqual(sum(1 for _ in reader),
+                    sum(1 for _ in read(self.path)))
 
     def test_header(self):
         self.assertEqual(self.header, self.header2)
@@ -32,8 +39,9 @@ class MGFTest(unittest.TestCase):
                     {'intensities', 'masses', 'params'})
 
     def test_readwrite_params(self):
-        for i in range(self.ns):
-            self.assertEqual(self.spectra[i]['params'], self.spectra2[i]['params'])
+        for s, s2 in zip(self.spectra, self.spectra2):
+            self.assertEqual(s['params'], s2['params'])
+
 
     def test_readwrite_msms_len(self):
         for i in range(self.ns):

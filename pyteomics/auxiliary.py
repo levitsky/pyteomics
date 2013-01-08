@@ -117,47 +117,66 @@ def _keepstate(func):
 def _file_obj(f, mode):
     """Check if `f` is a file name and open the file in `mode`."""
     if f is None:
-        return {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout}[mode[0]]
+        fobj = {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout}[mode[0]]
     elif isinstance(f, str):
-        return open(f, mode)
+        fobj = open(f, mode)
     else:
-        return f
+        fobj = f
+    return fobj, fobj is not f
 
 def _file_reader(mode='r'):
+    # a lot of the code below is borrowed from
+    # http://stackoverflow.com/a/14095585/1258041
     def decorator(func):
         """A decorator implementing the context manager protocol for functions
         that read files.
         
         Note: 'close' must be in kwargs! Otherwise it won't be respected."""
-        class CManager:
+        class CManager(object):
             def __init__(self, source, *args, **kwargs):
-                self.close = kwargs.get('close', True)
-                self.fsource = _file_obj(source, kwargs.pop('__mode', 'r'))
-                self.reader = func(self.fsource, *args, **kwargs)
+                self.file, self.close_file = _file_obj(source, mode)
 
+                try:
+                    self.reader = func(self.file, *args, **kwargs)
+                except:  # clean up on any error
+                    self.__exit__(*sys.exc_info())
+                    raise
+
+            # context manager support
             def __enter__(self):
-                return self.reader
+                return self
 
+            def __exit__(self, *args, **kwargs):
+                if not self.close_file:
+                    return  # do nothing
+                # clean up
+                exit = getattr(self.file, '__exit__', None)
+                if exit is not None:
+                    return exit(*args, **kwargs)
+                else:
+                    exit = getattr(self.file, 'close', None)
+                    if exit is not None:
+                        exit()
+
+            # iterator support
             def __iter__(self):
-                return self.reader
+                return self
 
             def __next__(self):
-                return next(self.reader)
+                try:
+                    return next(self.reader)
+                except StopIteration:
+                    self.__exit__(None, None, None)
+                    raise
 
-            def next(self):
-                return next(self.reader)
+            next = __next__  # Python 2 support
 
-            def __exit__(self, exc_type, exc_value, traceback):
-                if self.close and not self.fsource.closed:
-                    self.fsource.close()
-                return False
+            # delegate everything else to file object
+            def __getattr__(self, attr):
+                return getattr(self.file, attr)
 
         @wraps(func)
         def helper(*args, **kwargs):
-            if '__mode' in kwargs:
-                raise PyteomicsError("You used the internally "
-                    "reserverd keyword '__mode'. Please don't do that.")
-            kwargs['__mode'] = mode
             return CManager(*args, **kwargs)
         return helper
     return decorator
@@ -175,7 +194,7 @@ def _local_name(element):
 def _make_version_info(env):
 #   @_keepstate
     def version_info(source):
-        s = _file_obj(source, 'rb')
+        s, _ = _file_obj(source, 'rb')
         source = s if source is not s else open(s.name, 'rb')
         for _, elem in etree.iterparse(source, events=('start',),
                 remove_comments=True):
