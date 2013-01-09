@@ -154,16 +154,15 @@ def read_header(source):
 
     header : dict
     """
-    source, close = _file_obj(source, 'r')
-    header = {}
-    for line in source:
-        if line.strip() == 'BEGIN IONS':
-            break
-        l = line.split('=')
-        if len(l) == 2:
-            header[l[0].lower()] = l[1].strip()
-    if close: source.close()
-    return header
+    with _file_obj(source, 'r') as source:
+        header = {}
+        for line in source:
+            if line.strip() == 'BEGIN IONS':
+                break
+            l = line.split('=')
+            if len(l) == 2:
+                header[l[0].lower()] = l[1].strip()
+        return header
 
 def write(spectra, output=None, header=''):
     """
@@ -200,57 +199,56 @@ def write(spectra, output=None, header=''):
 
     output : file
     """
-    output, close = _file_obj(output, 'a')
+    with _file_obj(output, 'a') as output:
 
-    if isinstance(header, dict):
-        head_dict = header
-        head_lines = ['%s=%s' % (x.upper(), str(header[x])) for x in header]
-        head_str = '\n'.join(head_lines)
-    else:
-        if isinstance(header, str):
-            head_str = header
-            head_lines = header.split('\n')
+        if isinstance(header, dict):
+            head_dict = header
+            head_lines = ['%s=%s' % (x.upper(), str(header[x])) for x in header]
+            head_str = '\n'.join(head_lines)
         else:
-            head_lines = list(header)
-            head_str = '\n'.join(header)
-        head_dict = {}
-    for line in head_lines:
-        if not line.strip() or any(
-                line.startswith(c) for c in _comments):
-               continue
-        l = line.split('=')
-        if len(l) == 2:
-            head_dict[l[0].lower()] = l[1].strip()
-    output.write(head_str)
+            if isinstance(header, str):
+                head_str = header
+                head_lines = header.split('\n')
+            else:
+                head_lines = list(header)
+                head_str = '\n'.join(header)
+            head_dict = {}
+        for line in head_lines:
+            if not line.strip() or any(
+                    line.startswith(c) for c in _comments):
+                   continue
+            l = line.split('=')
+            if len(l) == 2:
+                head_dict[l[0].lower()] = l[1].strip()
+        output.write(head_str)
 
-    for spectrum in spectra:
-        output.write('\n\nBEGIN IONS\n')
-        output.write('\n'.join('{}={}'.format(key.upper(), val)
-            for key, val in spectrum['params'].items() if not
-            (val == head_dict.get(key) or
-            # handle PEPMASS tuple later
-            (key.lower() == 'pepmass' and 
-                not isinstance(val, (str, int, float))))))
-        # time to handle PEPMASS tuple
-        for key, val in spectrum['params'].items():
-            if key.lower() == 'pepmass' and not isinstance(val,
-                    (str, int, float)): # assume iterable
-                try:
-                    output.write('\nPEPMASS=' + ' '.join(
-                        str(x) for x in val if x is not None) + '\n')
-                except TypeError:
-                    raise PyteomicsError('Cannot handle parameter:'
-                            ' {} = {}'.format(key, val))
+        for spectrum in spectra:
+            output.write('\n\nBEGIN IONS\n')
+            output.write('\n'.join('{}={}'.format(key.upper(), val)
+                for key, val in spectrum['params'].items() if not
+                (val == head_dict.get(key) or
+                # handle PEPMASS tuple later
+                (key.lower() == 'pepmass' and 
+                    not isinstance(val, (str, int, float))))))
+            # time to handle PEPMASS tuple
+            for key, val in spectrum['params'].items():
+                if key.lower() == 'pepmass' and not isinstance(val,
+                        (str, int, float)): # assume iterable
+                    try:
+                        output.write('\nPEPMASS=' + ' '.join(
+                            str(x) for x in val if x is not None) + '\n')
+                    except TypeError:
+                        raise PyteomicsError('Cannot handle parameter:'
+                                ' {} = {}'.format(key, val))
 
-        try:
-            for m, i, c in zip(spectrum['masses'], spectrum['intensities'],
-                    spectrum.get('charges', cycle((None,)))):
-                output.write('\n{} {} {}'.format(
-                    m, i, c if c not in {None, numpy.nan} else ''))
-        except KeyError:
-            raise PyteomicsError("'masses', 'intensities' and 'charges' must be"
-                    " present in all spectra.")
-        output.write('\nEND IONS')
-    output.write('\n')
-    if close and output is not sys.stdout: output.close()
-    return output
+            try:
+                for m, i, c in zip(spectrum['masses'], spectrum['intensities'],
+                        spectrum.get('charges', cycle((None,)))):
+                    output.write('\n{} {} {}'.format(
+                        m, i, c if c not in {None, numpy.nan} else ''))
+            except KeyError:
+                raise PyteomicsError("'masses', 'intensities' and 'charges' must be"
+                        " present in all spectra.")
+            output.write('\nEND IONS')
+        output.write('\n')
+        return output
