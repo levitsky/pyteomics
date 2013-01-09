@@ -134,19 +134,15 @@ def write(entries, output=None):
         The file where the FASTA is written.
     """
 
-    foutput, close = _file_obj(output, 'a')
-   
-    for descr, seq in entries:
-        # write the description
-        foutput.write('>' + descr.replace('\n', '\n;') + '\n')
-        # write the sequence; it should be interrupted with \n every 70 characters
-        foutput.write(''.join([('%s\n' % seq[i:i+70])
-            for i in range(0, len(seq), 70)]) + '\n')
+    with _file_obj(output, 'a') as foutput:
+        for descr, seq in entries:
+            # write the description
+            foutput.write('>' + descr.replace('\n', '\n;') + '\n')
+            # write the sequence; it should be interrupted with \n every 70 characters
+            foutput.write(''.join([('%s\n' % seq[i:i+70])
+                for i in range(0, len(seq), 70)]) + '\n')
 
-    if close:
-        foutput.close()
-        
-    return foutput
+        return foutput.file
 
 def decoy_sequence(sequence, mode):
     """
@@ -207,25 +203,21 @@ def decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
     output : file
         A file object for the created file.
     """
-    fsource, close_source = _file_obj(source, 'r+')
-    foutput, close = _file_obj(output, 'a')
+    with _file_obj(source, 'r') as fsource, _file_obj(output, 'a') as foutput:
 
-    # store the initial position
-    pos = fsource.tell()
-    if not decoy_only:
-        write(read(fsource), foutput)
+        # store the initial position
+        pos = fsource.tell()
+        if not decoy_only:
+            write(read(fsource), foutput)
 
-    # return to the initial position the source file to read again
-    fsource.seek(pos)
+        # return to the initial position the source file to read again
+        fsource.seek(pos)
 
-    decoy_entries = ((prefix + descr, decoy_sequence(seq, mode))
-        for descr, seq in read(fsource))
+        decoy_entries = ((prefix + descr, decoy_sequence(seq, mode))
+            for descr, seq in read(fsource))
 
-    write(decoy_entries, foutput)
-    if close: foutput.close()
-    if close_source:
-        fsource.close()
-    return foutput
+        write(decoy_entries, foutput)
+        return foutput.file
 
 # auxiliary functions for parsing of FASTA headers
 def _split_pairs(s):

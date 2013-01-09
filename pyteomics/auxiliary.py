@@ -94,7 +94,7 @@ def linear_regression(x, y, a=None, b=None):
     r = numpy.corrcoef(x, y)[0, 1]
     stderr = (y - a * x - b).std()
 
-    return (a, b, r, stderr)
+    return a, b, r, stderr
 
 ### Public API ends here ###
 
@@ -114,15 +114,36 @@ def _keepstate(func):
             return func(source, *args, **kwargs)
     return wrapped
 
-def _file_obj(f, mode):
-    """Check if `f` is a file name and open the file in `mode`."""
-    if f is None:
-        fobj = {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout}[mode[0]]
-    elif isinstance(f, str):
-        fobj = open(f, mode)
-    else:
-        fobj = f
-    return fobj, fobj is not f
+class _file_obj(object):
+    """Check if `f` is a file name and open the file in `mode`.
+    A context manager."""
+    def __init__(self, f, mode):
+        if f is None:
+            self.file = {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout
+                    }[mode[0]]
+            self.none = True
+        elif isinstance(f, str):
+            self.file = open(f, mode)
+        else:
+            self.file = f
+        self.close_file = (self.file is not f)
+    def __enter__(self):
+        return self
+    def __exit__(self, *args, **kwargs):
+        if (not self.close_file) or hasattr(self, 'none'):
+            return  # do nothing
+        # clean up
+        exit = getattr(self.file, '__exit__', None)
+        if exit is not None:
+            return exit(*args, **kwargs)
+        else:
+            exit = getattr(self.file, 'close', None)
+            if exit is not None:
+                exit()
+    def __getattr__(self, attr):
+        return getattr(self.file, attr)
+    def __iter__(self):
+        return iter(self.file)
 
 def _file_reader(mode='r'):
     # a lot of the code below is borrowed from
@@ -134,8 +155,7 @@ def _file_reader(mode='r'):
         Note: 'close' must be in kwargs! Otherwise it won't be respected."""
         class CManager(object):
             def __init__(self, source, *args, **kwargs):
-                self.file, self.close_file = _file_obj(source, mode)
-
+                self.file = _file_obj(source, mode)
                 try:
                     self.reader = func(self.file, *args, **kwargs)
                 except:  # clean up on any error
@@ -147,16 +167,7 @@ def _file_reader(mode='r'):
                 return self
 
             def __exit__(self, *args, **kwargs):
-                if not self.close_file:
-                    return  # do nothing
-                # clean up
-                exit = getattr(self.file, '__exit__', None)
-                if exit is not None:
-                    return exit(*args, **kwargs)
-                else:
-                    exit = getattr(self.file, 'close', None)
-                    if exit is not None:
-                        exit()
+                self.file.__exit__(*args, **kwargs)
 
             # iterator support
             def __iter__(self):
@@ -192,19 +203,18 @@ def _local_name(element):
         return element.tag
 
 def _make_version_info(env):
-#   @_keepstate
+    @_keepstate
     def version_info(source):
-        s, _ = _file_obj(source, 'rb')
-        source = s if source is not s else open(s.name, 'rb')
-        for _, elem in etree.iterparse(source, events=('start',),
-                remove_comments=True):
-            if _local_name(elem) == env['element']:
-                vinfo = elem.attrib.get('version'), elem.attrib.get((
-                    '{{{}}}'.format(elem.nsmap['xsi'])
-                    if 'xsi' in elem.nsmap else '') + 'schemaLocation')
-                break
-        source.close()
-        return vinfo
+        with _file_obj(source, 'rb') as s:
+            s.seek(0)
+            for _, elem in etree.iterparse(s, events=('start',),
+                    remove_comments=True):
+                if _local_name(elem) == env['element']:
+                    vinfo = elem.attrib.get('version'), elem.attrib.get((
+                        '{{{}}}'.format(elem.nsmap['xsi'])
+                        if 'xsi' in elem.nsmap else '') + 'schemaLocation')
+                    break
+            return vinfo
     version_info.__doc__ = """
         Provide version information about the {0} file.
 
