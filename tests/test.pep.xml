@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <?xml-stylesheet type="text/xsl" href="/regis/data2/search/johnk/Dataset_Paper/mix3/4700/interact-pps_sl20060731_18mix_25ul_r1_1154456409.xsl"?>
 <msms_pipeline_analysis date="2006-10-04T10:05:13" xmlns="http://regis-web.systemsbiology.net/pepXML" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-xsi:schemaLocation="http://regis-web.systemsbiology.net/pepXML /tools/bin/TPP/tpp/schema/pepXML_v18.xsd" summary_xml="/regis/data2/search/johnk/Dataset_Paper/mix3/4700/interact-pps_sl20060731_18mix_25ul_r1_1154456409.xml">
+    xsi:schemaLocation="http://regis-web.systemsbiology.net/pepXML http://sashimi.sourceforge.net/schema_revision/pepXML/pepXML_v115.xsd" summary_xml="/regis/data2/search/johnk/Dataset_Paper/mix3/4700/interact-pps_sl20060731_18mix_25ul_r1_1154456409.xml">
   <analysis_summary analysis="database_refresh" time="2006-10-04T10:05:14" />
   <analysis_summary analysis="peptideprophet" time="2006-10-04T10:05:13">
     <peptideprophet_summary version="PeptideProphet v3.0 April 1, 2004 (TPP v2.9 GALE rev.3, Build 200609011623)" author="AKeller@ISB" min_prob="0.05" options="" est_tot_num_correct="147.4">
