@@ -1263,11 +1263,14 @@ mgf_int = [np.array([  73.,   44.,   67.,  291.,   54.,   49.]),
         np.array([  237.,   128.,   108.,  1007.,   974.,    79.])]
 mgf_mz = [np.array([  846.6,   846.8,   847.6,  1640.1,  1640.6,  1895.5]),
         np.array([  345.1,   370.2,   460.2,  1673.3,  1674. ,  1675.3])]
+mgf_ch = [np.array([ 1.,  2.,  1.,  1.,  1.,  1.]),
+        np.array([ 3.,  2.,  1.,  1.,  1.,  1.])]
 
 mgf_spectra_long = [{'intensities': ComparableArray(mgf_int[0].shape, mgf_int[0].dtype, mgf_int[0]),
   'masses': ComparableArray(mgf_mz[0].shape, mgf_mz[0].dtype, mgf_mz[0]),
+  'charges': ComparableArray(mgf_ch[0].shape, mgf_ch[0].dtype, mgf_ch[0]),
   'params': {'charge': '2+ and 3+',
-   'com': 'Taken from http://www.matrixscience.com/help/data_file_help.html',
+   'com': 'Based on http://www.matrixscience.com/help/data_file_help.html',
    'it_mods': 'Oxidation (M)',
    'itol': '1',
    'itolu': 'Da',
@@ -1279,14 +1282,15 @@ mgf_spectra_long = [{'intensities': ComparableArray(mgf_int[0].shape, mgf_int[0]
    'username': 'Lou Scene'}},
  {'intensities': ComparableArray(mgf_int[1].shape, mgf_int[1].dtype, mgf_int[1]),
   'masses': ComparableArray(mgf_mz[1].shape, mgf_mz[1].dtype, mgf_mz[1]),
+  'charges': ComparableArray(mgf_ch[1].shape, mgf_ch[1].dtype, mgf_ch[1]),
   'params': {'charge': '2+ and 3+',
-   'com': 'Taken from http://www.matrixscience.com/help/data_file_help.html',
+   'com': 'Based on http://www.matrixscience.com/help/data_file_help.html',
    'it_mods': 'Oxidation (M)',
    'itol': '1',
    'itolu': 'Da',
    'mass': 'Monoisotopic',
    'mods': 'Carbamidomethyl (C)',
-   'pepmass': (1084.9, None),
+   'pepmass': (1084.9, 1234.0),
    'rtinseconds': '25',
    'scans': '3',
    'title': 'Spectrum 2',
@@ -1294,11 +1298,13 @@ mgf_spectra_long = [{'intensities': ComparableArray(mgf_int[0].shape, mgf_int[0]
    'username': 'Lou Scene'}}]
 
 mgf_spectra_short = [{'intensities': ComparableArray(mgf_int[0].shape, mgf_int[0].dtype, mgf_int[0]),
+  'charges': ComparableArray(mgf_ch[0].shape, mgf_ch[0].dtype, mgf_ch[0]),
   'masses': ComparableArray(mgf_mz[0].shape, mgf_mz[0].dtype, mgf_mz[0]),
   'params': {'pepmass': (983.6, None), 'title': 'Spectrum 1'}},
  {'intensities': ComparableArray(mgf_int[1].shape, mgf_int[1].dtype, mgf_int[1]),
   'masses': ComparableArray(mgf_mz[1].shape, mgf_mz[1].dtype, mgf_mz[1]),
-  'params': {'pepmass': (1084.9, None),
+  'charges': ComparableArray(mgf_ch[1].shape, mgf_ch[1].dtype, mgf_ch[1]),
+  'params': {'pepmass': (1084.9, 1234.0),
    'rtinseconds': '25',
    'scans': '3',
    'title': 'Spectrum 2'}}]
