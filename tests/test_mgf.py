@@ -1,6 +1,7 @@
 import tempfile
 import unittest
 from pyteomics.mgf import *
+from data import mgf_spectra_long, mgf_spectra_short
 
 class MGFTest(unittest.TestCase):
     def setUp(self):
@@ -18,12 +19,14 @@ class MGFTest(unittest.TestCase):
         self.tmpfile.close()
         self.ns = len(self.spectra)
 
-    def test_with(self):
+    def test_read(self):
+        # http://stackoverflow.com/q/14246983/1258041
+        self.assertEqual(mgf_spectra_long, list(read(self.path)))
+        self.assertEqual(mgf_spectra_short, list(read(self.path, False)))
         with read(self.path) as reader:
-            # can't compare lists of spectra because of numpy arrays
-            # will fix later
-            self.assertEqual(sum(1 for _ in reader),
-                    sum(1 for _ in read(self.path)))
+            self.assertEqual(mgf_spectra_long, list(reader))
+        with read(self.path, False) as reader:
+            self.assertEqual(mgf_spectra_short, list(reader))
 
     def test_header(self):
         self.assertEqual(self.header, self.header2)
