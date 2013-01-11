@@ -4,6 +4,7 @@ from pyteomics.mgf import *
 from data import mgf_spectra_long, mgf_spectra_short
 
 class MGFTest(unittest.TestCase):
+    maxDiff = None
     def setUp(self):
         self.path = 'test.mgf'
         self.header = read_header(self.path)
@@ -35,16 +36,14 @@ class MGFTest(unittest.TestCase):
         self.assertEqual(self.ns, len(self.spectra2))
 
     def test_readwrite_keys(self):
-        for i in range(self.ns):
-            self.assertEqual(set(self.spectra[i].keys()),
-                    set(self.spectra2[i].keys()))
-            self.assertEqual(set(self.spectra[i].keys()),
-                    {'intensities', 'masses', 'params'})
+        for s, s2 in zip(self.spectra, self.spectra2):
+            self.assertEqual(set(s.keys()), set(s2.keys()))
+            self.assertEqual(set(s.keys()),
+                    {'intensities', 'masses', 'params', 'charges'})
 
     def test_readwrite_params(self):
         for s, s2 in zip(self.spectra, self.spectra2):
             self.assertEqual(s['params'], s2['params'])
-
 
     def test_readwrite_msms_len(self):
         for i in range(self.ns):
