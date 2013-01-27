@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="pepXML_std.xsl"?>
+<msms_pipeline_analysis date="2013:01:23:18:24:22" summary_xml="" xmlns="http://regis-web.systemsbiology.net/pepXML" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://sashimi.sourceforge.net/schema_revision/pepXML/pepXML_v117.xsd">
+   <msms_run_summary base_name="./output.2013_01_23_18_24_32.t.xml" search_engine="X! Tandem" raw_data_type="raw" raw_data=".?">
+      <sample_enzyme name="trypsin">
+<specificity cut="KR" no_cut="P" sense="C"/>
+</sample_enzyme>
+<search_summary base_name="./output.2013_01_23_18_24_32.t.xml" search_engine="X! Tandem" precursor_mass_type="monoisotopic" fragment_mass_type="monoisotopic" search_id="1">
+         <search_database local_path="/home/lab006/fasta/uniprot_sprot_with_decoy.fasta" type="AA"/>
+         <enzymatic_search_constraint enzyme="trypsin" max_num_internal_cleavages="1" min_number_termini="2" />
+         <aminoacid_modification aminoacid="C" massdiff="57.0215" mass="160.0306" variable="N" />
+         <aminoacid_modification aminoacid="C" massdiff="-17.0265" mass="143.0041" variable="Y" symbol="^" /><!--X! Tandem n-terminal AA variable modification-->
+         <aminoacid_modification aminoacid="E" massdiff="-18.0106" mass="111.0320" variable="Y" symbol="^" /><!--X! Tandem n-terminal AA variable modification-->
+         <aminoacid_modification aminoacid="Q" massdiff="-17.0265" mass="111.0321" variable="Y" symbol="^" /><!--X! Tandem n-terminal AA variable modification-->
+         
+         <!-- Input parameters -->
+         <parameter name="list path, taxonomy information" value="./taxonomy.xml"/>
+         <parameter name="output, histogram column width" value="30"/>
+         <parameter name="output, histograms" value="yes"/>
+         <parameter name="output, log path" value=""/>
+         <parameter name="output, maximum valid expectation value" value="0.1"/>
+         <parameter name="output, message" value="testing 1 2 3"/>
+         <parameter name="output, one sequence copy" value="yes"/>
+         <parameter name="output, parameters" value="yes"/>
+         <parameter name="output, path" value="./output.xml"/>
+         <parameter name="output, path hashing" value="yes"/>
+         <parameter name="output, performance" value="yes"/>
+         <parameter name="output, proteins" value="yes"/>
+         <parameter name="output, results" value="all"/>
+         <parameter name="output, sequence path" value=""/>
+         <parameter name="output, sequences" value="no"/>
+         <parameter name="output, sort results by" value="protein"/>
+         <parameter name="output, spectra" value="yes"/>
+         <parameter name="output, xsl path" value="tandem-style.xsl"/>
+         <parameter name="protein, C-terminal residue modification mass" value="0.0"/>
+         <parameter name="protein, N-terminal residue modification mass" value="0.0"/>
+         <parameter name="protein, cleavage C-terminal mass change" value="+17.002735"/>
+         <parameter name="protein, cleavage N-terminal mass change" value="+1.007825"/>
+         <parameter name="protein, cleavage site" value="[RK]|{P}"/>
+         <parameter name="protein, homolog management" value="no"/>
+         <parameter name="protein, modified residue mass file" value=""/>
+         <parameter name="protein, quick acetyl" value="no"/>
+         <parameter name="protein, quick pyrolidone" value="no"/>
+         <parameter name="protein, taxon" value="python"/>
+         <parameter name="refine" value="no"/>
+         <parameter name="refine, maximum valid expectation value" value="0.1"/>
+         <parameter name="refine, sequence path" value=""/>
+         <parameter name="refine, spectrum synthesis" value="yes"/>
+         <parameter name="residue, modification mass" value="57.021464@C"/>
+         <parameter name="residue, potential modification mass" value=""/>
+         <parameter name="residue, potential modification motif" value=""/>
+         <parameter name="scoring, a ions" value="no"/>
+         <parameter name="scoring, b ions" value="yes"/>
+         <parameter name="scoring, c ions" value="no"/>
+         <parameter name="scoring, cyclic permutation" value="no"/>
+         <parameter name="scoring, include reverse" value="no"/>
+         <parameter name="scoring, maximum missed cleavage sites" value="1"/>
+         <parameter name="scoring, minimum ion count" value="1"/>
+         <parameter name="scoring, x ions" value="no"/>
+         <parameter name="scoring, y ions" value="yes"/>
+         <parameter name="scoring, z ions" value="no"/>
+         <parameter name="spectrum, dynamic range" value="100.0"/>
+         <parameter name="spectrum, fragment mass type" value="monoisotopic"/>
+         <parameter name="spectrum, fragment monoisotopic mass error" value="100"/>
+         <parameter name="spectrum, fragment monoisotopic mass error units" value="ppm"/>
+         <parameter name="spectrum, maximum parent charge" value="4"/>
+         <parameter name="spectrum, minimum fragment mz" value="150.0"/>
+         <parameter name="spectrum, minimum parent m+h" value="500.0"/>
+         <parameter name="spectrum, minimum peaks" value="1"/>
+         <parameter name="spectrum, parent monoisotopic mass error minus" value="10"/>
+         <parameter name="spectrum, parent monoisotopic mass error plus" value="10"/>
+         <parameter name="spectrum, parent monoisotopic mass error units" value="ppm"/>
+         <parameter name="spectrum, parent monoisotopic mass isotope error" value="no "/>
+         <parameter name="spectrum, path" value="example.mgf"/>
+         <parameter name="spectrum, sequence batch size" value="1000"/>
+         <parameter name="spectrum, threads" value="10"/>
+         <parameter name="spectrum, total peaks" value="1000"/>
+         <parameter name="spectrum, use noise suppression" value="no"/>
+         <!-- Unused input parameters -->
+         <parameter name="protein, use minimal annotations" value="yes"/>
+         <parameter name="refine, modification mass" value=""/>
+         <parameter name="refine, point mutations" value="no"/>
+         <parameter name="refine, potential C-terminus modifications" value=""/>
+         <parameter name="refine, potential N-terminus modifications" value="+42.010565@["/>
+         <parameter name="refine, potential modification mass" value=""/>
+         <parameter name="refine, potential modification motif" value=""/>
+         <parameter name="refine, tic percent" value="20"/>
+         <parameter name="refine, unanticipated cleavage" value="yes"/>
+         <parameter name="refine, use potential modifications for full refinement" value="no"/>
+         <parameter name="scoring, pluggable scoring" value="no"/>
+         <!-- Performance parameters -->
+         <parameter name="list path, sequence source #1" value="/home/lab006/fasta/uniprot_sprot_with_decoy.fasta"/>
+         <parameter name="list path, sequence source description #1" value="no description"/>
+         <parameter name="modelling, total peptides used" value="3051"/>
+         <parameter name="modelling, total proteins used" value="1077170"/>
+         <parameter name="modelling, total spectra used" value="1"/>
+         <parameter name="process, start time" value="2013:01:23:18:24:22"/>
+         <parameter name="process, version" value="x! tandem CYCLONE (2012.10.01.1)"/>
+         <parameter name="quality values" value="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0"/>
+         <parameter name="refining, # input models" value="0"/>
+         <parameter name="refining, # input spectra" value="0"/>
+         <parameter name="refining, # partial cleavage" value="0"/>
+         <parameter name="refining, # point mutations" value="0"/>
+         <parameter name="refining, # potential C-terminii" value="0"/>
+         <parameter name="refining, # potential N-terminii" value="0"/>
+         <parameter name="refining, # unanticipated cleavage" value="0"/>
+         <parameter name="timing, initial modelling total (sec)" value="10.20"/>
+         <parameter name="timing, initial modelling/spectrum (sec)" value="10.2000"/>
+         <parameter name="timing, load sequence models (sec)" value="1.13"/>
+         <parameter name="timing, refinement/spectrum (sec)" value="0.0000"/>
+      </search_summary>
+      
+      <spectrum_query spectrum="" start_scan="1" end_scan="1" precursor_neutral_mass="683.3966" assumed_charge="2" index="1">
+      <search_result>
+         <search_hit hit_rank="1" peptide="GPAAIQK" peptide_prev_aa="K" peptide_next_aa="N" protein="sp|P35527|K1C9_HUMAN" protein_descr="Keratin, type I cytoskeletal 9 OS=Homo sapiens GN=KRT9 PE=1 SV=3" num_tot_proteins="1" num_matched_ions="8" tot_num_ions="12" calc_neutral_pep_mass="683.3966" massdiff="0.000" num_tol_term="2" num_missed_cleavages="0" is_rejected="0">
+            <search_score name="hyperscore" value="23.2"/>
+            <search_score name="nextscore" value="17.3"/>
+            <search_score name="bscore" value="6.6"/>
+            <search_score name="yscore" value="12.1"/>
+            <search_score name="cscore" value="0"/>
+            <search_score name="zscore" value="0"/>
+            <search_score name="ascore" value="0"/>
+            <search_score name="xscore" value="0"/>
+            <search_score name="expect" value="1.3"/>
+         </search_hit>
+      </search_result>
+      </spectrum_query>
+   </msms_run_summary>
+</msms_pipeline_analysis>

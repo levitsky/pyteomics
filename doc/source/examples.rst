@@ -10,3 +10,4 @@ Contents:
     :maxdepth: 1
 
     examples/example_fasta
+    examples/example_msms

@@ -115,7 +115,7 @@ def read(source=None, use_header=True):
                        'intensity array': numpy.array(intensities)}
 
                 if not all(c is None for c in charges):
-                    out['charge array'] = numpy.array(charges, dtype=numpy.float)
+                    out['charge array'] = numpy.array(charges, dtype=numpy.int8)
                 yield out
                 del out
                 params = dict(header) if use_header else {}

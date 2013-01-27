@@ -1,3 +1,9 @@
+2.1.1
+-----
+
+Rename keys in the dicts returned by :py:func:`mgf.read` to facilitate
+writing code working with both MGF and mzML.
+
 2.1.0
 -----
 
