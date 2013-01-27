@@ -255,6 +255,15 @@ function.
     >>> for descr, seq in fasta.read('my.fasta'):
     >>>    ...
 
+You can also use attributes to access description and sequence:
+
+.. code-block:: python
+
+    >>> from pyteomics import fasta
+    >>> for protein in fasta.read('my.fasta'):
+    >>>    print protein.description
+    >>>    print protein.sequence
+    
 Note the new recommended `with` syntax:
 
 .. code-block:: python
