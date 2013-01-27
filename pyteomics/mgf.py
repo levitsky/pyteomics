@@ -58,12 +58,12 @@ def read(source=None, use_header=True):
     """Read an MGF file and return entries iteratively.
     
     Read the specified MGF file, **yield** spectra one by one.
-    Each 'spectrum' is a :py:class:`dict` with three keys: 'masses',
-    'intensities' and 'params'. 'masses' and 'intensities' store
+    Each 'spectrum' is a :py:class:`dict` with three keys: 'm/z array',
+    'intensity array' and 'params'. 'm/z array' and 'intensity array' store
     :py:class:`numpy.array`'s of floats, and 'params' stores a
     :py:class:`dict` of parameters (keys and values are
     :py:class:`str`, keys corresponding to MGF, lowercased). Another array of
-    'charges' can be present in the output.
+    'charge array' can be present in the output.
 
     Parameters
     ----------
@@ -111,11 +111,11 @@ def read(source=None, use_header=True):
                     else:
                         params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
                 out = {'params': params, 
-                       'masses': numpy.array(masses),
-                       'intensities': numpy.array(intensities)}
+                       'm/z array': numpy.array(masses),
+                       'intensity array': numpy.array(intensities)}
 
                 if not all(c is None for c in charges):
-                    out['charges'] = numpy.array(charges, dtype=numpy.float)
+                    out['charge array'] = numpy.array(charges, dtype=numpy.int8)
                 yield out
                 del out
                 params = dict(header) if use_header else {}
@@ -172,16 +172,18 @@ def write(spectra, output=None, header=''):
     ----------
 
     spectra : iterable
-        A sequence of dictionaries with keys 'masses', 'intensities', and 'params'.
-        'masses' and 'intensities' should be sequences of :py:class:`int`,
-        :py:class:`float`, or :py:class:`str`. Strings will be written 'as is'.
-        The sequences should be of equal length, otherwise excessive values will
-        be ignored.
+        A sequence of dictionaries with keys 'm/z array', 'intensity array',
+        and 'params'. 'm/z array' and 'intensity array' should be sequences of
+        :py:class:`int`, :py:class:`float`, or :py:class:`str`. Strings will
+        be written 'as is'. The sequences should be of equal length, otherwise
+        excessive values will be ignored.
 
         'params' should be a :py:class:`dict` with keys corresponding to MGF
         format. Keys must be strings, they will be uppercased and used as is,
         without any format consistency tests. Values can be of any type allowing
         string representation.
+
+        'charge array' can also be specified.
 
     output : str or file or None, optional
         Path or a file-like object open for writing. If an existing file is
@@ -242,12 +244,12 @@ def write(spectra, output=None, header=''):
                                 ' {} = {}'.format(key, val))
 
             try:
-                for m, i, c in zip(spectrum['masses'], spectrum['intensities'],
-                        spectrum.get('charges', cycle((None,)))):
+                for m, i, c in zip(spectrum['m/z array'], spectrum['intensity array'],
+                        spectrum.get('charge array', cycle((None,)))):
                     output.write('\n{} {} {}'.format(
                         m, i, c if c not in {None, numpy.nan} else ''))
             except KeyError:
-                raise PyteomicsError("'masses', 'intensities' and 'charges' must be"
+                raise PyteomicsError("'m/z array' and 'intensity array' must be"
                         " present in all spectra.")
             output.write('\nEND IONS')
         output.write('\n')

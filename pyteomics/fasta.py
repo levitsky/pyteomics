@@ -47,6 +47,7 @@ formats.
 
 import itertools
 import random
+from collections import namedtuple
 import re
 from .auxiliary import PyteomicsError, _file_obj, _file_reader
 
@@ -78,6 +79,7 @@ def read(source=None, ignore_comments=False, parser=None):
     description, sequence
         A 2-tuple with FASTA header (str) and sequence (str).
     """
+    Protein = namedtuple('Protein', ('description', 'sequence'))
     f = parser or (lambda x: x)
     accumulated_strings = []
 
@@ -106,7 +108,7 @@ def read(source=None, ignore_comments=False, parser=None):
                 # Drop the translation stop sign.
                 if sequence.endswith('*'):
                     sequence = sequence[:-1]
-                yield f(description), sequence
+                yield Protein(f(description), sequence)
                 accumulated_strings = [stripped_string[1:], ]
             else:
                 # accumulated_strings is empty; we're probably reading

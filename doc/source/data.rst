@@ -19,8 +19,8 @@ contained in an mzML file. Here is an example of its output:
 .. code-block:: python
 
     >>> from pyteomics import mzml
-    >>> reader = mzml.read('tests/test.mzML')
-    >>> print next(reader) # Retrieve the first spectrum from the file and print it.
+    >>> with mzml.read('tests/test.mzML') as reader:
+    >>>     print next(reader) # Retrieve the first spectrum from the file and print it.
     {'MSn spectrum': '',
      'base peak intensity': 1471973.875,
      'base peak m/z': 810.415283203125,
@@ -70,17 +70,20 @@ Here is an example of use:
 .. code-block:: python
 
     >>> from pyteomics import mgf
-    >>> reader = mgf.read('tests/test.mgf')
-    >>> print next(reader) # Retrieve the first spectrum from the file and print it.
-    {'intensities': array([  73.,   44.,   67.,  291.,   54.,   49.]), 
-    'masses': array([  846.6,   846.8,   847.6,  1640.1,  1640.6,  1895.5]), 
+    >>> with mgf.read('tests/test.mgf') as reader:
+    >>>     print next(reader) # Retrieve the first spectrum from the file and print it.
+    {'m/z array': array([  345.1,   370.2,   460.2,  1673.3,  1674. ,  1675.3]),
+    'charge array': array([ 3,  2,  1,  1,  1,  1]),
     'params': {'username': 'Lou Scene', 'useremail': 'leu@altered-state.edu',
-    'mods': 'Carbamidomethyl (C)', 'itolu': 'Da', 'title': 'Spectrum 1',
-    'itol': '1', 'charge': '2+ and 3+', 'mass': 'Monoisotopic',
-    'it_mods': 'Oxidation (M)', 'pepmass': '983.6',
-    'com': 'Taken from http://www.matrixscience.com/help/data_file_help.html'}}
-
-Also, :py:mod:`pyteomics.mgf` allows to extract headers with general search 
+    'mods': 'Carbamidomethyl (C)', 'itolu': 'Da', 'title': 'Spectrum 2',
+    'rtinseconds': '25', 'itol': '1', 'charge': '2+ and 3+',
+    'mass': 'Monoisotopic', 'it_mods': 'Oxidation (M)',
+    'pepmass': (1084.9, 1234.0),
+    'com': 'Based on http://www.matrixscience.com/help/data_file_help.html',
+    'scans': '3'},
+    'intensity array': array([  237.,   128.,   108.,  1007.,   974.,    79.])}
+    
+Also, :py:mod:`pyteomics.mgf` allows to extract headers with general 
 parameters from MGF files with :py:func:`read_header` function. It also returns
 a :py:class:`dict`.
 
@@ -204,8 +207,8 @@ The module interface is similar to that of the other reader modules.
 .. code-block:: python
 
     >>> from pyteomics import mzid
-    >>> reader = mzid.read('tests/test.mzid')
-    >>> print next(reader)
+    >>> with mzid.read('tests/test.mzid') as reader:
+    >>>     print next(reader)
     {'SpectrumIdentificationItem': [
         {'ProteinScape:IntensityCoverage': 0.3919545603809718,
         'PeptideEvidenceRef': [
@@ -250,6 +253,16 @@ function.
 
     >>> from pyteomics import fasta
     >>> for descr, seq in fasta.read('my.fasta'):
+    >>>    ...
+
+Note the new recommended `with` syntax:
+
+.. code-block:: python
+
+    >>> from pyteomics import fasta
+    >>> with fasta.read('my.fasta') as reader:
+    >>>    for descr, seq in reader:
+    >>>       ...
 
 You can specify a function that will be applied to the FASTA headers for
 your convenience. :py:data:`pyteomics.fasta.std_parsers` has some pre-defined
