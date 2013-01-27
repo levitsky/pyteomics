@@ -4,6 +4,9 @@
 Rename keys in the dicts returned by :py:func:`mgf.read` to facilitate
 writing code working with both MGF and mzML.
 
+The items yielded by :py:func:`fasta.read` now have attributes `description`
+and `sequence`.
+
 2.1.0
 -----
 
