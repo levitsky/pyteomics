@@ -39,7 +39,7 @@ class MGFTest(unittest.TestCase):
         for s, s2 in zip(self.spectra, self.spectra2):
             self.assertEqual(set(s.keys()), set(s2.keys()))
             self.assertEqual(set(s.keys()),
-                    {'intensities', 'masses', 'params', 'charges'})
+                    {'intensity array', 'm/z array', 'params', 'charge array'})
 
     def test_readwrite_params(self):
         for s, s2 in zip(self.spectra, self.spectra2):
@@ -47,24 +47,24 @@ class MGFTest(unittest.TestCase):
 
     def test_readwrite_msms_len(self):
         for i in range(self.ns):
-            al = len(self.spectra[i]['masses'])
-            self.assertEqual(al, len(self.spectra[i]['intensities']))
-            self.assertEqual(al, len(self.spectra2[i]['masses']))
-            self.assertEqual(al, len(self.spectra2[i]['intensities']))
+            al = len(self.spectra[i]['m/z array'])
+            self.assertEqual(al, len(self.spectra[i]['intensity array']))
+            self.assertEqual(al, len(self.spectra2[i]['m/z array']))
+            self.assertEqual(al, len(self.spectra2[i]['intensity array']))
             for j in range(al):
-                self.assertEqual(self.spectra[i]['masses'][j],
-                        self.spectra2[i]['masses'][j])
-                self.assertEqual(self.spectra[i]['intensities'][j],
-                        self.spectra2[i]['intensities'][j])
+                self.assertEqual(self.spectra[i]['m/z array'][j],
+                        self.spectra2[i]['m/z array'][j])
+                self.assertEqual(self.spectra[i]['intensity array'][j],
+                        self.spectra2[i]['intensity array'][j])
 
     def test_readwrite_msms(self):
         for i in range(self.ns):
-            al = len(self.spectra[i]['masses'])
+            al = len(self.spectra[i]['m/z array'])
             for j in range(al):
-                self.assertEqual(self.spectra[i]['masses'][j],
-                        self.spectra2[i]['masses'][j])
-                self.assertEqual(self.spectra[i]['intensities'][j],
-                        self.spectra2[i]['intensities'][j])
+                self.assertEqual(self.spectra[i]['m/z array'][j],
+                        self.spectra2[i]['m/z array'][j])
+                self.assertEqual(self.spectra[i]['intensity array'][j],
+                        self.spectra2[i]['intensity array'][j])
 
 if __name__ == "__main__":
     unittest.main()
