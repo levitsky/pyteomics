@@ -19,8 +19,8 @@ contained in an mzML file. Here is an example of its output:
 .. code-block:: python
 
     >>> from pyteomics import mzml
-    >>> reader = mzml.read('tests/test.mzML')
-    >>> print next(reader) # Retrieve the first spectrum from the file and print it.
+    >>> with mzml.read('tests/test.mzML') as reader:
+    >>>     print next(reader) # Retrieve the first spectrum from the file and print it.
     {'MSn spectrum': '',
      'base peak intensity': 1471973.875,
      'base peak m/z': 810.415283203125,
@@ -70,9 +70,8 @@ Here is an example of use:
 .. code-block:: python
 
     >>> from pyteomics import mgf
-    >>> reader = mgf.read('tests/test.mgf')
-    >>> print next(reader) # Retrieve the first spectrum from the file and print it.
-    >>> next(reader) # retrieve the first spectrum and print it
+    >>> with mgf.read('tests/test.mgf') as reader:
+    >>>     print next(reader) # Retrieve the first spectrum from the file and print it.
     {'m/z array': array([  345.1,   370.2,   460.2,  1673.3,  1674. ,  1675.3]),
     'charge array': array([ 3,  2,  1,  1,  1,  1]),
     'params': {'username': 'Lou Scene', 'useremail': 'leu@altered-state.edu',
@@ -208,8 +207,8 @@ The module interface is similar to that of the other reader modules.
 .. code-block:: python
 
     >>> from pyteomics import mzid
-    >>> reader = mzid.read('tests/test.mzid')
-    >>> print next(reader)
+    >>> with mzid.read('tests/test.mzid') as reader:
+    >>>     print next(reader)
     {'SpectrumIdentificationItem': [
         {'ProteinScape:IntensityCoverage': 0.3919545603809718,
         'PeptideEvidenceRef': [
@@ -255,6 +254,15 @@ function.
     >>> from pyteomics import fasta
     >>> for descr, seq in fasta.read('my.fasta'):
     >>>    ...
+
+Note the new recommended `with` syntax:
+
+.. code-block:: python
+
+    >>> from pyteomics import fasta
+    >>> with fasta.read('my.fasta') as reader:
+    >>>    for descr, seq in reader:
+    >>>       ...
 
 You can specify a function that will be applied to the FASTA headers for
 your convenience. :py:data:`pyteomics.fasta.std_parsers` has some pre-defined
