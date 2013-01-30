@@ -107,6 +107,7 @@ def _get_info_smart(source, element, **kw):
             if t in info:
                 dtype = code
                 del info[t]
+                break
         if 'zlib compression' in info:
             compressed = True
             del info['zlib compression']

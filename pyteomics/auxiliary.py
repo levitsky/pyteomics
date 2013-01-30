@@ -326,7 +326,7 @@ def _make_get_info(env):
                     value = element.attrib['value']
                 return {element.attrib['name']: value}
             else:
-                return {'name': element.attrib['name']}
+                return {element.attrib['name']: True}
 
         info = dict(element.attrib)
         # process subelements
