@@ -1,3 +1,9 @@
+2.1.2
+-----
+
+Bugfix in XML parsers. The bug caused the mzML parser break on some files.
+The fix can slightly change the format of the output.
+
 2.1.1
 -----
 
