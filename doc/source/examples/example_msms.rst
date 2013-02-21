@@ -1,5 +1,5 @@
-Example 2: working with files, in silico fragmentation and visualization
-========================================================================
+Example 2: Fragmentation
+========================
 
 In this example, we are going to retrieve MS/MS data from an MGF file and
 compare it to identification info we read from a pepXML file. We are going to
