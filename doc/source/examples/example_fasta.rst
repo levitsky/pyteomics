@@ -1,5 +1,5 @@
-Example 1: in silico cleavage, property calculation and visualization
-=====================================================================
+Example 1: Unravelling the Peptidome 
+====================================
 
 In this example, we will introduce the Pyteomics tools to predict the basic
 physicochemical characteristics of peptides, such as mass, charge and 

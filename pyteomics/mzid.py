@@ -1,6 +1,6 @@
 """
-mzid - reader for peptide identification data in mzIdentML format
-======================================================================
+mzid - mzIdentML file reader
+============================
 
 Summary
 -------

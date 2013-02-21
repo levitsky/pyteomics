@@ -1,6 +1,6 @@
 """
-pepxml - reader for peptide-spectrum matches in pep.XML format
-==============================================================
+pepxml - pepXML file reader
+===========================
 
 Summary
 -------
