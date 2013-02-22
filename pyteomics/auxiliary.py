@@ -193,6 +193,24 @@ def _file_reader(mode='r'):
     return decorator
 
 ### End of file helpers section ###
+
+def memoize(maxsize=1000):
+    """Make a memoization decorator. A negative value of `maxsize` means
+    no size limit."""
+    def deco(f):
+        """Memoization decorator. Items of `kwargs` must be hashable."""
+        memo = {}
+        @wraps(f)
+        def func(*args, **kwargs):
+            key = (args, frozenset(kwargs.items()))
+            if key not in memo:
+                if len(memo) == maxsize:
+                    memo.pop()
+                memo[key] = f(*args, **kwargs)
+            return memo[key]
+        return func
+    return deco
+
 ### XML-related stuff below ###
 
 def _local_name(element):

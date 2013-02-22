@@ -91,7 +91,7 @@ Data
 import re
 from collections import deque
 from itertools import chain, product
-from .auxiliary import PyteomicsError
+from .auxiliary import PyteomicsError, memoize
 
 std_amino_acids = ['Q','W','E','R','T','Y','I','P','A','S',
                    'D','F','G','H','K','L','C','V','N','M']
@@ -422,7 +422,8 @@ def amino_acid_composition(sequence,
         
     return aa_dict
 
-def cleave(sequence, rule, missed_cleavages=0):
+@memoize()
+def cleave(sequence, rule, missed_cleavages=0, overlap=False):
     """Cleaves a polypeptide sequence using a given rule.
     
     Parameters
@@ -434,6 +435,13 @@ def cleave(sequence, rule, missed_cleavages=0):
         cleavage.    
     missed_cleavages : int, optional
         The maximal number of allowed missed cleavages. Defaults to 0.
+    overlap : bool, optional
+        Set this to :py:const:`True` if the cleavage rule is complex and
+        it is important to get all possible peptides when the matching
+        subsequences overlap (e.g. 'XX' produces overlapping matches when
+        the sequence contains 'XXX'). Default is :py:const:`False`.
+        Use with caution: enabling this results in exponentially growing
+        execution time.
 
     Returns
     -------
@@ -455,6 +463,10 @@ def cleave(sequence, rule, missed_cleavages=0):
         cleavage_sites.append(i)
         for j in range(0, len(cleavage_sites)-1):
             peptides.add(sequence[cleavage_sites[j]:cleavage_sites[-1]])
+        if overlap and i not in {0, None}:
+            peptides.update(
+                    cleave(sequence[i:], rule, missed_cleavages, overlap))
+
     if '' in peptides:
         peptides.remove('')
     return peptides

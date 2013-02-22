@@ -61,14 +61,16 @@ class ParserTest(unittest.TestCase):
                 self.assertIn(elem, seq)
             self.assertTrue(any(elem == seq
                 for elem in cleave(seq, expasy_rules['trypsin'], len(seq))))
+            self.assertTrue(any(elem == seq
+                for elem in cleave(seq, expasy_rules['trypsin'], len(seq), overlap=True)))
 
     def test_isoforms_simple(self):
         self.assertEqual(
                 set(isoforms('PEPTIDE', variable_mods={'xx': ['A', 'B', 'P', 'E']})),
-                set(['PEPTIDE', 'PEPTIDxxE', 'PExxPTIDE', 'PExxPTIDxxE', 'PxxEPTIDE',
+                {'PEPTIDE', 'PEPTIDxxE', 'PExxPTIDE', 'PExxPTIDxxE', 'PxxEPTIDE',
                      'PxxEPTIDxxE', 'PxxExxPTIDE', 'PxxExxPTIDxxE', 'xxPEPTIDE', 'xxPEPTIDxxE',
                      'xxPExxPTIDE', 'xxPExxPTIDxxE', 'xxPxxEPTIDE', 'xxPxxEPTIDxxE',
-                     'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE']))
+                     'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE'})
 
     def test_isoforms_len(self):
         for j in range(50):
