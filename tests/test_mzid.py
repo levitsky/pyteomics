@@ -4,6 +4,7 @@ from data import mzid_spectra
 from itertools import product
 
 class MzidTest(unittest.TestCase):
+    maxDiff = None
     def testReadPSM(self):
         for rec, refs in product((True, False), repeat=2):
             with read('test.mzid', recursive=rec, retrieve_refs=refs) as reader:

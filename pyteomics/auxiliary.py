@@ -326,7 +326,7 @@ def _make_get_info(env):
                     value = element.attrib['value']
                 return {element.attrib['name']: value}
             else:
-                return {element.attrib['name']: True}
+                return {'name': element.attrib['name']}
 
         info = dict(element.attrib)
         # process subelements
@@ -334,7 +334,13 @@ def _make_get_info(env):
             for child in element.iterchildren():
                 cname = _local_name(child)
                 if cname in {'cvParam', 'userParam'}:
-                    info.update(_get_info(source, child))
+                    newinfo = _get_info(source, child)
+                    if not ('name' in info and 'name' in newinfo):
+                        info.update(newinfo)
+                    else:
+                        if not isinstance(info['name'], list):
+                            info['name'] = [info['name']]
+                        info['name'].append(newinfo.pop('name'))
                 else:
                     if cname not in env['schema_info'](source, 'lists'):
                         info[cname] = env['get_info_smart'](source, child, **kwargs)
