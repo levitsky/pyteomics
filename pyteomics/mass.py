@@ -761,7 +761,7 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
     try:
         mass = sum(aa_mass[i] for i in sequence)
     except KeyError as e:
-        raise PyteomicsError('No mass data for residue: ' + e.message)
+        raise PyteomicsError('No mass data for residue: ' + e.args[0])
 
     mass_data = kwargs.get('mass_data', nist_mass)
     mass += mass_data['H'][0][0] * 2.0 + mass_data['O'][0][0]
