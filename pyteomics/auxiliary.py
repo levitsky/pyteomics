@@ -38,9 +38,9 @@ from traceback import format_exc
 import re
 import operator
 try: # Python 2.7
-    from urllib2 import urlopen
+    from urllib2 import urlopen, URLError
 except ImportError: # Python 3.x
-    from urllib.request import urlopen
+    from urllib.request import urlopen, URLError
 import sys
 
 class PyteomicsError(Exception):
@@ -205,7 +205,7 @@ def memoize(maxsize=1000):
             key = (args, frozenset(kwargs.items()))
             if key not in memo:
                 if len(memo) == maxsize:
-                    memo.pop()
+                    memo.popitem()
                 memo[key] = f(*args, **kwargs)
             return memo[key]
         return func
@@ -249,81 +249,82 @@ def _make_version_info(env):
     return version_info
 
 def _make_schema_info(env):
-    _schema_info_cache = {}
-    def _schema_info(source, key):
-        if source in _schema_info_cache:
-            return _schema_info_cache[source][key]
-        
+    @memoize(100)
+    def _schema_info(source):
         version, schema = env['version_info'](source)
         if version == env['default_version']:
-            ret = env['defaults']
-        else:
-            ret = {}
-            try:
-                if not schema:
-                    schema_url = ''
-                    raise PyteomicsError(
-                            'Schema information not found in {}.'.format(source))
-                schema_url = schema.split()[-1]
-                if not (schema_url.startswith('http://') or
-                        schema_url.startswith('file://')):
-                    schema_url = 'file://' + schema_url
-                schema_file = urlopen(schema_url)
-                p = etree.XMLParser(remove_comments=True)
-                schema_tree = etree.parse(schema_file, parser=p)
-                types = {'ints': {'int', 'long', 'nonNegativeInteger',
-                            'positiveInt', 'integer', 'unsignedInt'},
-                        'floats': {'float', 'double'},
-                        'bools': {'boolean'},
-                        'intlists': {'listOfIntegers'},
-                        'floatlists': {'listOfFloats'},
-                        'charlists': {'listOfChars', 'listOfCharsOrAny'}}
-                for k, val in types.items():
-                    tuples = set()
-                    for elem in schema_tree.iter():
-                        if _local_name(elem) == 'attribute' and elem.attrib.get(
-                                'type', '').split(':')[-1] in val:
-                            anc = elem.getparent()
-                            while not (
-                                    (_local_name(anc) == 'complexType' 
-                                        and 'name' in anc.attrib)
-                                    or _local_name(anc) == 'element'):
-                                anc = anc.getparent()
-                                if anc is None:
-                                    break
+            return env['defaults']
+        ret = {}
+        try:
+            if not schema:
+                schema_url = ''
+                raise PyteomicsError(
+                        'Schema information not found in {}.'.format(source))
+            schema_url = schema.split()[-1]
+            if not (schema_url.startswith('http://') or
+                    schema_url.startswith('file://')):
+                schema_url = 'file://' + schema_url
+            schema_file = urlopen(schema_url)
+            p = etree.XMLParser(remove_comments=True)
+            schema_tree = etree.parse(schema_file, parser=p)
+            types = {'ints': {'int', 'long', 'nonNegativeInteger',
+                        'positiveInt', 'integer', 'unsignedInt'},
+                    'floats': {'float', 'double'},
+                    'bools': {'boolean'},
+                    'intlists': {'listOfIntegers'},
+                    'floatlists': {'listOfFloats'},
+                    'charlists': {'listOfChars', 'listOfCharsOrAny'}}
+            for k, val in types.items():
+                tuples = set()
+                for elem in schema_tree.iter():
+                    if _local_name(elem) == 'attribute' and elem.attrib.get(
+                            'type', '').split(':')[-1] in val:
+                        anc = elem.getparent()
+                        while not (
+                                (_local_name(anc) == 'complexType' 
+                                    and 'name' in anc.attrib)
+                                or _local_name(anc) == 'element'):
+                            anc = anc.getparent()
+                            if anc is None:
+                                break
+                        else:
+                            if _local_name(anc) == 'complexType':
+                                elnames = [x.attrib['name'] for x in
+                                    schema_tree.iter() if x.attrib.get(
+                                        'type', '').split(':')[-1] ==
+                                    anc.attrib['name']]
                             else:
-                                if _local_name(anc) == 'complexType':
-                                    elnames = [x.attrib['name'] for x in
-                                        schema_tree.iter() if x.attrib.get(
-                                            'type', '').split(':')[-1] ==
-                                        anc.attrib['name']]
-                                else:
-                                    elnames = (anc.attrib['name'],)
-                                for elname in elnames:
-                                    tuples.add(
-                                        (elname, elem.attrib['name']))
-                    ret[k] = tuples
-                ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
-                    '//*[local-name()="element"]') if 'name' in elem.attrib and
-                    elem.attrib.get('maxOccurs', '1') != '1')
-            except Exception as e:
-                warn("Unknown {} version `{}`. Attempt to use schema\n"
-                        "information from <{}> failed.\n{}\n"
-                        "Falling back to defaults for {}\n"
-                        "NOTE: This is just a warning, probably from a badly-"
-                        "generated XML file.\nYou'll still most probably get "
-                        "decent results.\nLook here for suppressing warnings:\n"
-                        "http://docs.python.org/library/warnings.html#"
-                        "temporarily-suppressing-warnings\n"
-                        "If you think this shouldn't have happenned, you can "
-                        "report this to\n"
-                        "http://theorchromo.ru/pyteomics/issues\n"
-                        "".format(
-                            env['format'], version, schema_url,
-                            format_exc(), env['default_version']))
-                ret = env['defaults']
-        _schema_info_cache[source] = ret
-        return ret[key]
+                                elnames = (anc.attrib['name'],)
+                            for elname in elnames:
+                                tuples.add(
+                                    (elname, elem.attrib['name']))
+                ret[k] = tuples
+            ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
+                '//*[local-name()="element"]') if 'name' in elem.attrib and
+                elem.attrib.get('maxOccurs', '1') != '1')
+        except Exception as e:
+            if isinstance(e, URLError):
+                warn("Can't get the {0[format]} schema for version {1}"
+                " from {2} at the moment.\n"
+                "Using defaults for {0[default_version]}".format(env, version,
+                    schema_url))
+            else:
+                warn("Unknown {0[format]} version `{1}`. "
+                    "Attempt to use schema\n"
+                    "information from {2} failed.\n{3}\n"
+                    "Falling back to defaults for {0[default_version]}\n"
+                    "NOTE: This is just a warning, probably from a badly-"
+                    "generated XML file.\nYou'll still most probably get "
+                    "decent results.\nLook here for suppressing warnings:\n"
+                    "http://docs.python.org/library/warnings.html#"
+                    "temporarily-suppressing-warnings\n"
+                    "If you think this shouldn't have happenned, you can "
+                    "report this to\n"
+                    "http://hg.theorchromo.ru/pyteomics/issues\n"
+                    "".format(env, version, schema_url,
+                        format_exc()))
+            ret = env['defaults']
+        return ret
     _schema_info.__doc__ = """
         Stores defaults for version {}, tries to retrieve the schema for
         other versions. Keys are: 'floats', 'ints', 'bools', 'lists',
@@ -360,7 +361,7 @@ def _make_get_info(env):
                             info['name'] = [info['name']]
                         info['name'].append(newinfo.pop('name'))
                 else:
-                    if cname not in env['schema_info'](source, 'lists'):
+                    if cname not in env['schema_info'](source)['lists']:
                         info[cname] = env['get_info_smart'](source, child, **kwargs)
                     else:
                         if cname not in info:
@@ -386,7 +387,7 @@ def _make_get_info(env):
                 'charlists': list}
         for k, v in info.items():
             for t, a in converters.items():
-                if (_local_name(element), k) in env['schema_info'](source, t):
+                if (_local_name(element), k) in env['schema_info'](source)[t]:
                     info[k] = a(v)
         # resolve refs
         # loop is needed to resolve refs pulled from other refs

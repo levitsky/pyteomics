@@ -5,6 +5,8 @@ Adjust the behavior affected by the bug fixed in 2.1.2. `name` attributes
 of `<cvParam>` elements in the absence of `value` attributes are now collected
 in a list under the `'name'` key.
 
+Add support for overlapping matches in :py:func:`parser.cleave`.
+
 2.1.2
 -----
 
