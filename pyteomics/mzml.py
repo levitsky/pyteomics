@@ -108,12 +108,27 @@ def _get_info_smart(source, element, **kw):
                 dtype = code
                 del info[t]
                 break
+        # sometimes it's under 'name'
+        else:
+            if 'name' in info:
+                for t, code in types.items():
+                    if t in info['name']:
+                        dtype = code
+                        info['name'].remove(t)
+                        break
+        compressed = True
         if 'zlib compression' in info:
-            compressed = True
             del info['zlib compression']
+        elif 'name' in info and 'zlib compression' in info['name']:
+            info['name'].remove('zlib compression')
         else:
             compressed = False
             info.pop('no compression', None)
+            try:
+                info['name'].remove('no compression')
+                if not info['name']: del info['name']
+            except (KeyError, TypeError):
+                pass
         b = info.pop('binary')
         if b:
             array = _decode_base64_data_array(

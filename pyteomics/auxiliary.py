@@ -311,7 +311,8 @@ def _make_schema_info(env):
             else:
                 warn("Unknown {0[format]} version `{1}`. "
                     "Attempt to use schema\n"
-                    "information from {2} failed.\n{3}\n"
+                    "information from {2} failed.\n"
+                    "Exception information:\n{3}\n"
                     "Falling back to defaults for {0[default_version]}\n"
                     "NOTE: This is just a warning, probably from a badly-"
                     "generated XML file.\nYou'll still most probably get "
