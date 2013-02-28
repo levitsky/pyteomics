@@ -48,6 +48,8 @@ Auxiliary commands
   :py:func:`length` - calculate the number of amino acid
   residues in a polypeptide.
 
+  :py:func:`valid` - check if a sequence can be parsed successfully.
+
   :py:func:`is_modX` - check if supplied code corresponds to a modX label.
 
   :py:func:`is_term_mod` - check if supplied code corresponds to a
@@ -315,6 +317,22 @@ def parse(sequence,
         return tuples
 
     return parsed_sequence
+
+def valid(sequence, *args, **kwargs):
+    """Try to parse sequence and catch the exceptions.
+    `args` and `kwargs` are passed to :py:func:`parse`.
+
+    Returns:
+    --------
+    out : bool
+        :py:const:`True` if the sequence was parsed successfully, and
+        :py:const:`False` otherwise.
+    """
+    try:
+        parse(sequence, *args, **kwargs)
+    except PyteomicsError:
+        return False
+    return True
 
 def tostring(parsed_sequence, show_unmodified_termini=True):
     """Create a string from a parsed sequence.
