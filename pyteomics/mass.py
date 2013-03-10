@@ -525,7 +525,7 @@ def calculate_mass(*args, **kwargs):
     mass_data = kwargs.get('mass_data', nist_mass)
     ion_comp = kwargs.get('ion_comp', std_ion_comp)
     # Make a deep copy of `composition` keyword argument.
-    composition = (dict(kwargs['composition'])
+    composition = (Composition(kwargs['composition'])
                    if 'composition' in kwargs
                    else Composition(*args, **kwargs))
 
