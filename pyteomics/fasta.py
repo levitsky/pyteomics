@@ -73,11 +73,12 @@ def read(source=None, ignore_comments=False, parser=None):
         format guessing.
         Default is :py:const:`None`, which means return the header "as is".
 
-    Yields
-    ------
+    Returns
+    -------
     
-    description, sequence
-        A 2-tuple with FASTA header (str) and sequence (str).
+    out : iterator of tuples
+        A named 2-tuple with FASTA header (str) and sequence (str).
+        Attributes 'description' and 'sequence' are also provided.
     """
     Protein = namedtuple('Protein', ('description', 'sequence'))
     f = parser or (lambda x: x)

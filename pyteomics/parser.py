@@ -578,11 +578,12 @@ def isoforms(sequence, **kwargs):
         If :py:const:`True` then the unmodified N- and C-termini are explicitly
         shown in the returned sequences. Default value is :py:const:`False`.
 
-    Yields
+    Returns
     -------
-    isoform : str
+
+    out : iterator over strings
         All possible unique polypeptide sequences resulting from
-        the specified modifications.
+        the specified modifications are yielded obe by one.
     """
     def main(group): # index of the residue (capital letter) in `group`
         temp = [i for i, x in enumerate(group) if 
