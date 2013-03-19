@@ -77,10 +77,10 @@ def read(source=None, use_header=True):
         override those from the header in case of conflict.
         Default is :py:const:`True`.
 
-    Yields
-    ------
+    Returns
+    -------
 
-    spectrum : dict
+    out : iterator over dicts
     """
     pos = source.tell()
     header = read_header(source)
