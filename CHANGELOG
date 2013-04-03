@@ -1,9 +1,9 @@
 2.1.4
 -----
 
-Bugfix in :py:mod:`mgf`: the charges, if present, are returned as a masked array
-now. Previously, an exception a occurred if charges were missing for some of the
-fragments.
+Bugfix in :py:func:`mgf.read`: the charges, if present, are returned as a
+masked array now. Previously, an exception occurred if charges were missing
+for some of the fragments.
 
 2.1.3
 -----
