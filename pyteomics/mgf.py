@@ -46,8 +46,8 @@ Functions
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from .auxiliary import PyteomicsError, _file_obj, _file_reader
-import numpy
+from .auxiliary import PyteomicsError, _file_obj, _file_reader, _parse_charge
+import numpy as np
 from itertools import cycle
 import sys
 
@@ -62,8 +62,8 @@ def read(source=None, use_header=True):
     'intensity array' and 'params'. 'm/z array' and 'intensity array' store
     :py:class:`numpy.array`'s of floats, and 'params' stores a
     :py:class:`dict` of parameters (keys and values are
-    :py:class:`str`, keys corresponding to MGF, lowercased). Another array of
-    'charge array' can be present in the output.
+    :py:class:`str`, keys corresponding to MGF, lowercased). A masked array
+    'charge array' may be present in the output.
 
     Parameters
     ----------
@@ -111,11 +111,11 @@ def read(source=None, use_header=True):
                     else:
                         params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
                 out = {'params': params, 
-                       'm/z array': numpy.array(masses),
-                       'intensity array': numpy.array(intensities)}
+                       'm/z array': np.array(masses),
+                       'intensity array': np.array(intensities)}
 
-                if not all(c is None for c in charges):
-                    out['charge array'] = numpy.array(charges, dtype=numpy.int8)
+                if any(charges):
+                    out['charge array'] = np.ma.masked_equal(charges, 0)
                 yield out
                 del out
                 params = dict(header) if use_header else {}
@@ -132,7 +132,7 @@ def read(source=None, use_header=True):
                         try:
                             masses.append(float(l[0]))            # this may cause
                             intensities.append(float(l[1]))       # exceptions...
-                            charges.append(l[2] if len(l) > 2 else None)
+                            charges.append(_parse_charge(l[2]) if len(l) > 2 else 0)
                         except ValueError:
                             raise PyteomicsError(
                                  'Error when parsing %s. Line:\n%s' %
@@ -161,7 +161,9 @@ def read_header(source):
                 break
             l = line.split('=')
             if len(l) == 2:
-                header[l[0].lower()] = l[1].strip()
+                key = l[0].lower()
+                val = l[1].strip()
+                header[key] = val
         return header
 
 def write(spectra, output=None, header=''):
@@ -247,7 +249,7 @@ def write(spectra, output=None, header=''):
                 for m, i, c in zip(spectrum['m/z array'], spectrum['intensity array'],
                         spectrum.get('charge array', cycle((None,)))):
                     output.write('\n{} {} {}'.format(
-                        m, i, c if c not in {None, numpy.nan} else ''))
+                        m, i, (c if c not in (None, np.nan, np.ma.masked) else '')))
             except KeyError:
                 raise PyteomicsError("'m/z array' and 'intensity array' must be"
                         " present in all spectra.")
