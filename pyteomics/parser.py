@@ -50,6 +50,9 @@ Auxiliary commands
 
   :py:func:`valid` - check if a sequence can be parsed successfully.
 
+  :py:func:`fast_valid` - check if a sequence contains of known one-letter
+  codes.
+
   :py:func:`is_modX` - check if supplied code corresponds to a modX label.
 
   :py:func:`is_term_mod` - check if supplied code corresponds to a
@@ -318,9 +321,9 @@ def parse(sequence,
 
     return parsed_sequence
 
-def valid(sequence, *args, **kwargs):
+def valid(*args, **kwargs):
     """Try to parse sequence and catch the exceptions.
-    `args` and `kwargs` are passed to :py:func:`parse`.
+    All parameters are passed to :py:func:`parse`.
 
     Returns:
     --------
@@ -329,10 +332,30 @@ def valid(sequence, *args, **kwargs):
         :py:const:`False` otherwise.
     """
     try:
-        parse(sequence, *args, **kwargs)
+        parse(*args, **kwargs)
     except PyteomicsError:
         return False
     return True
+
+def fast_valid(sequence, labels=std_labels):
+    """Iterate over `sequence` and check if all items are in `labels`.
+    With strings, this only works as expected on sequences without
+    modifications or terminal groups.
+
+    Parameters:
+    -----------
+    sequence : iterable (expectedly, str)
+        The sequence to check. A valid sequence would be a string of
+        labels, all present in `labels`.
+    labels : iterable, optional
+        An iterable of known labels.
+
+    Returns:
+    --------
+    out : bool
+    """
+    labels = set(labels)
+    return all(aa in labels for aa in sequence)
 
 def tostring(parsed_sequence, show_unmodified_termini=True):
     """Create a string from a parsed sequence.
