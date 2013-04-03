@@ -501,7 +501,7 @@ def calculate_mass(*args, **kwargs):
         If True then the average mass is calculated. Note that mass is not
         averaged for elements with specified isotopes.
     ion_type : str, optional
-        If specified, then the polypeptide is considered to be in a form
+        If specified, then the polypeptide is considered to be in the form
         of the corresponding ion. Do not forget to specify the charge state!
     charge : int, optional
         If not 0 then m/z is calculated: the mass is increased
@@ -515,7 +515,7 @@ def calculate_mass(*args, **kwargs):
         value is :py:data:`nist_mass`). 
     ion_comp : dict, optional
         A dict with the relative elemental compositions of peptide ion
-        fragments (default is std_ion_comp).
+        fragments (default is :py:data:`std_ion_comp`).
     
     Returns
     -------
@@ -764,7 +764,7 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         raise PyteomicsError('No mass data for residue: ' + e.args[0])
 
     mass_data = kwargs.get('mass_data', nist_mass)
-    mass += mass_data['H'][0][0] * 2.0 + mass_data['O'][0][0]
+    mass += mass_data['H'][0][0] * 2 + mass_data['O'][0][0]
 
     if ion_type:
         ion_comp = kwargs.get('ion_comp', std_ion_comp)
