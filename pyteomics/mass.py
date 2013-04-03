@@ -767,10 +767,13 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
     mass += mass_data['H'][0][0] * 2 + mass_data['O'][0][0]
 
     if ion_type:
-        ion_comp = kwargs.get('ion_comp', std_ion_comp)
-        mass += sum(
-            mass_data[element][0][0] * ion_comp[ion_type][element]
-             for element in ion_comp[ion_type])
+        try:
+            icomp = kwargs.get('ion_comp', std_ion_comp)[ion_type]
+        except KeyError:
+            raise PyteomicsError('Unknown ion type: {}'.format(ion_type))
+
+        mass += sum(mass_data[element][0][0] * num
+             for element, num in icomp.items())
         
     if charge:
         mass = (mass + mass_data['H+'][0][0] * charge) / charge
@@ -785,7 +788,7 @@ class Unimod():
     """
 
     def __init__(self, source='http://www.unimod.org/xml/unimod.xml'):
-        """Create a database and fill it from XML file retrieved from `url`.
+        """Create a database and fill it from XML file retrieved from `source`.
 
         Parameters:
         -----------
