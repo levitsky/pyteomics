@@ -76,7 +76,6 @@ class ParserTest(unittest.TestCase):
         for j in range(50):
             L = random.randint(1, 10)
             peptide = ''.join([random.choice(self.labels) for _ in range(L)])
-#           print peptide
             modseqs = isoforms(peptide, variable_mods=self.potential,
                     fixed_mods=self.constant, labels=self.labels)
             forms = sum(1 for x in modseqs)
@@ -89,6 +88,31 @@ class ParserTest(unittest.TestCase):
                         length(p, labels=self.extlabels))
             self.assertEqual(forms, (3**pp.count('A')) *
                     (2**(pp.count('X')+pp.count('C'))) * 2**N)
+
+    def test_fast_valid(self):
+        for j in range(50):
+            L = random.randint(1, 10)
+            peptide = ''.join([random.choice(self.labels) for _ in range(L)])
+            self.assertTrue(fast_valid(peptide, labels=self.labels))
+            self.assertTrue(valid(peptide, labels=self.labels))
+            for aa in set(peptide):
+                bad = peptide.replace(aa, 'Z')
+                self.assertFalse(fast_valid(bad, labels=self.labels))
+                self.assertFalse(valid(bad, labels=self.labels))
+
+
+    def test_valid(self):
+        for j in range(50):
+            L = random.randint(1, 10)
+            peptide = ''.join([random.choice(self.labels) for _ in range(L)])
+            modseqs = isoforms(peptide, variable_mods=self.potential,
+                    fixed_mods=self.constant, labels=self.labels)
+            for s in modseqs:
+                self.assertTrue(valid(s, labels=self.extlabels))
+                for aa in set(peptide):
+                    bad = s.replace(aa, 'Z')
+                    self.assertFalse(fast_valid(bad, labels=self.labels))
+                    self.assertFalse(valid(bad, labels=self.labels))
 
 if __name__ == '__main__':
     unittest.main()

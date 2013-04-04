@@ -1,9 +1,13 @@
 2.1.4
 -----
 
-Bugfix in :py:func:`mgf.read`: the charges, if present, are returned as a
+Bugfixes:
+
+ - in :py:func:`mgf.read`: the charges, if present, are returned as a
 masked array now. Previously, an exception occurred if charges were missing
-for some of the fragments.
+for some of the fragments;
+ - values in :py:data:`mass.nist_mass` corrected;
+ - other minor corrections.
 
 2.1.3
 -----
