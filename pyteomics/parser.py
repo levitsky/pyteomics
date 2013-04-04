@@ -135,7 +135,7 @@ def is_modX(label):
     -------
     out : bool
     """
-    return label and ((len(label) == 1 and label[0].isupper()) or
+    return label and ((len(label) == 1 and label.isupper()) or
             (label[:-1].islower() and label[-1].isupper()))
 
 def length(sequence, **kwargs):
@@ -173,11 +173,10 @@ def length(sequence, **kwargs):
             num_term_groups += 1
         return len(parsed_sequence) - num_term_groups
     elif isinstance(sequence, dict):
-        return sum([amount for aa, amount in list(sequence.items()) 
-                    if not is_term_mod(aa)])
+        return sum(amount for aa, amount in sequence.items() 
+                    if not is_term_mod(aa))
 
-    raise PyteomicsError('Unsupported type of a sequence.')
-    return None
+    raise PyteomicsError('Unsupported type of sequence.')
 
 def _split_label(label):
         if not is_modX(label):
@@ -210,10 +209,10 @@ def parse(sequence,
         If :py:const:`True` then do not raise an exception when an unknown 
         modification of a known amino acid residue is found in the sequence.
         Default value is :py:const:`False`.
-    labels : list, optional
-        A list of allowed labels for amino acids, modifications and terminal
-        modifications (default is the 20 standard amino acids, N-terminal H- 
-        and C-terminal -OH). 
+    labels : container, optional
+        A list (set, tuple, etc.) of allowed labels for amino acids,
+        modifications and terminal modifications (default is the 20
+        standard amino acids, N-terminal 'H-' and C-terminal '-OH'). 
 
         New in ver. 1.2.2: separate labels for modifications (such as 'p' or 'ox')
         are now allowed.
