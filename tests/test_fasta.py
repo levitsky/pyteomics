@@ -74,10 +74,10 @@ class FastaTest(unittest.TestCase):
         self.assertEqual(new_entries, self.fasta_entries_long)
         new_fasta_file.close()
         
-    def test_decoy_db(self):
+    def test_write_decoy_db(self):
         self.fasta_file.seek(0)
         decdb = tempfile.TemporaryFile(mode='r+')
-        decoy_db(self.fasta_file, decdb, decoy_only=False, prefix='PREFIX_')
+        write_decoy_db(self.fasta_file, decdb, decoy_only=False, prefix='PREFIX_')
         decdb.seek(0)
         all_entries = list(read(decdb, False))
         decdb.close()
