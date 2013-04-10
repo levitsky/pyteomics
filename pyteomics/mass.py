@@ -89,38 +89,38 @@ import re
 import operator
 
 nist_mass = {
-    'H': {1: (1.0078250320710, 0.99988570),
-          2: (2.01410177784, 0.00011570),
+    'H': {1: (1.00782503207, 0.999885),
+          2: (2.0141017778, 0.000115),
           3: (3.016049277725, 0.0),
-          0: (1.0078250320710, 1.0)},
+          0: (1.00782503207, 1.0)},
     
     'H+': {1: (1.00727646677, 1.0),
            0: (1.00727646677, 1.0)},
 
     'e*': {0: (0.00054857990943, 1.0)}, 
 
-    'C': {12: (12.0000000, 0.98938),
-          13: (13.0033548378, 0.01078),
-          14: (14.0032419894, 0.0),
+    'C': {12: (12.0000000, 0.9893),
+          13: (13.0033548378, 0.0107),
+          14: (14.003241989, 0.0),
            0: (12.0000000, 1.0)},
 
-    'N': {14: (14.00307400486, 0.9963620),
-          15: (15.00010889827, 0.0036420),
-           0: (14.00307400486, 1.0)},
+    'N': {14: (14.0030740048, 0.99636),
+          15: (15.0001088982, 0.00364),
+           0: (14.0030740048, 1.0)},
 
-    'O': {16: (15.9949146195616, 0.9975716),
-          17: (16.9991317012, 0.000381),
-          18: (17.99916107, 0.0020514),
-           0: (15.9949146195616, 1.0)},
+    'O': {16: (15.99491461956, 0.99757),
+          17: (16.99913170, 0.00038),
+          18: (17.9991610, 0.00205),
+           0: (15.99491461956, 1.0)},
     
-    'P': {31: (30.9737616320, 1.0000),
-           0: (30.9737616320, 1.0000)},
+    'P': {31: (30.97376163, 1.0000),
+           0: (30.97376163, 1.0000)},
 
-    'S': {32: (31.9720710015, 0.949926),
-          33: (32.9714587615, 0.00752),
-          34: (33.9678669012, 0.042524),
-          36: (35.9670807620, 0.00011),
-           0: (31.9720710015, 1.0)},
+    'S': {32: (31.97207100, 0.9499),
+          33: (32.97145876, 0.0075),
+          34: (33.96786690, 0.0425),
+          36: (35.96708076, 0.0001),
+           0: (31.97207100, 1.0)},
     }
 """
 A dict with the exact element masses downloaded from the NIST website:
@@ -501,7 +501,7 @@ def calculate_mass(*args, **kwargs):
         If True then the average mass is calculated. Note that mass is not
         averaged for elements with specified isotopes.
     ion_type : str, optional
-        If specified, then the polypeptide is considered to be in a form
+        If specified, then the polypeptide is considered to be in the form
         of the corresponding ion. Do not forget to specify the charge state!
     charge : int, optional
         If not 0 then m/z is calculated: the mass is increased
@@ -515,7 +515,7 @@ def calculate_mass(*args, **kwargs):
         value is :py:data:`nist_mass`). 
     ion_comp : dict, optional
         A dict with the relative elemental compositions of peptide ion
-        fragments (default is std_ion_comp).
+        fragments (default is :py:data:`std_ion_comp`).
     
     Returns
     -------
@@ -661,7 +661,7 @@ def isotopic_composition_abundance(*args, **kwargs):
         The relative abundance of a given isotopic composition.
     """
 
-    composition = (dict(kwargs['composition'])
+    composition = (Composition(kwargs['composition'])
                    if 'composition' in kwargs
                    else Composition(*args, **kwargs))
 
@@ -764,13 +764,16 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         raise PyteomicsError('No mass data for residue: ' + e.args[0])
 
     mass_data = kwargs.get('mass_data', nist_mass)
-    mass += mass_data['H'][0][0] * 2.0 + mass_data['O'][0][0]
+    mass += mass_data['H'][0][0] * 2 + mass_data['O'][0][0]
 
     if ion_type:
-        ion_comp = kwargs.get('ion_comp', std_ion_comp)
-        mass += sum(
-            mass_data[element][0][0] * ion_comp[ion_type][element]
-             for element in ion_comp[ion_type])
+        try:
+            icomp = kwargs.get('ion_comp', std_ion_comp)[ion_type]
+        except KeyError:
+            raise PyteomicsError('Unknown ion type: {}'.format(ion_type))
+
+        mass += sum(mass_data[element][0][0] * num
+             for element, num in icomp.items())
         
     if charge:
         mass = (mass + mass_data['H+'][0][0] * charge) / charge
@@ -785,7 +788,7 @@ class Unimod():
     """
 
     def __init__(self, source='http://www.unimod.org/xml/unimod.xml'):
-        """Create a database and fill it from XML file retrieved from `url`.
+        """Create a database and fill it from XML file retrieved from `source`.
 
         Parameters:
         -----------

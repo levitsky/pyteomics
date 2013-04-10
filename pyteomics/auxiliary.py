@@ -211,6 +211,17 @@ def memoize(maxsize=1000):
         return func
     return deco
 
+def _parse_charge(s):
+    try:
+        return int(s)
+    except ValueError:
+        if ',' in s or 'and' in s:
+            return list(map(_parse_charge,
+                re.split(r'(?:,\s*)|(?:\s*and\s*)', s)))
+    num, sign = re.match(r'(\d+)(\+|-)', s).groups()
+    return int(num)*(-1 if sign == '-' else 1)
+    
+
 ### XML-related stuff below ###
 
 def _local_name(element):

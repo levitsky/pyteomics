@@ -20,7 +20,10 @@ Decoy database generation
 
   :py:func:`decoy_sequence` - generate a decoy sequence from a given sequence
 
-  :py:func:`decoy_db` - generate a decoy database from a given FASTA database
+  :py:func:`decoy_db` - generate entries for a decoy database from a given FASTA
+  database
+
+  :py:func:`write_decoy_db` - generate a decoy database and print it to a file
 
 Auxiliary
 ----------
@@ -73,11 +76,12 @@ def read(source=None, ignore_comments=False, parser=None):
         format guessing.
         Default is :py:const:`None`, which means return the header "as is".
 
-    Yields
-    ------
+    Returns
+    -------
     
-    description, sequence
-        A 2-tuple with FASTA header (str) and sequence (str).
+    out : iterator of tuples
+        A named 2-tuple with FASTA header (str) and sequence (str).
+        Attributes 'description' and 'sequence' are also provided.
     """
     Protein = namedtuple('Protein', ('description', 'sequence'))
     f = parser or (lambda x: x)
@@ -172,11 +176,58 @@ def decoy_sequence(sequence, mode):
             """`fasta.decoy_sequence`: `mode` must be 'reverse' or
             'shuffle', not {}""".format(mode))
 
-def decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
-             decoy_only=False):
-    """Generate a decoy database out of a given ``source``.
+@_file_reader()
+def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False):
+    """Iterate over sequences for a decoy database out of a given ``source``.
     
-    If 'output' is a path, the file will be open for appending, so no information
+    If `output` is a path, the file will be open for appending, so no information
+    will be lost if the file exists. Although, the user should be careful when
+    providing open file streams as `source` and `output`. The reading and writing
+    will start from the current position in the files, which is where the last I/O
+    operation finished. One can use the :py:func:`file.seek` method to change it.
+
+    Parameters
+    ----------
+    source : file-like object or str or None, optional
+        A path to a FASTA database or a file object itself. Default is
+        :py:const:`None`, which means read standard input.
+    mode : {'reverse', 'shuffle'}, optional
+        Algorithm of decoy sequence generation. 'reverse' by default.
+    prefix : str, optional
+        A prefix to the protein descriptions of decoy entries. The default 
+        value is 'DECOY_'.
+    decoy_only : bool, optional
+        If set to :py:const:`True`, only the decoy entries will be written to
+        `output`. If :py:const:`False`, the entries from `source` will be
+        written first.
+        :py:const:`False` by default.
+   
+    Returns
+    -------
+    out : iterator 
+        An iterator over entries of the new database.
+    """
+
+    # store the initial position
+    pos = source.tell()
+    if not decoy_only:
+        for x in read(source):
+            yield x
+
+    # return to the initial position the source file to read again
+    source.seek(pos)
+
+    decoy_entries = ((prefix + descr, decoy_sequence(seq, mode))
+        for descr, seq in read(source))
+
+    for x in decoy_entries:
+        yield x
+
+def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
+        decoy_only=False):
+    """Generate a decoy database out of a given ``source`` and write to file.
+    
+    If `output` is a path, the file will be open for appending, so no information
     will be lost if the file exists. Although, the user should be careful when
     providing open file streams as `source` and `output`. The reading and writing
     will start from the current position in the files, which is where the last I/O
@@ -194,32 +245,22 @@ def decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
         Algorithm of decoy sequence generation. 'reverse' by default.
     prefix : str, optional
         A prefix to the protein descriptions of decoy entries. The default 
-        value is "DECOY\_"
+        value is "DECOY_"
     decoy_only : bool, optional
-        If set to True, only the decoy entries will be written to 'output'.
-        If False, the entries from 'source' will be written as well.
-        False by default.
+        If set to :py:const:`True`, only the decoy entries will be written to
+        `output`. If :py:const:`False`, the entries from `source` will be
+        written as well.
+        :py:const:`False` by default.
    
     Returns
     -------
     output : file
         A file object for the created file.
     """
-    with _file_obj(source, 'r') as fsource, _file_obj(output, 'a') as foutput:
-
-        # store the initial position
-        pos = fsource.tell()
-        if not decoy_only:
-            write(read(fsource), foutput)
-
-        # return to the initial position the source file to read again
-        fsource.seek(pos)
-
-        decoy_entries = ((prefix + descr, decoy_sequence(seq, mode))
-            for descr, seq in read(fsource))
-
-        write(decoy_entries, foutput)
-        return foutput.file
+    with _file_obj(output, 'a') as fout, decoy_db(
+            source, mode, prefix, decoy_only) as entries:
+        write(entries, fout)
+        return fout.file
 
 # auxiliary functions for parsing of FASTA headers
 def _split_pairs(s):

@@ -48,6 +48,11 @@ Auxiliary commands
   :py:func:`length` - calculate the number of amino acid
   residues in a polypeptide.
 
+  :py:func:`valid` - check if a sequence can be parsed successfully.
+
+  :py:func:`fast_valid` - check if a sequence contains of known one-letter
+  codes.
+
   :py:func:`is_modX` - check if supplied code corresponds to a modX label.
 
   :py:func:`is_term_mod` - check if supplied code corresponds to a
@@ -130,7 +135,7 @@ def is_modX(label):
     -------
     out : bool
     """
-    return label and ((len(label) == 1 and label[0].isupper()) or
+    return label and ((len(label) == 1 and label.isupper()) or
             (label[:-1].islower() and label[-1].isupper()))
 
 def length(sequence, **kwargs):
@@ -168,11 +173,10 @@ def length(sequence, **kwargs):
             num_term_groups += 1
         return len(parsed_sequence) - num_term_groups
     elif isinstance(sequence, dict):
-        return sum([amount for aa, amount in list(sequence.items()) 
-                    if not is_term_mod(aa)])
+        return sum(amount for aa, amount in sequence.items() 
+                    if not is_term_mod(aa))
 
-    raise PyteomicsError('Unsupported type of a sequence.')
-    return None
+    raise PyteomicsError('Unsupported type of sequence.')
 
 def _split_label(label):
         if not is_modX(label):
@@ -205,10 +209,10 @@ def parse(sequence,
         If :py:const:`True` then do not raise an exception when an unknown 
         modification of a known amino acid residue is found in the sequence.
         Default value is :py:const:`False`.
-    labels : list, optional
-        A list of allowed labels for amino acids, modifications and terminal
-        modifications (default is the 20 standard amino acids, N-terminal H- 
-        and C-terminal -OH). 
+    labels : container, optional
+        A list (set, tuple, etc.) of allowed labels for amino acids,
+        modifications and terminal modifications (default is the 20
+        standard amino acids, N-terminal 'H-' and C-terminal '-OH'). 
 
         New in ver. 1.2.2: separate labels for modifications (such as 'p' or 'ox')
         are now allowed.
@@ -315,6 +319,42 @@ def parse(sequence,
         return tuples
 
     return parsed_sequence
+
+def valid(*args, **kwargs):
+    """Try to parse sequence and catch the exceptions.
+    All parameters are passed to :py:func:`parse`.
+
+    Returns:
+    --------
+    out : bool
+        :py:const:`True` if the sequence was parsed successfully, and
+        :py:const:`False` otherwise.
+    """
+    try:
+        parse(*args, **kwargs)
+    except PyteomicsError:
+        return False
+    return True
+
+def fast_valid(sequence, labels=std_labels):
+    """Iterate over `sequence` and check if all items are in `labels`.
+    With strings, this only works as expected on sequences without
+    modifications or terminal groups.
+
+    Parameters:
+    -----------
+    sequence : iterable (expectedly, str)
+        The sequence to check. A valid sequence would be a string of
+        labels, all present in `labels`.
+    labels : iterable, optional
+        An iterable of known labels.
+
+    Returns:
+    --------
+    out : bool
+    """
+    labels = set(labels)
+    return all(aa in labels for aa in sequence)
 
 def tostring(parsed_sequence, show_unmodified_termini=True):
     """Create a string from a parsed sequence.
@@ -560,11 +600,12 @@ def isoforms(sequence, **kwargs):
         If :py:const:`True` then the unmodified N- and C-termini are explicitly
         shown in the returned sequences. Default value is :py:const:`False`.
 
-    Yields
+    Returns
     -------
-    isoform : str
+
+    out : iterator over strings
         All possible unique polypeptide sequences resulting from
-        the specified modifications.
+        the specified modifications are yielded obe by one.
     """
     def main(group): # index of the residue (capital letter) in `group`
         temp = [i for i, x in enumerate(group) if 
