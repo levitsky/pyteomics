@@ -7,8 +7,10 @@ import numpy as np
 # http://stackoverflow.com/q/14246983/1258041
 class ComparableArray(np.ndarray):
     def __eq__(self, other):
-        return (isinstance(other, np.ndarray) and self.shape == other.shape and 
-            np.allclose(self, other))
+        if not isinstance(other, np.ndarray):
+            return False
+        other = np.asarray(other, dtype=np.float)
+        return self.shape == other.shape and np.allclose(self, other)
 
 pepxml_spectra = [
             {'spectrum': 'pps_sl20060731_18mix_25ul_r1_1154456409.0100.0100.1',

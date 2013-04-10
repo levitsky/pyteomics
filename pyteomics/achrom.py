@@ -534,10 +534,10 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
         A set of retention coefficients, length correction parameter and
         a fixed retention time shift.
     raise_no_mod : bool, optional
-        If True than an exception is raised when a modified amino acid from 
-        `peptides` is not found in `RC_dict`. If False, than the retention 
-        coefficient for the non-modified amino acid residue is used instead. 
-        True by default.
+        If :py:const:`True` then an exception is raised when a modified amino
+        acid from `peptides` is not found in `RC_dict`. If :py:const:`False`,
+        then the retention coefficient for the non-modified amino acid residue
+        is used instead. :py:const:`True` by default.
 
     Returns
     -------

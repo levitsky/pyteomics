@@ -1,3 +1,19 @@
+2.1.4
+-----
+
+In :py:mod:`fasta`, :py:func:`decoy_db` now doesn't write to file, but returns
+an iterator over FASTA records. The old :py:func:`decoy_db` is now called
+:py:func:`write_decoy_db`, which is equivalent to :py:func:`decoy_db` combined
+with :py:func:`write`.
+
+Bugfixes:
+
+ - in :py:func:`mgf.read`: the charges, if present, are returned as a
+masked array now. Previously, an exception occurred if charges were missing
+for some of the fragments;
+ - values in :py:data:`mass.nist_mass` corrected;
+ - other minor corrections.
+
 2.1.3
 -----
 

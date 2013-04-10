@@ -20,9 +20,12 @@ def fragments(peptide, types=('b', 'y'), maxcharge=1):
     for i in xrange(1, len(peptide)-1):
         for ion_type in types:
             for charge in xrange(1, maxcharge+1):
-                for slice_obj in (slice(i, None), slice(i)):
-                    yield mass.calculate_mass(
-                        peptide[slice_obj], ion_type=ion_type, charge=charge)
+                if ion_type[0] in 'abc':
+                    yield mass.fast_mass(
+                            peptide[:i], ion_type=ion_type, charge=charge)
+                else:
+                    yield mass.fast_mass(
+                            peptide[i:], ion_type=ion_type, charge=charge)
 
 with mgf.read('example.mgf') as spectra, pepxml.read('example.pep.xml') as psms:
     spectrum = next(spectra)

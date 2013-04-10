@@ -31,13 +31,13 @@ Then we'll download the files, if needed:
 
 Now it's time to define the function that will give us *m/z* of theoretical
 fragments for a given sequence. We will use
-:py:func:`pyteomics.mass.calculate_mass` to calculate the values.
+:py:func:`pyteomics.mass.fast_mass` to calculate the values.
 All we need to do is split the sequence at every bond and iterate
 over possible charges and ion types:
 
 .. literalinclude:: example_msms.py
     :language: python
-    :lines: 15-25
+    :lines: 15-28
 
 So, the outer loop is over "fragmentation sites", the next one is over ion
 types, then over charges, and lastly over two parts of the sequence
@@ -49,25 +49,25 @@ recommended.
 
 .. literalinclude:: example_msms.py
     :language: python
-    :lines: 27-29
+    :lines: 29-32
 
 Now prepare the figure...
 
 .. literalinclude:: example_msms.py
     :language: python
-    :lines: 30-34
+    :lines: 33-37
 
 ... plot the real spectrum:
 
 .. literalinclude:: example_msms.py
     :language: python
-    :lines: 35-36
+    :lines: 38-39
 
 ... calculate and plot the theoretical spectrum, and show everything:
 
 .. literalinclude:: example_msms.py
     :language: python
-    :lines: 37-42
+    :lines: 40-45
 
 You will see something like :download:`this <example_msms.png>`.
 
