@@ -134,7 +134,7 @@ pepxml_spectra = [
                'is_rejected': False,
                'massdiff': 0.004,
                'modifications': [{'mass': 147.0354, 'position': 10}],
-               'modified_peptide': 'EVPLNTIIFMGR',
+               'modified_peptide': 'EVPLNTIIFM[147]GR',
                'num_matched_ions': 8,
                'num_missed_cleavages': 0,
                'num_tot_proteins': 2,

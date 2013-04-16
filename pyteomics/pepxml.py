@@ -108,8 +108,17 @@ def _get_info_smart(source, element, **kw):
             info['modifications'].append({'position': 1 + len(info['peptide']),
                 'mass': float(info.pop('mod_cterm_mass'))})
     if 'modified_peptide' in info and info['modified_peptide'] == info.get(
-            'peptide') and not 'modifications' in info:
-        info['modifications'] = []
+            'peptide'):
+        if not info.get('modifications'):
+            info['modifications'] = []
+        else:
+            mp = info['modified_peptide']
+            for mod in sorted(info['modifications'],
+                    key=lambda m: m['position'],
+                    reverse=True):
+                p = mod['position']
+                mp = mp[:p] + '[{}]'.format(int(mod['mass'])) + mp[p:]
+            info['modified_peptide'] = mp
     if 'search_hit' in info:
         info['search_hit'].sort(key=lambda x: x['hit_rank'])
     return info
