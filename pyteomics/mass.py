@@ -184,17 +184,26 @@ class Composition(defaultdict):
             result[elem] += cnt
         return result
 
+    def __radd__(self, other):
+        return self + other
+
     def __sub__(self, other):
         result = self.copy()
         for elem, cnt in other.items():
             result[elem] -= cnt
         return result
 
+    def __rsub__(self, other):
+        return (self - other) * (-1)
+
     def __mul__(self, other):
         if not isinstance(other, int):
             raise PyteomicsError('Cannot multiply Composition by non-integer',
                     other)
         return Composition({k: v*other for k, v in self.items()})
+
+    def __rmul__(self, other):
+        return self * other
 
     def __eq__(self, other):
         if not isinstance(other, dict):
@@ -264,7 +273,7 @@ class Composition(defaultdict):
     def _from_sequence(self, sequence, aa_comp):
         parsed_sequence = parser.parse(
             sequence,
-            labels=list(aa_comp.keys()),
+            labels=aa_comp,
             show_unmodified_termini=True)
         self._from_parsed_sequence(parsed_sequence, aa_comp)
         
@@ -347,7 +356,9 @@ class Composition(defaultdict):
         split_sequence.
 
         If none of these are specified, the constructor will look at the first
-        positional argument and try to build the object from it.
+        positional argument and try to build the object from it. Without
+        positional arguments, a Composition will be constructed directly from
+        keyword arguments.
         
         If there's an ambiguity, i.e. the argument is both a valid sequence
         and a formula (such as 'HCN'), it will be treated as a sequence. You
@@ -365,7 +376,8 @@ class Composition(defaultdict):
         Parameters
         ----------
         formula : str, optional
-            A string with a chemical formula.
+            A string with a chemical formula. All elements must be present in
+            `mass_data`.
         sequence : str, optional
             A polypeptide sequence string in modX notation.
         parsed_sequence : list of str, optional
@@ -402,21 +414,28 @@ class Composition(defaultdict):
         elif args:
             if isinstance(args[0], dict):
                 self._from_dict(args[0])
-            else:
+            elif isinstance(args[0], str):
                 try:
-                    sequence = parser.tostring(args[0], True)
-                    self._from_sequence(sequence, aa_comp)
-                except:
+                    self._from_sequence(args[0], aa_comp)
+                except PyteomicsError:
                     try:
                         self._from_formula(args[0], mass_data)
-                    except:
+                    except PyteomicsError:
                         raise PyteomicsError(
-                                'Could not create a Composition object from `{}`. '
-                                'A Composition object must be specified by '
-                                'a sequence, parsed sequence, formula or '
-                                'a dict'.format(args[0]))
+                                'Could not create a Composition object from '
+                                'string: "{}": not a valid sequence or '
+                                'formula'.format(args[0]))
+            else:
+                try:
+                    self._from_sequence(parser.tostring(args[0], True),
+                            aa_comp)
+                except:
+                    raise PyteomicsError('Could not create a Composition object'
+                            ' from `{}`. A Composition object must be '
+                            'specified by sequence, parsed or split sequence,'
+                            ' formula or dict.'.format(args[0]))
         else:
-            self._from_dict(dict(**kwargs))
+            self._from_dict(kwargs)
 
 std_aa_comp.update({
     'A':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1}),
@@ -476,7 +495,10 @@ def calculate_mass(*args, **kwargs):
     Composition object.
 
     One or none of the following keyword arguments is required:
-    **formula**, **sequence**, **parsed_sequence** or **composition**.
+    **formula**, **sequence**, **parsed_sequence**, **split_sequence**
+    or **composition**.
+    All arguments given are used to create a Composition object, unless
+    an existing one is passed as a keyword argument.
     
     Note that if a sequence string is supplied then the mass is
     calculated for a polypeptide with standard terminal groups (NH2-

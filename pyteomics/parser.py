@@ -376,8 +376,6 @@ def tostring(parsed_sequence, show_unmodified_termini=True):
     sequence : str
     """
     labels = []
-    if isinstance(parsed_sequence, str): # regular sequence, not parsed
-        parsed_sequence = parse(parsed_sequence)
     for group in parsed_sequence:
         if isinstance(group, str):
             if (group not in (std_cterm, std_nterm)) or show_unmodified_termini:
