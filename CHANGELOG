@@ -1,3 +1,11 @@
+2.1.5
+-----
+
+Fix in :py:mod:`pepxml`. 'modified_peptide' is now always available.
+
+Fix in :py:mod:`mass` (issue #2 in the bug tracker). Improved arithmetics
+for :py:class:`Composition` objects.
+
 2.1.4
 -----
 
