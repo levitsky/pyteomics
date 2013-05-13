@@ -598,6 +598,12 @@ def isoforms(sequence, **kwargs):
         If :py:const:`True` then the unmodified N- and C-termini are explicitly
         shown in the returned sequences. Default value is :py:const:`False`.
 
+    format : str, optional
+        If :py:const:`'str'` (default), an iterator over sequences is returned.
+        If :py:const:`'split'`, the iterator will yield results in the same
+        format is :py:func:`parse` with the 'split' option, with unmodified
+        terminal groups shown.
+
     Returns
     -------
 
@@ -654,18 +660,27 @@ def isoforms(sequence, **kwargs):
         and main(group)[1] in res), second)
     states = [set(first).union([parsed[0]])]
     # Continue with regular mods
-    states.extend([set([group]).union(set([apply_mod(group, mod) for mod in variable_mods if
-        main(group)[1] in variable_mods[mod] and not is_term_mod(mod)])) for group in parsed[1:-1]])
+    states.extend({group}.union(set(apply_mod(group, mod)
+            for mod in variable_mods if 
+                main(group)[1] in variable_mods[mod] and not is_term_mod(mod)))
+        for group in parsed[1:-1])
     # Finally add C-terminal mods and regular mods on the C-terminal residue
     if len(parsed) > 1:
         second = set(apply_mod(parsed[-1], m) for m, r in variable_mods.items()
-                if main(parsed[-1])[1] in r and not is_term_mod(m)).union([parsed[-1]])
+                    if main(parsed[-1])[1] in r and not is_term_mod(m)
+                ).union((parsed[-1],))
         first = chain((apply_mod(group, mod) for group in second 
                 for mod, res in variable_mods.items()
             if mod.startswith('-') and main(group)[1] in res), second)
-        states.append(set(first).union([parsed[-1]]))
+        states.append(set(first).union((parsed[-1],)))
 
-    return (tostring(x, show_unmodified_termini) for x in product(*states))
+    format_ = kwargs.get('format', 'str')
+    if format_ == 'split': return product(*states)
+    elif format_ == 'str':
+        return (tostring(form, show_unmodified_termini)
+            for form in product(*states))
+    else:
+        raise PyteomicsError('Unsupported value of "format": {}'.format(format_))
     
 
 if __name__ == "__main__":
