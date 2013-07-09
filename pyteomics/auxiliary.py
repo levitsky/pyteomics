@@ -98,7 +98,7 @@ def linear_regression(x, y, a=None, b=None):
 
 ### Public API ends here ###
 
-### Next section: File-reading helpers 
+### Next section: File reading helpers 
 def _keepstate(func):
     """Decorator to help keep the position in open file passed as first argument
     to functions"""
@@ -376,9 +376,8 @@ def _make_get_info(env):
                     if cname not in env['schema_info'](source)['lists']:
                         info[cname] = env['get_info_smart'](source, child, **kwargs)
                     else:
-                        if cname not in info:
-                            info[cname] = []
-                        info[cname].append(env['get_info_smart'](source, child, **kwargs))
+                        info.setdefault(cname, []).append(
+                                env['get_info_smart'](source, child, **kwargs))
         # process element text
         if element.text and element.text.strip():
             stext = element.text.strip()
