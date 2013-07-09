@@ -99,8 +99,8 @@ def _get_info_smart(source, element, **kw):
             del info['alternative_protein']
     if 'peptide' in info and not 'modified_peptide' in info:
         info['modified_peptide'] = info['peptide']
-    if 'mod_aminoacid_mass' in info:
-        info['modifications'] = info.pop('mod_aminoacid_mass')
+    if 'peptide' in info:
+        info['modifications'] = info.pop('mod_aminoacid_mass', [])
         if 'mod_nterm_mass' in info:
             info['modifications'].insert(0, {'position': 0,
                 'mass': float(info.pop('mod_nterm_mass'))})
