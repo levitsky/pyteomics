@@ -20,7 +20,7 @@ key.
 Data access
 -----------
 
-  :py:func:`read` - iterate through peptide-spectrum matches in a pep.XML 
+  :py:func:`read` - iterate through peptide-spectrum matches in a mzIdentML 
   file. Data from a single PSM group are converted to a human-readable dict. 
 
   :py:func:`get_by_id` - get an element by its ID and extract the data from it.
