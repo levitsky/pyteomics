@@ -5,14 +5,14 @@ pepxml - pepXML file reader
 Summary
 -------
 
-`pep.XML <http://tools.proteomecenter.org/wiki/index.php?title=Formats:pepXML>`_
+`pepXML <http://tools.proteomecenter.org/wiki/index.php?title=Formats:pepXML>`_
 was the first widely accepted format for proteomics search engines' output. 
 Even though it is to be replaced by a community standard
 `mzIdentML <http://www.psidev.info/index.php?q=node/454>`_, it is still used
 commonly.
 
 This module provides minimalistic infrastructure for access to data stored in
-pep.XML files. The most important function is :py:func:`read`, which 
+pepXML files. The most important function is :py:func:`read`, which 
 reads peptide-spectum matches and related information and saves them into 
 human-readable dicts. The rest of data can be obtained via :py:func:`get_node` 
 function. This function relies on the terminology of the underlying 
@@ -21,7 +21,7 @@ function. This function relies on the terminology of the underlying
 Data access
 -----------
 
-  :py:func:`read` - iterate through peptide-spectrum matches in a pep.XML 
+  :py:func:`read` - iterate through peptide-spectrum matches in a pepXML 
   file. Data for a single spectrum are converted to an easy-to-use dict. 
 
   :py:func:`roc_curve` - get a receiver-operator curve (min peptideprophet
@@ -116,8 +116,9 @@ def _get_info_smart(source, element, **kw):
             for mod in sorted(info['modifications'],
                     key=lambda m: m['position'],
                     reverse=True):
-                p = mod['position']
-                mp = mp[:p] + '[{}]'.format(int(mod['mass'])) + mp[p:]
+                if mod['position'] not in {0, 1+len(info['peptide'])}:
+                    p = mod['position']
+                    mp = mp[:p] + '[{}]'.format(int(mod['mass'])) + mp[p:]
             info['modified_peptide'] = mp
     if 'search_hit' in info:
         info['search_hit'].sort(key=lambda x: x['hit_rank'])
