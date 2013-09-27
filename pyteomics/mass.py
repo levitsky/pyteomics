@@ -840,11 +840,9 @@ class Unimod():
                             formula = _make_isotope_string(symbol, isotope),
                             mass_data = self._massdata) * amount
             new_d['composition'] = comp
-            
             new_d['record_id'] = int(d.pop('record_id'))
             new_d['approved'] = (d.pop('approved') == '1')
             new_d.update(d)
-            
             spec = []
             for sp in self._xpath('specificity', mod):
                 sp_d = sp.attrib
@@ -860,7 +858,7 @@ class Unimod():
                     sp_new_d['note'] = '\n'.join(notes)
                 spec.append(sp_new_d)
             new_d['specificity'] = spec
-            
+
             alt_names = []
             for alt_name in self._xpath('alt_name', mod):
                 alt_names.append(alt_name.text)
