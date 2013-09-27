@@ -15,8 +15,11 @@ Pyteomics is distributed under `Apache License version 2.0 <http://opensource.or
 
 .. include:: ../../NOTICE
 
-Relation to the other proteomics data analysis tools
-----------------------------------------------------
+.. include:: ../../INFO
+
+Relation to other proteomics data analysis tools
+------------------------------------------------
+
 Our goal is to create an infrastructure for proteomics data analysis within
 Python ecosystem. Pyteomics is **not** a proteomic search engine, **nor** does
 it any data conversion. There are `other tools <http://www.ms-utils.org/>`_ for
