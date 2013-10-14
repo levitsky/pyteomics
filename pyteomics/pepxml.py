@@ -63,7 +63,7 @@ def _get_info_smart(source, element, **kw):
         info = _get_info(source, element, rec if rec is not None else True,
                 **kwargs)
     
-    # attributes which contain unconverted values.
+    # attributes which contain unconverted values
     convert = {'float':  {'calc_neutral_pep_mass', 'massdiff'},
         'int': {'start_scan', 'end_scan', 'index'},
         'bool': {'is_rejected'},
@@ -136,7 +136,7 @@ def read(source):
     Returns
     -------
     out : iterator
-       An iterator over the dicts with PSM properties.
+       An iterator over dicts with PSM properties.
     """
 
     return iterfind(source, 'spectrum_query')
@@ -164,14 +164,14 @@ def roc_curve(source):
         "/*[local-name()='analysis_summary and @analysis='peptideprophet']"
         "/*[local-name()='peptideprophet_summary']"
         "/*[local-name()='roc_data_point']"):
-        
+
         roc_data_point = dict(roc_element.attrib)
         for key in roc_data_point:
             roc_data_point[key] = float(roc_data_point[key])
         roc_curve.append(roc_data_point)
 
     return sorted(roc_curve, key=lambda x: x['min_prob'])
-    
+
 _version_info_env = {'format': 'pepXML', 'element': 'msms_pipeline_analysis'}
 version_info = aux._make_version_info(_version_info_env)
 

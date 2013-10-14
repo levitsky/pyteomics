@@ -228,8 +228,7 @@ def _local_name(element):
     """Strip namespace from the XML element's name"""
     if element.tag.startswith('{'):
         return element.tag.rsplit('}', 1)[1]
-    else:
-        return element.tag
+    return element.tag
 
 def _make_version_info(env):
     @_keepstate
