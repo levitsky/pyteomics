@@ -46,7 +46,13 @@ import numpy as np
 from . import auxiliary as aux
 
 def _get_info_smart(source, element, **kw):
-    return _get_info(source, element, **kw)
+    info = _get_info(source, element, **kw)
+    info.pop('group', None)
+    info.pop('model', None)
+    if isinstance(info.get('note'), dict
+            ) and set(info['note']) == {'label', 'note'}:
+        info['note'] = info['note']['note']
+    return info
 
 @aux._file_reader('rb')
 def read(source):
@@ -55,7 +61,7 @@ def read(source):
     Parameters
     ----------
     source : str or file
-        A path to a target X!Tandem ooutput file or the file object itself.
+        A path to a target X!Tandem output file or the file object itself.
 
     Returns
     -------
@@ -63,16 +69,25 @@ def read(source):
        An iterator over dicts with PSM properties.
     """
 
-    return iterfind(source, 'group[@type="model"]')
+    return iterfind(source, 'group[type=model]', recursive=True)
 
-def _schema_info(source):
+def _schema_info(_):
     """Stores defaults for X!Tandem output. Keys are: 'floats', 'ints',
     'bools', 'lists', 'intlists', 'floatlists', 'charlists'."""
 
-    return {'ints': set(), 'floats': set(), 'bools': set(), 'lists': set(),
+    return {'ints': {
+        ('group', 'z')} | {('domain', k) for k in [
+            'missed_cleavages', 'start', 'end', 'y_ions', 'b_ions']},
+            'floats': {('group', k) for k in [
+                'fI', 'sumI', 'maxI', 'mh', 'expect']} | {
+                   ('domain', k) for k in [
+                       'expect', 'hyperscore', 'b_score', 'y_score',
+                       'nextscore', 'delta', 'mh']} | {
+                   ('protein', 'expect'), ('protein', 'sumI')},
+            'bools': set(), 'lists': set(),
             'intlists': set(), 'floatlists': set(), 'charlists': set()}
 
-_getinfo_env = {'keys': set(), 'schema_info': _schema_info,
+_getinfo_env = {'keys': {'domain'}, 'schema_info': _schema_info,
     'get_info_smart': _get_info_smart}
 _get_info = aux._make_get_info(_getinfo_env)
 

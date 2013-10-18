@@ -395,9 +395,10 @@ def _make_get_info(env):
                 'intlists': lambda x: numpy.fromstring(x, dtype=int, sep=' '),
                 'floatlists': lambda x: numpy.fromstring(x, sep=' '),
                 'charlists': list}
+        schema_info = env['schema_info'](source)
         for k, v in info.items():
             for t, a in converters.items():
-                if (_local_name(element), k) in env['schema_info'](source)[t]:
+                if (_local_name(element), k) in schema_info[t]:
                     info[k] = a(v)
         # resolve refs
         # loop is needed to resolve refs pulled from other refs
