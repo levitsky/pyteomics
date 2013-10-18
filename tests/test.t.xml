@@ -1,0 +1,1774 @@
+<?xml version="1.0"?>
+<bioml xmlns:GAML="http://www.bioml.com/gaml/" label="models from 'C:\Xtandem_WorkDir\QC_Shew_07_02_0p5uguL-a_16Oct07_Owl_07-08-02_dta.txt'">
+<group id="10745" mh="2314.835000" z="2" expect="8.4e-005" label="SO_1630 translation elongation factor Ts (Tsf)" type="model" sumI="5.29" maxI="22514.9" fI="225.149" >
+<protein expect="-137.0" id="10745.1" uid="1370" label="SO_1630 translation elongation factor Ts (Tsf)" sumI="6.79" >
+<note label="description">SO_1630 translation elongation factor Ts (Tsf)</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="283">
+	<domain id="10745.1.1" start="191" end="211" expect="8.4e-005" mh="2314.159" delta="0.676" hyperscore="36.4" nextscore="21.8" y_score="12.2" y_ions="8" b_score="8.7" b_ions="4" pre="VVAR" post="MVVG" seq="EQALQIEISMNEGKPADIAEK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="10745.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.60936</GAML:attribute>
+<GAML:attribute type="a1">-0.266291</GAML:attribute>
+<GAML:Xdata label="10745.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="38">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10745.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="38">
+7922 7922 7922 7922 7557 6417 5382 3923 2715 1693 1057 572 322 180 89 35 15 7 0 0 0 0 5 0 0 0 0 0 0 0
+0 0 0 0 0 0 3 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="10745.convolute" type="convolution survival function">
+<GAML:Xdata label="10745.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="15">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10745.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="15">
+7927 7927 7927 7927 7562 6422 5231 3521 2005 833 336 72 11 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="10745.b" type="b ion histogram">
+<GAML:Xdata label="10745.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="8">
+0 1 2 3 4 5 6 7 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10745.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="8">
+2736 3890 1074 201 25 0 1 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="10745.y" type="y ion histogram">
+<GAML:Xdata label="10745.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+0 1 2 3 4 5 6 7 8 9 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10745.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+2890 3802 1013 197 16 5 1 0 3 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=9161 cs=2</note>
+<GAML:trace id="10745" label="10745.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">2314.84</GAML:attribute>
+<GAML:attribute type="charge">2</GAML:attribute>
+<GAML:Xdata label="10745.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+424.241 460.272 553.307 575.344 597.315 665.184 725.412 743.416 745.566 794.265 812.213 813.284 872.11 873.41 883.199 907.471 911.529 925.485 928.72 937.587 994.221 1012.29 1029.29 1043.54 1057.58 1084.37 1093.22 1116.39 1243.35 1261.63
+1285.44 1302.6 1369.64 1373.52 1386.46 1389.52 1391.66 1503.76 1504.75 1572.66 1613.72 1631.67 1633.76 1728.85 1745.87 1746.87 1837.87 1855.79 1857 1969.52 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10745.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+9 23 13 12 11 24 9 100 7 18 18 9 12 8 7 10 21 15 24 14 20 10 14 7 13 9 7 13 7 8
+7 21 13 10 12 84 21 34 16 11 13 43 12 7 21 11 12 28 9 8 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="4837" mh="1102.528000" z="2" expect="1.7e-004" label="SO_1630 translation elongation factor Ts (Tsf)" type="model" sumI="5.05" maxI="21465.5" fI="214.655" >
+<protein expect="-137.0" id="4837.1" uid="1370" label="SO_1630 translation elongation factor Ts (Tsf)" sumI="6.79" >
+<note label="description">SO_1630 translation elongation factor Ts (Tsf)</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="283">
+	<domain id="4837.1.1" start="256" end="265" expect="1.7e-004" mh="1101.615" delta="0.913" hyperscore="42.4" nextscore="23.1" y_score="12.0" y_ions="8" b_score="10.4" b_ions="6" pre="NFIR" post="EEDF" seq="LEVGEGIEKK" missed_cleavages="3">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="4837.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.44746</GAML:attribute>
+<GAML:attribute type="a1">-0.217408</GAML:attribute>
+<GAML:Xdata label="4837.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="44">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 39 40 41 42 43 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="4837.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="44">
+12785 12785 12443 11705 9951 8567 6775 5438 4127 3021 2232 1480 834 566 296 159 96 58 33 13 5 2 0 9 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 5 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="4837.convolute" type="convolution survival function">
+<GAML:Xdata label="4837.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="17">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="4837.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="17">
+12794 12794 12452 11697 9849 8138 5956 4254 2961 1931 1338 632 277 83 25 5 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="4837.b" type="b ion histogram">
+<GAML:Xdata label="4837.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="8">
+0 1 2 3 4 5 6 7 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="4837.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="8">
+3279 6417 2389 586 110 8 5 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="4837.y" type="y ion histogram">
+<GAML:Xdata label="4837.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+0 1 2 3 4 5 6 7 8 9 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="4837.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+5303 5562 1604 299 16 4 1 0 5 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=5722 cs=2</note>
+<GAML:trace id="4837" label="4837.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">1102.53</GAML:attribute>
+<GAML:attribute type="charge">2</GAML:attribute>
+<GAML:Xdata label="4837.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+197.166 215.115 240.206 243.039 257.381 275.142 300.175 343.298 352.358 380.927 386.318 399.05 404.255 421.35 430.457 431.417 449.368 486.049 494.954 500.485 506.614 510.265 517.579 522.372 524.162 567.463 574.351 585.319 670.357 680.453
+685.274 695.779 698.598 703.442 713.41 732.529 742.472 760.458 762.539 792.105 800.354 809.434 827.331 828.331 841.502 859.481 861.487 955.318 973.334 988.356 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="4837.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+3 13 2 34 4 18 2 4 2 3 4 2 3 4 100 6 2 13 24 2 2 3 2 3 3 3 18 6 2 3
+2 2 6 6 6 2 6 55 3 2 3 11 19 7 6 79 7 7 7 3 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="17689" mh="2732.762000" z="3" expect="1.7e-009" label="SO_1630 translation elongation factor Ts (Tsf)" type="model" sumI="5.49" maxI="23827.9" fI="238.279" >
+<protein expect="-137.0" id="17689.1" uid="1370" label="SO_1630 translation elongation factor Ts (Tsf)" sumI="6.79" >
+<note label="description">SO_1630 translation elongation factor Ts (Tsf)</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="283">
+	<domain id="17689.1.1" start="256" end="281" expect="1.7e-009" mh="2732.399" delta="0.363" hyperscore="83.5" nextscore="32.1" y_score="12.3" y_ions="13" b_score="12.2" b_ions="16" pre="NFIR" post="KA]" seq="LEVGEGIEKKEEDFAAEVAAQIAASK" missed_cleavages="3">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="17689.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.7331</GAML:attribute>
+<GAML:attribute type="a1">-0.173651</GAML:attribute>
+<GAML:Xdata label="17689.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="86">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59
+60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="17689.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="86">
+11595 11595 11595 11595 11595 11285 10980 10374 9327 8062 6643 5183 3936 2920 2092 1490 1019 717 448 298 187 117 77 62 35 23 14 10 4 3
+0 0 6 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 4 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="17689.convolute" type="convolution survival function">
+<GAML:Xdata label="17689.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="17689.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+11601 11601 11601 11601 11601 11291 10959 10211 8562 6208 3583 1507 312 56 8 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="17689.b" type="b ion histogram">
+<GAML:Xdata label="17689.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="18">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="17689.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="18">
+1076 3337 3312 2275 1062 379 128 24 2 2 0 0 0 0 0 0 4 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="17689.y" type="y ion histogram">
+<GAML:Xdata label="17689.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="15">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="17689.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="15">
+1976 3986 3103 1658 602 214 51 5 1 1 0 0 0 4 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=13087 cs=3</note>
+<GAML:trace id="17689" label="17689.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">2732.76</GAML:attribute>
+<GAML:attribute type="charge">3</GAML:attribute>
+<GAML:Xdata label="17689.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+376.293 617.315 671.512 688.437 698.24 717.053 729.018 759.37 760.481 777.389 802.58 816.819 825.4 827.455 831.311 838.238 841.201 849.009 852.384 858.391 859.587 864.612 866.399 873.644 885.666 892.729 955.937 978.657 987.609 1023.32
+1050.07 1058.57 1076.64 1103.09 1122.74 1129.41 1147.6 1159.46 1170.55 1179.29 1180.4 1196.6 1214.94 1218.65 1244.06 1250.34 1276.65 1294.07 1347.55 1391.11 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="17689.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+9 9 11 37 12 10 32 95 23 9 25 10 16 10 29 40 9 11 11 58 32 9 8 39 9 18 12 17 100 52
+9 97 9 23 22 40 17 11 11 43 11 12 85 9 11 32 44 17 13 10 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="5677" mh="973.690000" z="2" expect="4.1e-001" label="SO_1630 translation elongation factor Ts (Tsf)" type="model" sumI="5.42" maxI="90860.5" fI="908.605" >
+<protein expect="-137.0" id="5677.1" uid="1370" label="SO_1630 translation elongation factor Ts (Tsf)" sumI="6.79" >
+<note label="description">SO_1630 translation elongation factor Ts (Tsf)</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="283">
+	<domain id="5677.1.1" start="256" end="264" expect="4.1e-001" mh="973.520" delta="0.170" hyperscore="29.2" nextscore="21.9" y_score="12.0" y_ions="5" b_score="10.3" b_ions="5" pre="NFIR" post="KEED" seq="LEVGEGIEK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="5677.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.0624</GAML:attribute>
+<GAML:attribute type="a1">-0.18665</GAML:attribute>
+<GAML:Xdata label="5677.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="31">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="5677.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="31">
+13717 13717 13415 11491 9577 7781 5831 4334 3327 2531 1923 1339 841 603 342 222 118 88 37 20 0 10 3 0 0 0 0 0 0 4
+0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="5677.convolute" type="convolution survival function">
+<GAML:Xdata label="5677.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="18">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="5677.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="18">
+13727 13727 13275 11050 8643 6411 4052 2735 2019 1535 1148 559 420 86 17 10 3 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="5677.b" type="b ion histogram">
+<GAML:Xdata label="5677.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="7">
+0 1 2 3 4 5 6 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="5677.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="7">
+3745 6457 2857 605 56 7 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="5677.y" type="y ion histogram">
+<GAML:Xdata label="5677.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="7">
+0 1 2 3 4 5 6 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="5677.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="7">
+3688 6168 3081 681 97 12 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=6224 cs=2</note>
+<GAML:trace id="5677" label="5677.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">973.69</GAML:attribute>
+<GAML:attribute type="charge">2</GAML:attribute>
+<GAML:Xdata label="5677.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="46">
+152.074 175.128 180.122 197.221 215.198 217.234 227.041 228.981 232.26 242.988 246.046 251.19 258.168 260.184 285.243 299.126 316.259 322.18 328.177 342.231 356.221 357.196 366.364 371.178 379.957 386.43 388.186 399.034 424.26 429.858
+442.337 444.412 446.309 452.294 460.563 575.415 586.297 632.33 681.373 698.432 731.39 733.527 744.469 827.414 842.54 860.366 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="5677.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="46">
+2 1 1 2 16 1 1 1 1 37 2 2 2 1 2 2 1 1 1 5 7 2 1 15 1 2 1 2 2 3
+4 3 3 5 1 3 2 31 2 1 100 3 3 4 2 5 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="14413" mh="1778.848000" z="2" expect="4.4e-017" label="SO_1630 translation elongation factor Ts (Tsf)" type="model" sumI="5.44" maxI="21889.3" fI="218.893" >
+<protein expect="-137.0" id="14413.1" uid="1370" label="SO_1630 translation elongation factor Ts (Tsf)" sumI="6.79" >
+<note label="description">SO_1630 translation elongation factor Ts (Tsf)</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="283">
+	<domain id="14413.1.1" start="265" end="281" expect="4.4e-017" mh="1777.897" delta="0.951" hyperscore="91.8" nextscore="23.8" y_score="12.8" y_ions="14" b_score="10.9" b_ions="12" pre="GIEK" post="KA]" seq="KEEDFAAEVAAQIAASK" missed_cleavages="3">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="14413.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.63577</GAML:attribute>
+<GAML:attribute type="a1">-0.239733</GAML:attribute>
+<GAML:Xdata label="14413.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="94">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59
+60 61 62 63 64 65 66 67 68 69 70 71 72 73 74 75 76 77 78 79 80 81 82 83 84 85 86 87 88 89
+90 91 92 93 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="14413.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="94">
+9301 9301 9301 9301 9301 8082 7313 5524 4214 2820 1899 1069 637 369 196 113 66 34 20 11 3 0 8 0 7 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 6 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="14413.convolute" type="convolution survival function">
+<GAML:Xdata label="14413.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="15">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="14413.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="15">
+9309 9309 9309 9309 9309 8090 7266 5258 3596 1955 932 238 45 15 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="14413.b" type="b ion histogram">
+<GAML:Xdata label="14413.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="14">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="14413.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="14">
+3320 4488 1231 229 32 3 0 0 0 0 0 0 6 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="14413.y" type="y ion histogram">
+<GAML:Xdata label="14413.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="14413.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+3014 4671 1311 263 42 1 1 0 0 0 0 0 0 0 6 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=11244 cs=2</note>
+<GAML:trace id="14413" label="14413.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">1778.85</GAML:attribute>
+<GAML:attribute type="charge">2</GAML:attribute>
+<GAML:Xdata label="14413.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+305.133 376.336 387.236 485.304 489.322 502.284 503.317 617.442 649.319 688.417 702.288 720.385 723.659 755.229 759.438 763.477 772.708 775.099 791.385 792.398 841.462 858.413 859.58 987.545 1001.51 1019.36 1021.57 1058.5 1059.5 1062.05
+1069.01 1090.48 1097.32 1119.4 1129.52 1131.48 1161.46 1197.72 1271.45 1272.55 1276.61 1278.87 1289.55 1384.72 1391.61 1402.6 1473.66 1520.62 1544.66 1649.59 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="14413.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+9 18 9 9 17 22 9 18 11 46 18 17 11 8 86 13 17 11 36 14 9 52 29 56 12 33 10 100 43 18
+11 31 13 9 82 12 26 26 15 16 83 9 30 9 26 16 29 26 25 13 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="14412" mh="1778.646000" z="3" expect="2.3e-006" label="SO_1630 translation elongation factor Ts (Tsf)" type="model" sumI="5.58" maxI="49671.2" fI="496.712" >
+<protein expect="-137.0" id="14412.1" uid="1370" label="SO_1630 translation elongation factor Ts (Tsf)" sumI="6.79" >
+<note label="description">SO_1630 translation elongation factor Ts (Tsf)</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="283">
+	<domain id="14412.1.1" start="265" end="281" expect="2.3e-006" mh="1777.897" delta="0.749" hyperscore="63.6" nextscore="31.9" y_score="10.4" y_ions="11" b_score="11.5" b_ions="14" pre="GIEK" post="KA]" seq="KEEDFAAEVAAQIAASK" missed_cleavages="3">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="14412.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.55709</GAML:attribute>
+<GAML:attribute type="a1">-0.175846</GAML:attribute>
+<GAML:Xdata label="14412.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="66">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59
+60 61 62 63 64 65 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="14412.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="66">
+13718 13718 13718 13430 13139 12459 11603 10169 8667 7028 5498 4080 2898 2000 1353 897 598 379 264 179 104 62 39 25 20 18 12 10 5 3
+0 0 7 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 6 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="14412.convolute" type="convolution survival function">
+<GAML:Xdata label="14412.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="14412.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+13725 13725 13725 13437 13120 12380 11307 9437 7362 4801 2268 772 129 20 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="14412.b" type="b ion histogram">
+<GAML:Xdata label="14412.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="14412.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+2094 4459 3634 2080 978 328 89 48 5 3 1 0 0 0 6 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="14412.y" type="y ion histogram">
+<GAML:Xdata label="14412.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="13">
+0 1 2 3 4 5 6 7 8 9 10 11 12 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="14412.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="13">
+3353 4816 3159 1531 605 175 73 7 0 0 0 6 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=11243 cs=3</note>
+<GAML:trace id="14412" label="14412.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">1778.65</GAML:attribute>
+<GAML:attribute type="charge">3</GAML:attribute>
+<GAML:Xdata label="14412.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+234.187 287.179 305.166 309.25 371.546 376.223 380.415 427.23 429.769 460.921 489.377 496.337 501.37 510.357 532.117 536.712 545.762 572.525 574.751 617.461 636.934 645.184 649.231 663.431 670.448 672.688 679.647 688.27 693.026 702.041
+720.275 723.322 728.368 737.311 741.474 759.327 764.134 766.832 772.831 791.59 816.526 858.491 891.285 920.448 962.229 1019.43 1033.28 1090.57 1215.59 1345.92 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="14412.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+12 5 61 3 4 19 4 3 6 15 14 6 5 49 8 8 25 5 3 14 3 14 3 9 8 3 3 49 3 63
+8 15 7 100 7 45 4 3 37 8 28 4 6 32 6 14 7 3 3 8 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="15435" mh="1650.868000" z="3" expect="2.5e-002" label="SO_1630 translation elongation factor Ts (Tsf)" type="model" sumI="4.10" maxI="1098.7" fI="10.987" >
+<protein expect="-137.0" id="15435.1" uid="1370" label="SO_1630 translation elongation factor Ts (Tsf)" sumI="6.79" >
+<note label="description">SO_1630 translation elongation factor Ts (Tsf)</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="283">
+	<domain id="15435.1.1" start="266" end="281" expect="2.5e-002" mh="1649.802" delta="1.066" hyperscore="34.2" nextscore="25.1" y_score="11.3" y_ions="8" b_score="10.4" b_ions="8" pre="IEKK" post="KA]" seq="EEDFAAEVAAQIAASK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="15435.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">6.25959</GAML:attribute>
+<GAML:attribute type="a1">-0.229915</GAML:attribute>
+<GAML:Xdata label="15435.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="36">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="15435.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="36">
+14379 14379 14379 14379 14379 14159 13718 12836 11363 9287 6977 4865 3198 2045 1209 736 430 237 145 84 49 27 11 6 0 5 0 0 0 0
+0 0 0 0 4 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="15435.convolute" type="convolution survival function">
+<GAML:Xdata label="15435.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="15435.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+14384 14384 14384 14384 14384 14164 13720 12674 10684 7333 3544 967 136 14 1 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="15435.b" type="b ion histogram">
+<GAML:Xdata label="15435.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+0 1 2 3 4 5 6 7 8 9 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="15435.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+1897 4875 4138 2319 844 219 80 8 4 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="15435.y" type="y ion histogram">
+<GAML:Xdata label="15435.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+0 1 2 3 4 5 6 7 8 9 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="15435.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+2966 5614 3649 1570 444 113 20 3 5 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=11825 cs=3</note>
+<GAML:trace id="15435" label="15435.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">1650.87</GAML:attribute>
+<GAML:attribute type="charge">3</GAML:attribute>
+<GAML:Xdata label="15435.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+228.419 242.374 269.956 281.056 305.151 353.314 370.033 380.307 423.351 435.154 438.27 464.352 472.664 476.159 479.266 481.758 482.737 488.279 497.741 501.109 502.985 505.386 514.379 517.517 529.755 532.144 556.775 571.195 573.962 592.477
+617.31 629.201 638.471 666.982 673.349 677.275 688.41 696.317 709.038 719.729 724.563 759.55 781.076 792.172 873.165 887.341 891.291 931.623 972.383 1161.68 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="15435.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+13 11 15 13 38 14 10 28 25 14 19 15 23 13 11 27 25 27 16 20 52 17 22 19 31 56 22 15 50 10
+24 22 17 14 100 12 18 37 48 11 12 13 17 30 16 27 30 13 11 10 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="15412" mh="1650.552000" z="2" expect="2.0e-002" label="SO_1630 translation elongation factor Ts (Tsf)" type="model" sumI="4.39" maxI="1371.3" fI="13.713" >
+<protein expect="-137.0" id="15412.1" uid="1370" label="SO_1630 translation elongation factor Ts (Tsf)" sumI="6.79" >
+<note label="description">SO_1630 translation elongation factor Ts (Tsf)</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="283">
+	<domain id="15412.1.1" start="266" end="281" expect="2.0e-002" mh="1649.802" delta="0.750" hyperscore="26.1" nextscore="20.8" y_score="11.3" y_ions="6" b_score="8.0" b_ions="3" pre="IEKK" post="KA]" seq="EEDFAAEVAAQIAASK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="15412.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">6.60295</GAML:attribute>
+<GAML:attribute type="a1">-0.318031</GAML:attribute>
+<GAML:Xdata label="15412.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="28">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="15412.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="28">
+10146 10146 10146 10146 10146 10146 10068 7697 6204 4124 2466 1326 725 374 166 87 26 12 6 3 0 6 0 0 0 0 4 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="15412.convolute" type="convolution survival function">
+<GAML:Xdata label="15412.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="15">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="15412.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="15">
+10152 10152 10152 10152 10152 10152 10074 7703 5932 3277 1177 338 60 6 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="15412.b" type="b ion histogram">
+<GAML:Xdata label="15412.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="6">
+0 1 2 3 4 5 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="15412.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="6">
+3560 4959 1390 217 26 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="15412.y" type="y ion histogram">
+<GAML:Xdata label="15412.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="8">
+0 1 2 3 4 5 6 7 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="15412.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="8">
+3738 4865 1326 195 24 0 4 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=11811 cs=2</note>
+<GAML:trace id="15412" label="15412.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">1650.55</GAML:attribute>
+<GAML:attribute type="charge">2</GAML:attribute>
+<GAML:Xdata label="15412.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+305.116 497.861 575.095 617.436 667.242 679.042 688.34 705.687 724.645 726.179 759.728 774.694 792.844 794.601 799.769 845.788 858.539 863.641 865.853 873.113 875.286 893.376 901.334 914.051 916.419 931.614 935.593 962.217 973.16 983.855
+988.755 991.254 992.813 1007.96 1013.64 1016.93 1027.55 1033.71 1052.21 1112.02 1115.18 1124.24 1125.56 1130.71 1139.77 1158.67 1221.49 1276.91 1345.47 1347.61 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="15412.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+28 23 28 24 28 28 47 32 25 30 49 27 50 92 24 27 100 40 38 28 25 29 26 31 29 27 42 24 36 32
+67 27 28 32 32 49 30 26 46 41 24 41 28 35 36 30 26 24 51 45 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="12977" mh="2278.011000" z="3" expect="2.8e-009" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" type="model" sumI="4.92" maxI="9526.7" fI="95.267" >
+<protein expect="-136.0" id="12977.1" uid="717" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" sumI="6.15" >
+<note label="description">SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="1517">
+    <domain id="12977.1.1" start="9" end="28" expect="2.8e-009" mh="2276.149" delta="1.862" hyperscore="71.5" nextscore="31.5" y_score="14.1" y_ions="16" b_score="12.6" b_ions="11" pre="NQPK" post="DFSL" seq="HMTQAQTPDPLFLQAEHLAK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="12977.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.89718</GAML:attribute>
+<GAML:attribute type="a1">-0.202034</GAML:attribute>
+<GAML:Xdata label="12977.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="74">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59
+60 61 62 63 64 65 66 67 68 69 70 71 72 73 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="12977.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="74">
+13337 13337 13337 13337 13196 12677 12028 10813 9257 7321 5704 4152 2884 1904 1290 859 551 326 225 123 73 44 26 13 6 4 3 0 0 0
+0 3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="12977.convolute" type="convolution survival function">
+<GAML:Xdata label="12977.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="17">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="12977.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="17">
+13340 13340 13340 13340 13199 12674 11928 10307 7596 4460 1808 568 87 28 3 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="12977.b" type="b ion histogram">
+<GAML:Xdata label="12977.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="13">
+0 1 2 3 4 5 6 7 8 9 10 11 12 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="12977.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="13">
+1988 4124 3726 2147 956 279 86 28 4 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="12977.y" type="y ion histogram">
+<GAML:Xdata label="12977.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="18">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="12977.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="18">
+2625 4686 3418 1705 627 223 44 9 1 0 0 0 0 0 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=10431 cs=3</note>
+<GAML:trace id="12977" label="12977.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">2278.01</GAML:attribute>
+<GAML:attribute type="charge">3</GAML:attribute>
+<GAML:Xdata label="12977.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+269.277 308.227 455.251 468.314 505.825 528.843 545.37 587.68 602.193 610.794 634.11 643.579 668.441 675.616 681.438 684.629 697.32 707.895 732.377 734.419 737.45 738.492 740.222 742.424 779.451 780.404 790.571 796.58 798.471 846.176
+881.624 890.135 909.471 933.487 944.659 946.166 953.906 965.285 973.706 992.494 995.741 1004.47 1010.4 1030.17 1056.49 1065.74 1070.16 1220.56 1266.73 1478.82 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="12977.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+11 9 8 9 7 14 9 8 18 7 70 7 23 20 8 10 13 7 10 8 9 9 100 11 10 10 10 16 17 13
+7 16 31 7 7 11 8 8 20 10 24 43 36 19 47 24 8 23 20 12 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="10921" mh="1385.274000" z="2" expect="2.4e-006" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" type="model" sumI="4.81" maxI="7067.4" fI="70.674" >
+<protein expect="-136.0" id="10921.1" uid="717" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" sumI="6.15" >
+<note label="description">SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="1517">
+	<domain id="10921.1.1" start="47" end="59" expect="2.4e-006" mh="1384.743" delta="0.531" hyperscore="49.7" nextscore="22.3" y_score="12.5" y_ions="8" b_score="10.3" b_ions="8" pre="EEIK" post="DLAS" seq="GLLNDDAIQANLK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="10921.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.41107</GAML:attribute>
+<GAML:attribute type="a1">-0.221938</GAML:attribute>
+<GAML:Xdata label="10921.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="52">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10921.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="52">
+11224 11224 11224 11224 10077 9010 7185 5706 4193 2702 1692 1000 527 319 174 115 76 45 27 16 0 7 4 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="10921.convolute" type="convolution survival function">
+<GAML:Xdata label="10921.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10921.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+11231 11231 11231 11231 10084 8986 6964 5086 3067 1593 805 204 58 11 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="10921.b" type="b ion histogram">
+<GAML:Xdata label="10921.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+0 1 2 3 4 5 6 7 8 9 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10921.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+2928 5877 1934 408 68 14 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="10921.y" type="y ion histogram">
+<GAML:Xdata label="10921.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+0 1 2 3 4 5 6 7 8 9 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10921.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+5029 4894 1106 178 22 0 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=9259 cs=2</note>
+<GAML:trace id="10921" label="10921.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">1385.27</GAML:attribute>
+<GAML:attribute type="charge">2</GAML:attribute>
+<GAML:Xdata label="10921.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+284.084 353.382 357.344 374.264 445.348 513.065 514.21 540.411 551.114 556.413 573.33 583.331 595.563 599.136 607.843 611.28 613.021 625.724 628.259 642.242 646.37 655.289 658.358 662.108 664.288 665.805 757.502 774.416 777.332 784.521
+795.267 812.258 818.66 823.3 834.328 852.262 872.526 916.234 923.544 929.444 940.329 987.527 994.454 1011.25 1079.65 1101.42 1125.38 1214.71 1220.85 1238.51 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10921.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+8 6 10 12 52 11 7 10 8 15 100 7 9 7 76 23 7 8 16 6 6 12 7 12 22 9 21 6 14 6
+32 28 6 6 6 7 59 7 12 6 27 54 13 15 7 79 7 16 6 14 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="11249" mh="2584.446000" z="3" expect="1.5e-001" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" type="model" sumI="4.82" maxI="10524" fI="105.24" >
+<protein expect="-136.0" id="11249.1" uid="717" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" sumI="6.15" >
+<note label="description">SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="1517">
+	<domain id="11249.1.1" start="60" end="83" expect="1.5e-001" mh="2585.357" delta="-0.911" hyperscore="28.2" nextscore="23.4" y_score="5.7" y_ions="2" b_score="12.4" b_ions="9" pre="ANLK" post="GAKR" seq="DLASLDVDGYVAKVIQPTQDKGRP" missed_cleavages="2">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="11249.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">6.10902</GAML:attribute>
+<GAML:attribute type="a1">-0.246012</GAML:attribute>
+<GAML:Xdata label="11249.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="30">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="11249.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="30">
+12451 12451 12451 12451 12084 11747 10958 9490 7757 5779 4150 2575 1587 915 533 327 165 105 40 19 7 0 7 1 0 0 0 0 2 0
+
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="11249.convolute" type="convolution survival function">
+<GAML:Xdata label="11249.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="11249.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+12458 12458 12458 12458 12091 11704 10682 8468 5402 2487 814 178 40 15 1 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="11249.b" type="b ion histogram">
+<GAML:Xdata label="11249.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="11">
+0 1 2 3 4 5 6 7 8 9 10 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="11249.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="11">
+1467 3991 4098 1997 694 180 25 4 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="11249.y" type="y ion histogram">
+<GAML:Xdata label="11249.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="8">
+0 1 2 3 4 5 6 7 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="11249.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="8">
+2065 4545 3592 1682 467 95 12 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=9450 cs=3</note>
+<GAML:trace id="11249" label="11249.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">2584.45</GAML:attribute>
+<GAML:attribute type="charge">3</GAML:attribute>
+<GAML:Xdata label="11249.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+597.321 615.318 671.207 696.354 714.168 739.003 747.318 753.503 755.358 772.653 774.658 780.41 790.213 792.25 798.494 801.144 804.915 808.022 811.055 813.157 817.292 820.771 823.46 826.212 829.384 832.238 835.016 838.35 840.792 844.05
+983.847 989.613 1006.7 1023.61 1049.57 1103.56 1117.83 1138.28 1140.08 1146.49 1148.59 1156.48 1157.69 1160.04 1168.35 1175.5 1177.43 1201.1 1210.63 1219.75 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="11249.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+19 13 6 18 24 8 5 9 7 6 10 5 7 7 6 8 7 6 6 6 12 7 7 17 11 22 32 14 54 100
+14 5 7 6 7 7 6 10 6 7 6 10 15 11 8 6 9 8 8 6 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="19079" mh="3709.860000" z="3" expect="1.3e-006" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" type="model" sumI="5.29" maxI="16742.2" fI="167.422" >
+<protein expect="-136.0" id="19079.1" uid="717" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" sumI="6.15" >
+<note label="description">SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="1517">
+	<domain id="19079.1.1" start="149" end="183" expect="1.3e-006" mh="3710.812" delta="-0.952" hyperscore="58.9" nextscore="34.6" y_score="12.9" y_ions="15" b_score="11.2" b_ions="7" pre="KAIR" post="AIAE" seq="HFAELSMPIVYLIDTPGADAGEVANSQNQAHSISK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="19079.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.69891</GAML:attribute>
+<GAML:attribute type="a1">-0.19671</GAML:attribute>
+<GAML:Xdata label="19079.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="61">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59
+60 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="19079.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="61">
+7869 7869 7869 7869 7869 7666 7423 6920 6119 5093 4019 2999 2164 1432 970 607 383 220 143 93 49 35 26 15 5 0 7 0 5 0
+0 0 0 0 0 3 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2
+0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="19079.convolute" type="convolution survival function">
+<GAML:Xdata label="19079.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="19079.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+7876 7876 7876 7876 7876 7673 7410 6793 5617 3798 1858 614 98 27 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="19079.b" type="b ion histogram">
+<GAML:Xdata label="19079.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+0 1 2 3 4 5 6 7 8 9 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="19079.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+1181 2549 2170 1212 485 217 50 11 1 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="19079.y" type="y ion histogram">
+<GAML:Xdata label="19079.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="17">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="19079.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="17">
+1312 2668 2203 1129 409 124 18 11 0 0 0 0 0 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=13870 cs=3</note>
+<GAML:trace id="19079" label="19079.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">3709.86</GAML:attribute>
+<GAML:attribute type="charge">3</GAML:attribute>
+<GAML:Xdata label="19079.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+685.381 798.362 816.377 821.562 867.468 974.539 982.3 991.095 1026.36 1032.97 1041.54 1064.34 1099.49 1125.34 1140.04 1149.92 1156.13 1183.12 1192.32 1206.47 1213.37 1214.44 1284.49 1289.61 1290.65 1293.78 1344.5 1384.77 1402.72 1439.4
+1448.39 1450.04 1514.05 1515.69 1557.41 1614.96 1629.62 1631.63 1640.75 1641.84 1669.86 1678.59 1704.91 1713.7 1714.67 1731.93 1783.07 1787.49 1981.77 1983.44 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="19079.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+19 23 48 15 13 11 13 40 9 19 59 8 31 31 8 9 32 10 9 9 27 20 14 9 17 13 10 12 26 21
+88 15 40 23 40 22 38 13 32 10 9 22 18 35 100 22 11 10 21 15 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="18951" mh="3712.434000" z="3" expect="5.8e-004" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" type="model" sumI="4.55" maxI="2598.3" fI="25.983" >
+<protein expect="-136.0" id="18951.1" uid="717" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" sumI="6.15" >
+<note label="description">SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="1517">
+	<domain id="18951.1.1" start="149" end="183" expect="5.8e-004" mh="3710.812" delta="1.622" hyperscore="44.1" nextscore="27.7" y_score="12.2" y_ions="12" b_score="10.9" b_ions="6" pre="KAIR" post="AIAE" seq="HFAELSMPIVYLIDTPGADAGEVANSQNQAHSISK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="18951.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.81686</GAML:attribute>
+<GAML:attribute type="a1">-0.205499</GAML:attribute>
+<GAML:Xdata label="18951.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="46">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="18951.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="46">
+7864 7864 7864 7864 7864 7864 7447 7054 6274 5240 4187 3065 2217 1453 991 604 359 231 121 84 44 24 19 16 8 7 2 0 3 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="18951.convolute" type="convolution survival function">
+<GAML:Xdata label="18951.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="18951.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+7867 7867 7867 7867 7867 7867 7450 6996 5978 4264 2270 812 155 34 5 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="18951.b" type="b ion histogram">
+<GAML:Xdata label="18951.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+0 1 2 3 4 5 6 7 8 9 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="18951.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+1325 2724 2145 1069 436 129 27 8 4 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="18951.y" type="y ion histogram">
+<GAML:Xdata label="18951.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="14">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="18951.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="14">
+1368 2612 2102 1133 453 144 41 9 1 2 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=13799 cs=3</note>
+<GAML:trace id="18951" label="18951.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">3712.43</GAML:attribute>
+<GAML:attribute type="charge">3</GAML:attribute>
+<GAML:Xdata label="18951.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+798.313 816.372 821.126 884.394 899.655 915.127 983.221 991.87 1041.87 1099.5 1125.46 1126.75 1139.76 1156.23 1166.45 1183.04 1185.85 1189.73 1195.68 1198.17 1210.05 1212.46 1213.46 1215.08 1284.61 1294.56 1384.72 1401.43 1402.97 1431.54
+1440.12 1449.34 1514.64 1515.72 1519.35 1552.67 1557.76 1561.26 1569.63 1612.17 1614.87 1629.68 1640.6 1641.72 1679.61 1714.6 1731.81 1767.37 1787.79 1982.92 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="18951.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+17 28 17 15 16 15 18 32 76 43 23 22 19 35 26 17 18 15 22 17 17 35 22 53 22 23 20 21 14 20
+21 100 40 30 17 15 41 17 18 15 46 26 24 18 25 71 25 14 18 25 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="12494" mh="1262.023000" z="2" expect="2.2e-003" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" type="model" sumI="5.05" maxI="12093.4" fI="120.934" >
+<protein expect="-136.0" id="12494.1" uid="717" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" sumI="6.15" >
+<note label="description">SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="1517">
+	<domain id="12494.1.1" start="474" end="484" expect="2.2e-003" mh="1261.726" delta="0.297" hyperscore="36.9" nextscore="22.0" y_score="12.2" y_ions="7" b_score="12.9" b_ions="5" pre="NNFK" post="SVTQ" seq="GLIQHLENLPK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="12494.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.52887</GAML:attribute>
+<GAML:attribute type="a1">-0.221766</GAML:attribute>
+<GAML:Xdata label="12494.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="39">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="12494.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="39">
+11338 11338 11338 11338 10152 9105 7254 5856 4324 3086 2117 1345 910 546 286 163 94 52 36 17 10 5 4 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="12494.convolute" type="convolution survival function">
+<GAML:Xdata label="12494.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="18">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="12494.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="18">
+11340 11340 11340 11340 10154 9075 7037 5274 3299 2044 1137 593 262 75 19 9 1 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="12494.b" type="b ion histogram">
+<GAML:Xdata label="12494.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="7">
+0 1 2 3 4 5 6 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="12494.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="7">
+3572 5679 1676 350 61 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="12494.y" type="y ion histogram">
+<GAML:Xdata label="12494.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="9">
+0 1 2 3 4 5 6 7 8 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="12494.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="9">
+3784 5673 1557 299 24 1 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=10155 cs=2</note>
+<GAML:trace id="12494" label="12494.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">1262.02</GAML:attribute>
+<GAML:attribute type="charge">2</GAML:attribute>
+<GAML:Xdata label="12494.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+226.068 244.188 357.121 400.312 425.719 460.726 471.36 472.797 474.368 480.824 489.75 513.393 521.314 528.778 532.044 535.743 543.917 546.366 549.337 558.322 587.412 592.054 594.233 595.756 600.448 601.441 602.97 605.228 662.484 663.455
+667.966 711.053 713.472 718.518 730.671 774.926 777.521 791.439 822.614 830.625 833.731 850.48 905.525 919.571 961.495 978.583 990.541 1001.52 1002.61 1018.48 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="12494.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+9 39 12 11 11 7 22 7 9 46 8 36 7 7 9 7 9 59 21 6 19 7 7 8 30 9 7 9 16 10
+6 6 44 6 5 6 8 37 5 16 7 100 22 10 22 42 9 17 5 99 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="3739" mh="1616.496000" z="2" expect="3.4e-007" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" type="model" sumI="5.09" maxI="12868.5" fI="128.685" >
+<protein expect="-136.0" id="3739.1" uid="717" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" sumI="6.15" >
+<note label="description">SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="1517">
+	<domain id="3739.1.1" start="558" end="572" expect="3.4e-007" mh="1615.756" delta="0.740" hyperscore="57.2" nextscore="23.3" y_score="11.5" y_ions="8" b_score="11.1" b_ions="10" pre="LLHK" post="AKFY" seq="SIDHALSTQDTANDK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="3739.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.05512</GAML:attribute>
+<GAML:attribute type="a1">-0.201487</GAML:attribute>
+<GAML:Xdata label="3739.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="59">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="3739.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="59">
+9260 9260 9260 9260 8857 7402 5835 4293 2771 1796 1151 696 438 258 171 97 70 47 26 7 2 0 0 4 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="3739.convolute" type="convolution survival function">
+<GAML:Xdata label="3739.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="3739.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+9264 9264 9264 9264 8861 7406 5712 3860 2030 965 426 134 39 10 1 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="3739.b" type="b ion histogram">
+<GAML:Xdata label="3739.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="12">
+0 1 2 3 4 5 6 7 8 9 10 11 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="3739.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="12">
+2899 4803 1227 273 48 12 0 0 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="3739.y" type="y ion histogram">
+<GAML:Xdata label="3739.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+0 1 2 3 4 5 6 7 8 9 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="3739.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+4090 3991 968 180 29 4 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=5005 cs=2</note>
+<GAML:trace id="3739" label="3739.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">1616.5</GAML:attribute>
+<GAML:attribute type="charge">2</GAML:attribute>
+<GAML:Xdata label="3739.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+253.073 324.274 376.286 425.389 447.451 453.273 496.23 506.417 524.31 548.348 575.34 609.63 619.358 627.051 637.354 638.315 642.195 651.12 663.298 691.003 694.006 700.231 706.264 708.366 724.398 751.143 763.928 765.334 774.253 782.653
+892.431 935.499 953.493 961.76 979.348 981.603 984.457 1050.43 1068.34 1074.78 1092.47 1094.51 1146.44 1151.57 1163.43 1165.5 1169.57 1240.46 1354.57 1469.51 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="3739.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+6 11 8 6 9 19 10 15 66 44 9 11 14 7 54 17 10 50 14 8 7 10 10 25 22 9 8 7 9 12
+34 8 7 7 100 10 9 8 38 9 88 12 7 7 57 13 8 13 9 17 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="21270" mh="3577.563000" z="3" expect="5.1e-006" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" type="model" sumI="4.86" maxI="4514.9" fI="45.149" >
+<protein expect="-136.0" id="21270.1" uid="717" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" sumI="6.15" >
+<note label="description">SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="1517">
+	<domain id="21270.1.1" start="872" end="905" expect="5.1e-006" mh="3575.770" delta="1.793" hyperscore="51.6" nextscore="28.3" y_score="13.8" y_ions="7" b_score="14.2" b_ions="11" pre="YLSK" post="INEV" seq="VPGAMAGLVHNPFSENLDNQLASIDPLMPMPTAK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="21270.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">6.18139</GAML:attribute>
+<GAML:attribute type="a1">-0.222493</GAML:attribute>
+<GAML:Xdata label="21270.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="54">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="21270.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="54">
+8318 8318 8318 8318 8318 8318 8027 7746 7196 6145 5089 3869 2840 1923 1285 845 510 320 199 102 43 21 10 2 0 11 1 0 3 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="21270.convolute" type="convolution survival function">
+<GAML:Xdata label="21270.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="17">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="21270.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="17">
+8329 8329 8329 8329 8329 8329 8038 7724 6994 5501 3416 1388 287 62 8 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="21270.b" type="b ion histogram">
+<GAML:Xdata label="21270.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="13">
+0 1 2 3 4 5 6 7 8 9 10 11 12 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="21270.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="13">
+1205 2799 2350 1328 446 159 37 2 0 1 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="21270.y" type="y ion histogram">
+<GAML:Xdata label="21270.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="9">
+0 1 2 3 4 5 6 7 8 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="21270.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="9">
+1288 2770 2338 1291 476 136 21 9 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=15101 cs=3</note>
+<GAML:trace id="21270" label="21270.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">3577.56</GAML:attribute>
+<GAML:attribute type="charge">3</GAML:attribute>
+<GAML:Xdata label="21270.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+644.407 775.483 848.5 849.546 868.038 962.677 985.463 986.434 1038.31 1045.3 1047.04 1054.36 1077.2 1080.73 1089.43 1095.2 1100.46 1103.56 1130.09 1138.8 1151.36 1152.88 1158.4 1160 1161.82 1164.97 1167.93 1173.14 1230.1 1238.88
+1246.84 1257.29 1291.82 1296.26 1297.83 1300.64 1302.67 1306.44 1319.04 1358.18 1371.65 1401.24 1405.57 1458.89 1468.12 1484.42 1533.61 1580.64 1607.81 1850.06 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="21270.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+61 25 38 28 20 16 75 48 23 20 35 24 18 20 23 22 100 48 46 65 16 16 23 18 18 30 17 20 34 31
+19 16 20 97 32 67 22 18 15 16 53 35 18 42 56 25 27 33 18 17 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="24308" mh="3205.592000" z="3" expect="2.6e-005" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" type="model" sumI="4.64" maxI="3068.6" fI="30.686" >
+<protein expect="-136.0" id="24308.1" uid="717" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" sumI="6.15" >
+<note label="description">SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="1517">
+	<domain id="24308.1.1" start="906" end="934" expect="2.6e-005" mh="3204.663" delta="0.929" hyperscore="57.6" nextscore="31.5" y_score="12.9" y_ions="11" b_score="12.2" b_ions="11" pre="PTAK" post="KLMK" seq="INEVIINALSTLVVEAPAEEEEIVQNDPR" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="24308.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.54616</GAML:attribute>
+<GAML:attribute type="a1">-0.175841</GAML:attribute>
+<GAML:Xdata label="24308.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="60">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59
+
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="24308.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="60">
+9650 9650 9650 9650 9650 9561 9175 8609 7742 6473 5238 3775 2699 1824 1238 807 556 370 253 170 115 64 49 31 20 10 1 0 11 6
+3 2 1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 3 0
+
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="24308.convolute" type="convolution survival function">
+<GAML:Xdata label="24308.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="24308.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+9661 9661 9661 9661 9661 9572 9186 8535 7360 5379 3078 1246 254 61 7 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="24308.b" type="b ion histogram">
+<GAML:Xdata label="24308.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="13">
+0 1 2 3 4 5 6 7 8 9 10 11 12 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="24308.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="13">
+1744 3452 2419 1253 555 168 42 20 5 0 0 3 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="24308.y" type="y ion histogram">
+<GAML:Xdata label="24308.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="13">
+0 1 2 3 4 5 6 7 8 9 10 11 12 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="24308.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="13">
+1561 3251 2619 1455 554 174 31 9 4 0 0 3 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=16805 cs=3</note>
+<GAML:trace id="24308" label="24308.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">3205.59</GAML:attribute>
+<GAML:attribute type="charge">3</GAML:attribute>
+<GAML:Xdata label="24308.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+629.217 682.28 690.848 728.554 763.79 798.935 841.339 850.208 863.7 867.352 913.148 962.733 980.486 1003.11 1018.8 1024.47 1032.5 1042.15 1047.74 1050.39 1147.02 1150.52 1168.55 1196.5 1212.77 1239.69 1248.03 1254.36 1263.54 1267.04
+1271.01 1281.54 1304.48 1318.58 1324.56 1327.91 1362.74 1364.81 1380.57 1381.53 1409.98 1454.77 1479.44 1509.49 1525.69 1591.56 1608.6 1610.83 1661.65 1679.91 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="24308.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+30 14 17 39 53 89 15 13 58 30 100 58 29 13 27 14 14 19 14 15 29 14 15 24 24 17 25 24 23 18
+15 38 19 18 18 13 17 17 76 20 16 14 73 14 34 13 63 15 15 25 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="23606" mh="3332.772000" z="3" expect="2.8e-007" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" type="model" sumI="4.50" maxI="3346.7" fI="33.467" >
+<protein expect="-136.0" id="23606.1" uid="717" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" sumI="6.15" >
+<note label="description">SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="1517">
+	<domain id="23606.1.1" start="906" end="935" expect="2.8e-007" mh="3332.758" delta="0.014" hyperscore="68.3" nextscore="28.5" y_score="13.0" y_ions="15" b_score="8.8" b_ions="6" pre="PTAK" post="LMKP" seq="INEVIINALSTLVVEAPAEEEEIVQNDPRK" missed_cleavages="1">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="23606.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.46221</GAML:attribute>
+<GAML:attribute type="a1">-0.175937</GAML:attribute>
+<GAML:Xdata label="23606.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="70">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 38 39 40 41 42 43 44 45 46 47 48 49 50 51 52 53 54 55 56 57 58 59
+60 61 62 63 64 65 66 67 68 69 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="23606.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="70">
+9491 9491 9491 9491 9292 9014 8456 7680 6589 5475 4175 3134 2175 1560 1058 737 483 309 209 138 97 61 38 25 14 7 5 2 1 0
+0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="23606.convolute" type="convolution survival function">
+<GAML:Xdata label="23606.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="23606.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+9493 9493 9493 9493 9294 9012 8364 7253 5505 3573 1843 628 166 38 4 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="23606.b" type="b ion histogram">
+<GAML:Xdata label="23606.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="9">
+0 1 2 3 4 5 6 7 8 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="23606.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="9">
+1599 3166 2636 1396 477 163 39 17 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="23606.y" type="y ion histogram">
+<GAML:Xdata label="23606.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="17">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="23606.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="17">
+1411 3236 2580 1405 599 192 58 9 1 0 0 0 0 0 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=16407 cs=3</note>
+<GAML:trace id="23606" label="23606.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">3332.77</GAML:attribute>
+<GAML:attribute type="charge">3</GAML:attribute>
+<GAML:Xdata label="23606.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+456.401 682.381 779.455 827.695 850.391 863.324 867.478 918.459 928.132 963.268 977.18 980.463 1006.41 1026.77 1050.66 1063.07 1068.81 1072.24 1076.72 1083.47 1085.43 1088.72 1090.04 1093.52 1151.45 1159.46 1177.29 1178.94 1209.06 1215.76
+1220.77 1234.21 1236.15 1241.17 1246.02 1264.3 1269.23 1317.97 1326.78 1374.44 1380.67 1383.01 1399.98 1408.86 1439.59 1480.37 1489.03 1553.86 1590.93 1654.16 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="23606.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+6 6 9 17 15 24 14 11 16 9 54 12 6 54 11 7 9 6 7 33 9 8 14 7 14 15 55 6 7 9
+9 46 8 6 6 8 29 10 100 11 9 96 7 7 65 16 15 15 11 7 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="19973" mh="3802.256000" z="3" expect="2.2e-001" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" type="model" sumI="5.17" maxI="25804.5" fI="258.045" >
+<protein expect="-136.0" id="19973.1" uid="717" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" sumI="6.15" >
+<note label="description">SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="1517">
+	<domain id="19973.1.1" start="1063" end="1099" expect="2.2e-001" mh="3801.018" delta="1.238" hyperscore="33.7" nextscore="32.6" y_score="13.5" y_ions="8" b_score="9.6" b_ions="7" pre="NAIK" post="AVQG" seq="TSQAQNVPVVPGSHGILTNAEQAVNVASEIGYPVLLK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="19973.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.38392</GAML:attribute>
+<GAML:attribute type="a1">-0.179288</GAML:attribute>
+<GAML:Xdata label="19973.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="36">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="19973.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="36">
+7724 7724 7724 7724 7488 7266 6823 6119 5165 4088 3218 2332 1677 1185 797 545 392 247 153 96 59 46 20 9 4 0 6 0 0 0
+0 0 0 4 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="19973.convolute" type="convolution survival function">
+<GAML:Xdata label="19973.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="19973.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+7730 7730 7730 7730 7494 7244 6635 5347 3327 1578 582 156 29 11 4 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="19973.b" type="b ion histogram">
+<GAML:Xdata label="19973.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="12">
+0 1 2 3 4 5 6 7 8 9 10 11 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="19973.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="12">
+887 2132 2128 1475 719 304 56 21 6 0 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="19973.y" type="y ion histogram">
+<GAML:Xdata label="19973.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+0 1 2 3 4 5 6 7 8 9 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="19973.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+1169 2582 2108 1234 459 136 32 8 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=14376 cs=3</note>
+<GAML:trace id="19973" label="19973.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">3802.26</GAML:attribute>
+<GAML:attribute type="charge">3</GAML:attribute>
+<GAML:Xdata label="19973.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+569.486 711.789 733.345 789.324 1024.6 1036.82 1065.31 1100.81 1116.74 1119.5 1134.35 1150.83 1171.76 1174.39 1189.36 1191.82 1200.99 1227.76 1231.13 1238.3 1241.44 1307.38 1316.32 1342.79 1376.01 1380.52 1389.38 1391.02 1402.69 1439.68
+1450.95 1475.71 1498.16 1502.81 1507.8 1519.49 1528.52 1535.44 1537.52 1572.8 1587.53 1604.32 1609.17 1617.86 1644.19 1671.02 1699.74 1715.36 1772.57 1829.16 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="19973.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+6 6 5 14 9 6 9 5 5 6 4 7 5 5 21 7 16 4 6 5 7 7 4 11 7 11 45 11 16 9
+5 5 7 7 26 6 11 18 100 7 6 7 11 32 7 5 6 14 5 8 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group id="20048" mh="1901.548000" z="2" expect="4.4e-002" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" type="model" sumI="4.88" maxI="8095.5" fI="80.955" >
+<protein expect="-136.0" id="20048.1" uid="717" label="SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC" sumI="6.15" >
+<note label="description">SO_0840 acetyl-CoA carboxylase multifunctional enzyme accADC</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="1517">
+	<domain id="20048.1.1" start="1082" end="1099" expect="4.4e-002" mh="1901.038" delta="0.510" hyperscore="25.1" nextscore="19.4" y_score="10.3" y_ions="7" b_score="0.0" b_ions="0" pre="ILTN" post="AVQG" seq="AEQAVNVASEIGYPVLLK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="20048.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.81865</GAML:attribute>
+<GAML:attribute type="a1">-0.286077</GAML:attribute>
+<GAML:Xdata label="20048.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="27">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="20048.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="27">
+8963 8963 8963 8963 8092 7338 5716 4338 3085 1887 1114 600 319 144 74 26 13 5 0 5 0 0 0 0 0 1 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="20048.convolute" type="convolution survival function">
+<GAML:Xdata label="20048.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="20048.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="16">
+8968 8968 8968 8968 8097 7323 5584 4046 2425 1117 484 144 46 17 3 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="20048.b" type="b ion histogram">
+<GAML:Xdata label="20048.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="6">
+0 1 2 3 4 5 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="20048.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="6">
+3337 4463 1004 156 8 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="20048.y" type="y ion histogram">
+<GAML:Xdata label="20048.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="9">
+0 1 2 3 4 5 6 7 8 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="20048.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="9">
+3315 4481 1008 148 15 0 0 1 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=14420 cs=2</note>
+<GAML:trace id="20048" label="20048.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">1901.55</GAML:attribute>
+<GAML:attribute type="charge">2</GAML:attribute>
+<GAML:Xdata label="20048.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+569.454 627.428 729.373 732.381 740.46 767.461 789.462 795.064 871.786 893.306 895.356 902.558 924.383 961.402 977.935 991.569 995.401 1004.99 1018.17 1024.12 1031.51 1046.39 1069.14 1078.3 1104.95 1106.46 1115.21 1118.69 1142.33 1143.37
+1150.63 1160.58 1171.62 1181.28 1189.64 1200.69 1219.28 1227.8 1252.74 1255.3 1256.46 1273.36 1275.55 1306.81 1342.84 1350.95 1450.54 1507.8 1535.97 1617.04 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="20048.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+30 75 14 28 15 5 29 7 52 6 39 14 18 6 5 7 5 39 14 100 6 6 9 41 11 7 7 7 16 20
+9 11 7 19 16 22 35 5 9 9 8 49 10 12 8 6 30 5 10 23 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+<group label="input parameters" type="parameters">
+	<note type="input" label="list path, default parameters">default_input.xml</note>
+	<note type="input" label="list path, taxonomy information">C:\Xtandem_WorkDir\taxonomy.xml</note>
+	<note type="input" label="output, histogram column width">30</note>
+	<note type="input" label="output, histograms">yes</note>
+	<note type="input" label="output, log path">XTandem_Processing_Log.txt</note>
+	<note type="input" label="output, maximum valid expectation value">0.5</note>
+	<note type="input" label="output, message"></note>
+	<note type="input" label="output, one sequence copy">yes</note>
+	<note type="input" label="output, parameters">yes</note>
+	<note type="input" label="output, path">C:\Xtandem_WorkDir\QC_Shew_07_02_0p5uguL-a_16Oct07_Owl_07-08-02_xt.xml</note>
+	<note type="input" label="output, path hashing">no</note>
+	<note type="input" label="output, performance">yes</note>
+	<note type="input" label="output, proteins">yes</note>
+	<note type="input" label="output, results">valid</note>
+	<note type="input" label="output, sequence path"></note>
+	<note type="input" label="output, sequences">yes</note>
+	<note type="input" label="output, sort results by">protein</note>
+	<note type="input" label="output, spectra">yes</note>
+	<note type="input" label="output, xsl path">tandem-style.xsl</note>
+	<note type="input" label="protein, C-terminal residue modification mass">0.0</note>
+	<note type="input" label="protein, N-terminal residue modification mass">0.0</note>
+	<note type="input" label="protein, cleavage C-terminal mass change">+17.002735</note>
+	<note type="input" label="protein, cleavage N-terminal mass change">+1.007825</note>
+	<note type="input" label="protein, cleavage semi">yes</note>
+	<note type="input" label="protein, cleavage site">[RK]|{P}</note>
+	<note type="input" label="protein, homolog management">no</note>
+	<note type="input" label="protein, modified residue mass file"></note>
+	<note type="input" label="protein, taxon">Shewanella_oneidensis_MR-1</note>
+	<note type="input" label="refine">yes</note>
+	<note type="input" label="refine, maximum valid expectation value">0.5</note>
+	<note type="input" label="refine, modification mass"></note>
+	<note type="input" label="refine, point mutations">no</note>
+	<note type="input" label="refine, potential C-terminus modifications"></note>
+	<note type="input" label="refine, potential N-terminus modifications"></note>
+	<note type="input" label="refine, potential modification mass"></note>
+	<note type="input" label="refine, potential modification motif"></note>
+	<note type="input" label="refine, sequence path"></note>
+	<note type="input" label="refine, spectrum synthesis">yes</note>
+	<note type="input" label="refine, tic percent">1</note>
+	<note type="input" label="refine, unanticipated cleavage">yes</note>
+	<note type="input" label="refine, use potential modifications for full refinement">no</note>
+	<note type="input" label="residue, modification mass"></note>
+	<note type="input" label="residue, potential modification mass"></note>
+	<note type="input" label="residue, potential modification motif"></note>
+	<note type="input" label="scoring, a ions">no</note>
+	<note type="input" label="scoring, b ions">yes</note>
+	<note type="input" label="scoring, c ions">no</note>
+	<note type="input" label="scoring, cyclic permutation">no</note>
+	<note type="input" label="scoring, include reverse">no</note>
+	<note type="input" label="scoring, maximum missed cleavage sites">3</note>
+	<note type="input" label="scoring, minimum ion count">4</note>
+	<note type="input" label="scoring, x ions">no</note>
+	<note type="input" label="scoring, y ions">yes</note>
+	<note type="input" label="scoring, z ions">no</note>
+	<note type="input" label="spectrum, dynamic range">100.0</note>
+	<note type="input" label="spectrum, fragment mass type">monoisotopic</note>
+	<note type="input" label="spectrum, fragment monoisotopic mass error">0.4</note>
+	<note type="input" label="spectrum, fragment monoisotopic mass error units">Daltons</note>
+	<note type="input" label="spectrum, maximum parent charge">4</note>
+	<note type="input" label="spectrum, minimum fragment mz">150.0</note>
+	<note type="input" label="spectrum, minimum parent m+h">500.0</note>
+	<note type="input" label="spectrum, minimum peaks">15</note>
+	<note type="input" label="spectrum, parent monoisotopic mass error minus">2.0</note>
+	<note type="input" label="spectrum, parent monoisotopic mass error plus">2.0</note>
+	<note type="input" label="spectrum, parent monoisotopic mass error units">Daltons</note>
+	<note type="input" label="spectrum, parent monoisotopic mass isotope error">no</note>
+	<note type="input" label="spectrum, path">C:\Xtandem_WorkDir\QC_Shew_07_02_0p5uguL-a_16Oct07_Owl_07-08-02_dta.txt</note>
+	<note type="input" label="spectrum, sequence batch size">100</note>
+	<note type="input" label="spectrum, threads">2</note>
+	<note type="input" label="spectrum, total peaks">50</note>
+	<note type="input" label="spectrum, use noise suppression">no</note>
+</group>
+<group label="unused input parameters"  type="parameters">
+	<note type="input" label="scoring, pluggable scoring">no</note>
+</group>
+<group label="performance parameters" type="parameters">
+	<note label="list path, sequence source #1">C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta</note>
+	<note label="modelling, estimated false positives">1659</note>
+	<note label="modelling, total peptides used">1334076200</note>
+	<note label="modelling, total proteins used">4198</note>
+	<note label="modelling, total spectra assigned">6388</note>
+	<note label="modelling, total spectra used">29718</note>
+	<note label="modelling, total unique assigned">4978</note>
+	<note label="process, start time">2007:10:16:18:24:52</note>
+	<note label="process, version">x! tandem 2007.01.01.2</note>
+	<note label="quality values">3125 1793 754 409 315 274 278 182 185 169 150 153 117 141 116 100 96 65 60 54</note>
+	<note label="refining, # input models">1789</note>
+	<note label="refining, # input spectra">24242</note>
+	<note label="refining, # partial cleavage">23</note>
+	<note label="refining, # point mutations">0</note>
+	<note label="refining, # potential C-terminii">0</note>
+	<note label="refining, # potential N-terminii">0</note>
+	<note label="refining, # unanticipated cleavage">1411</note>
+	<note label="timing, initial modelling total (sec)">1594.86</note>
+	<note label="timing, initial modelling/spectrum (sec)">0.054</note>
+	<note label="timing, load sequence models (sec)">0.08</note>
+	<note label="timing, refinement/spectrum (sec)">0.123</note>
+</group>
+</bioml>
