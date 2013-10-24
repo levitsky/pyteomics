@@ -47,11 +47,33 @@ from . import auxiliary as aux
 
 def _get_info_smart(source, element, **kw):
     info = _get_info(source, element, **kw)
-    info.pop('group', None)
-    info.pop('model', None)
+    # handy simplifications below
     if isinstance(info.get('note'), dict
             ) and set(info['note']) == {'label', 'note'}:
         info['note'] = info['note']['note']
+    if 'protein' in info and info.get('label') == info['protein']['label']:
+        del info['label']
+    if 'group' in info:
+        for g in info['group']:
+            label = g.pop('label')
+            type_ = g.pop('type')
+            info.setdefault(type_, {})[label] = g
+        del info['group']
+    if 'trace' in info:
+        for t in info['trace']:
+            info[t.pop('type')] = t
+        del info['trace']
+    if isinstance(info.get('values'), dict):
+        info['values'] = info['values']['values']
+    if isinstance(info.get('attribute'), list):
+        for a in info.pop('attribute'):
+            info[a['type']] = float(a['attribute'])
+    if 'support' in info:
+        for d in info['support']['supporting data'].values():
+            for l in ['Xdata', 'Ydata']:
+                d[l]['values'] = d[l]['values'].astype(int)
+    if 'charge' in info:
+        info['charge'] = int(info['charge'])
     return info
 
 @aux._file_reader('rb')
@@ -69,7 +91,9 @@ def read(source):
        An iterator over dicts with PSM properties.
     """
 
-    return iterfind(source, 'group[type=model]', recursive=True)
+    for g in iterfind(source, 'group[type=model]', recursive=True):
+        del g['type']
+        yield g
 
 def _schema_info(_):
     """Stores defaults for X!Tandem output. Keys are: 'floats', 'ints',
@@ -77,15 +101,19 @@ def _schema_info(_):
 
     return {'ints': {
         ('group', 'z')} | {('domain', k) for k in [
-            'missed_cleavages', 'start', 'end', 'y_ions', 'b_ions']},
+            'missed_cleavages', 'start', 'end', 'y_ions', 'b_ions',
+            'a_ions', 'x_ions', 'c_ions', 'z_ions']},
+
             'floats': {('group', k) for k in [
                 'fI', 'sumI', 'maxI', 'mh', 'expect']} | {
                    ('domain', k) for k in [
                        'expect', 'hyperscore', 'b_score', 'y_score',
+                       'a_score', 'x_score', 'c_score', 'z_score',
                        'nextscore', 'delta', 'mh']} | {
                    ('protein', 'expect'), ('protein', 'sumI')},
-            'bools': set(), 'lists': set(),
-            'intlists': set(), 'floatlists': set(), 'charlists': set()}
+
+            'bools': set(), 'lists': {'group', 'trace', 'attribute'},
+            'floatlists': {('values', 'values')}, 'intlists': set(), 'charlists': set()}
 
 _getinfo_env = {'keys': {'domain'}, 'schema_info': _schema_info,
     'get_info_smart': _get_info_smart}
