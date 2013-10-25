@@ -42,6 +42,7 @@ Data access
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from itertools import chain
 import numpy as np
 from . import auxiliary as aux
 
@@ -72,6 +73,12 @@ def _get_info_smart(source, element, **kw):
         for d in info['support']['supporting data'].values():
             for l in ['Xdata', 'Ydata']:
                 d[l]['values'] = d[l]['values'].astype(int)
+        fims = info['support']['fragment ion mass spectrum']
+        fims.update(fims.pop('tandem mass spectrum'))
+        for d in chain(info['support']['supporting data'].values(),
+                (info['support']['fragment ion mass spectrum'],)):
+            for l in ['Xdata', 'Ydata']:
+                del d[l]['label']
     if 'charge' in info:
         info['charge'] = int(info['charge'])
     return info

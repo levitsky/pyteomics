@@ -12,47 +12,50 @@ class ComparableArray(np.ndarray):
         other = np.asarray(other, dtype=np.float)
         return self.shape == other.shape and np.allclose(self, other)
 
+def makeCA(arr):
+    return ComparableArray(arr.shape, arr.dtype, arr)
+
 pepxml_spectra = [
             {'spectrum': 'pps_sl20060731_18mix_25ul_r1_1154456409.0100.0100.1',
-             'end_scan': 100, 
-             'start_scan': 100, 
+             'end_scan': 100,
+             'start_scan': 100,
              'index': 1,
              'assumed_charge': 1,
              'precursor_neutral_mass': 860.392,
              'search_hit': [{
-             'num_missed_cleavages': 0, 
-             'tot_num_ions': 12, 
+             'num_missed_cleavages': 0,
+             'tot_num_ions': 12,
              'is_rejected': False,
              'search_score': {
                 'deltacn': 0.081,
-                'sprank': 1.0, 
-                'deltacnstar': 0.0, 
-                'spscore': 894.0, 
+                'sprank': 1.0,
+                'deltacnstar': 0.0,
+                'spscore': 894.0,
                 'xcorr': 1.553},
-             'hit_rank': 1, 
-             'num_matched_ions': 11, 
-             'num_tot_proteins': 1, 
-             'peptide': 'SLNGEWR', 
-             'massdiff': -0.5, 
+             'hit_rank': 1,
+             'num_matched_ions': 11,
+             'num_tot_proteins': 1,
+             'peptide': 'SLNGEWR',
+             'massdiff': -0.5,
              'analysis_result': [{'analysis': 'peptideprophet',
                  'peptideprophet_result':
                  {'all_ntt_prob': [0.0422, 0.509, 0.96],
-                  'parameter': 
+                  'parameter':
                     {'fval': 1.4723, 'massd': -0.5, 'nmc': 0.0, 'ntt': 2.0},
                   'probability': 0.96}}],
              'modifications': [],
-             'modified_peptide': 'SLNGEWR', 
+             'modified_peptide': 'SLNGEWR',
              'proteins': [{'num_tol_term': 2,
                            'protein': 'sp|P00722|BGAL_ECOLI',
                            'peptide_prev_aa': 'R',
                            'protein_descr': 'BETA-GALACTOSIDASE (EC 3.2.1.23) '
                                             '(LACTASE) - Escherichia coli.',
-                           'peptide_next_aa': 'F'}], 
-             'calc_neutral_pep_mass': 860.892}]}, 
+                           'peptide_next_aa': 'F'}],
+             'calc_neutral_pep_mass': 860.892}]},
             {'precursor_neutral_mass': 677.392,
              'spectrum': 'pps_sl20060731_18mix_25ul_r1_1154456409.0040.0040.1',
-             'start_scan': 40, 
-             'assumed_charge': 1, 
+             'start_scan': 40,
+             'assumed_charge': 1,
              'index': 2,
              'end_scan': 40,
              'search_hit': [{'tot_num_ions': 10,
@@ -67,7 +70,7 @@ pepxml_spectra = [
                 'spscore': 427.0,
                 'xcorr': 1.644},
              'num_tot_proteins': 1,
-             'peptide': 'GKKFAK', 
+             'peptide': 'GKKFAK',
              'massdiff': -0.5,
              'analysis_result': [{'analysis': 'peptideprophet',
               'peptideprophet_result': {
@@ -76,10 +79,10 @@ pepxml_spectra = [
                       'fval': 2.0779, 'massd': -0.5, 'nmc': 1.0, 'ntt': 1.0},
                   'probability': 0.548}}],
              'modifications': [],
-             'modified_peptide': 'GKKFAK', 
+             'modified_peptide': 'GKKFAK',
              'proteins': [{'num_tol_term': 1,
-                           'protein': 'gi|3212198|gb|AAC22319.1|', 
-                           'peptide_prev_aa': 'N', 
+                           'protein': 'gi|3212198|gb|AAC22319.1|',
+                           'peptide_prev_aa': 'N',
                            'protein_descr': 'hemoglobin-binding protein '
                                             '[Haemophilus influenzae Rd]',
                            'peptide_next_aa': 'I'}],
@@ -1220,9 +1223,9 @@ mzml_spectra = [{'MSn spectrum': '',
   'highest observed m/z': 2000.0099466203771,
   'id': 'controllerType=0 controllerNumber=1 scan=1',
   'index': 0,
-  'intensity array': ComparableArray(mzml_int_array.shape, mzml_int_array.dtype, mzml_int_array),
+  'intensity array': makeCA(mzml_int_array),
   'lowest observed m/z': 200.00018816645022,
-  'm/z array': ComparableArray(mzml_mz_array.shape, mzml_mz_array.dtype, mzml_mz_array),
+  'm/z array': makeCA(mzml_mz_array),
   'ms level': 1,
   'positive scan': '',
   'profile spectrum': '',
@@ -1245,9 +1248,9 @@ mzml_spectra = [{'MSn spectrum': '',
   'highest observed m/z': 2000.0099466203771,
   'id': 'controllerType=0 controllerNumber=1 scan=1',
   'index': 1,
-  'intensity array': ComparableArray(mzml_int_array.shape, mzml_int_array.dtype, mzml_int_array),
+  'intensity array': makeCA(mzml_int_array),
   'lowest observed m/z': 200.00018816645022,
-  'm/z array': ComparableArray(mzml_mz_array.shape, mzml_mz_array.dtype, mzml_mz_array),
+  'm/z array': makeCA(mzml_mz_array),
   'ms level': 1,
   'positive scan': '',
   'profile spectrum': '',
@@ -1270,9 +1273,9 @@ mgf_mz = [np.array([  846.6,   846.8,   847.6,  1640.1,  1640.6,  1895.5]),
 mgf_ch = [np.array([ 1.,  2.,  1.,  1.,  1.,  1.]),
         np.array([ 3.,  2.,  1.,  1.,  1.,  1.])]
 
-mgf_spectra_long = [{'intensity array': ComparableArray(mgf_int[0].shape, mgf_int[0].dtype, mgf_int[0]),
-  'm/z array': ComparableArray(mgf_mz[0].shape, mgf_mz[0].dtype, mgf_mz[0]),
-  'charge array': ComparableArray(mgf_ch[0].shape, mgf_ch[0].dtype, mgf_ch[0]),
+mgf_spectra_long = [{'intensity array': makeCA(mgf_int[0]),
+  'm/z array': makeCA(mgf_mz[0]),
+  'charge array': makeCA(mgf_ch[0]),
   'params': {'charge': '2+ and 3+',
    'com': 'Based on http://www.matrixscience.com/help/data_file_help.html',
    'it_mods': 'Oxidation (M)',
@@ -1284,9 +1287,9 @@ mgf_spectra_long = [{'intensity array': ComparableArray(mgf_int[0].shape, mgf_in
    'title': 'Spectrum 1',
    'useremail': 'leu@altered-state.edu',
    'username': 'Lou Scene'}},
- {'intensity array': ComparableArray(mgf_int[1].shape, mgf_int[1].dtype, mgf_int[1]),
-  'm/z array': ComparableArray(mgf_mz[1].shape, mgf_mz[1].dtype, mgf_mz[1]),
-  'charge array': ComparableArray(mgf_ch[1].shape, mgf_ch[1].dtype, mgf_ch[1]),
+ {'intensity array': makeCA(mgf_int[1]),
+  'm/z array': makeCA(mgf_mz[1]),
+  'charge array': makeCA(mgf_ch[1]),
   'params': {'charge': '2+ and 3+',
    'com': 'Based on http://www.matrixscience.com/help/data_file_help.html',
    'it_mods': 'Oxidation (M)',
@@ -1301,14 +1304,112 @@ mgf_spectra_long = [{'intensity array': ComparableArray(mgf_int[0].shape, mgf_in
    'useremail': 'leu@altered-state.edu',
    'username': 'Lou Scene'}}]
 
-mgf_spectra_short = [{'intensity array': ComparableArray(mgf_int[0].shape, mgf_int[0].dtype, mgf_int[0]),
-  'charge array': ComparableArray(mgf_ch[0].shape, mgf_ch[0].dtype, mgf_ch[0]),
-  'm/z array': ComparableArray(mgf_mz[0].shape, mgf_mz[0].dtype, mgf_mz[0]),
+mgf_spectra_short = [{'intensity array': makeCA(mgf_int[0]),
+  'charge array': makeCA(mgf_ch[0]),
+  'm/z array': makeCA(mgf_mz[0]),
   'params': {'pepmass': (983.6, None), 'title': 'Spectrum 1'}},
- {'intensity array': ComparableArray(mgf_int[1].shape, mgf_int[1].dtype, mgf_int[1]),
-  'm/z array': ComparableArray(mgf_mz[1].shape, mgf_mz[1].dtype, mgf_mz[1]),
-  'charge array': ComparableArray(mgf_ch[1].shape, mgf_ch[1].dtype, mgf_ch[1]),
+ {'intensity array': makeCA(mgf_int[1]),
+  'm/z array': makeCA(mgf_mz[1]),
+  'charge array': makeCA(mgf_ch[1]),
   'params': {'pepmass': (1084.9, 1234.0),
    'rtinseconds': '25',
    'scans': '3',
    'title': 'Spectrum 2'}}]
+
+tandem_names = ['fims', 'expf', 'csf', 'bhist', 'yhist']
+tandem_arrays = {}
+for name in tandem_names:
+    for p in ('x', 'y'):
+        tandem_arrays.setdefault(name, {})[p] = np.load(
+        'tandem_{}_{}.npy'.format(name, p))
+
+tandem_spectra = [{'support': {
+    'supporting data': {
+        'hyperscore expectation function': {
+            'label': '10745.hyper',
+            'Ydata': {
+                'units': 'counts',
+                'values': makeCA(tandem_arrays['expf']['y']),
+                },
+            'Xdata': {
+                'units': 'score',
+                'values': makeCA(tandem_arrays['expf']['x']),
+                },
+            'a0': 5.60936,
+            'a1': -0.266291
+            },
+        'y ion histogram': {
+            'Ydata': {
+                'units': 'counts',
+                'values': makeCA(tandem_arrays['yhist']['y']),
+                },
+            'Xdata': {
+                'units': 'number of ions',
+                'values': makeCA(tandem_arrays['yhist']['x']),
+                },
+            'label': '10745.y'
+            },
+        'b ion histogram': {
+            'Ydata': {
+                'units': 'counts',
+                'values': makeCA(tandem_arrays['bhist']['y']),
+                },
+            'Xdata': {
+                'units': 'number of ions',
+                'values': makeCA(tandem_arrays['bhist']['x']),
+                },
+            'label': '10745.b'
+            },
+        'convolution survival function': {
+            'Ydata': {
+                'units': 'counts',
+                'values': makeCA(tandem_arrays['csf']['y']),
+                },
+            'Xdata': {
+                'units': 'score',
+                'values': makeCA(tandem_arrays['csf']['x']),
+                },
+            'label': '10745.convolute'
+            }
+         },
+     'fragment ion mass spectrum': {
+         'Ydata': {
+             'units': 'UNKNOWN',
+             'values': makeCA(tandem_arrays['fims']['y']),
+          },
+          'label': '10745.spectrum',
+          'M+H': 2314.84,
+          'charge': 2,
+          'Xdata': {
+              'units': 'MASSTOCHARGERATIO',
+              'values': makeCA(tandem_arrays['fims']['x']),
+              },
+          'note': 'scan=9161 cs=2',
+          'id': '10745'
+          }
+      },
+      'fI': 225.149,
+      'sumI': 5.29,
+      'expect': 8.4e-05,
+      'protein': {
+          'peptide': {
+              'y_score': 12.2, 'nextscore': 21.8, 'missed_cleavages': 0,
+              'expect': 8.4e-05, 'end': 211, 'id': '10745.1.1',
+              'pre': 'VVAR', 'b_score': 8.7, 'mh': 2314.159, 'start': 191,
+              'seq': 'EQALQIEISMNEGKPADIAEK', 'hyperscore': 36.4,
+              'delta': 0.676, 'post': 'MVVG', 'b_ions': 4, 'y_ions': 8
+              },
+          'label': 'SO_1630 translation elongation factor Ts (Tsf)',
+          'file': {
+              'URL': 'C:\\DMS_Temp_Org\\ID_001140_4BD5AF39.fasta',
+              'type': 'peptide'
+              },
+           'expect': -137.0, 'uid': '1370',
+           'note': 'SO_1630 translation elongation factor Ts (Tsf)',
+           'sumI': 6.79, 'id': '10745.1'
+           },
+       'id': '10745',
+       'maxI': 22514.9,
+       'mh': 2314.835,
+       'z': 2
+       }]
