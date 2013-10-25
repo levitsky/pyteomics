@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<bioml xmlns:GAML="http://www.bioml.com/gaml/" label="models from 'C:\Xtandem_WorkDir\QC_Shew_07_02_0p5uguL-a_16Oct07_Owl_07-08-02_dta.txt'">
+<group id="10745" mh="2314.835000" z="2" expect="8.4e-005" label="SO_1630 translation elongation factor Ts (Tsf)" type="model" sumI="5.29" maxI="22514.9" fI="225.149" >
+<protein expect="-137.0" id="10745.1" uid="1370" label="SO_1630 translation elongation factor Ts (Tsf)" sumI="6.79" >
+<note label="description">SO_1630 translation elongation factor Ts (Tsf)</note>
+<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
+<peptide start="1" end="283">
+	<domain id="10745.1.1" start="191" end="211" expect="8.4e-005" mh="2314.159" delta="0.676" hyperscore="36.4" nextscore="21.8" y_score="12.2" y_ions="8" b_score="8.7" b_ions="4" pre="VVAR" post="MVVG" seq="EQALQIEISMNEGKPADIAEK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<group label="supporting data" type="support">
+<GAML:trace label="10745.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">5.60936</GAML:attribute>
+<GAML:attribute type="a1">-0.266291</GAML:attribute>
+<GAML:Xdata label="10745.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="38">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
+30 31 32 33 34 35 36 37 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10745.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="38">
+7922 7922 7922 7922 7557 6417 5382 3923 2715 1693 1057 572 322 180 89 35 15 7 0 0 0 0 5 0 0 0 0 0 0 0
+0 0 0 0 0 0 3 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="10745.convolute" type="convolution survival function">
+<GAML:Xdata label="10745.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="15">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10745.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="15">
+7927 7927 7927 7927 7562 6422 5231 3521 2005 833 336 72 11 2 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="10745.b" type="b ion histogram">
+<GAML:Xdata label="10745.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="8">
+0 1 2 3 4 5 6 7 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10745.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="8">
+2736 3890 1074 201 25 0 1 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+<GAML:trace label="10745.y" type="y ion histogram">
+<GAML:Xdata label="10745.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+0 1 2 3 4 5 6 7 8 9 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10745.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
+2890 3802 1013 197 16 5 1 0 3 0 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+
+</group>
+<group type="support" label="fragment ion mass spectrum">
+<note label="Description">   scan=9161 cs=2</note>
+<GAML:trace id="10745" label="10745.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">2314.84</GAML:attribute>
+<GAML:attribute type="charge">2</GAML:attribute>
+<GAML:Xdata label="10745.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+424.241 460.272 553.307 575.344 597.315 665.184 725.412 743.416 745.566 794.265 812.213 813.284 872.11 873.41 883.199 907.471 911.529 925.485 928.72 937.587 994.221 1012.29 1029.29 1043.54 1057.58 1084.37 1093.22 1116.39 1243.35 1261.63
+1285.44 1302.6 1369.64 1373.52 1386.46 1389.52 1391.66 1503.76 1504.75 1572.66 1613.72 1631.67 1633.76 1728.85 1745.87 1746.87 1837.87 1855.79 1857 1969.52 
+</GAML:values>
+</GAML:Xdata>
+<GAML:Ydata label="10745.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
+9 23 13 12 11 24 9 100 7 18 18 9 12 8 7 10 21 15 24 14 20 10 14 7 13 9 7 13 7 8
+7 21 13 10 12 84 21 34 16 11 13 43 12 7 21 11 12 28 9 8 
+</GAML:values>
+</GAML:Ydata>
+</GAML:trace>
+</group></group>
+</bioml>

@@ -228,8 +228,7 @@ def _local_name(element):
     """Strip namespace from the XML element's name"""
     if element.tag.startswith('{'):
         return element.tag.rsplit('}', 1)[1]
-    else:
-        return element.tag
+    return element.tag
 
 def _make_version_info(env):
     @_keepstate
@@ -374,7 +373,8 @@ def _make_get_info(env):
                         info['name'].append(newinfo.pop('name'))
                 else:
                     if cname not in env['schema_info'](source)['lists']:
-                        info[cname] = env['get_info_smart'](source, child, **kwargs)
+                        info[cname] = env['get_info_smart'](
+                                source, child, **kwargs)
                     else:
                         info.setdefault(cname, []).append(
                                 env['get_info_smart'](source, child, **kwargs))
@@ -393,12 +393,15 @@ def _make_get_info(env):
             raise PyteomicsError('Cannot convert string to bool: ' + s)
 
         converters = {'ints': int, 'floats': float, 'bools': str_to_bool,
-                'intlists': lambda x: numpy.fromstring(x, dtype=int, sep=' '),
-                'floatlists': lambda x: numpy.fromstring(x, sep=' '),
+                'intlists': lambda x: numpy.fromstring(x.replace('\n', ' '),
+                    dtype=int, sep=' '),
+                'floatlists': lambda x: numpy.fromstring(x.replace('\n', ' '),
+                    sep=' '),
                 'charlists': list}
+        schema_info = env['schema_info'](source)
         for k, v in info.items():
             for t, a in converters.items():
-                if (_local_name(element), k) in env['schema_info'](source)[t]:
+                if (_local_name(element), k) in schema_info[t]:
                     info[k] = a(v)
         # resolve refs
         # loop is needed to resolve refs pulled from other refs
@@ -449,7 +452,9 @@ def _make_iterfind(env):
                 '!=': 'ne', '<>': 'ne', '>': 'gt', '>=': 'ge'}
         try:
             lhs, sign, rhs = re.match(pattern_cond, cond).groups()
-            return getattr(operator, func[sign])(d[lhs], type(d[lhs])(rhs))
+            if lhs in d:
+                return getattr(operator, func[sign])(d[lhs], type(d[lhs])(rhs))
+            return False
         except (AttributeError, KeyError, ValueError):
             raise PyteomicsError('Invalid condition: ' + cond)
 
@@ -474,7 +479,7 @@ def _make_iterfind(env):
             if path.startswith('//'):
                 path = path[2:]
                 if path.startswith('/') or '//' in path:
-                    raise ValueError("Too many /'s in a row.")
+                    raise PyteomicsError("Too many /'s in a row.")
         else:
             absolute = True
             path = path[1:]
@@ -486,7 +491,7 @@ def _make_iterfind(env):
             name_lc = _local_name(elem).lower()
             if ev == 'start':
                 if name_lc == localname or localname == '*':
-                    found = True
+                    found += True
             else:
                 if name_lc == localname or localname == '*':
                     if (absolute and elem.getparent() is None
@@ -496,7 +501,7 @@ def _make_iterfind(env):
                             if cond is None or satisfied(info, cond):
                                 yield info
                     if not localname == '*':
-                        found = False
+                        found -= 1
                 if not found:
                     elem.clear()
     return iterfind
