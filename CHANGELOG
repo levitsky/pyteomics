@@ -1,3 +1,9 @@
+2.2.0
+-----
+
+New module :py:mod:`pyteomics.tandem` for reading output files of X!Tandem
+ search engine.
+
 2.1.6
 -----
 

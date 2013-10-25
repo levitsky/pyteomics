@@ -1,19 +1,19 @@
 Data access
 ===========
 
-The following section is dedicated to data manipulation. **Pyteomics** aims to 
+The following section is dedicated to data manipulation. **Pyteomics** aims to
 support the most common formats of (LC-)MS/MS data, peptide identification
-files and protein databases 
+files and protein databases.
 
 mzML
 ----
 
 **mzML** is an XML-based format for experimental data obtained on MS/MS or LC-MS
-setups. **Pyteomics** offers you the functionality of :py:mod:`pyteomics.mzml` module
-to gain access to the information contained in .mzML files from Python.
+setups. **Pyteomics** offers you the functionality of :py:mod:`pyteomics.mzml`
+module to gain access to the information contained in mzML files from Python.
 
-The main function in this module is
-:py:func:`pyteomics.mzml.read`. It allows the user to iterate through MS/MS spectra
+The main function in this module is :py:func:`pyteomics.mzml.read`. It allows
+the user to iterate through MS/MS spectra
 contained in an mzML file. Here is an example of its output:
 
 .. code-block:: python
@@ -59,7 +59,7 @@ human-readable format for MS/MS data. It allows storing MS/MS peak lists and
 exprimental parameters. :py:mod:`pyteomics.mgf` is a module that implements
 reading and writing MGF files.
 
-Similar to :py:mod:`pyteomics.mzml`, :py:mod:`pyteomics.mgf` has a 
+Similar to :py:mod:`pyteomics.mzml`, :py:mod:`pyteomics.mgf` has a
 :py:func:`read` function. It allows iterating through spectrum entries.
 Spectra are represented as :py:class:`dictionaries`. MS/MS peak lists are stored
 as :py:class:`numpy.array` objects :py:obj:`masses` and :py:obj:`intensities`.
@@ -83,7 +83,7 @@ Here is an example of use:
     'scans': '3'},
     'intensity array': array([  237.,   128.,   108.,  1007.,   974.,    79.])}
     
-Also, :py:mod:`pyteomics.mgf` allows to extract headers with general 
+Also, :py:mod:`pyteomics.mgf` allows to extract headers with general
 parameters from MGF files with :py:func:`read_header` function. It also returns
 a :py:class:`dict`.
 
@@ -145,13 +145,13 @@ pepXML
 
 `pepXML <http://tools.proteomecenter.org/wiki/index.php?title=Formats:pepXML>`_
 is a widely used XML-based format for peptide identifications.
-It contains information about the MS data, the parameters of the search engine 
-used and the assigned sequences. To access these data, use :py:mod:`pyteomics.pepxml`
-module.
+It contains information about the MS data, the parameters of the search engine
+used and the assigned sequences. To access these data, use
+:py:mod:`pyteomics.pepxml` module.
 
-:py:mod:`pyteomics.pepxml` has the same structure as :py:mod:`pyteomics.mzml`. The function
-:py:func:`pyteomics.pepxml.read` iterates through Peptide-Spectrum matches in a .pepXML file 
-and returns them as a custom dict.
+:py:mod:`pyteomics.pepxml` has the same structure as :py:mod:`pyteomics.mzml`.
+The function :py:func:`pyteomics.pepxml.read` iterates through Peptide-Spectrum
+matches in a pepXML file and returns them as a custom dict.
 
 .. code-block:: python
 
@@ -195,6 +195,97 @@ and returns them as a custom dict.
     'precursor_neutral_mass': 860.392,
     'start_scan': 100}
 
+X!Tandem
+--------
+
+`X!Tandem search engine <http://www.thegpm.org/tandem/>`_ has its own output
+format that contains more info than pepXML. **Pyteomics** has a reader for it
+in the :py:mod:`pyteomics.tandem` module.
+
+.. code-block:: python
+
+    >>> from pyteomics import tandem
+    >>> with tandem.read('tests/test.t.xml') as reader:
+    ...     print next(reader)
+    ...
+    {'support':
+        {'fragment ion mass spectrum':
+            {'note': 'scan=9161 cs=2', 'charge': 2, 'Ydata':
+                {'units': 'UNKNOWN',
+                'values':
+                array([   9.,   23.,   13.,   12.,   11.,   24.,    9.,  100.,    7.,
+                 18.,   18.,    9.,   12.,    8.,    7.,   10.,   21.,   15.,
+                 24.,   14.,   20.,   10.,   14.,    7.,   13.,    9.,    7.,
+                 13.,    7.,    8.,    7.,   21.,   13.,   10.,   12.,   84.,
+                 21.,   34.,   16.,   11.,   13.,   43.,   12.,    7.,   21.,
+                 11.,   12.,   28.,    9.,    8.])}, 'Xdata':
+                {'units': 'MASSTOCHARGERATIO',
+                'values':
+                array([  424.241,   460.272,   553.307,   575.344,   597.315,   665.184,
+                 725.412,   743.416,   745.566,   794.265,   812.213,   813.284,
+                 872.11 ,   873.41 ,   883.199,   907.471,   911.529,   925.485,
+                 928.72 ,   937.587,   994.221,  1012.29 ,  1029.29 ,  1043.54 ,
+                1057.58 ,  1084.37 ,  1093.22 ,  1116.39 ,  1243.35 ,  1261.63 ,
+                1285.44 ,  1302.6  ,  1369.64 ,  1373.52 ,  1386.46 ,  1389.52 ,
+                1391.66 ,  1503.76 ,  1504.75 ,  1572.66 ,  1613.72 ,  1631.67 ,
+                1633.76 ,  1728.85 ,  1745.87 ,  1746.87 ,  1837.87 ,  1855.79 ,
+                1857.   ,  1969.52 ])},
+             'M+H': 2314.84, 'id': '10745', 'label': '10745.spectrum'},
+         'supporting data':
+            {'b ion histogram':
+               {'Ydata':
+                {'units': 'counts',
+                 'values': array([2736, 3890, 1074,  201,   25,    0,    1,    0])},
+                'Xdata':
+                {'units': 'number of ions',
+                'values': array([0, 1, 2, 3, 4, 5, 6, 7])},
+                'label': '10745.b'},
+             'y ion histogram':
+                {'Ydata':
+                 {'units': 'counts',
+                  'values': array([2890, 3802, 1013,  197,   16,    5,    1,    0,    3,    0])},
+                 'Xdata':
+                 {'units': 'number of ions',
+                 'values': array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9])},
+                 'label': '10745.y'},
+             'convolution survival function':
+                {'Ydata':
+                 {'units': 'counts',
+                  'values': array([7927, 7927, 7927, 7927, 7562, 6422, 5231, 3521, 2005,  833,  336, 72,   11,    2,    0])},
+                 'Xdata':
+                 {'units': 'score',
+                 'values': array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14])},
+                 'label': '10745.convolute'},
+             'hyperscore expectation function':
+                {'label': '10745.hyper', 'a1': -0.266291, 'a0': 5.60936,
+                'Ydata':
+                 {'units': 'counts',
+                  'values': array([7922, 7922, 7922, 7922, 7557, 6417, 5382, 3923, 2715, 1693, 1057,
+                                    572,  322,  180,   89,   35,   15,    7,    0,    0,    0,    0,
+                                      5,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,
+                                      0,    0,    0,    3,    0])},
+                'Xdata':
+                {'units': 'score',
+                 'values': array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
+                                  17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33,
+                                  34, 35, 36, 37])}}}},
+     'mh': 2314.835, 'maxI': 22514.9, 'expect': 8.4e-05, 'sumI': 5.29,
+     'fI': 225.149,
+     'protein':
+        {'file':
+            {'URL': 'C:\\DMS_Temp_Org\\ID_001140_4BD5AF39.fasta',
+             'type': 'peptide'},
+         'peptide':
+            {'pre': 'VVAR', 'seq': 'EQALQIEISMNEGKPADIAEK',
+            'b_ions': 4, 'y_ions': 8, 'hyperscore': 36.4, 'b_score': 8.7,
+            'expect': 8.4e-05, 'delta': 0.676, 'post': 'MVVG', 'id': '10745.1.1',
+            'end': 211, 'mh': 2314.159, 'missed_cleavages': 0, 'start': 191,
+            'y_score': 12.2, 'nextscore': 21.8}, 'uid': '1370',
+            'label': 'SO_1630 translation elongation factor Ts (Tsf)',
+            'note': 'SO_1630 translation elongation factor Ts (Tsf)',
+            'expect': -137.0, 'sumI': 6.79, 'id': '10745.1'},
+            'z': 2, 'id': '10745'}
+
 mzIdentML
 ---------
 
@@ -233,11 +324,11 @@ above.
 
 Additional function :py:func:`get_by_id` allows to extract info from any element
 using its unique ID.
-                                                                                       
+
 FASTA
 -----
 
-To extract data from FASTA databases, use the :py:func:`pyteomics.fasta.read` 
+To extract data from FASTA databases, use the :py:func:`pyteomics.fasta.read`
 function.
 
 .. code-block:: python
@@ -287,7 +378,7 @@ You can also create a FASTA file using a sequence of (description, sequence)
     >>> fasta.write(entries, 'target-file.fasta')
 
 Another common task is to generate a *decoy database*. **Pyteomics** allows
-that by means of the :py:func:`pyteomics.fasta.decoy_db` function. 
+that by means of the :py:func:`pyteomics.fasta.decoy_db` function.
 
 .. code-block:: python
 
@@ -295,7 +386,7 @@ that by means of the :py:func:`pyteomics.fasta.decoy_db` function.
     >>> fasta.decoy_db('mydb.fasta', 'mydb-with-decoy.fasta')
 
 The only required argument is the first one, indicating the source database. The
-second argument is the target file and defaults to system standard output. 
+second argument is the target file and defaults to system standard output.
 
 If you need to modify a single sequence, use the :py:func:`pyteomics.fasta.decoy_sequence`
 method. It currently supports two modes: *‘reverse’* and *‘random’*.
