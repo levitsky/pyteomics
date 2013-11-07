@@ -309,8 +309,10 @@ def _parse_unimes(header):
 def _parse_spd(header):
     assert '=' not in header
     ID, gene, d = map(lambda s: s.strip(), header.split('|'))
+    gid, species = gene.split('_')
     return {'id': ID, 'gene': gene, 'description': d,
-            'species': gene.split('_', 1)[1].lower()}
+            'species': species.lower(),
+            'gene_id': gid}
 
 std_parsers = {'uniprotkb': _parse_uniprotkb, 'uniref': _parse_uniref,
         'uniparc': _parse_uniparc, 'unimes': _parse_unimes, 'spd': _parse_spd}
