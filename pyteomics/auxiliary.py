@@ -54,7 +54,7 @@ class PyteomicsError(Exception):
 
     def __init__(self, msg):
         self.message = msg
-        
+
     def __str__(self):
         return "Pyteomics error, message: %s" % (repr(self.message),)
 
@@ -66,9 +66,9 @@ def linear_regression(x, y, a=None, b=None):
     x, y : array_like of float
     a : float, optional
         If specified then the slope coefficient is fixed and equals a.
-    b : float, optional        
+    b : float, optional
         If specified then the free term is fixed and equals b.
-    
+
     Returns
     -------
     out : 4-tuple of float
@@ -98,7 +98,7 @@ def linear_regression(x, y, a=None, b=None):
 
 ### Public API ends here ###
 
-### Next section: File reading helpers 
+### Next section: File reading helpers
 def _keepstate(func):
     """Decorator to help keep the position in open file passed as first argument
     to functions"""
@@ -151,7 +151,7 @@ def _file_reader(mode='r'):
     def decorator(func):
         """A decorator implementing the context manager protocol for functions
         that read files.
-        
+
         Note: 'close' must be in kwargs! Otherwise it won't be respected."""
         class CManager(object):
             def __init__(self, source, *args, **kwargs):
@@ -220,7 +220,7 @@ def _parse_charge(s):
                 re.split(r'(?:,\s*)|(?:\s*and\s*)', s)))
     num, sign = re.match(r'(\d+)(\+|-)', s).groups()
     return int(num)*(-1 if sign == '-' else 1)
-    
+
 
 ### XML-related stuff below ###
 
