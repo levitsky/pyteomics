@@ -1,5 +1,5 @@
 """
-fasta - manipulations with FASTA databases 
+fasta - manipulations with FASTA databases
 ==========================================
 
 FASTA is a simple file format for protein sequence databases. Please refer to
@@ -62,7 +62,7 @@ def read(source=None, ignore_comments=False, parser=None):
     ----------
 
     source : str or file or None, optional
-        A file object (or file name) with a FASTA database. Default is 
+        A file object (or file name) with a FASTA database. Default is
         :py:const:`None`, which means read standard input.
     ignore_comments : bool, optional
         If True then ignore the second and subsequent lines of description.
@@ -78,7 +78,7 @@ def read(source=None, ignore_comments=False, parser=None):
 
     Returns
     -------
-    
+
     out : iterator of tuples
         A named 2-tuple with FASTA header (str) and sequence (str).
         Attributes 'description' and 'sequence' are also provided.
@@ -94,7 +94,7 @@ def read(source=None, ignore_comments=False, parser=None):
         # Skip empty lines.
         if not stripped_string:
             continue
-        
+
         is_comment = (stripped_string.startswith('>')
                       or stripped_string.startswith(';'))
         if is_comment:
@@ -179,7 +179,7 @@ def decoy_sequence(sequence, mode):
 @_file_reader()
 def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False):
     """Iterate over sequences for a decoy database out of a given ``source``.
-    
+
     If `output` is a path, the file will be open for appending, so no information
     will be lost if the file exists. Although, the user should be careful when
     providing open file streams as `source` and `output`. The reading and writing
@@ -201,10 +201,10 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False):
         `output`. If :py:const:`False`, the entries from `source` will be
         written first.
         :py:const:`False` by default.
-   
+
     Returns
     -------
-    out : iterator 
+    out : iterator
         An iterator over entries of the new database.
     """
 
@@ -226,7 +226,7 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False):
 def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
         decoy_only=False):
     """Generate a decoy database out of a given ``source`` and write to file.
-    
+
     If `output` is a path, the file will be open for appending, so no information
     will be lost if the file exists. Although, the user should be careful when
     providing open file streams as `source` and `output`. The reading and writing
@@ -244,14 +244,14 @@ def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
     mode : {'reverse', 'shuffle'}, optional
         Algorithm of decoy sequence generation. 'reverse' by default.
     prefix : str, optional
-        A prefix to the protein descriptions of decoy entries. The default 
+        A prefix to the protein descriptions of decoy entries. The default
         value is "DECOY_"
     decoy_only : bool, optional
         If set to :py:const:`True`, only the decoy entries will be written to
         `output`. If :py:const:`False`, the entries from `source` will be
         written as well.
         :py:const:`False` by default.
-   
+
     Returns
     -------
     output : file
@@ -297,7 +297,7 @@ def _parse_uniparc(header):
     return {'id': ID, 'status': status}
 
 def _parse_unimes(header):
-    assert 'OS=' in header and 'SV=' in header
+    assert 'OS=' in header and 'SV=' in header and 'PE=' not in header
     ID, name, pairs, _ = re.match(
             r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$',
             header).groups()
@@ -306,10 +306,15 @@ def _parse_unimes(header):
     _intify(info, ('SV',))
     return info
 
+def _parse_spd(header):
+    assert '=' not in header
+    ID, gene, d = map(lambda s: s.strip(), header.split('|'))
+    return {'id': ID, 'gene': gene, 'description': d}
+
 std_parsers = {'uniprotkb': _parse_uniprotkb, 'uniref': _parse_uniref,
-        'uniparc': _parse_uniparc, 'unimes': _parse_unimes}
+        'uniparc': _parse_uniparc, 'unimes': _parse_unimes, 'spd': _parse_spd}
 """A dictionary with parsers for known FASTA header formats. For now, supported
-formats are those described at 
+formats are those described at
 `UniProt help page <http://www.uniprot.org/help/fasta-headers>`_."""
 
 def parse(header, flavour='auto', parsers=None):
@@ -322,7 +327,7 @@ def parse(header, flavour='auto', parsers=None):
         FASTA header to parse
     flavour : str, optional
         Short name of the header format (case-insensitive). Valid values are
-        :py:const:`'auto'` and keys of the `parsers` dict. Default is 
+        :py:const:`'auto'` and keys of the `parsers` dict. Default is
         :py:const:`'auto'`, which means try all formats in turn and return the
         first result that can be obtained without an exception.
     parsers : dict, optional
@@ -333,7 +338,7 @@ def parse(header, flavour='auto', parsers=None):
 
     Returns
     -------
-    
+
     out : dict
         A dictionary with the info from the header. The format depends on the
         flavour."""
