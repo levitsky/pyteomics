@@ -159,7 +159,7 @@ def decoy_sequence(sequence, mode):
     sequence : str
         The initial sequence string.
     mode : {'reverse', 'shuffle'}
-        Type of decoy sequence. 
+        Type of decoy sequence.
 
     Returns
     -------
@@ -194,7 +194,7 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False):
     mode : {'reverse', 'shuffle'}, optional
         Algorithm of decoy sequence generation. 'reverse' by default.
     prefix : str, optional
-        A prefix to the protein descriptions of decoy entries. The default 
+        A prefix to the protein descriptions of decoy entries. The default
         value is 'DECOY_'.
     decoy_only : bool, optional
         If set to :py:const:`True`, only the decoy entries will be written to
@@ -277,18 +277,24 @@ def _parse_uniprotkb(header):
     db, ID, entry, name, pairs, _ = re.match(
            r'^(\w+)\|([-\w]+)\|(\w+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$',
            header).groups()
-    info = {'db': db, 'id': ID, 'entry': entry, 'name': name}
+    gid, taxon = entry.split('_')
+    info = {'db': db, 'id': ID, 'entry': entry,
+            'name': name, 'gene_id': gid, 'taxon': taxon}
     info.update(_split_pairs(pairs))
     _intify(info, ('PE', 'SV'))
     return info
 
 def _parse_uniref(header):
-    assert 'Tax' in header and 'RepID=' in header
+    assert 'Tax' in header
     ID, cluster, pairs, _ = re.match(
             r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$',
             header).groups()
     info = {'id': ID, 'cluster': cluster}
     info.update(_split_pairs(pairs))
+    gid, taxon = info['RepID'].split('_')
+    type_, acc = ID.split('_')
+    info.update({'taxon': taxon, 'gene_id': gid,
+            'type': type_, 'accession': acc})
     _intify(info, ('n',))
     return info
 
@@ -309,10 +315,9 @@ def _parse_unimes(header):
 def _parse_spd(header):
     assert '=' not in header
     ID, gene, d = map(lambda s: s.strip(), header.split('|'))
-    gid, species = gene.split('_')
+    gid, taxon = gene.split('_')
     return {'id': ID, 'gene': gene, 'description': d,
-            'species': species.lower(),
-            'gene_id': gid}
+            'taxon': taxon, 'gene_id': gid}
 
 std_parsers = {'uniprotkb': _parse_uniprotkb, 'uniref': _parse_uniref,
         'uniparc': _parse_uniparc, 'unimes': _parse_unimes, 'spd': _parse_spd}
