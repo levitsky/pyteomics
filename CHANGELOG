@@ -3,6 +3,9 @@
 
 Update parsers for FASTA headers.
 
+NamedTuple for FASTA entries is now defined globally, which should solve
+pickling problems.
+
 2.2.0
 -----
 

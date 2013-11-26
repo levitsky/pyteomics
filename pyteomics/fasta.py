@@ -54,6 +54,8 @@ from collections import namedtuple
 import re
 from .auxiliary import PyteomicsError, _file_obj, _file_reader
 
+Protein = namedtuple('Protein', ('description', 'sequence'))
+
 @_file_reader()
 def read(source=None, ignore_comments=False, parser=None):
     """Read a FASTA file and return entries iteratively.
@@ -83,7 +85,6 @@ def read(source=None, ignore_comments=False, parser=None):
         A named 2-tuple with FASTA header (str) and sequence (str).
         Attributes 'description' and 'sequence' are also provided.
     """
-    Protein = namedtuple('Protein', ('description', 'sequence'))
     f = parser or (lambda x: x)
     accumulated_strings = []
 
