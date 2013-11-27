@@ -10,7 +10,7 @@ Pyteomics uses the following python packages:
 
 - `numpy <http://pypi.python.org/pypi/numpy>`_
 - `matplotlib <http://sourceforge.net/projects/matplotlib/files/matplotlib/>`_ (used by pyteomics.pylab_aux)
-- `lxml <http://pypi.python.org/pypi/lxml/2.3>`_ (used by pyteomics.mzml, pyteomics.pepxml, pyteomics.mzid)
+- `lxml <http://pypi.python.org/pypi/lxml>`_ (used by pyteomics.mzml, pyteomics.pepxml, pyteomics.mzid)
 
 GNU/Linux
 ---------
@@ -31,7 +31,7 @@ Windows
     - `matplotlib <http://sourceforge.net/projects/matplotlib/files/matplotlib/>`_
     - `lxml <http://pypi.python.org/pypi/lxml>`_
 
-- Download a pre-compiled binary Pyteomics package from the `list <http://pypi.python.org/pypi/pyteomics#downloads>`_.
+- Download a pre-compiled binary Pyteomics package from `PyPI <http://pypi.python.org/pypi/pyteomics>`_.
 
 OR
 

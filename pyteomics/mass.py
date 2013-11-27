@@ -93,7 +93,7 @@ nist_mass = {
           2: (2.0141017778, 0.000115),
           3: (3.016049277725, 0.0),
           0: (1.00782503207, 1.0)},
-    
+
     'H+': {1: (1.00727646677, 1.0),
            0: (1.00727646677, 1.0)},
 
@@ -112,7 +112,7 @@ nist_mass = {
           17: (16.99913170, 0.00038),
           18: (17.9991610, 0.00205),
            0: (15.99491461956, 1.0)},
-    
+
     'P': {31: (30.97376163, 1.0000),
            0: (30.97376163, 1.0000)},
 
@@ -144,7 +144,7 @@ def _parse_isotope_string(label):
     >>> _parse_isotope_string('C')
     ('C', 0)
     >>> _parse_isotope_string('C[12]')
-    ('C', 12)    
+    ('C', 12)
     """
     if label.endswith(']'):
         isotope_num = int(label[label.find('[')+1:-1])
@@ -171,7 +171,7 @@ class Composition(defaultdict):
     The main improvement over dict is that Composition objects allow
     adding and subtraction.
     """
-        
+
     def __str__(self):
         return 'Composition({})'.format(dict.__repr__(self))
 
@@ -215,8 +215,8 @@ class Composition(defaultdict):
     # override default behavior:
     # we don't want to add 0's to the dictionary
     def __missing__(self, key):
-        return 0 
-    
+        return 0
+
     def __setitem__(self, key, value):
         if isinstance(value, float): value = int(round(value))
         elif not isinstance(value, int):
@@ -229,7 +229,7 @@ class Composition(defaultdict):
 
     def copy(self):
         return Composition(self)
-    
+
     def _from_parsed_sequence(self, parsed_sequence, aa_comp):
         self.clear()
         comp = defaultdict(int)
@@ -248,15 +248,15 @@ class Composition(defaultdict):
                     raise PyteomicsError(
                             'No information for %s in `aa_comp`' % aa)
         self._from_dict(comp)
-    
+
     def _from_split_sequence(self, split_sequence, aa_comp):
         self.clear()
         comp = defaultdict(int)
         for group in split_sequence:
             i = 0
             while i < len(group):
-                for j in range(len(group)+1, -1, -1): 
-                    try:                           
+                for j in range(len(group)+1, -1, -1):
+                    try:
                         label = ''.join(group[i:j])
                         for elem, cnt in aa_comp[label].items():
                             comp[elem] += cnt
@@ -276,18 +276,18 @@ class Composition(defaultdict):
             labels=aa_comp,
             show_unmodified_termini=True)
         self._from_parsed_sequence(parsed_sequence, aa_comp)
-        
+
     def _from_formula(self, formula, mass_data):
         # Parsing a formula backwards.
         prev_chem_symbol_start = len(formula)
         i = len(formula) - 1
-        
+
         while i >= 0:
             # Read backwards until a non-number character is met.
             if (formula[i].isdigit() or formula[i] == '-'):
                 i -= 1
                 continue
-            
+
             else:
                 # If the number of atoms is omitted then it is 1.
                 if i+1 == prev_chem_symbol_start:
@@ -327,7 +327,7 @@ class Composition(defaultdict):
                         prev_chem_symbol_start = i + 1
                         element_found = True
                         break
-                    
+
                 if not element_found:
                     raise PyteomicsError(
                         'Unknown chemical element in the formula: %s' %formula)
@@ -347,7 +347,7 @@ class Composition(defaultdict):
         substance. Basically it is a dict object, in which keys are the names
         of chemical elements and values contain integer numbers of
         corresponding atoms in a substance.
-        
+
         The main improvement over dict is that Composition objects allow
         addition and subtraction.
 
@@ -359,20 +359,20 @@ class Composition(defaultdict):
         positional argument and try to build the object from it. Without
         positional arguments, a Composition will be constructed directly from
         keyword arguments.
-        
+
         If there's an ambiguity, i.e. the argument is both a valid sequence
         and a formula (such as 'HCN'), it will be treated as a sequence. You
         need to provide the 'formula' keyword to override this.
-         
+
         .. warning::
-         
+
             Be careful when supplying a list with a parsed sequence or a split
             sequence as a keyword argument. It must be
             obtained with enabled `show_unmodified_termini` option.
             When supplying it as a positional argument, the option doesn't
             matter, because the positional argument is always converted to
             a sequence prior to any processing.
-        
+
         Parameters
         ----------
         formula : str, optional
@@ -394,10 +394,10 @@ class Composition(defaultdict):
             value is :py:data:`nist_mass`). It is used for formulae parsing only. 
         """
         defaultdict.__init__(self, int)
-        
+
         aa_comp=kwargs.get('aa_comp', std_aa_comp)
         mass_data=kwargs.get('mass_data', nist_mass)
-        
+
         kw_sources = {'formula', 'sequence', 'parsed_sequence',
                 'split_sequence'}
         kw_given = kw_sources.intersection(kwargs)
@@ -409,7 +409,7 @@ class Composition(defaultdict):
             kwa = kw_given.pop()
             getattr(self, '_from_' + kwa)(kwargs[kwa],
                     mass_data if kwa == 'formula' else aa_comp)
-        
+
         # can't build from kwargs
         elif args:
             if isinstance(args[0], dict):
@@ -499,7 +499,7 @@ def calculate_mass(*args, **kwargs):
     or **composition**.
     All arguments given are used to create a Composition object, unless
     an existing one is passed as a keyword argument.
-    
+
     Note that if a sequence string is supplied then the mass is
     calculated for a polypeptide with standard terminal groups (NH2-
     and -OH).
@@ -520,8 +520,9 @@ def calculate_mass(*args, **kwargs):
     composition : Composition, optional
         A Composition object with the elemental composition of a substance.
     average : bool, optional
-        If True then the average mass is calculated. Note that mass is not
-        averaged for elements with specified isotopes.
+        If :py:const:`True` then the average mass is calculated. Note that mass
+        is not averaged for elements with specified isotopes. Default is
+        :py:const:`False`.
     ion_type : str, optional
         If specified, then the polypeptide is considered to be in the form
         of the corresponding ion. Do not forget to specify the charge state!
@@ -538,7 +539,7 @@ def calculate_mass(*args, **kwargs):
     ion_comp : dict, optional
         A dict with the relative elemental compositions of peptide ion
         fragments (default is :py:data:`std_ion_comp`).
-    
+
     Returns
     -------
         mass : float
@@ -585,7 +586,7 @@ def calculate_mass(*args, **kwargs):
     if charge:
         mass /= charge
     return mass
- 
+
 def most_probable_isotopic_composition(*args, **kwargs):
     """Calculate the most probable isotopic composition of a peptide
     molecule/ion defined by a sequence string, parsed sequence,
@@ -759,7 +760,7 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
     ion_type : str, optional
         If specified, then the polypeptide is considered to be
         in a form of corresponding ion. Do not forget to
-        specify the charge state!                
+        specify the charge state!
     charge : int, optional
         If not 0 then m/z is calculated: the mass is increased
         by the corresponding number of proton masses and divided
@@ -796,7 +797,7 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
 
         mass += sum(mass_data[element][0][0] * num
              for element, num in icomp.items())
-        
+
     if charge:
         mass = (mass + mass_data['H+'][0][0] * charge) / charge
 
