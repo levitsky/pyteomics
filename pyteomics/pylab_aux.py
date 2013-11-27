@@ -2,7 +2,7 @@
 pylab_aux - auxiliary functions for plotting with pylab
 =======================================================
 
-This module serves as a collection of useful routines for data plotting with 
+This module serves as a collection of useful routines for data plotting with
 matplotlib.
 
 Data plotting
@@ -14,7 +14,7 @@ Data plotting
 
   :py:func:`plot_function_3d` - plot a 3D graph of a function of two variables.
 
-  :py:func:`plot_function_contour` - plot a contour graph of a function of 
+  :py:func:`plot_function_contour` - plot a contour graph of a function of
   two variables.
 
 See also
@@ -48,7 +48,7 @@ from .auxiliary import linear_regression, PyteomicsError
 
 def plot_line(a, b, **kwargs):
     """Plot a line y = a * x + b.
-    
+
     Parameters
     ----------
     a, b : float
@@ -56,9 +56,9 @@ def plot_line(a, b, **kwargs):
     """
     xlim = pylab.xlim()
     ylim = pylab.ylim()
-    pylab.plot([xlim[0], xlim[1]], 
+    pylab.plot([xlim[0], xlim[1]],
                [a * xlim[0] + b, a * xlim[1] + b],
-               **kwargs) 
+               **kwargs)
 
 def scatter_trend(x, y, **kwargs):
     """Make a scatter plot with a linear regression.
@@ -117,7 +117,7 @@ def plot_function_3d(x, y, function, **kwargs):
         The function to plot.
     plot_type : {'surface', 'wireframe', 'scatter', 'contour', 'contourf'}
         The type of a plot, see
-        `scipy cookbook <http://www.scipy.org/Cookbook/Matplotlib/mplot3D>`_ 
+        `scipy cookbook <http://www.scipy.org/Cookbook/Matplotlib/mplot3D>`_
         for examples. The default value is 'surface'.
     num_contours : int
         The number of contours to plot, 50 by default.
