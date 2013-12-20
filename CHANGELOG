@@ -1,3 +1,9 @@
+2.2.2
+-----
+
+Bugfix in :py:mod:`pyteomics.tandem`. The info about all proteins is now
+extracted.
+
 2.2.1
 -----
 
