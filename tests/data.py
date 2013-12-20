@@ -1391,7 +1391,7 @@ tandem_spectra = [{'support': {
       'fI': 225.149,
       'sumI': 5.29,
       'expect': 8.4e-05,
-      'protein': {
+      'protein': [{
           'peptide': {
               'y_score': 12.2, 'nextscore': 21.8, 'missed_cleavages': 0,
               'expect': 8.4e-05, 'end': 211, 'id': '10745.1.1',
@@ -1407,7 +1407,7 @@ tandem_spectra = [{'support': {
            'expect': -137.0, 'uid': '1370',
            'note': 'SO_1630 translation elongation factor Ts (Tsf)',
            'sumI': 6.79, 'id': '10745.1'
-           },
+           }],
        'id': '10745',
        'maxI': 22514.9,
        'mh': 2314.835,

@@ -52,7 +52,7 @@ def _get_info_smart(source, element, **kw):
     if isinstance(info.get('note'), dict
             ) and set(info['note']) == {'label', 'note'}:
         info['note'] = info['note']['note']
-    if 'protein' in info and info.get('label') == info['protein']['label']:
+    if 'protein' in info and 'label' in info:
         del info['label']
     if 'group' in info:
         for g in info['group']:
@@ -119,7 +119,7 @@ def _schema_info(_):
                        'nextscore', 'delta', 'mh']} | {
                    ('protein', 'expect'), ('protein', 'sumI')},
 
-            'bools': set(), 'lists': {'group', 'trace', 'attribute'},
+            'bools': set(), 'lists': {'group', 'trace', 'attribute', 'protein'},
             'floatlists': {('values', 'values')}, 'intlists': set(), 'charlists': set()}
 
 _getinfo_env = {'keys': {'domain'}, 'schema_info': _schema_info,
