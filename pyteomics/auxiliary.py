@@ -392,7 +392,12 @@ def _make_get_info(env):
             if s.lower() in {'false', '0'}: return False
             raise PyteomicsError('Cannot convert string to bool: ' + s)
 
-        converters = {'ints': int, 'floats': float, 'bools': str_to_bool,
+        def str_to_num(s, numtype):
+            return numtype(s) if s else None
+
+        to = lambda t: lambda s: str_to_num(s, t)
+
+        converters = {'ints': to(int), 'floats': to(float), 'bools': str_to_bool,
                 'intlists': lambda x: numpy.fromstring(x.replace('\n', ' '),
                     dtype=int, sep=' '),
                 'floatlists': lambda x: numpy.fromstring(x.replace('\n', ' '),
