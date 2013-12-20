@@ -1,86 +1,219 @@
 <?xml version="1.0"?>
-<bioml xmlns:GAML="http://www.bioml.com/gaml/" label="models from 'C:\Xtandem_WorkDir\QC_Shew_07_02_0p5uguL-a_16Oct07_Owl_07-08-02_dta.txt'">
-<group id="10745" mh="2314.835000" z="2" expect="8.4e-005" label="SO_1630 translation elongation factor Ts (Tsf)" type="model" sumI="5.29" maxI="22514.9" fI="225.149" >
-<protein expect="-137.0" id="10745.1" uid="1370" label="SO_1630 translation elongation factor Ts (Tsf)" sumI="6.79" >
-<note label="description">SO_1630 translation elongation factor Ts (Tsf)</note>
-<file type="peptide" URL="C:\DMS_Temp_Org\ID_001140_4BD5AF39.fasta"/>
-<peptide start="1" end="283">
-	<domain id="10745.1.1" start="191" end="211" expect="8.4e-005" mh="2314.159" delta="0.676" hyperscore="36.4" nextscore="21.8" y_score="12.2" y_ions="8" b_score="8.7" b_ions="4" pre="VVAR" post="MVVG" seq="EQALQIEISMNEGKPADIAEK" missed_cleavages="0">
+<?xml-stylesheet type="text/xsl" href="tandem-style.xsl"?>
+<bioml xmlns:GAML="http://www.bioml.com/gaml/" label="models from 'swedcad.mgf'">
+<group id="11745" mh="800.418907" z="2" rt="42" expect="1.5e-07" label="sp|P35579|MYH9_HUMAN Myosin-9 OS=Homo sapiens GN=MYH9 PE=1 SV=4" type="model" sumI="6.93" maxI="4.82322e+06" fI="48232.2" act="0" >
+<protein expect="-989.8" id="11745.1" uid="249282" label="sp|P35579|MYH9_HUMAN Myosin-9 OS=Homo sapiens GN=MYH9 PE=1 SV=4" sumI="8.29" >
+<note label="description">sp|P35579|MYH9_HUMAN Myosin-9 OS=Homo sapiens GN=MYH9 PE=1 SV=4</note>
+<file type="peptide" URL="/home/lab006/fasta/uniprot_sprot.fasta"/>
+<peptide start="1" end="1960">
+	
+<domain id="11745.1.1" start="9" end="14" expect="1.5e-07" mh="800.4189" delta="0.0000" hyperscore="16.4" nextscore="16.4" y_score="11.8" y_ions="3" b_score="8.2" b_ions="2" pre="AADK" post="NFIN" seq="YLYVDK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<protein expect="-784.7" id="11745.2" uid="249280" label="sp|Q258K2|MYH9_CANFA Myosin-9 OS=Canis familiaris GN=MYH9 PE=2 SV=1" sumI="8.24" >
+<note label="description">sp|Q258K2|MYH9_CANFA Myosin-9 OS=Canis familiaris GN=MYH9 PE=2 SV=1</note>
+<file type="peptide" URL="/home/lab006/fasta/uniprot_sprot.fasta"/>
+<peptide start="1" end="1960">
+	
+<domain id="11745.2.1" start="9" end="14" expect="1.5e-07" mh="800.4189" delta="0.0000" hyperscore="16.4" nextscore="16.4" y_score="11.8" y_ions="3" b_score="8.2" b_ions="2" pre="AADK" post="NFIN" seq="YLYVDK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<protein expect="-660.7" id="11745.3" uid="249283" label="sp|Q8VDD5|MYH9_MOUSE Myosin-9 OS=Mus musculus GN=Myh9 PE=1 SV=4" sumI="8.19" >
+<note label="description">sp|Q8VDD5|MYH9_MOUSE Myosin-9 OS=Mus musculus GN=Myh9 PE=1 SV=4</note>
+<file type="peptide" URL="/home/lab006/fasta/uniprot_sprot.fasta"/>
+<peptide start="1" end="1960">
+	
+<domain id="11745.3.1" start="9" end="14" expect="1.5e-07" mh="800.4189" delta="0.0000" hyperscore="16.4" nextscore="16.4" y_score="11.8" y_ions="3" b_score="8.2" b_ions="2" pre="AADK" post="NFIN" seq="YLYVDK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<protein expect="-654.3" id="11745.4" uid="249284" label="sp|Q62812|MYH9_RAT Myosin-9 OS=Rattus norvegicus GN=Myh9 PE=1 SV=3" sumI="8.15" >
+<note label="description">sp|Q62812|MYH9_RAT Myosin-9 OS=Rattus norvegicus GN=Myh9 PE=1 SV=3</note>
+<file type="peptide" URL="/home/lab006/fasta/uniprot_sprot.fasta"/>
+<peptide start="1" end="1961">
+	
+<domain id="11745.4.1" start="9" end="14" expect="1.5e-07" mh="800.4189" delta="0.0000" hyperscore="16.4" nextscore="16.4" y_score="11.8" y_ions="3" b_score="8.2" b_ions="2" pre="AADK" post="NFIN" seq="YLYVDK" missed_cleavages="0">
+</domain>
+</peptide>
+</protein>
+<protein expect="-463.3" id="11745.5" uid="249281" label="sp|P14105|MYH9_CHICK Myosin-9 OS=Gallus gallus GN=MYH9 PE=2 SV=1" sumI="8.05" >
+<note label="description">sp|P14105|MYH9_CHICK Myosin-9 OS=Gallus gallus GN=MYH9 PE=2 SV=1</note>
+<file type="peptide" URL="/home/lab006/fasta/uniprot_sprot.fasta"/>
+<peptide start="1" end="1959">
+	
+<domain id="11745.5.1" start="9" end="14" expect="1.5e-07" mh="800.4189" delta="0.0000" hyperscore="16.4" nextscore="16.4" y_score="11.8" y_ions="3" b_score="8.2" b_ions="2" pre="DADK" post="NIIN" seq="YLYVDK" missed_cleavages="0">
 </domain>
 </peptide>
 </protein>
 <group label="supporting data" type="support">
-<GAML:trace label="10745.hyper" type="hyperscore expectation function">
-<GAML:attribute type="a0">5.60936</GAML:attribute>
-<GAML:attribute type="a1">-0.266291</GAML:attribute>
-<GAML:Xdata label="10745.hyper" units="score">
-<GAML:values byteorder="INTEL" format="ASCII" numvalues="38">
-0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29
-30 31 32 33 34 35 36 37 
+<GAML:trace label="11745.hyper" type="hyperscore expectation function">
+<GAML:attribute type="a0">4.84111</GAML:attribute>
+<GAML:attribute type="a1">-0.712472</GAML:attribute>
+<GAML:Xdata label="11745.hyper" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="18">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 
 </GAML:values>
 </GAML:Xdata>
-<GAML:Ydata label="10745.hyper" units="counts">
-<GAML:values byteorder="INTEL" format="ASCII" numvalues="38">
-7922 7922 7922 7922 7557 6417 5382 3923 2715 1693 1057 572 322 180 89 35 15 7 0 0 0 0 5 0 0 0 0 0 0 0
-0 0 0 0 0 0 3 0 
+<GAML:Ydata label="11745.hyper" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="18">
+350 350 350 308 98 19 0 81 0 0 80 3 0 47 4 0 10 0 
 </GAML:values>
 </GAML:Ydata>
 </GAML:trace>
-<GAML:trace label="10745.convolute" type="convolution survival function">
-<GAML:Xdata label="10745.convolute" units="score">
-<GAML:values byteorder="INTEL" format="ASCII" numvalues="15">
-0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 
+<GAML:trace label="11745.convolute" type="convolution survival function">
+<GAML:Xdata label="11745.convolute" units="score">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="14">
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 
 </GAML:values>
 </GAML:Xdata>
-<GAML:Ydata label="10745.convolute" units="counts">
-<GAML:values byteorder="INTEL" format="ASCII" numvalues="15">
-7927 7927 7927 7927 7562 6422 5231 3521 2005 833 336 72 11 2 0 
+<GAML:Ydata label="11745.convolute" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="14">
+351 351 351 309 99 20 1 0 0 0 80 0 43 0 
 </GAML:values>
 </GAML:Ydata>
 </GAML:trace>
-<GAML:trace label="10745.b" type="b ion histogram">
-<GAML:Xdata label="10745.b" units="number of ions">
-<GAML:values byteorder="INTEL" format="ASCII" numvalues="8">
-0 1 2 3 4 5 6 7 
+<GAML:trace label="11745.b" type="b ion histogram">
+<GAML:Xdata label="11745.b" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="4">
+0 1 2 3 
 </GAML:values>
 </GAML:Xdata>
-<GAML:Ydata label="10745.b" units="counts">
-<GAML:values byteorder="INTEL" format="ASCII" numvalues="8">
-2736 3890 1074 201 25 0 1 0 
+<GAML:Ydata label="11745.b" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="4">
+346 64 21 0 
 </GAML:values>
 </GAML:Ydata>
 </GAML:trace>
-<GAML:trace label="10745.y" type="y ion histogram">
-<GAML:Xdata label="10745.y" units="number of ions">
-<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
-0 1 2 3 4 5 6 7 8 9 
+<GAML:trace label="11745.y" type="y ion histogram">
+<GAML:Xdata label="11745.y" units="number of ions">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="5">
+0 1 2 3 4 
 </GAML:values>
 </GAML:Xdata>
-<GAML:Ydata label="10745.y" units="counts">
-<GAML:values byteorder="INTEL" format="ASCII" numvalues="10">
-2890 3802 1013 197 16 5 1 0 3 0 
+<GAML:Ydata label="11745.y" units="counts">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="5">
+2 381 38 10 0 
 </GAML:values>
 </GAML:Ydata>
 </GAML:trace>
 
 </group>
 <group type="support" label="fragment ion mass spectrum">
-<note label="Description">   scan=9161 cs=2</note>
-<GAML:trace id="10745" label="10745.spectrum" type="tandem mass spectrum">
-<GAML:attribute type="M+H">2314.84</GAML:attribute>
+<note label="Description">YLYVDK </note>
+<GAML:trace id="11745" label="11745.spectrum" type="tandem mass spectrum">
+<GAML:attribute type="M+H">800.419</GAML:attribute>
 <GAML:attribute type="charge">2</GAML:attribute>
-<GAML:Xdata label="10745.spectrum" units="MASSTOCHARGERATIO">
-<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
-424.241 460.272 553.307 575.344 597.315 665.184 725.412 743.416 745.566 794.265 812.213 813.284 872.11 873.41 883.199 907.471 911.529 925.485 928.72 937.587 994.221 1012.29 1029.29 1043.54 1057.58 1084.37 1093.22 1116.39 1243.35 1261.63
-1285.44 1302.6 1369.64 1373.52 1386.46 1389.52 1391.66 1503.76 1504.75 1572.66 1613.72 1631.67 1633.76 1728.85 1745.87 1746.87 1837.87 1855.79 1857 1969.52 
+<GAML:Xdata label="11745.spectrum" units="MASSTOCHARGERATIO">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="14">
+174.759 249.16 262.135 277.155 361.208 378.203 401.716 440.218 472.624 495.27 504.276 524.271 526.277 637.355 
 </GAML:values>
 </GAML:Xdata>
-<GAML:Ydata label="10745.spectrum" units="UNKNOWN">
-<GAML:values byteorder="INTEL" format="ASCII" numvalues="50">
-9 23 13 12 11 24 9 100 7 18 18 9 12 8 7 10 21 15 24 14 20 10 14 7 13 9 7 13 7 8
-7 21 13 10 12 84 21 34 16 11 13 43 12 7 21 11 12 28 9 8 
+<GAML:Ydata label="11745.spectrum" units="UNKNOWN">
+<GAML:values byteorder="INTEL" format="ASCII" numvalues="14">
+2 22 3 13 4 1 5 2 2 2 10 100 4 6 
 </GAML:values>
 </GAML:Ydata>
 </GAML:trace>
 </group></group>
+
+<group label="input parameters" type="parameters">
+	<note type="input" label="list path, taxonomy information">./taxonomy.xml</note>
+	<note type="input" label="output, histogram column width">30</note>
+	<note type="input" label="output, histograms">yes</note>
+	<note type="input" label="output, log path"></note>
+	<note type="input" label="output, maximum valid expectation value">0.1</note>
+	<note type="input" label="output, message">testing 1 2 3</note>
+	<note type="input" label="output, one sequence copy">yes</note>
+	<note type="input" label="output, parameters">yes</note>
+	<note type="input" label="output, path">./output.xml</note>
+	<note type="input" label="output, path hashing">yes</note>
+	<note type="input" label="output, performance">yes</note>
+	<note type="input" label="output, proteins">yes</note>
+	<note type="input" label="output, results">all</note>
+	<note type="input" label="output, sequence path"></note>
+	<note type="input" label="output, sequences">no</note>
+	<note type="input" label="output, sort results by">protein</note>
+	<note type="input" label="output, spectra">yes</note>
+	<note type="input" label="output, xsl path">tandem-style.xsl</note>
+	<note type="input" label="protein, C-terminal residue modification mass">0.0</note>
+	<note type="input" label="protein, N-terminal residue modification mass">0.0</note>
+	<note type="input" label="protein, cleavage C-terminal mass change">+17.002735</note>
+	<note type="input" label="protein, cleavage N-terminal mass change">+1.007825</note>
+	<note type="input" label="protein, cleavage site">[RK]|{P}</note>
+	<note type="input" label="protein, homolog management">no</note>
+	<note type="input" label="protein, modified residue mass file"></note>
+	<note type="input" label="protein, quick acetyl">no</note>
+	<note type="input" label="protein, quick pyrolidone">no</note>
+	<note type="input" label="protein, taxon">python</note>
+	<note type="input" label="refine">no</note>
+	<note type="input" label="refine, maximum valid expectation value">0.1</note>
+	<note type="input" label="refine, sequence path"></note>
+	<note type="input" label="refine, spectrum synthesis">yes</note>
+	<note type="input" label="residue, modification mass"></note>
+	<note type="input" label="residue, potential modification mass"></note>
+	<note type="input" label="residue, potential modification motif"></note>
+	<note type="input" label="scoring, a ions">no</note>
+	<note type="input" label="scoring, b ions">yes</note>
+	<note type="input" label="scoring, c ions">no</note>
+	<note type="input" label="scoring, cyclic permutation">no</note>
+	<note type="input" label="scoring, include reverse">no</note>
+	<note type="input" label="scoring, maximum missed cleavage sites">3</note>
+	<note type="input" label="scoring, minimum ion count">1</note>
+	<note type="input" label="scoring, x ions">no</note>
+	<note type="input" label="scoring, y ions">yes</note>
+	<note type="input" label="scoring, z ions">no</note>
+	<note type="input" label="spectrum, dynamic range">100.0</note>
+	<note type="input" label="spectrum, fragment mass type">monoisotopic</note>
+	<note type="input" label="spectrum, fragment monoisotopic mass error">10</note>
+	<note type="input" label="spectrum, fragment monoisotopic mass error units">ppm</note>
+	<note type="input" label="spectrum, maximum parent charge">2</note>
+	<note type="input" label="spectrum, minimum fragment mz">50.0</note>
+	<note type="input" label="spectrum, minimum parent m+h">400.0</note>
+	<note type="input" label="spectrum, minimum peaks">1</note>
+	<note type="input" label="spectrum, parent monoisotopic mass error minus">5</note>
+	<note type="input" label="spectrum, parent monoisotopic mass error plus">5</note>
+	<note type="input" label="spectrum, parent monoisotopic mass error units">ppm</note>
+	<note type="input" label="spectrum, parent monoisotopic mass isotope error">no </note>
+	<note type="input" label="spectrum, path">swedcad.mgf</note>
+	<note type="input" label="spectrum, sequence batch size">1000</note>
+	<note type="input" label="spectrum, threads">12</note>
+	<note type="input" label="spectrum, total peaks">1000</note>
+	<note type="input" label="spectrum, use noise suppression">no</note>
+</group>
+<group label="unused input parameters"  type="parameters">
+	<note type="input" label="protein, use minimal annotations">yes</note>
+	<note type="input" label="refine, modification mass"></note>
+	<note type="input" label="refine, point mutations">no</note>
+	<note type="input" label="refine, potential C-terminus modifications"></note>
+	<note type="input" label="refine, potential N-terminus modifications">+42.010565@[</note>
+	<note type="input" label="refine, potential modification mass"></note>
+	<note type="input" label="refine, potential modification motif"></note>
+	<note type="input" label="refine, tic percent">20</note>
+	<note type="input" label="refine, unanticipated cleavage">yes</note>
+	<note type="input" label="refine, use potential modifications for full refinement">no</note>
+	<note type="input" label="scoring, pluggable scoring">no</note>
+</group>
+<group label="performance parameters" type="parameters">
+	<note label="list path, sequence source #1">/home/lab006/fasta/uniprot_sprot.fasta</note>
+	<note label="list path, sequence source description #1">no description</note>
+	<note label="modelling, total peptides used">41757410</note>
+	<note label="modelling, total proteins used">538585</note>
+	<note label="modelling, total spectra used">15897</note>
+	<note label="process, start time">2013:12:16:19:10:42</note>
+	<note label="process, version">x! tandem CYCLONE (2012.10.01.1)</note>
+	<note label="quality values">821 906 855 882 831 839 784 684 695 641 588 541 495 431 420 346 314 286 232 203</note>
+	<note label="refining, # input models">0</note>
+	<note label="refining, # input spectra">0</note>
+	<note label="refining, # partial cleavage">0</note>
+	<note label="refining, # point mutations">0</note>
+	<note label="refining, # potential C-terminii">0</note>
+	<note label="refining, # potential N-terminii">0</note>
+	<note label="refining, # unanticipated cleavage">0</note>
+	<note label="timing, initial modelling total (sec)">393.97</note>
+	<note label="timing, initial modelling/spectrum (sec)">0.0248</note>
+	<note label="timing, load sequence models (sec)">18.98</note>
+	<note label="timing, refinement/spectrum (sec)">0.0000</note>
+</group>
 </bioml>

@@ -112,7 +112,7 @@ def _schema_info(_):
             'a_ions', 'x_ions', 'c_ions', 'z_ions']},
 
             'floats': {('group', k) for k in [
-                'fI', 'sumI', 'maxI', 'mh', 'expect']} | {
+                'fI', 'sumI', 'maxI', 'mh', 'expect', 'rt']} | {
                    ('domain', k) for k in [
                        'expect', 'hyperscore', 'b_score', 'y_score',
                        'a_score', 'x_score', 'c_score', 'z_score',
