@@ -269,7 +269,8 @@ def _make_schema_info(env):
             if not schema:
                 schema_url = ''
                 raise PyteomicsError(
-                        'Schema information not found in {}.'.format(source))
+                        'Schema information not found in {}.'.format(
+                            getattr(source, 'name', source)))
             schema_url = schema.split()[-1]
             if not (schema_url.startswith('http://') or
                     schema_url.startswith('file://')):
@@ -291,7 +292,7 @@ def _make_schema_info(env):
                             'type', '').split(':')[-1] in val:
                         anc = elem.getparent()
                         while not (
-                                (_local_name(anc) == 'complexType' 
+                                (_local_name(anc) == 'complexType'
                                     and 'name' in anc.attrib)
                                 or _local_name(anc) == 'element'):
                             anc = anc.getparent()
@@ -321,7 +322,7 @@ def _make_schema_info(env):
             else:
                 warn("Unknown {0[format]} version `{1}`. "
                     "Attempt to use schema\n"
-                    "information from {2} failed.\n"
+                    "information from '{2}' failed.\n"
                     "Exception information:\n{3}\n"
                     "Falling back to defaults for {0[default_version]}\n"
                     "NOTE: This is just a warning, probably from a badly-"
@@ -329,7 +330,7 @@ def _make_schema_info(env):
                     "decent results.\nLook here for suppressing warnings:\n"
                     "http://docs.python.org/library/warnings.html#"
                     "temporarily-suppressing-warnings\n"
-                    "If you think this shouldn't have happenned, you can "
+                    "If you think this shouldn't have happened, you can "
                     "report this to\n"
                     "http://hg.theorchromo.ru/pyteomics/issues\n"
                     "".format(env, version, schema_url,
