@@ -28,10 +28,10 @@ Mass calculations
   calculation. Can calculate mass for a polypeptide sequence, chemical
   formula or elemental composition. Supplied with an ion type and
   charge, the function would calculate m/z.
-  
+
   :py:func:`fast_mass` - a less powerful but much faster function for
   polypeptide mass calculation.
-  
+
 Isotopic abundances
 -------------------
 
@@ -97,7 +97,7 @@ nist_mass = {
     'H+': {1: (1.00727646677, 1.0),
            0: (1.00727646677, 1.0)},
 
-    'e*': {0: (0.00054857990943, 1.0)}, 
+    'e*': {0: (0.00054857990943, 1.0)},
 
     'C': {12: (12.0000000, 0.9893),
           13: (13.0033548378, 0.0107),
@@ -330,14 +330,14 @@ class Composition(defaultdict):
 
                 if not element_found:
                     raise PyteomicsError(
-                        'Unknown chemical element in the formula: %s' %formula)
+                        'Unknown chemical element in the formula: %s' % formula)
 
     def _from_dict(self, comp):
         for isotope_string, num_atoms in comp.items():
             element_name, isotope_num = _parse_isotope_string(
                 isotope_string)
 
-                # Remove explicitly undefined isotopes (e.g. X[0]).
+            # Remove explicitly undefined isotopes (e.g. X[0]).
             self[_make_isotope_string(element_name, isotope_num)] = (
                         num_atoms)
 
@@ -490,7 +490,7 @@ and the sum of elemental compositions of its constituting amino acid residues.
 """
 
 def calculate_mass(*args, **kwargs):
-    """Calculates the monoisotopic mass of a polypeptide defined by a 
+    """Calculates the monoisotopic mass of a polypeptide defined by a
     sequence string, parsed sequence, chemical formula or
     Composition object.
 
@@ -535,7 +535,7 @@ def calculate_mass(*args, **kwargs):
         default value is std_aa_comp).
     mass_data : dict, optional
         A dict with the masses of the chemical elements (the default
-        value is :py:data:`nist_mass`). 
+        value is :py:data:`nist_mass`).
     ion_comp : dict, optional
         A dict with the relative elemental compositions of peptide ion
         fragments (default is :py:data:`std_ion_comp`).
@@ -640,7 +640,7 @@ def most_probable_isotopic_composition(*args, **kwargs):
     mass_data = kwargs.get('mass_data', nist_mass)
     elements_with_isotopes = kwargs.get('elements_with_isotopes')
     isotopic_composition = Composition()
-    
+
     for element_name in composition:
         if (not elements_with_isotopes
         or (element_name in elements_with_isotopes)):
@@ -648,7 +648,7 @@ def most_probable_isotopic_composition(*args, **kwargs):
             first_iso, second_iso = sorted(
                 [(i[0], i[1][1])
                  for i in mass_data[element_name].items() if i[0]])[:2]
-            
+
             # Write the number of isotopes of the most abundant type.
             first_iso_str = _make_isotope_string(element_name, first_iso[0])
             isotopic_composition[first_iso_str] = int(math.ceil(
@@ -667,7 +667,7 @@ def most_probable_isotopic_composition(*args, **kwargs):
 def isotopic_composition_abundance(*args, **kwargs):
     """Calculate the relative abundance of a given isotopic composition
     of a molecule.
-    
+
     Parameters
     ----------
     formula : str, optional
@@ -719,13 +719,13 @@ def isotopic_composition_abundance(*args, **kwargs):
                 relative_abundance *= (
                     mass_data[element_name][isotope_num][1]
                     ** isotope_content)
-            
+
     return relative_abundance
 
 std_aa_mass = {
     'G': 57.02146,
     'A': 71.03711,
-    'S': 87.03203, 
+    'S': 87.03203,
     'P': 97.05276,
     'V': 99.06841,
     'T': 101.04768,
@@ -767,7 +767,7 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         by z.
     mass_data : dict, optional
         A dict with the masses of chemical elements (the default
-        value is :py:data:`nist_mass`). 
+        value is :py:data:`nist_mass`).
     aa_mass : dict, optional
         A dict with the monoisotopic mass of amino acid residues
         (default is std_aa_mass);
