@@ -21,7 +21,7 @@ setup(
     requires         = [line.strip() for line in open('requirements.txt')],
     classifiers      = ['Intended Audience :: Science/Research',
                         'Programming Language :: Python :: 2.7',
-                        'Programming Language :: Python :: 3.2',
+                        'Programming Language :: Python :: 3',
                         'Topic :: Education',
                         'Topic :: Scientific/Engineering :: Bio-Informatics',
                         'Topic :: Scientific/Engineering :: Chemistry',
