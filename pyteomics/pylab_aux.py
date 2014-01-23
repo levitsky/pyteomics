@@ -88,8 +88,9 @@ def scatter_trend(x, y, **kwargs):
                               c=kwargs.get('c', 'b'),
                               alpha=kwargs.get('alpha', 1.0))
     scat_plot.set_label(
-        '$y\,=\,%.3fx\,+\,%.3f$, $R^2=\,%.3f$ \n$\sigma\,=\,%.3f$' % (
-            a, b, r*r, stderr))
+        '$y\,=\,{:.3f}x\,{}\,{:.3f}$, '
+        '$R^2=\,{:.3f}$ \n$\sigma\,=\,{:.3f}$'.format(
+            a, '-' if b < 0 else '+', abs(b), r*r, stderr))
     legend = pylab.legend(loc='upper left')
     legend_frame = legend.get_frame()
     legend_frame.set_alpha(kwargs.get('alpha_legend', 1.0))
