@@ -96,6 +96,23 @@ def linear_regression(x, y, a=None, b=None):
 
     return a, b, r, stderr
 
+class Charge(int):
+    def __new__(cls, *args, **kwargs):
+        try:
+            return super(Charge, cls).__new__(cls, *args)
+        except ValueError as e:
+            if isinstance(args[0], str):
+                try:
+                    num, sign = re.match(r'^(\d+)(\+|-)$', args[0]).groups()
+                    return super(Charge, cls).__new__(cls,
+                        sign + num, *args[1:], **kwargs)
+                except:
+                    pass
+            raise PyteomicsError(*e.args)
+
+    def __str__(self):
+        return str(abs(self)) + '+-'[self<0]
+
 ### Public API ends here ###
 
 ### Next section: File reading helpers
@@ -211,15 +228,13 @@ def memoize(maxsize=1000):
         return func
     return deco
 
+
 def _parse_charge(s):
     try:
-        return int(s)
-    except ValueError:
-        if ',' in s or 'and' in s:
-            return list(map(_parse_charge,
+        return Charge(s)
+    except PyteomicsError:
+        return list(map(_parse_charge,
                 re.split(r'(?:,\s*)|(?:\s*and\s*)', s)))
-    num, sign = re.match(r'(\d+)(\+|-)', s).groups()
-    return int(num)*(-1 if sign == '-' else 1)
 
 
 ### XML-related stuff below ###
