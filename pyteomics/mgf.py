@@ -56,14 +56,14 @@ _comments = '#;!/'
 @_file_reader()
 def read(source=None, use_header=True):
     """Read an MGF file and return entries iteratively.
-    
+
     Read the specified MGF file, **yield** spectra one by one.
-    Each 'spectrum' is a :py:class:`dict` with three keys: 'm/z array',
-    'intensity array' and 'params'. 'm/z array' and 'intensity array' store
-    :py:class:`numpy.array`'s of floats, and 'params' stores a
-    :py:class:`dict` of parameters (keys and values are
-    :py:class:`str`, keys corresponding to MGF, lowercased). A masked array
-    'charge array' may be present in the output.
+    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
+    'intensity array', 'charge array' and 'params'. 'm/z array' and
+    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
+    'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
+    and 'params' stores a :py:class:`dict` of parameters (keys and values are
+    :py:class:`str`, keys corresponding to MGF, lowercased).
 
     Parameters
     ----------
@@ -71,7 +71,7 @@ def read(source=None, use_header=True):
     source : str or file or None, optional
         A file object (or file name) with data in MGF format. Default is
         :py:const:`None`, which means read standard input.
-    
+
     use_header : bool, optional
         Add the info from file header to each dict. Spectrum-specific parameters
         override those from the header in case of conflict.
@@ -110,19 +110,17 @@ def read(source=None, use_header=True):
                                 'PEPMASS = {}'.format(params['pepmass']))
                     else:
                         params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
-                out = {'params': params, 
+                out = {'params': params,
                        'm/z array': np.array(masses),
-                       'intensity array': np.array(intensities)}
-
-                if any(charges):
-                    out['charge array'] = np.ma.masked_equal(charges, 0)
+                       'intensity array': np.array(intensities),
+                       'charge array': np.ma.masked_equal(charges, 0)}
                 yield out
                 del out
                 params = dict(header) if use_header else {}
                 masses = []
                 intensities = []
                 charges = []
-            else: 
+            else:
                 l = line.split('=', 1)
                 if len(l) > 1: # spectrum-specific parameters!
                     params[l[0].lower()] = l[1].strip()
@@ -142,7 +140,7 @@ def read_header(source):
     """
     Read the specified MGF file, get search parameters specified in the header
     as a :py:class:`dict`, the keys corresponding to MGF format (lowercased).
-    
+
     Parameters
     ----------
 
@@ -232,7 +230,7 @@ def write(spectra, output=None, header=''):
                 for key, val in spectrum['params'].items() if not
                 (val == head_dict.get(key) or
                 # handle PEPMASS tuple later
-                (key.lower() == 'pepmass' and 
+                (key.lower() == 'pepmass' and
                     not isinstance(val, (str, int, float))))))
             # time to handle PEPMASS tuple
             for key, val in spectrum['params'].items():
