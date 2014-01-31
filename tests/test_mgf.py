@@ -17,8 +17,8 @@ class MGFTest(unittest.TestCase):
         self.tmpfile.seek(0)
         tmpreader = read(self.tmpfile)
         self.spectra2 = list(tmpreader)
-        self.tmpfile.close()
         self.ns = len(self.spectra)
+        self.tmpfile.close()
 
     def test_read(self):
         # http://stackoverflow.com/q/14246983/1258041
