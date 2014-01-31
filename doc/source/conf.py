@@ -12,6 +12,8 @@
 # serve to show the default.
 
 import sys, os
+
+# http://stackoverflow.com/q/10861463/1258041
 from sphinx.ext.autodoc import ModuleLevelDocumenter, DataDocumenter
 
 def add_directive_header(self, sig):
@@ -72,7 +74,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Pyteomics documentation'
-copyright = u'2011-2013, Lev Levitsky, Anton Goloborodko, Mikhail Gorshkov'
+copyright = u'2011-2014, Lev Levitsky, Anton Goloborodko, Mikhail Gorshkov'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

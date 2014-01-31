@@ -1,5 +1,5 @@
 """
-mgf - read and write MS/MS data in Mascot Generic Format. 
+mgf - read and write MS/MS data in Mascot Generic Format.
 =========================================================
 
 Summary
@@ -10,7 +10,7 @@ human-readable format for MS/MS data. It allows storing MS/MS peak lists and
 exprimental parameters.
 
 This module provides minimalistic infrastructure for access to data stored in
-MGF files. The most important function is :py:func:`read`, which 
+MGF files. The most important function is :py:func:`read`, which
 reads spectra and related information as saves them into human-readable
 :py:class:`dict`'s.
 Also, common parameters can be read from MGF file header with
@@ -110,7 +110,7 @@ def read(source=None, use_header=True):
                     else:
                         params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
                 if isinstance(params.get('charge'), str):
-                    params['charge'] = _parse_charge(params['charge'])
+                    params['charge'] = _parse_charge(params['charge'], True)
                 out = {'params': params,
                        'm/z array': np.array(masses),
                        'intensity array': np.array(intensities),
@@ -165,7 +165,7 @@ def read_header(source):
                 val = l[1].strip()
                 header[key] = val
         if 'charge' in header:
-            header['charge'] = _parse_charge(header['charge'])
+            header['charge'] = _parse_charge(header['charge'], True)
         return header
 
 def write(spectra, output=None, header=''):
