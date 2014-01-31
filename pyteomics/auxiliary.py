@@ -119,10 +119,14 @@ class ChargeList(list):
             self.extend(map(Charge,
                 re.split(r'(?:,\s*)|(?:\s*and\s*)', args[0])))
         else:
-            super(ChargeList, self).__init__(self, *args, **kwargs)
+            super(ChargeList, self).__init__(*args, **kwargs)
 
     def __str__(self):
-        return ', '.join(map(str, self[:-1])) + ' and {}'.format(self[-1])
+        if len(self) > 1:
+            return ', '.join(map(str, self[:-1])) + ' and {}'.format(self[-1])
+        elif self:
+            return str(self[0])
+        return super(ChargeList, self).__str__()
 
 ### Public API ends here ###
 
@@ -240,11 +244,13 @@ def memoize(maxsize=1000):
     return deco
 
 
-def _parse_charge(s):
-    try:
-        return Charge(s)
-    except PyteomicsError:
-        return ChargeList(s)
+def _parse_charge(s, list_only=False):
+    if not list_only:
+        try:
+            return Charge(s)
+        except PyteomicsError:
+            pass
+    return ChargeList(s)
 
 
 ### XML-related stuff below ###
