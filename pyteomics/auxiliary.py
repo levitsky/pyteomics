@@ -113,6 +113,17 @@ class Charge(int):
     def __str__(self):
         return str(abs(self)) + '+-'[self<0]
 
+class ChargeList(list):
+    def __init__(self, *args, **kwargs):
+        if args and isinstance(args[0], str):
+            self.extend(map(Charge,
+                re.split(r'(?:,\s*)|(?:\s*and\s*)', args[0])))
+        else:
+            super(ChargeList, self).__init__(self, *args, **kwargs)
+
+    def __str__(self):
+        return ', '.join(map(str, self[:-1])) + ' and {}'.format(self[-1])
+
 ### Public API ends here ###
 
 ### Next section: File reading helpers
@@ -233,8 +244,7 @@ def _parse_charge(s):
     try:
         return Charge(s)
     except PyteomicsError:
-        return list(map(_parse_charge,
-                re.split(r'(?:,\s*)|(?:\s*and\s*)', s)))
+        return ChargeList(s)
 
 
 ### XML-related stuff below ###

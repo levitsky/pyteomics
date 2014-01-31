@@ -110,6 +110,8 @@ def read(source=None, use_header=True):
                                 'PEPMASS = {}'.format(params['pepmass']))
                     else:
                         params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
+                if isinstance(params.get('charge'), str):
+                    params['charge'] = _parse_charge(params['charge'])
                 out = {'params': params,
                        'm/z array': np.array(masses),
                        'intensity array': np.array(intensities),
@@ -162,6 +164,8 @@ def read_header(source):
                 key = l[0].lower()
                 val = l[1].strip()
                 header[key] = val
+        if 'charge' in header:
+            header['charge'] = _parse_charge(header['charge'])
         return header
 
 def write(spectra, output=None, header=''):
@@ -204,7 +208,7 @@ def write(spectra, output=None, header=''):
     with _file_obj(output, 'a') as output:
 
         if isinstance(header, dict):
-            head_dict = header
+            head_dict = header.copy()
             head_lines = ['%s=%s' % (x.upper(), str(header[x])) for x in header]
             head_str = '\n'.join(head_lines)
         else:
@@ -228,21 +232,25 @@ def write(spectra, output=None, header=''):
             output.write('\n\nBEGIN IONS\n')
             output.write('\n'.join('{}={}'.format(key.upper(), val)
                 for key, val in spectrum['params'].items() if not
-                (val == head_dict.get(key) or
-                # handle PEPMASS tuple later
-                (key.lower() == 'pepmass' and
+                (val == head_dict.get(key) and
+                # handle PEPMASS and CHARGE later
+                (key.lower() in {'pepmass', 'charge'} and
                     not isinstance(val, (str, int, float))))))
-            # time to handle PEPMASS tuple
+            # time to handle PEPMASS
             for key, val in spectrum['params'].items():
+                outstr = ''
                 if key.lower() == 'pepmass' and not isinstance(val,
                         (str, int, float)): # assume iterable
                     try:
-                        output.write('\nPEPMASS=' + ' '.join(
-                            str(x) for x in val if x is not None) + '\n')
+                        outstr = '\nPEPMASS=' + ' '.join(
+                            str(x) for x in val if x is not None)
                     except TypeError:
                         raise PyteomicsError('Cannot handle parameter:'
                                 ' {} = {}'.format(key, val))
-
+                elif key.lower() == 'charge':
+                    outstr = '\nCHARGE={}'.format(_parse_charge(str(val)))
+                output.write(outstr)
+            output.write('\n')
             try:
                 for m, i, c in zip(spectrum['m/z array'], spectrum['intensity array'],
                         spectrum.get('charge array', cycle((None,)))):
