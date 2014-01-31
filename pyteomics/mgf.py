@@ -46,7 +46,8 @@ Functions
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from .auxiliary import PyteomicsError, _file_obj, _file_reader, _parse_charge
+from .auxiliary import PyteomicsError
+from .auxiliary import _keepstate, _file_obj, _file_reader, _parse_charge
 import numpy as np
 from itertools import cycle
 import sys
@@ -82,9 +83,7 @@ def read(source=None, use_header=True):
 
     out : iterator over dicts
     """
-    pos = source.tell()
     header = read_header(source)
-    source.seek(pos)
     reading_spectrum = False
     params = {}
     masses = []
@@ -138,6 +137,7 @@ def read(source=None, use_header=True):
                                  'Error when parsing %s. Line:\n%s' %
                                  (source, line))
 
+@_keepstate
 def read_header(source):
     """
     Read the specified MGF file, get search parameters specified in the header
@@ -236,7 +236,7 @@ def write(spectra, output=None, header=''):
                 # handle PEPMASS and CHARGE later
                 (key.lower() in {'pepmass', 'charge'} and
                     not isinstance(val, (str, int, float))))))
-            # time to handle PEPMASS
+            # time to handle PEPMASS and CHARGE
             for key, val in spectrum['params'].items():
                 outstr = ''
                 if key.lower() == 'pepmass' and not isinstance(val,
