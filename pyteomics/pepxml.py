@@ -82,7 +82,10 @@ def _get_info_smart(source, element, **kw):
             scores = {}
             for score in info[k]:
                 name, value = score.popitem()
-                scores[name] = float(value)
+                try:
+                    scores[name] = float(value)
+                except ValueError:
+                    scores[name] = value
             info[k] = scores
     if 'search_result' in info and len(info['search_result']) == 1:
         info.update(info['search_result'][0])
