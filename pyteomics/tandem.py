@@ -84,7 +84,7 @@ def _get_info_smart(source, element, **kw):
     return info
 
 @aux._file_reader('rb')
-def read(source):
+def read(source, read_schema=True):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
@@ -92,17 +92,24 @@ def read(source):
     source : str or file
         A path to a target X!Tandem output file or the file object itself.
 
+    read_schema : bool, optional
+        If :py:const:`True`, attempt to extract information from the XML schema
+        mentioned in the pepXML header (default). Otherwise, use default
+        parameters. Disable this to avoid waiting on long network connections or
+        if you don't like to get the related warnings.
+
     Returns
     -------
     out : iterator
        An iterator over dicts with PSM properties.
     """
 
-    for g in iterfind(source, 'group[type=model]', recursive=True):
+    for g in iterfind(source, 'group[type=model]',
+            recursive=True, read_schema=True):
         del g['type']
         yield g
 
-def _schema_info(_):
+def _schema_info(_, **kw):
     """Stores defaults for X!Tandem output. Keys are: 'floats', 'ints',
     'bools', 'lists', 'intlists', 'floatlists', 'charlists'."""
 

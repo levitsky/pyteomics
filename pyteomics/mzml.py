@@ -6,21 +6,20 @@ Summary
 -------
 
 mzML is a standard rich XML-format for raw mass spectrometry data storage.
-Please refer to http://www.psidev.info/index.php?q=node/257 for the detailed 
+Please refer to http://www.psidev.info/index.php?q=node/257 for the detailed
 specification of the format and the structure of mzML files.
 
 This module provides minimalistic infrastructure for access to data stored in
-mzML files. The most important function is :py:func:`read`, which 
+mzML files. The most important function is :py:func:`read`, which
 reads spectra and related information as saves them into human-readable dicts.
-The rest of data can be obtained via a combination of :py:func:`get_node` and
-:py:func:`read_params` functions. These functions rely on the terminology of 
-the underlying `lxml library <http://lxml.de/>`_. 
+These functions rely on the terminology of
+the underlying `lxml library <http://lxml.de/>`_.
 
 Data access
 -----------
 
   :py:func:`read` - iterate through spectra in mzML file. Data from a
-  single spectrum are converted to a human-readable dict. Spectra themselves are 
+  single spectrum are converted to a human-readable dict. Spectra themselves are
   stored under 'm/z array' and 'intensity array' keys.
 
   :py:func:`version_info` - get version information about the mzML file
@@ -53,10 +52,10 @@ from . import auxiliary as aux
 
 def _decode_base64_data_array(source, dtype, is_compressed):
     """Read a base64-encoded binary array.
-    
+
     Parameters
     ----------
-    source : str 
+    source : str
         A binary array encoded with base64.
     dtype : str
         The type of the array in numpy dtype notation.
@@ -75,7 +74,7 @@ def _decode_base64_data_array(source, dtype, is_compressed):
     return output
 
 @aux._file_reader('rb')
-def read(source):
+def read(source, read_schema=True):
     """Parse ``source`` and iterate through spectra.
 
     Parameters
@@ -83,13 +82,19 @@ def read(source):
     source : str or file
         A path to a target mzML file or the file object itself.
 
+    read_schema : bool, optional
+        If :py:const:`True`, attempt to extract information from the XML schema
+        mentioned in the mzML header (default). Otherwise, use default
+        parameters. Disable this to avoid waiting on long network connections or
+        if you don't like to get the related warnings.
+
     Returns
     -------
     out : iterator
        An iterator over the dicts with spectra properties.
     """
-    
-    return iterfind(source, 'spectrum')
+
+    return iterfind(source, 'spectrum', read_schema=read_schema)
 
 def _get_info_smart(source, element, **kw):
     name = aux._local_name(element)

@@ -6,23 +6,22 @@ Summary
 -------
 
 `pepXML <http://tools.proteomecenter.org/wiki/index.php?title=Formats:pepXML>`_
-was the first widely accepted format for proteomics search engines' output. 
+was the first widely accepted format for proteomics search engines' output.
 Even though it is to be replaced by a community standard
 `mzIdentML <http://www.psidev.info/index.php?q=node/454>`_, it is still used
 commonly.
 
 This module provides minimalistic infrastructure for access to data stored in
-pepXML files. The most important function is :py:func:`read`, which 
-reads peptide-spectum matches and related information and saves them into 
-human-readable dicts. The rest of data can be obtained via :py:func:`get_node` 
-function. This function relies on the terminology of the underlying 
+pepXML files. The most important function is :py:func:`read`, which
+reads peptide-spectum matches and related information and saves them into
+human-readable dicts. This function relies on the terminology of the underlying
 `lxml library <http://lxml.de/>`_.
 
 Data access
 -----------
 
-  :py:func:`read` - iterate through peptide-spectrum matches in a pepXML 
-  file. Data for a single spectrum are converted to an easy-to-use dict. 
+  :py:func:`read` - iterate through peptide-spectrum matches in a pepXML
+  file. Data for a single spectrum are converted to an easy-to-use dict.
 
   :py:func:`roc_curve` - get a receiver-operator curve (min peptideprophet
   probability is a sample vs. false discovery rate) of peptideprophet analysis.
@@ -62,13 +61,13 @@ def _get_info_smart(source, element, **kw):
     else:
         info = _get_info(source, element, rec if rec is not None else True,
                 **kwargs)
-    
+
     # attributes which contain unconverted values
     convert = {'float':  {'calc_neutral_pep_mass', 'massdiff'},
         'int': {'start_scan', 'end_scan', 'index'},
         'bool': {'is_rejected'},
         'floatarray': {'all_ntt_prob'}}
-    converters = {'float': float, 'int': int, 
+    converters = {'float': float, 'int': int,
             'bool': lambda x: x.lower() in {'1', 'true'},
             'floatarray': lambda x: list(map(float, x[1:-1].split(',')))}
     for k, v in dict(info).items():
@@ -128,7 +127,7 @@ def _get_info_smart(source, element, **kw):
     return info
 
 @aux._file_reader('rb')
-def read(source):
+def read(source, read_schema=True):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
@@ -136,13 +135,19 @@ def read(source):
     source : str or file
         A path to a target pepXML file or the file object itself.
 
+    read_schema : bool, optional
+        If :py:const:`True`, attempt to extract information from the XML schema
+        mentioned in the pepXML header (default). Otherwise, use default
+        parameters. Disable this to avoid waiting on long network connections or
+        if you don't like to get the related warnings.
+
     Returns
     -------
     out : iterator
        An iterator over dicts with PSM properties.
     """
 
-    return iterfind(source, 'spectrum_query')
+    return iterfind(source, 'spectrum_query', read_schema=read_schema)
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.
@@ -158,7 +163,7 @@ def roc_curve(source):
         A list of ROC points, sorted by ascending min prob.
     """
 
-    parser = etree.XMLParser(remove_comments=True, ns_clean=True) 
+    parser = etree.XMLParser(remove_comments=True, ns_clean=True)
     tree = etree.parse(source, parser=parser)
 
     roc_curve = []
@@ -178,7 +183,7 @@ def roc_curve(source):
 _version_info_env = {'format': 'pepXML', 'element': 'msms_pipeline_analysis'}
 version_info = aux._make_version_info(_version_info_env)
 
-_schema_defaults = {'ints': 
+_schema_defaults = {'ints':
     {('xpressratio_summary', 'xpress_light'),
      ('distribution_point', 'obs_5_distr'),
      ('distribution_point', 'obs_2_distr'),
@@ -332,7 +337,8 @@ _schema_env = {'format': 'pepXML', 'version_info': version_info,
         'default_version': '1.15', 'defaults': _schema_defaults}
 _schema_info = aux._make_schema_info(_schema_env)
 
-_getinfo_env = {'keys': {'search_score_summary', 'modification_info'}, 'schema_info': _schema_info,
+_getinfo_env = {'keys': {'search_score_summary', 'modification_info'},
+        'schema_info': _schema_info,
         'get_info_smart': _get_info_smart}
 _get_info = aux._make_get_info(_getinfo_env)
 

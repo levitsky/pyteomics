@@ -20,8 +20,8 @@ key.
 Data access
 -----------
 
-  :py:func:`read` - iterate through peptide-spectrum matches in a mzIdentML 
-  file. Data from a single PSM group are converted to a human-readable dict. 
+  :py:func:`read` - iterate through peptide-spectrum matches in a mzIdentML
+  file. Data from a single PSM group are converted to a human-readable dict.
 
   :py:func:`get_by_id` - get an element by its ID and extract the data from it.
 
@@ -71,7 +71,7 @@ def get_by_id(source, elem_id):
     ----------
     source : str or file
         A path to a target mzIdentML file of the file object itself.
-    
+
     elem_id : str
         The value of the `id` attribute to match.
 
@@ -161,18 +161,26 @@ def read(source, **kwargs):
     ----------
     source : str or file
         A path to a target mzIdentML file or the file object itself.
+
     recursive : bool, optional
         If :py:const:`False`, subelements will not be processed when
         extracting info from elements. Default is :py:const:`True`.
+
     retrieve_refs : bool, optional
         If :py:const:`True`, additional information from references will be
         automatically added to the results. The file processing time will
         increase. Default is :py:const:`False`.
+
+    read_schema : bool, optional
+        If :py:const:`True`, attempt to extract information from the XML schema
+        mentioned in the mzIdentML header (default). Otherwise, use default
+        parameters. Disable this to avoid waiting on long network connections or
+        if you don't like to get the related warnings.
 
     Returns
     -------
     out : iterator
        An iterator over the dicts with PSM properties.
     """
-    
+
     return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
