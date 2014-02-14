@@ -1,3 +1,24 @@
+2.2.3
+-----
+
+Bugfix in :py:mod:`pyteomics.pepxml`. The bug caused an exception when parsing
+some pepXML files.
+
+The output of :py:func:`pyteomics.mgf.read` now always contains a masked
+array of charges.
+
+New parameter "read_schema" in :py:func:`read` functions of XML parsing modules.
+When set to :py:const:`False`, disables the attempts to fetch an auxiliary file
+and obtain structure information about the file being parsed.
+
+Other minor fixes.
+
+API change
+..........
+
+In :py:func:`pyteomics.mgf.read` the precursor charge is now always represented
+by a list of ints (a :py:class:`ChargeList` object).
+
 2.2.2
 -----
 
@@ -82,7 +103,7 @@ New sets of retention coefficients in :py:mod:`achrom`.
 
 :py:mod:`fasta` now has tools for parsing of FASTA headers.
 
-File parsers now implement the `context manager protocol 
+File parsers now implement the `context manager protocol
 <http://docs.python.org/reference/datamodel.html#with-statement-context-managers>`_.
 We recommend using `with` statements to avoid resource leaks.
 

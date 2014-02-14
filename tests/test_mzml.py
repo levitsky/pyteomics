@@ -6,8 +6,9 @@ import numpy as np
 class MzmlTest(unittest.TestCase):
     maxDiff = None
     def testReadSpectrum(self):
-        # http://stackoverflow.com/q/14246983/1258041
-        self.assertEqual(mzml_spectra, list(read('test.mzML')))
-            
+        for rs in [True, False]:
+            # http://stackoverflow.com/q/14246983/1258041
+            self.assertEqual(mzml_spectra, list(read('test.mzML', rs)))
+
 if __name__ == '__main__':
     unittest.main()

@@ -6,8 +6,9 @@ from itertools import product
 class MzidTest(unittest.TestCase):
     maxDiff = None
     def testReadPSM(self):
-        for rec, refs in product((True, False), repeat=2):
-            with read('test.mzid', recursive=rec, retrieve_refs=refs) as reader:
+        for rec, refs, rs in product((True, False), repeat=3):
+            with read('test.mzid',
+                   recursive=rec, retrieve_refs=refs, read_schema=rs) as reader:
                 psms = list(reader)
                 self.assertEqual(psms, mzid_spectra[(rec, refs)])
 

@@ -291,7 +291,9 @@ def _make_version_info(env):
 
 def _make_schema_info(env):
     @memoize(100)
-    def _schema_info(source):
+    def _schema_info(source, **kwargs):
+        read_schema = kwargs.get('read_schema', True)
+        if not read_schema: return env['defaults']
         version, schema = env['version_info'](source)
         if version == env['default_version']:
             return env['defaults']
@@ -375,11 +377,13 @@ def _make_schema_info(env):
     return _schema_info
 
 def _make_get_info(env):
-    def _get_info(source, element, recursive=False, retrieve_refs=False):
+    def _get_info(source, element, recursive=False, retrieve_refs=False, **kw):
         """Extract info from element's attributes, possibly recursive.
         <cvParam> and <userParam> elements are treated in a special way."""
         name = _local_name(element)
         kwargs = dict(recursive=recursive, retrieve_refs=retrieve_refs)
+        kwargs.update(kw)
+        schema_info = env['schema_info'](source, **kwargs)
         if name in {'cvParam', 'userParam'}:
             if 'value' in element.attrib:
                 try:
@@ -396,7 +400,7 @@ def _make_get_info(env):
             for child in element.iterchildren():
                 cname = _local_name(child)
                 if cname in {'cvParam', 'userParam'}:
-                    newinfo = _get_info(source, child)
+                    newinfo = _get_info(source, child, **kw)
                     if not ('name' in info and 'name' in newinfo):
                         info.update(newinfo)
                     else:
@@ -404,7 +408,7 @@ def _make_get_info(env):
                             info['name'] = [info['name']]
                         info['name'].append(newinfo.pop('name'))
                 else:
-                    if cname not in env['schema_info'](source)['lists']:
+                    if cname not in schema_info['lists']:
                         info[cname] = env['get_info_smart'](
                                 source, child, **kwargs)
                     else:
@@ -435,7 +439,6 @@ def _make_get_info(env):
                 'floatlists': lambda x: numpy.fromstring(x.replace('\n', ' '),
                     sep=' '),
                 'charlists': list}
-        schema_info = env['schema_info'](source)
         for k, v in info.items():
             for t, a in converters.items():
                 if (_local_name(element), k) in schema_info[t]:
