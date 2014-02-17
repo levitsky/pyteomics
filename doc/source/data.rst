@@ -15,21 +15,21 @@ General Notes
  - All file parsers support the *with* syntax, but do not require it. So you can
    do:
 
-.. code-block :: python
+   .. code-block :: python
 
-    >>> from pyteomics import mgf
-    >>> reader = mgf.read('tests/test.mgf')
-    >>> for spectrum in reader:
-    >>>    ...
+        >>> from pyteomics import mgf
+        >>> reader = mgf.read('tests/test.mgf')
+        >>> for spectrum in reader:
+        >>>    ...
 
-... but it is recommended to do:
+   ... but it is recommended to do:
 
-.. code-block :: python
+   .. code-block :: python
 
-    >>> from pyteomics import mgf
-    >>> with mgf.read('tests/test.mgf') as reader:
-    >>>     for spectrum in reader:
-    >>>        ...
+        >>> from pyteomics import mgf
+        >>> with mgf.read('tests/test.mgf') as reader:
+        >>>     for spectrum in reader:
+        >>>        ...
 
 mzML
 ----
