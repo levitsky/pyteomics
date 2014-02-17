@@ -12,6 +12,20 @@ Project infrastructure
 
   :py:class:`PyteomicsError` - a pyteomics-specific exception
 
+Helpers
+-------
+
+  :py:class:`Charge` - a subclass of :py:class:`int` for charge states
+
+  :py:class:`ChargeList` - a subclass of :py:class:`list` for lists of charges.
+
+  :py:func:`print_tree` - display the structure of a complex nested
+  :py:class:`dict`.
+
+  :py:func:`memoize` - makes a
+  `memoization <http://stackoverflow.com/a/1988826/1258041>`_
+  `function decorator <http://stackoverflow.com/a/1594484/1258041>`_
+
 -------------------------------------------------------------------------------
 
 """
@@ -30,7 +44,8 @@ Project infrastructure
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import numpy
+from __future__ import print_function
+import numpy as np
 from functools import wraps
 from lxml import etree
 from warnings import warn
@@ -79,24 +94,28 @@ def linear_regression(x, y, a=None, b=None):
         stderr -- standard deviation.
     """
 
-    if not isinstance(x, numpy.ndarray):
-        x = numpy.array(x)
-    if not isinstance(y, numpy.ndarray):
-        y = numpy.array(y)
+    if not isinstance(x, np.ndarray):
+        x = np.array(x)
+    if not isinstance(y, np.ndarray):
+        y = np.array(y)
 
     if (a is not None and b is None):
         b = (y - a * x).mean()
     elif (a is not None and b is not None):
         pass
     else:
-        a, b = numpy.polyfit(x, y, 1)
+        a, b = np.polyfit(x, y, 1)
 
-    r = numpy.corrcoef(x, y)[0, 1]
+    r = np.corrcoef(x, y)[0, 1]
     stderr = (y - a * x - b).std()
 
     return a, b, r, stderr
 
 class Charge(int):
+    """A subclass of :py:class:`int`. Can be constructed from strings in "N+"
+    or "N-" format, and the string representation of a :py:class:`Charge` is
+    also in that format.
+    """
     def __new__(cls, *args, **kwargs):
         try:
             return super(Charge, cls).__new__(cls, *args)
@@ -114,6 +133,10 @@ class Charge(int):
         return str(abs(self)) + '+-'[self<0]
 
 class ChargeList(list):
+    """Just a list of :py:class:`Charge`s. When printed, looks like an
+    enumeration of the list contents. Can also be constructed from such
+    strings (e.g. "2+, 3+ and 4+").
+    """
     def __init__(self, *args, **kwargs):
         if args and isinstance(args[0], str):
             self.extend(map(Charge,
@@ -127,6 +150,45 @@ class ChargeList(list):
         elif self:
             return str(self[0])
         return super(ChargeList, self).__str__()
+
+def print_tree(d, indent_str=' -> ', indent_count=1):
+    """Read a nested dict (with strings as keys) and print its structure.
+    """
+    def structure(d):
+        out = {}
+        for k, v in d.items():
+            if isinstance(v, dict):
+                out[k] = structure(v)
+            elif isinstance(v, list) and v and isinstance(v[0], dict):
+                out['{} [list]'.format(k)] = structure(v[0])
+            else:
+                out[k] = None
+        return out
+
+    def _print(d, level=0):
+        for k, v in d.items():
+            print('{}{}'.format(indent_str * indent_count * level, k))
+            if v is not None:
+                _print(v, level+1)
+    _print(structure(d))
+
+def memoize(maxsize=1000):
+    """Make a memoization decorator. A negative value of `maxsize` means
+    no size limit."""
+    def deco(f):
+        """Memoization decorator. Items of `kwargs` must be hashable."""
+        memo = {}
+        @wraps(f)
+        def func(*args, **kwargs):
+            key = (args, frozenset(kwargs.items()))
+            if key not in memo:
+                if len(memo) == maxsize:
+                    memo.popitem()
+                memo[key] = f(*args, **kwargs)
+            return memo[key]
+        return func
+    return deco
+
 
 ### Public API ends here ###
 
@@ -225,24 +287,6 @@ def _file_reader(mode='r'):
     return decorator
 
 ### End of file helpers section ###
-
-def memoize(maxsize=1000):
-    """Make a memoization decorator. A negative value of `maxsize` means
-    no size limit."""
-    def deco(f):
-        """Memoization decorator. Items of `kwargs` must be hashable."""
-        memo = {}
-        @wraps(f)
-        def func(*args, **kwargs):
-            key = (args, frozenset(kwargs.items()))
-            if key not in memo:
-                if len(memo) == maxsize:
-                    memo.popitem()
-                memo[key] = f(*args, **kwargs)
-            return memo[key]
-        return func
-    return deco
-
 
 def _parse_charge(s, list_only=False):
     if not list_only:
@@ -434,9 +478,9 @@ def _make_get_info(env):
         to = lambda t: lambda s: str_to_num(s, t)
 
         converters = {'ints': to(int), 'floats': to(float), 'bools': str_to_bool,
-                'intlists': lambda x: numpy.fromstring(x.replace('\n', ' '),
+                'intlists': lambda x: np.fromstring(x.replace('\n', ' '),
                     dtype=int, sep=' '),
-                'floatlists': lambda x: numpy.fromstring(x.replace('\n', ' '),
+                'floatlists': lambda x: np.fromstring(x.replace('\n', ' '),
                     sep=' '),
                 'charlists': list}
         for k, v in info.items():
