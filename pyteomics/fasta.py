@@ -181,12 +181,6 @@ def decoy_sequence(sequence, mode):
 def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False):
     """Iterate over sequences for a decoy database out of a given ``source``.
 
-    If `output` is a path, the file will be open for appending, so no information
-    will be lost if the file exists. Although, the user should be careful when
-    providing open file streams as `source` and `output`. The reading and writing
-    will start from the current position in the files, which is where the last I/O
-    operation finished. One can use the :py:func:`file.seek` method to change it.
-
     Parameters
     ----------
     source : file-like object or str or None, optional
@@ -215,7 +209,7 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False):
         for x in read(source):
             yield x
 
-    # return to the initial position the source file to read again
+    # return to the initial position in the source file to read again
     source.seek(pos)
 
     decoy_entries = ((prefix + descr, decoy_sequence(seq, mode))

@@ -1,4 +1,4 @@
-2.2.3
+2.3.0
 -----
 
 Bugfix in :py:mod:`pyteomics.pepxml`. The bug caused an exception when parsing
