@@ -46,15 +46,14 @@ Functions
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from .auxiliary import PyteomicsError
-from .auxiliary import _keepstate, _file_obj, _file_reader, _parse_charge
+from . import auxiliary as aux
 import numpy as np
 from itertools import cycle
 import sys
 
 _comments = '#;!/'
 
-@_file_reader()
+@aux._file_reader()
 def read(source=None, use_header=True):
     """Read an MGF file and return entries iteratively.
 
@@ -105,12 +104,12 @@ def read(source=None, use_header=True):
                     try:
                         pepmass = tuple(map(float, params['pepmass'].split()))
                     except ValueError:
-                        raise PyteomicsError('MGF format error: cannot parse '
+                        raise aux.PyteomicsError('MGF format error: cannot parse '
                                 'PEPMASS = {}'.format(params['pepmass']))
                     else:
                         params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
                 if isinstance(params.get('charge'), str):
-                    params['charge'] = _parse_charge(params['charge'], True)
+                    params['charge'] = aux._parse_charge(params['charge'], True)
                 out = {'params': params,
                        'm/z array': np.array(masses),
                        'intensity array': np.array(intensities),
@@ -131,13 +130,13 @@ def read(source=None, use_header=True):
                         try:
                             masses.append(float(l[0]))            # this may cause
                             intensities.append(float(l[1]))       # exceptions...
-                            charges.append(_parse_charge(l[2]) if len(l) > 2 else 0)
+                            charges.append(aux._parse_charge(l[2]) if len(l) > 2 else 0)
                         except ValueError:
-                            raise PyteomicsError(
+                            raise aux.PyteomicsError(
                                  'Error when parsing %s. Line:\n%s' %
                                  (source, line))
 
-@_keepstate
+@aux._keepstate
 def read_header(source):
     """
     Read the specified MGF file, get search parameters specified in the header
@@ -154,7 +153,7 @@ def read_header(source):
 
     header : dict
     """
-    with _file_obj(source, 'r') as source:
+    with aux._file_obj(source, 'r') as source:
         header = {}
         for line in source:
             if line.strip() == 'BEGIN IONS':
@@ -165,7 +164,7 @@ def read_header(source):
                 val = l[1].strip()
                 header[key] = val
         if 'charge' in header:
-            header['charge'] = _parse_charge(header['charge'], True)
+            header['charge'] = aux._parse_charge(header['charge'], True)
         return header
 
 def write(spectra, output=None, header=''):
@@ -205,7 +204,7 @@ def write(spectra, output=None, header=''):
 
     output : file
     """
-    with _file_obj(output, 'a') as output:
+    with aux._file_obj(output, 'a') as output:
 
         if isinstance(header, dict):
             head_dict = header.copy()
@@ -245,10 +244,10 @@ def write(spectra, output=None, header=''):
                         outstr = '\nPEPMASS=' + ' '.join(
                             str(x) for x in val if x is not None)
                     except TypeError:
-                        raise PyteomicsError('Cannot handle parameter:'
+                        raise aux.PyteomicsError('Cannot handle parameter:'
                                 ' {} = {}'.format(key, val))
                 elif key.lower() == 'charge':
-                    outstr = '\nCHARGE={}'.format(_parse_charge(str(val)))
+                    outstr = '\nCHARGE={}'.format(aux._parse_charge(str(val)))
                 output.write(outstr)
             output.write('\n')
             try:
@@ -257,8 +256,10 @@ def write(spectra, output=None, header=''):
                     output.write('\n{} {} {}'.format(
                         m, i, (c if c not in (None, np.nan, np.ma.masked) else '')))
             except KeyError:
-                raise PyteomicsError("'m/z array' and 'intensity array' must be"
+                raise aux.PyteomicsError("'m/z array' and 'intensity array' must be"
                         " present in all spectra.")
             output.write('\nEND IONS')
         output.write('\n')
         return output
+
+chain = aux._make_chain(read)

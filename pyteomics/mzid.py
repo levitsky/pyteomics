@@ -184,3 +184,5 @@ def read(source, **kwargs):
     """
 
     return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
+
+chain = aux._make_chain(read)

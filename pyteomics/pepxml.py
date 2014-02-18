@@ -344,3 +344,5 @@ _get_info = aux._make_get_info(_getinfo_env)
 
 _iterfind_env = {'get_info_smart': _get_info_smart}
 iterfind = aux._make_iterfind(_iterfind_env)
+
+chain = aux._make_chain(read)
