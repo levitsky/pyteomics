@@ -52,11 +52,11 @@ import itertools
 import random
 from collections import namedtuple
 import re
-from .auxiliary import PyteomicsError, _file_obj, _file_reader
+from . import auxiliary as aux
 
 Protein = namedtuple('Protein', ('description', 'sequence'))
 
-@_file_reader()
+@aux._file_reader()
 def read(source=None, ignore_comments=False, parser=None):
     """Read a FASTA file and return entries iteratively.
 
@@ -141,7 +141,7 @@ def write(entries, output=None):
         The file where the FASTA is written.
     """
 
-    with _file_obj(output, 'a') as foutput:
+    with aux._file_obj(output, 'a') as foutput:
         for descr, seq in entries:
             # write the description
             foutput.write('>' + descr.replace('\n', '\n;') + '\n')
@@ -173,11 +173,11 @@ def decoy_sequence(sequence, mode):
         modified_sequence = list(sequence)
         random.shuffle(modified_sequence)
         return ''.join(modified_sequence)
-    raise PyteomicsError(
+    raise aux.PyteomicsError(
             """`fasta.decoy_sequence`: `mode` must be 'reverse' or
             'shuffle', not {}""".format(mode))
 
-@_file_reader()
+@aux._file_reader()
 def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False):
     """Iterate over sequences for a decoy database out of a given ``source``.
 
@@ -252,7 +252,7 @@ def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
     output : file
         A file object for the created file.
     """
-    with _file_obj(output, 'a') as fout, decoy_db(
+    with aux._file_obj(output, 'a') as fout, decoy_db(
             source, mode, prefix, decoy_only) as entries:
         write(entries, fout)
         return fout.file
@@ -358,11 +358,13 @@ def parse(header, flavour='auto', parsers=None):
                 return parser(header)
             except:
                 pass
-        raise PyteomicsError('Unknown FASTA header format.')
+        raise aux.PyteomicsError('Unknown FASTA header format.')
     elif flavour.lower() in known:
         try:
             return known[flavour.lower()](header)
         except Exception as e:
-            raise PyteomicsError('Could not parse as {}. '
+            raise aux.PyteomicsError('Could not parse as {}. '
                     'The error message was: {}'.format(
                         flavour, e.message))
+
+chain = aux._make_chain(read)

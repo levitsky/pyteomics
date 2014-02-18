@@ -56,6 +56,7 @@ try: # Python 2.7
 except ImportError: # Python 3.x
     from urllib.request import urlopen, URLError
 import sys
+from contextlib import contextmanager
 import socket
 import warnings
 warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
@@ -287,6 +288,22 @@ def _file_reader(mode='r'):
             return CManager(*args, **kwargs)
         return helper
     return decorator
+
+def _make_chain(reader):
+    def chain(*files, **kwargs):
+        for f in files:
+            with reader(f, **kwargs) as r:
+                for item in r:
+                    yield item
+
+    @contextmanager
+    def f(*files, **kwargs):
+        """Chain :py:func:`read` for several files.
+        Positional arguments should be file names or file objects.
+        Keyword arguments are passed to the :py:func:`read` function.
+        """
+        yield chain(*files, **kwargs)
+    return f
 
 ### End of file helpers section ###
 
