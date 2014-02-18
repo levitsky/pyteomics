@@ -1,15 +1,24 @@
 2.3.0
 -----
 
+New parameter "read_schema" in :py:func:`read` functions of XML parsing modules.
+When set to :py:const:`False`, disables the attempts to fetch an auxiliary file
+and obtain structure information about the file being parsed.
+
+New function :py:func:`chain` in all modules that have a :py:func:`read`
+function, for convenient chaining of multiple files. :py:func:`chain` only
+works as a context manager. Use :py:func:`itertools.chain` in other cases.
+
+New function :py:func:`pyteomics.auxiliary.print_tree` for exploration of
+complex nested dicts produced by XML parsers.
+
+New sets of retention coefficients in :py:mod:`pyteomics.achrom`.
+
 Bugfix in :py:mod:`pyteomics.pepxml`. The bug caused an exception when parsing
 some pepXML files.
 
 The output of :py:func:`pyteomics.mgf.read` now always contains a masked
 array of charges.
-
-New parameter "read_schema" in :py:func:`read` functions of XML parsing modules.
-When set to :py:const:`False`, disables the attempts to fetch an auxiliary file
-and obtain structure information about the file being parsed.
 
 Other minor fixes.
 
