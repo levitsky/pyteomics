@@ -1,5 +1,5 @@
 """
-auxiliary - common functions and objects 
+auxiliary - common functions and objects
 ========================================
 
 Math
@@ -48,7 +48,6 @@ from __future__ import print_function
 import numpy as np
 from functools import wraps
 from lxml import etree
-from warnings import warn
 from traceback import format_exc
 import re
 import operator
@@ -57,6 +56,9 @@ try: # Python 2.7
 except ImportError: # Python 3.x
     from urllib.request import urlopen, URLError
 import sys
+import socket
+import warnings
+warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
@@ -391,23 +393,27 @@ def _make_schema_info(env):
                 '//*[local-name()="element"]') if 'name' in elem.attrib and
                 elem.attrib.get('maxOccurs', '1') != '1')
         except Exception as e:
-            if isinstance(e, URLError):
-                warn("Can't get the {0[format]} schema for version {1}"
-                " from {2} at the moment.\n"
-                "Using defaults for {0[default_version]}".format(env, version,
+            if isinstance(e, (URLError, socket.error, socket.timeout)):
+                warnings.warn("Can't get the {0[format]} schema for version "
+                "`{1}` from <{2}> at the moment.\n"
+                "Using defaults for {0[default_version]}.\n"
+                "You can disable reading the schema by specifying "
+                "`read_schema=False`.".format(env, version,
                     schema_url))
             else:
-                warn("Unknown {0[format]} version `{1}`. "
+                warnings.warn("Unknown {0[format]} version `{1}`. "
                     "Attempt to use schema\n"
-                    "information from '{2}' failed.\n"
+                    "information from <{2}> failed.\n"
                     "Exception information:\n{3}\n"
                     "Falling back to defaults for {0[default_version]}\n"
                     "NOTE: This is just a warning, probably from a badly-"
-                    "generated XML file.\nYou'll still most probably get "
+                    "generated XML file.\nYou will still most probably get "
                     "decent results.\nLook here for suppressing warnings:\n"
                     "http://docs.python.org/library/warnings.html#"
                     "temporarily-suppressing-warnings\n"
-                    "If you think this shouldn't have happened, you can "
+                    "You can also disable reading the schema by specifying "
+                    "`read_schema=False`.\n"
+                    "If you think this shouldn't have happened, please "
                     "report this to\n"
                     "http://hg.theorchromo.ru/pyteomics/issues\n"
                     "".format(env, version, schema_url,
