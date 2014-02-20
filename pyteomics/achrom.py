@@ -53,32 +53,32 @@ Data
   I.D.), gradient (A = aq. 10 mM (NH4)2HPO4 - 0.1 M NaClO4, pH 7.0; B
   = 0.1 M NaClO4 in 60% aq. acetonitrile) at 1.67% B/min, flow rate 1
   ml/min, 26 centigrades.
-  
+
   :py:data:`RCs_meek_ph2_1` - a set of RCs from [#Meek]_. Conditions: Bio-Rad
   "ODS" column, gradient (A = 0.1 M NaClO4, 0.1% phosphoric acid in
   water; B = 0.1 M NaClO4, 0.1% phosphoric acid in 60%
   aq. acetonitrile) at 1.25% B/min, room temperature.
-  
+
   :py:data:`RCs_meek_ph7_4` - a set of RCs from [#Meek]_. Conditions: Bio-Rad
   "ODS" column, gradient (A = 0.1 M NaClO4, 5 mM phosphate buffer in
   water; B = 0.1 M NaClO4, 5 mM phosphate buffer in 60%
   aq. acetonitrile) at 1.25% B/min, room temperature.
-  
+
   :py:data:`RCs_browne_tfa` - a set of RCs found in
   [#Browne]_. Conditions: Waters mjuBondapak C18 column, gradient (A =
   0.1% aq. TFA, B = 0.1% TFA in acetonitrile) at 0.33% B/min, flow
   rate 1.5 ml/min.
-  
+
   :py:data:`RCs_browne_hfba` - a set of RCs found in
   [#Browne]_. Conditions: Waters mjuBondapak C18 column, gradient (A =
   0.13% aq. HFBA, B = 0.13% HFBA in acetonitrile) at 0.33% B/min, flow
   rate 1.5 ml/min.
-  
+
   :py:data:`RCs_palmblad` - a set of RCs from
   [#Palmblad]_. Conditions: a fused silica column (80-100 x 0.200 mm
   I.D.) packed in-house with C18 ODS-AQ; solvent A = 0.5% aq. HAc,
   B = 0.5% HAc in acetonitrile.
-  
+
   :py:data:`RCs_yoshida` - a set of RCs for normal phase chromatography
   from [#Yoshida]_. Conditions:
   TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A = 0.1% TFA
@@ -86,35 +86,35 @@ Data
   water/min, flow rate 1.0 ml/min, 40 centigrades.
 
   :py:data:`RCs_yoshida_lc` - a set of length-corrected RCs for normal phase
-  chromatography. The set was calculated in [#Moskovets]_ for the data from 
-  [#Yoshida]_. 
+  chromatography. The set was calculated in [#Moskovets]_ for the data from
+  [#Yoshida]_.
   Conditions:
   TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A = 0.1% TFA
   in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at 0.6%
   water/min, flow rate 1.0 ml/min, 40 centigrades.
 
-  :py:data:`RCs_zubarev` - a set of length-corrected RCs calculated 
-  on a dataset used in [#Goloborodko]_. 
+  :py:data:`RCs_zubarev` - a set of length-corrected RCs calculated
+  on a dataset used in [#Goloborodko]_.
   Conditions: Reprosil-Pur C18-AQ column (150 x 0.075 mm I.D.), gradient (A =
   0.5% AA in water; B = 0.5% AA in ACN-water (90:10)) at
   0.5% water/min, flow rate 200.0 nl/min, room temperature.
 
-  :py:data:`RCs_gilar_atlantis_ph3_0` - a set of retention coefficients obtained in
-  [#Gilar]_.
+  :py:data:`RCs_gilar_atlantis_ph3_0` - a set of retention coefficients obtained
+  in [#Gilar]_.
   Conditions: Atlantis HILIC silica column, (150 x 2.1 mm I.D.), 3 um, 100 A,
   gradient (A = water, B = ACN, C = 200 mM ammonium formate):
   0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
   at 0.2 ml/min, temperature 40 C, pH 3.0
 
-  :py:data:`RCs_gilar_atlantis_ph4_5` - a set of retention coefficients obtained in
-  [#Gilar]_.
+  :py:data:`RCs_gilar_atlantis_ph4_5` - a set of retention coefficients obtained
+  in [#Gilar]_.
   Conditions: Atlantis HILIC silica column, (150 x 2.1 mm I.D.), 3 um, 100 A,
   gradient (A = water, B = ACN, C = 200 mM ammonium formate):
   0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
   at 0.2 ml/min, temperature 40 C, pH 4.5
 
-  :py:data:`RCs_gilar_atlantis_ph10_0` - a set of retention coefficients obtained in
-  [#Gilar]_.
+  :py:data:`RCs_gilar_atlantis_ph10_0` - a set of retention coefficients
+  obtained in [#Gilar]_.
   Conditions: Atlantis HILIC silica column, (150 x 2.1 mm I.D.), 3 um, 100 A,
   gradient (A = water, B = ACN, C = 200 mM ammonium formate):
   0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
@@ -140,7 +140,8 @@ Data
   [#Gilar]_.
   Conditions: ACQUITY UPLC BEH C18 column (100 mm x 2.1 mm I.D.), 1.7 um, 130 A.
   Mobile phase A: 0.02% TFA in water, mobile phase B: 0.018% TFA in ACN.
-  Gradient: 0 to 50% B in 50 min, flow rate 0.2 ml/min, temperature 40 C., pH 2.6.
+  Gradient: 0 to 50% B in 50 min, flow rate 0.2 ml/min, temperature 40 C.,
+  pH 2.6.
 
 Theory
 ------
@@ -161,9 +162,9 @@ polypeptide. This equation can also be expressed in terms of linear
 algebra:
 
 .. math::
-    
+
     RT = \\bar{aa} \cdot \\bar{RC} + RT_0,
-    
+
 where :math:`\\bar{aa}` is a vector of amino acid composition,
 i.e. :math:`\\bar{aa}_i` is the number of amino acid residues of i-th
 type in a polypeptide; :math:`\\bar{RC}` is a vector of respective
@@ -186,8 +187,8 @@ line. But the line would describe the main trend and could be used to estimate
 retention time for peptides with known amino acid composition.
 
 This best fit line is described by retention coefficients and :math:`RT_0`.
-The procedure of finding these coefficients is called *calibration*. There is `an
-analytical solution to calibration of linear models
+The procedure of finding these coefficients is called *calibration*. There is
+`an analytical solution to calibration of linear models
 <http://en.wikipedia.org/wiki/Linear_regression>`_, which makes them
 especially useful in real applications.
 
@@ -209,11 +210,11 @@ peptide sequence:
     RT = \sum_{i=1}^{i=N}{RC_i} + m\,ln N \sum_{i=1}^{i=N}{RC_i} + RT_0
 
 We would call the second term :math:`m\,ln N \sum_{i=1}^{i=N}{RC_i}` *the
-length correction term* and m - *the length correction parameter*. The simplified
-and vectorized form of this equation would be:
+length correction term* and m - *the length correction parameter*. The
+simplified and vectorized form of this equation would be:
 
 .. math::
-    
+
     RT = (1 + m\,ln N) \, \\bar{RC} \cdot \\bar{aa} + RT_0
 
 This equation may be reduced to a linear form and solved by the standard
@@ -224,26 +225,26 @@ Terminal retention coefficients
 
 Another significant improvement may be obtained through introduction of
 separate sets of retention coefficients for terminal amino acid residues
-[#Tripet]_. 
+[#Tripet]_.
 
 References
 ----------
 
 .. [#Meek] Meek, J. L. `Prediction of peptide retention times in high-pressure
-   liquid chromatography on the basis of amino acid composition. 
+   liquid chromatography on the basis of amino acid composition.
    <http://www.ncbi.nlm.nih.gov/pubmed/6929513>`_
    PNAS, 1980, 77 (3), 1632-1636.
 
 .. [#Guo1] Guo, D.; Mant, C. T.; Taneja, A. K.; Parker, J. M. R.; Hodges,
    R. S.  `Prediction of peptide retention times in reversed-phase
    high-performance liquid chromatography I. Determination of retention
-   coefficients of amino acid residues of model synthetic peptides. 
+   coefficients of amino acid residues of model synthetic peptides.
    <http://dx.doi.org/10.1016/0021-9673(86)80102-9>`_
    Journal of Chromatography A, 1986, 359, 499-518.
-   
+
 .. [#Baczek] Baczek, T.; Kaliszan, R. `Predictions of peptides' retention times
    in reversed-phase liquid chromatography as a new supportive tool to improve
-   protein identification in proteomics. 
+   protein identification in proteomics.
    <http://dx.doi.org/10.1002/pmic.200800544>`_
    Proteomics, 2009, 9 (4), 835-47.
 
@@ -251,10 +252,10 @@ References
    Peptides in RP-LC: Peptide Retention Prediction.
    <http://dx.doi.org/10.1365/s10337-010-1721-8>`_
    Chromatographia, 2010, 72 (9-10), 781-797.
-   
+
 .. [#MantLogLen] Mant, C. T.; Zhou, N. E.; Hodges, R. S. `Correlation of
    protein retention times in reversed-phase chromatography with polypeptide
-   chain length and hydrophobicity. 
+   chain length and hydrophobicity.
    <http://dx.doi.org/10.1016/S0021-9673(01)93882-8>`_
    Journal of Chromatography A, 1989, 476, 363-375.
 
@@ -281,14 +282,14 @@ References
    Chromatography A, 1998, 808 (1-2), 105-112.
 
 .. [#Moskovets] Moskovets, E.; Goloborodko A. A.; Gorshkov A. V.; Gorshkov M.V.
-   `Limitation of predictive 2-D liquid chromatography in reducing the database 
+   `Limitation of predictive 2-D liquid chromatography in reducing the database
    search space in shotgun proteomics: In silico studies.
-   <http://dx.doi.org/10.1002/jssc.201100798>`_ 
-   Journal of Separation Science, 2012, 35 (14), 1771-1778. 
+   <http://dx.doi.org/10.1002/jssc.201100798>`_
+   Journal of Separation Science, 2012, 35 (14), 1771-1778.
 
-.. [#Goloborodko] Goloborodko A. A.; Mayerhofer C.; Zubarev A. R.; 
+.. [#Goloborodko] Goloborodko A. A.; Mayerhofer C.; Zubarev A. R.;
    Tarasova I. A.; Gorshkov A. V.; Zubarev, R. A.; Gorshkov, M. V.
-   `Empirical approach to false discovery rate 
+   `Empirical approach to false discovery rate
    estimation in shotgun proteomics. <http://dx.doi.org/10.1002/rcm.4417>`_
    Rapid communications in mass spectrometry, 2010, 24(4), 454-62.
 
@@ -345,11 +346,11 @@ def get_RCs(sequences, RTs, lcp = -0.21,
     -------
     RC_dict : dict
         Dictionary with the calculated retention coefficients.
-        
+
         - RC_dict['aa'] -- amino acid retention coefficients.
-        
+
         - RC_dict['const'] -- constant retention time shift.
-        
+
         - RC_dict['lcp'] -- length correction parameter.
 
     Examples
@@ -370,8 +371,8 @@ def get_RCs(sequences, RTs, lcp = -0.21,
 
     # Make a list of all amino acids present in the sample.
     peptide_dicts = [
-        amino_acid_composition(peptide, False, term_aa, 
-                               allow_unknown_modifications=True, 
+        amino_acid_composition(peptide, False, term_aa,
+                               allow_unknown_modifications=True,
                                labels=labels)
         for peptide in sequences]
 
@@ -379,9 +380,9 @@ def get_RCs(sequences, RTs, lcp = -0.21,
                                 for aa in peptide_dict])
 
     # Determine retention coefficients using multidimensional linear
-    # regression. 
+    # regression.
     composition_array = [
-        [peptide_dicts[i].get(aa, 0.0) 
+        [peptide_dicts[i].get(aa, 0.0)
          * (1.0 + lcp * numpy.log(length(peptide_dicts[i])))
            for aa in detected_amino_acids]
         + [1.0] # Add free term to each peptide.
@@ -438,7 +439,7 @@ def get_RCs(sequences, RTs, lcp = -0.21,
             defined_term_RCs = [aa for aa in RC_dict['aa']
                               if not aa[1:].startswith('term')
                               and term_label + aa in RC_dict['aa']]
-            
+
             a, b, r, stderr = linear_regression(
                 [RC_dict['aa'][aa] for aa in defined_term_RCs],
                 [RC_dict['aa'][term_label+aa] for aa in defined_term_RCs])
@@ -478,11 +479,11 @@ def get_RCs_vary_lcp(sequences, RTs,
     -------
     RC_dict : dict
         Dictionary with the calculated retention coefficients.
-        
+
         - RC_dict['aa'] -- amino acid retention coefficients.
-        
+
         - RC_dict['const'] -- constant retention time shift.
-        
+
         - RC_dict['lcp'] -- length correction parameter.
 
     Examples
@@ -555,7 +556,7 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
     >>> abs(RT - 3.4) < 1e-6      # Float comparison
     True
     """
-    
+
     amino_acids = [aa for aa in RC_dict['aa']
                    if not (aa.startswith('cterm') or aa.startswith('nterm'))]
 
