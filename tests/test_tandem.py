@@ -7,9 +7,11 @@ class TandemTest(unittest.TestCase):
         self.maxDiff = None
 
     def testReadPSM(self):
-        for rs in range(2):
-            psms = list(read('test.t.xml', read_schema=rs))
-            self.assertEqual(psms, tandem_spectra)
+        for func in [read, chain,
+                lambda x, **kw: chain.from_iterable([x], **kw)]:
+            for rs in range(2):
+                with func('test.t.xml', read_schema=rs) as r:
+                    self.assertEqual(list(r), tandem_spectra)
 
 if __name__ == '__main__':
     unittest.main()
