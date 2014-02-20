@@ -8,8 +8,10 @@ class PepxmlTest(unittest.TestCase):
 
     def testReadPSM(self):
         for rs in [True, False]:
-            psms = list(read('test.pep.xml', read_schema=rs))
-            self.assertEqual(psms, pepxml_spectra)
+            for func in [read, chain,
+                    lambda x, **kw: chain.from_iterable([x], **kw)]:
+                with func('test.pep.xml', read_schema=rs) as r:
+                    self.assertEqual(list(r), pepxml_spectra)
 
 if __name__ == '__main__':
     unittest.main()
