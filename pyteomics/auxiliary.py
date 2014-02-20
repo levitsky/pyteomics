@@ -290,20 +290,41 @@ def _file_reader(mode='r'):
     return decorator
 
 def _make_chain(reader):
-    def chain(*files, **kwargs):
+    def _iter(files, kwargs):
         for f in files:
             with reader(f, **kwargs) as r:
                 for item in r:
                     yield item
 
+    def chain(*files, **kwargs):
+        return _iter(files, kwargs)
+
+    def from_iterable(files, **kwargs):
+        return _iter(files, kwargs)
+
     @contextmanager
-    def f(*files, **kwargs):
+    def _chain(*files, **kwargs):
         """Chain :py:func:`read` for several files.
         Positional arguments should be file names or file objects.
         Keyword arguments are passed to the :py:func:`read` function.
         """
         yield chain(*files, **kwargs)
-    return f
+
+    @contextmanager
+    def _from_iterable(files, **kwargs):
+        """Chain :py:func:`read` for several files.
+        Keyword arguments are passed to the :py:func:`read` function.
+
+        Parameters
+        ----------
+        files : iterable
+            Iterable of file names or file objects.
+        """
+        yield from_iterable(files, **kwargs)
+
+
+    _chain.from_iterable = _from_iterable
+    return _chain
 
 ### End of file helpers section ###
 
