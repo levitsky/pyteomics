@@ -8,6 +8,7 @@ and obtain structure information about the file being parsed.
 New function :py:func:`chain` in all modules that have a :py:func:`read`
 function, for convenient chaining of multiple files. :py:func:`chain` only
 works as a context manager. Use :py:func:`itertools.chain` in other cases.
+The ``chain.from_iterable`` form is also available as a context manager.
 
 New function :py:func:`pyteomics.auxiliary.print_tree` for exploration of
 complex nested dicts produced by XML parsers.
