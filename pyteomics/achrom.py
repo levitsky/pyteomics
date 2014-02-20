@@ -340,7 +340,7 @@ References
 #   limitations under the License.
 
 import operator
-import numpy
+import numpy as np
 from .auxiliary import linear_regression, PyteomicsError
 from . import parser
 
@@ -382,14 +382,11 @@ def get_RCs(sequences, RTs, lcp = -0.21,
     Examples
     --------
     >>> RCs = get_RCs(['A','AA'], [1.0, 2.0], 0.0, labels=['A'])
-    >>> RCs['const'] = round(RCs['const'], 4) # Rounding for comparison
-    >>> RCs == {'aa': {'A': 1.0}, 'lcp': 0.0, 'const': 0.0}
+    >>> abs(RCs['aa']['A'] - 1) < 1e-6 and abs(RCs['const']) < 1e-6
     True
     >>> RCs = get_RCs(['A','AA','B'], [1.0, 2.0, 2.0], 0.0, labels=['A','B'])
-    >>> RCs['aa']['A'] = round(RCs['aa']['A'], 4)
-    >>> RCs['aa']['B'] = round(RCs['aa']['B'], 4)
-    >>> RCs['const'] = round(RCs['const'], 4)
-    >>> RCs == {'aa':{'A': 1.0, 'B': 2.0},'const': 0.0, 'lcp': 0.0}
+    >>> abs(RCs['aa']['A'] - 1) + abs(RCs['aa']['B'] - 2) + \
+            abs(RCs['const']) < 1e-6
     True
     """
 
@@ -409,7 +406,7 @@ def get_RCs(sequences, RTs, lcp = -0.21,
     # regression.
     composition_array = [
             [pdict.get(aa, 0.0)
-             * (1.0 + lcp * numpy.log(parser.length(pdict)))
+             * (1.0 + lcp * np.log(parser.length(pdict)))
                for aa in detected_amino_acids]
             + [1.0] # Add free term to each peptide.
         for pdict in peptide_dicts]
@@ -433,8 +430,8 @@ def get_RCs(sequences, RTs, lcp = -0.21,
             RTs.append(0.0)
 
     # Use least square linear regression.
-    RCs, res, rank, s = numpy.linalg.lstsq(numpy.array(composition_array),
-                                           numpy.array(RTs))
+    RCs, res, rank, s = np.linalg.lstsq(np.array(composition_array),
+                                           np.array(RTs))
 
     # Remove normalizing elements from the RTs vector.
     if term_aa:
@@ -514,13 +511,10 @@ def get_RCs_vary_lcp(sequences, RTs,
 
     Examples
     --------
-    >>> RC_dict = get_RCs_vary_lcp(['A', 'AA', 'AAA'], \
+    >>> RCs = get_RCs_vary_lcp(['A', 'AA', 'AAA'], \
         [1.0, 2.0, 3.0], \
         labels=['A'])
-    >>> RC_dict['aa']['A'] = round(RC_dict['aa']['A'], 4)
-    >>> RC_dict['lcp'] = round(RC_dict['lcp'], 4)
-    >>> RC_dict['const'] = round(RC_dict['const'], 4)
-    >>> RC_dict == {'aa': {'A': 1.0}, 'lcp': 0.0, 'const': 0.0}
+    >>> abs(RCs['aa']['A'] - 1) + abs(RCs['lcp']) + abs(RCs['const']) < 1e-6
     True
     """
     labels = kwargs.get('labels', parser.std_labels)
@@ -533,7 +527,7 @@ def get_RCs_vary_lcp(sequences, RTs,
     max_lcp = lcp_range[1]
     step = (max_lcp - min_lcp) / 10.0
     while step > lcp_accuracy:
-        lcp_grid = numpy.arange(min_lcp, max_lcp,
+        lcp_grid = np.arange(min_lcp, max_lcp,
                                 (max_lcp - min_lcp) / 10.0)
         for lcp in lcp_grid:
             RC_dict = get_RCs(sequences, RTs, lcp, term_aa, labels=labels)
@@ -611,7 +605,7 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
             RT += peptide_dict[aa] * RC_dict['aa'][aa]
 
     length_correction_term = (
-        1.0 + RC_dict['lcp'] * numpy.log(parser.length(peptide_dict)))
+        1.0 + RC_dict['lcp'] * np.log(parser.length(peptide_dict)))
     RT *= length_correction_term
 
     RT += RC_dict['const']
