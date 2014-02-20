@@ -143,6 +143,22 @@ Data
   Gradient: 0 to 50% B in 50 min, flow rate 0.2 ml/min, temperature 40 C.,
   pH 2.6.
 
+  :py:data:`RCs_krokhin_100A_fa` - a set of retention coefficients obtained in
+  [#Krokhin]_.
+  Conditions: 300 um x 150mm PepMap100 (Dionex, 0.1% FA), packed with
+  5-um Luna C18(2) (Phenomenex, Torrance, CA), pH=2.0.
+  Both eluents A (2% ACN in water) and B (98% ACN) contained
+  0.1% FA as ion-pairing modifier. 0.33% ACN/min
+  linear gradient (0-30% B).
+
+  :py:data:`RCs_krokhin_100A_tfa` - a set of retention coefficients obtained in
+  [#Krokhin]_.
+  Conditions: 300 um x 150mm PepMap100 (Dionex, 0.1% TFA), packed with
+  5-um Luna C18(2) (Phenomenex, Torrance, CA), pH=2.0.
+  Both eluents A (2% ACN in water) and B (98% ACN) contained
+  0.1% TFA as ion-pairing modifier. 0.33% ACN/min
+  linear gradient (0-30% B).
+
 Theory
 ------
 
@@ -267,15 +283,18 @@ References
    <http://dx.doi.org/10.1016/j.chroma.2006.12.024>`_
    Journal of chromatography A, 2007, 1141 (2), 212-25.
 
-.. [#Browne] Browne, C. A.; Bennett, H. P. J.; Solomon, S. The
+.. [#Browne] Browne, C. A.; Bennett, H. P. J.; Solomon, S. `The
    isolation of peptides by high-performance liquid chromatography
-   using predicted elution positions. Analytical Biochemistry, 1982,
-   124 (1), 201-208.
+   using predicted elution positions
+   <http://www.sciencedirect.com/science/article/pii/000326978290238X>`_.
+   Analytical Biochemistry, 1982, 124 (1), 201-208.
 
 .. [#Palmblad] Palmblad, M.; Ramstrom, M.; Markides, K. E.; Hakansson,
-   P.; Bergquist, J. Prediction of Chromatographic Retention and
+   P.; Bergquist, J. `Prediction of Chromatographic Retention and
    Protein Identification in Liquid Chromatography/Mass
-   Spectrometry. Analytical Chemistry, 2002, 74 (22), 5826-5830.
+   Spectrometry
+   <http://pubs.acs.org/doi/abs/10.1021/ac0256890>`_.
+   Analytical Chemistry, 2002, 74 (22), 5826-5830.
 
 .. [#Yoshida] Yoshida, T. Calculation of peptide retention
    coefficients in normal-phase liquid chromatography. Journal of
@@ -297,6 +316,13 @@ References
     hydrophilic-interaction chromatography.
     <http://dx.doi.org/10.1016/j.chroma.2011.04.005>`_
     Journal of chromatography A, 1218(49), 8890-6.
+
+.. [#Krokhin] Dwivedi, R. C.; Spicer, V.; Harder, M.; Antonovici, M.; Ens, W.;
+    Standing, K. G.; Wilkins, J. A.; Krokhin, O. V. (2008). `Practical
+    implementation of 2D HPLC scheme with accurate peptide retention prediction
+    in both dimensions for high-throughput bottom-up proteomics
+    <http://pubs.acs.org/doi/abs/10.1021/ac800984n>`_.
+    Analytical Chemistry, 80(18), 7036-42.
 """
 
 #   Copyright 2012 Anton Goloborodko, Lev Levitsky
@@ -316,7 +342,7 @@ References
 import operator
 import numpy
 from .auxiliary import linear_regression, PyteomicsError
-from .parser import std_labels, length, amino_acid_composition, std_nterm, std_cterm
+from . import parser
 
 def get_RCs(sequences, RTs, lcp = -0.21,
             term_aa = False, **kwargs):
@@ -367,26 +393,26 @@ def get_RCs(sequences, RTs, lcp = -0.21,
     True
     """
 
-    labels = kwargs.get('labels', std_labels)
+    labels = kwargs.get('labels', parser.std_labels)
 
     # Make a list of all amino acids present in the sample.
     peptide_dicts = [
-        amino_acid_composition(peptide, False, term_aa,
+        parser.amino_acid_composition(peptide, False, term_aa,
                                allow_unknown_modifications=True,
                                labels=labels)
         for peptide in sequences]
 
-    detected_amino_acids = set([aa for peptide_dict in peptide_dicts
-                                for aa in peptide_dict])
+    detected_amino_acids = {aa for peptide_dict in peptide_dicts
+                                for aa in peptide_dict}
 
     # Determine retention coefficients using multidimensional linear
     # regression.
     composition_array = [
-        [peptide_dicts[i].get(aa, 0.0)
-         * (1.0 + lcp * numpy.log(length(peptide_dicts[i])))
-           for aa in detected_amino_acids]
-        + [1.0] # Add free term to each peptide.
-        for i in range(len(sequences))]
+            [pdict.get(aa, 0.0)
+             * (1.0 + lcp * numpy.log(parser.length(pdict)))
+               for aa in detected_amino_acids]
+            + [1.0] # Add free term to each peptide.
+        for pdict in peptide_dicts]
 
     # Add normalizing conditions for terminal retention coefficients. The
     # condition we are using here is quite arbitrary. It implies that the sum
@@ -420,8 +446,8 @@ def get_RCs(sequences, RTs, lcp = -0.21,
     RC_dict['aa'] = dict(
         zip(list(detected_amino_acids),
             RCs[:len(detected_amino_acids)]))
-    RC_dict['aa'][std_nterm] = 0.0
-    RC_dict['aa'][std_cterm] = 0.0
+    RC_dict['aa'][parser.std_nterm] = 0.0
+    RC_dict['aa'][parser.std_cterm] = 0.0
     RC_dict['const'] = RCs[len(detected_amino_acids)]
     RC_dict['lcp'] = lcp
 
@@ -497,7 +523,7 @@ def get_RCs_vary_lcp(sequences, RTs,
     >>> RC_dict == {'aa': {'A': 1.0}, 'lcp': 0.0, 'const': 0.0}
     True
     """
-    labels = kwargs.get('labels', std_labels)
+    labels = kwargs.get('labels', parser.std_labels)
 
     best_r = -1.1
     best_RC_dict = {}
@@ -512,7 +538,7 @@ def get_RCs_vary_lcp(sequences, RTs,
         for lcp in lcp_grid:
             RC_dict = get_RCs(sequences, RTs, lcp, term_aa, labels=labels)
             regression_coeffs = linear_regression(
-                RTs, 
+                RTs,
                 [calculate_RT(peptide, RC_dict) for peptide in sequences])
             if regression_coeffs[2] > best_r:
                 best_r = regression_coeffs[2]
@@ -568,7 +594,7 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
             break
 
     # Calculate retention time.
-    peptide_dict = amino_acid_composition(peptide, False, term_aa,
+    peptide_dict = parser.amino_acid_composition(peptide, False, term_aa,
         allow_unknown_modifications=True, labels=amino_acids)
     RT = 0.0
     for aa in peptide_dict:
@@ -577,7 +603,7 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
                 RT += peptide_dict[aa] * RC_dict['aa'][aa[-1]]
             else:
                 raise PyteomicsError(
-                    'The amino acid residue ' + 
+                    'The amino acid residue ' +
                     '{0} in the supplied RC_dict. '.format(aa) +
                     'Set raise_no_mod=False to ignore this error ' +
                     'and use the RC for {0} instead'.format(aa[-1]))
@@ -585,7 +611,7 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
             RT += peptide_dict[aa] * RC_dict['aa'][aa]
 
     length_correction_term = (
-        1.0 + RC_dict['lcp'] * numpy.log(length(peptide_dict)))
+        1.0 + RC_dict['lcp'] * numpy.log(parser.length(peptide_dict)))
     RT *= length_correction_term
 
     RT += RC_dict['const']
@@ -694,6 +720,8 @@ J. L. Prediction of peptide retention times in high-pressure liquid
 chromatography on the basis of amino acid composition. PNAS, 1980, 77
 (3), 1632-1636.
 
+.. note :: C stands for Cystine.
+
 Conditions: Bio-Rad "ODS" column, gradient (A = 0.1 M NaClO4,
 0.1% phosphoric acid in water; B = 0.1 M NaClO4, 0.1% phosphoric acid
 in 60% aq. acetonitrile) at 1.25% B/min, room temperature.
@@ -727,6 +755,8 @@ RCs_meek_ph7_4 = {'aa':{'K':  0.1,
 J. L. Prediction of peptide retention times in high-pressure liquid
 chromatography on the basis of amino acid composition. PNAS, 1980, 77
 (3), 1632-1636.
+
+.. note :: C stands for Cystine.
 
 Conditions: Bio-Rad "ODS" column, gradient (A = 0.1 M NaClO4,
 5 mM phosphate buffer in water; B = 0.1 M NaClO4, 5 mM phosphate buffer
@@ -845,6 +875,7 @@ RCs_yoshida = {'aa':{'K':  2.77,
                      'L': -2.31,
                      'A':  0.28,
                      'C':  0.80,
+                  'comC':  0.80,
                      'E':  1.58,
                      'D':  2.45,
                      'F': -2.94,
@@ -869,6 +900,8 @@ T. Calculation of peptide retention coefficients in normal-phase
 liquid chromatography. Journal of Chromatography A, 1998, 808 (1-2),
 105-112.
 
+.. note::  Cysteine is Carboxymethylated.
+
 Conditions: TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A =
 0.1% TFA in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at
 0.6% water/min, flow rate 1.0 ml/min, 40 centigrades.
@@ -876,6 +909,7 @@ Conditions: TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A =
 
 RCs_yoshida_lc = {'aa': {'A': 1.29,
                          'C': 0.94,
+                      'comC': 0.94,
                          'D': 3.89,
                          'E': 4.40,
                          'F': -4.18,
@@ -896,7 +930,7 @@ RCs_yoshida_lc = {'aa': {'A': 1.29,
                          'Y': -0.46,
                          'H-': 0.0,
                          '-OH': 0.0},
-                  'const': 0.0, 
+                  'const': 0.0,
                   'lcp': -0.2}
 """A set of retention coefficients from the length-corrected model
 of normal-phase peptide chromatography. The dataset comes from Yoshida, T.
@@ -905,7 +939,9 @@ liquid chromatography. Journal of Chromatography A, 1998, 808 (1-2),
 105-112. The RCs were calculated in Moskovets, E.; Goloborodko A. A.;
 Gorshkov A. V.; Gorshkov M.V. Limitation of predictive 2-D liquid chromatography
 in reducing the database search space in shotgun proteomics: In silico studies.
-Journal of Separation Science, 2012, 35 (14), 1771-1778. 
+Journal of Separation Science, 2012, 35 (14), 1771-1778.
+
+.. note::  Cysteine is Carboxymethylated.
 
 Conditions: TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A =
 0.1% TFA in ACN-water (90:10); B = 0.1% TFA in ACN-water (55:45)) at
@@ -932,18 +968,21 @@ RCs_zubarev = {'aa': {'A': 6.73,
                       'Y': 13.22,
                       'W': 31.27,
                       'V': 13.05,
-                      'camC': 3.25,
-                      'oxM': -7.61,
-                      '-OH': 0.0,
-                      'H-': 0.0},
-                  'const': 0.53,
-                  'lcp': -0.21}
+                   'camC': 3.25,
+                      'C': 3.25,
+                    'oxM': -7.61,
+                    '-OH': 0.0,
+                     'H-': 0.0},
+            'const': 0.53,
+              'lcp': -0.21}
 """A set of retention coefficients from the length-corrected model
 of reversed-phase peptide chromatography. The dataset was taken from
 Goloborodko A. A.; Mayerhofer C.; Zubarev A. R.; Tarasova I. A.; Gorshkov A. V.;
-Zubarev, R. A.; Gorshkov, M. V. Empirical approach to false discovery rate 
-estimation in shotgun proteomics. Rapid communications in mass spectrometry, 
+Zubarev, R. A.; Gorshkov, M. V. Empirical approach to false discovery rate
+estimation in shotgun proteomics. Rapid communications in mass spectrometry,
 2010, 24(4), 454-62.
+
+.. note::  Cysteine is Carbamidomethylated.
 
 Conditions: Reprosil-Pur C18-AQ column (150 x 0.075 mm I.D.), gradient (A =
 0.5% AA in water; B = 0.5% AA in ACN-water (90:10)) at
@@ -957,7 +996,8 @@ RCs_gilar_atlantis_ph3_0 = {'aa': {'K': 15.90,
     'P': 4.77,
     'Q': 5.43,
     'D': 3.20,
-    'C*': 4.87,
+   'C*': 4.87,
+    'C': 4.87,
     'N': 3.91,
     'A': 3.34,
     'G': 3.33,
@@ -977,6 +1017,8 @@ Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
 hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
 8890-6.
 
+.. note::  Cysteine is Carbamidomethylated.
+
 Conditions: Atlantis HILIC silica column (150 x 2.1 mm I.D.), 3 um, 100 A,
 gradient (A = water, B = ACN, C = 200 mM ammonium formate):
 0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
@@ -989,7 +1031,8 @@ RCs_gilar_atlantis_ph4_5 = {'aa': {'K': 15.49,
     'P': 5.89,
     'Q': 5.68,
     'D': 5.31,
-    'C*': 5.23,
+   'C*': 5.23,
+    'C': 5.23,
     'N': 4.07,
     'A': 3.6,
     'G': 3.46,
@@ -1009,6 +1052,8 @@ Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
 hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
 8890-6.
 
+.. note::  Cysteine is Carbamidomethylated.
+
 Conditions: Atlantis HILIC silica column (150 x 2.1 mm I.D.), 3 um, 100 A,
 gradient (A = water, B = ACN, C = 200 mM ammonium formate):
 0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
@@ -1021,7 +1066,8 @@ RCs_gilar_atlantis_ph10_0 = {'aa': {'K': 25.23,
     'P': 4.00,
     'Q': 3.53,
     'D': -0.84,
-    'C*': 3.52,
+   'C*': 3.52,
+    'C': 3.52,
     'N': 3.26,
     'A': 3.64,
     'G': 3.02,
@@ -1041,6 +1087,8 @@ Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
 hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
 8890-6.
 
+.. note::  Cysteine is Carbamidomethylated.
+
 Conditions: Atlantis HILIC silica column (150 x 2.1 mm I.D.), 3 um, 100 A,
 gradient (A = water, B = ACN, C = 200 mM ammonium formate):
 0 min, 5% A, 90% B, 5% C; 62.5 min, 55% A, 40% B, 5% C
@@ -1053,7 +1101,8 @@ RCs_gilar_beh = {'aa': {'K': 9.49,
     'P': 4.73,
     'Q': 4.65,
     'D': 4.97,
-    'C*': 3.47,
+    'C': 3.47,
+   'C*': 3.47,
     'N': 3.50,
     'A': 2.90,
     'G': 2.63,
@@ -1073,6 +1122,8 @@ Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
 hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
 8890-6.
 
+.. note::  Cysteine is Carbamidomethylated.
+
 Conditions: ACQUITY UPLC BEH HILIC column (150 x 2.1 mm I.D.), 1.7 um, 130 A,
 Mobile phase A: 10 mM ammonium formate buffer, pH 4.5 prepared by
 titrating 10 mM solution of FA with ammonium hydroxide. Mobile phase B:
@@ -1086,7 +1137,8 @@ RCs_gilar_beh_amide = {'aa': {'K': 7.19,
     'P': 3.18,
     'Q': 5.19,
     'D': 6.02,
-    'C*': 3.71,
+   'C*': 3.71,
+    'C': 3.71,
     'N': 4.16,
     'A': 2.64,
     'G': 3.12,
@@ -1106,6 +1158,8 @@ Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
 hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
 8890-6.
 
+.. note::  Cysteine is Carbamidomethylated.
+
 Conditions: ACQUITY UPLC BEH glycan column (150 x 2.1 mm I.D.), 1.7 um, 130 A,
 Mobile phase A: 10 mM ammonium formate buffer, pH 4.5 prepared by
 titrating 10 mM solution of FA with ammonium hydroxide. Mobile phase B:
@@ -1119,7 +1173,8 @@ RCs_gilar_rp = {'aa': {'K': -1.015,
     'P': 3.496,
     'Q': 1.228,
     'D': 1.326,
-    'C*': 1.832,
+    'C': 1.832,
+   'C*': 1.832,
     'N': 0.299,
     'A': 2.322,
     'G': 1.172,
@@ -1139,10 +1194,89 @@ Gilar, M., & Jaworski, A. (2011). Retention behavior of peptides in
 hydrophilic-interaction chromatography. Journal of chromatography A, 1218(49),
 8890-6.
 
+.. note::  Cysteine is Carbamidomethylated.
+
 Conditions: ACQUITY UPLC BEH C18 column (100 mm x 2.1 mm I.D.), 1.7 um, 130 A.
 Mobile phase A: 0.02% TFA in water, mobile phase B: 0.018% TFA in ACN.
 Gradient: 0 to 50% B in 50 min, flow rate 0.2 ml/min, temperature 40 C., pH 2.6.
 """
+
+RCs_krokhin_100A_fa = {'aa':{'K': -5.08,
+                       'G': -0.07,
+                       'L':  9.89,
+                       'A':  1.63,
+                       'C':  0.7,
+                    'camC':  0.7,
+                       'E':  1.75,
+                       'D':  0.95,
+                       'F':  11.92,
+                       'I':  9.06,
+                       'H': -5.05,
+                       'M':  6.96,
+                       'N': -0.59,
+                       'Q':  0.2,
+                       'P':  1.98,
+                       'S': 0.27,
+                       'R': -3.55,
+                       'T':  1.37,
+                       'W':  13.67,
+                       'V':  5.72,
+                       'Y':  5.97},
+                 'lcf': 0.0,
+                 'const': 0.0}
+"""A set of retention coefficients from R.C. Dwivedi, V. Spicer,
+M. Harder, M. Antonovici, W. Ens, K.G. Standing, J.A. Wilkins, and O.V. Krokhin;
+Analytical Chemistry 2008 80 (18), 7036-7042.
+Practical Implementation of 2D HPLC Scheme with Accurate Peptide
+Retention Prediction in Both Dimensions for High-Throughput Bottom-Up Proteomics.
+
+.. note::  Cysteine is Carbamidomethylated.
+
+Conditions: 300 um x 150mm PepMap100 (Dionex, 0.1% FA), packed with
+5-um Luna C18(2) (Phenomenex, Torrance, CA), pore size 100A,  pH=2.0.
+Both eluents A (2% ACN in water) and B (98% ACN) contained
+0.1% FA as ion-pairing modifier. 0.33% ACN/min
+linear gradient (0-30% B).
+"""
+
+RCs_krokhin_100A_tfa = {'aa':{'K': -3.53,
+                       'G': -0.35,
+                       'L':  9.44,
+                       'A':  1.11,
+                       'C':  0.04,
+                    'camC':  0.04,
+                       'E':  1.08,
+                       'D':  -0.22,
+                       'F':  11.34,
+                       'I':  7.86,
+                       'H': -3.04,
+                       'M':  6.57,
+                       'N': -1.44,
+                       'Q':  -0.53,
+                       'P':  1.62,
+                       'S': -0.33,
+                       'R': -2.58,
+                       'T':  0.48,
+                       'W':  13.12,
+                       'V':  4.86,
+                       'Y':  5.4},
+                 'lcf': 0.0,
+                 'const': 0.0}
+"""A set of retention coefficients from R.C. Dwivedi, V. Spicer,
+M. Harder, M. Antonovici, W. Ens, K.G. Standing, J.A. Wilkins, and O.V. Krokhin;
+Analytical Chemistry 2008 80 (18), 7036-7042.
+Practical Implementation of 2D HPLC Scheme with Accurate Peptide
+Retention Prediction in Both Dimensions for High-Throughput Bottom-Up Proteomics.
+
+.. note :: Cysteine is Carbamidomethylated.
+
+Conditions: 300 um x 150mm PepMap100 (Dionex, 0.1% TFA), packed with
+5-um Luna C18(2) (Phenomenex, Torrance, CA), pore size 100 A,  pH=2.0.
+Both eluents A (2% ACN in water) and B (98% ACN) contained
+0.1% TFA as ion-pairing modifier. 0.33% ACN/min
+linear gradient (0-30% B).
+"""
+
 
 if __name__ == "__main__":
     import doctest
