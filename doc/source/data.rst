@@ -12,8 +12,8 @@ General Notes
    :py:func:`pyteomics.auxiliary.print_tree` to display the structure of the
    data returned by various parsers.
 
- - All file parsers support the *with* syntax, but do not require it. So you can
-   do:
+ - All file parsers support the ``with`` syntax, but do not require it. So you
+   can do:
 
    .. code-block :: python
 
@@ -30,6 +30,14 @@ General Notes
         >>> with mgf.read('tests/test.mgf') as reader:
         >>>     for spectrum in reader:
         >>>        ...
+
+ - All modules described here have three functions for reading data:
+   :py:func:`read`, :py:func:`chain` and :py:func:`chain.from_iterable`.
+   The latter two (`added in version 2.3 <changelog.html>`_) are convenient for
+   reading multiple files of the same type.
+   ``chain('f1', 'f2')`` is equivalent to ``chain.from_iterable(['f1', 'f2'])``.
+   :py:func:`chain` and :py:func:`chain.from_iterable` only support the
+   ``with`` syntax.
 
 mzML
 ----
