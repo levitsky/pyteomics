@@ -75,8 +75,8 @@ with :py:func:`write`.
 Bugfixes:
 
  - in :py:func:`mgf.read`: the charges, if present, are returned as a
-masked array now. Previously, an exception occurred if charges were missing
-for some of the fragments;
+   masked array now. Previously, an exception occurred if charges were missing
+   for some of the fragments;
  - values in :py:data:`mass.nist_mass` corrected;
  - other minor corrections.
 
@@ -120,26 +120,26 @@ We recommend using `with` statements to avoid resource leaks.
 API changes
 ...........
 
- - 'pepmass' is now a tuple in the output of :py:func:`mgf.read` (to allow reading
-precursor intensities).
+ - 'pepmass' is now a tuple in the output of :py:func:`mgf.read` (to allow
+   reading precursor intensities).
 
  - new function :py:func:`fasta.parse` for convenient parsing of FASTA headers.
 
  - :py:data:`fasta.std_parsers` stores parsers for common UniProt header formats.
 
  - new parameter *parser* in :py:func:`fasta.read` allows to apply parsing while
-reading a FASTA file.
+   reading a FASTA file.
 
- - `close` parameter removed in all functions that do file I/O. The unified behavior
- is: if the parameter is a file object, it won't be closed by the function. If a file
- path is given, the file object will be created and closed inside the corresponding
- function.
+ - `close` parameter removed in all functions that do file I/O. The unified
+   behavior is: if the parameter is a file object, it won't be closed by the
+   function. If a file path is given, the file object will be created and closed
+   inside the corresponding function.
 
 2.0.3
 -----
 
-Added new class :py:class:`Unimod` in :py:mod:`mass`. The interface is experimental and may
-change.
+Added new class :py:class:`Unimod` in :py:mod:`mass`. The interface is
+experimental and may change.
 
 Improved :py:func:`iterfind` function in XML-reading modules.
 
@@ -150,7 +150,8 @@ Bugfix in :py:func:`auxiliary.linear_regression`.
 2.0.2
 -----
 
-Added new function :py:func:`iterfind` in :py:mod:`mzid`, :py:mod:`pepxml` and :py:mod:`mzml`.
+Added new function :py:func:`iterfind` in :py:mod:`mzid`, :py:mod:`pepxml` and
+:py:mod:`mzml`.
 
 2.0.1
 -----
@@ -158,7 +159,7 @@ Added new function :py:func:`iterfind` in :py:mod:`mzid`, :py:mod:`pepxml` and :
 API changes
 ...........
 
-  - :py:func:`parser.peptide_length` is renamed to :py:func:`length`.
+ - :py:func:`parser.peptide_length` is renamed to :py:func:`length`.
 
 2.0.0
 -----
@@ -170,15 +171,16 @@ Fixed bugs, improved tests.
 API changes
 ...........
 
-  - top-module functions in :py:mod:`fasta`, :py:mod:`mgf`, :py:mod:`mzml`, :py:mod:`pepxml`, as well
-  as :py:mod:`mzid`, are now called :py:func:`read`.
+ - top-module functions in :py:mod:`fasta`, :py:mod:`mgf`, :py:mod:`mzml`,
+   :py:mod:`pepxml`, as well as :py:mod:`mzid`, are now called :py:func:`read`.
 
-  - in :py:mod:`parser`, :py:func:`parse_sequence` renamed to :py:func:`parse`. It now accepts
-  an optional parameter `allow_unknown_modifications`.   
+ - in :py:mod:`parser`, :py:func:`parse_sequence` renamed to :py:func:`parse`.
+   It now accepts an optional parameter `allow_unknown_modifications`.
 
-  - :py:func:`mgf.write_mgf` and :py:func:`fasta.write_fasta` renamed to :py:func:`write`.
+ - :py:func:`mgf.write_mgf` and :py:func:`fasta.write_fasta` renamed to
+   :py:func:`write`.
 
-  - the output format of all :py:func:`read` functions has changed.
+ - the output format of all :py:func:`read` functions has changed.
 
 1.2.5
 -----
@@ -196,24 +198,27 @@ Changes in :py:mod:`mass`.
 API changes
 ...........
 
-    - :py:class:`Composition` objects can be created using positional first argument,
-    which will be treated as a sequence or (upon failure) as a formula. That
-    means that all functions relying on Composition (:py:func:`calculate_mass`,
-    :py:func:`most_probable_isotopic_composition`, :py:func:`isotopic_composition_abundance`)
-    allow that as well. However, it's of no use for the latter.
+ - :py:class:`Composition` objects can be created using positional first
+   argument, which will be treated as a sequence or (upon failure) as a formula.
+   This means that all functions relying on Composition
+   (:py:func:`calculate_mass`, :py:func:`most_probable_isotopic_composition`,
+   :py:func:`isotopic_composition_abundance`) allow that as well. However, it's
+   of no use for the latter.
 
-    - :py:class:`Composition` entries for modifications can be added to *aa_comp* and
-    used in composition and mass calculations. This way the specified group will
-    be added to any residue bearing this modification.
+ - :py:class:`Composition` entries for modifications can be added to *aa_comp*
+   and used in composition and mass calculations. This way the specified group
+   will be added to any residue bearing this modification.
 
-    - That being said, the :py:func:`add_modifications` function is not needed anymore
-    and has been removed.
+ - That being said, the :py:func:`add_modifications` function is not needed
+   anymore and has been removed.
 
-    - Addition and subtraction of :py:class:`Composition` objects now produces a
-    :py:class:`Composition` object, allowing addition/subtraction of multiple objects.
+ - Addition and subtraction of :py:class:`Composition` objects now produces a
+   :py:class:`Composition` object, allowing addition/subtraction of multiple
+   objects.
 
-    - :py:class:`Composition` is now a subclass of :py:class:`collections.defaultdict` so one
-    can safely retrieve values without checking if a key exists.
+ - :py:class:`Composition` is now a subclass of
+   :py:class:`collections.defaultdict` so one can safely retrieve values
+   without checking if a key exists.
 
 1.2.3
 -----
@@ -228,14 +233,14 @@ Helper function :py:func:`parser.is_modX` added to check *modX* labels.
 API changes
 ...........
 
-    - :py:func:`parser.isoforms` now returns a generator object
+ - :py:func:`parser.isoforms` now returns a generator object
 
 1.2.2
 -----
 
 Bugfix in :py:mod:`pepxml`: modification info is now extracted.
-New optional bool argument 'split' in :py:func:`parser.parse_sequence()` allows to
-generate a list of tuples where modifications are separated from the residues
+New optional bool argument 'split' in :py:func:`parser.parse_sequence()` allows
+to generate a list of tuples where modifications are separated from the residues
 instead of a regular list of labels. In *labels* not only *modX* labels are
 now allowed, but also separate *mod* prefixes. Such modificatiuons are assumed
 to be applicable to any residue.
@@ -263,20 +268,20 @@ modified sequences of a peptide.
 1.1.0
 -----
 
-New module added - :py:mod:`pyteomics.mgf`. It is intended for reading and writing
-files in Mascot Generic Format.
+New module added - :py:mod:`pyteomics.mgf`. It is intended for reading and
+writing files in Mascot Generic Format.
 
 1.0.2
 -----
 
-In :py:mod:`pepxml` module, now all search hits are read from file (not only the top
-hit).
+In :py:mod:`pepxml` module, now all search hits are read from file (not only the
+top hit).
 
 API changes:
 ............
 
-    - :py:func:`pepxml.read`: information specific to search hits is now stored in a list
-    under the 'search_hits' key. The list is sorted by hit rank.
+ - :py:func:`pepxml.read`: information specific to search hits is now stored in
+   a list under the 'search_hits' key. The list is sorted by hit rank.
 
 
 1.0.1
@@ -292,9 +297,8 @@ The first public release of Pyteomics.
 API changes:
 ............
 
-    - :py:mod:`achrom`: rename 'length correction factor' to 'length correction parameter'.
-      achrom.get_RCs_vary_lcf() was renamed to achrom.get_RCs_vary_lcp(),
-      'length_correction_factor' keyword argument of achrom.get_RCs() was 
-      renamed to 'lcp'.
-      
+ - :py:mod:`achrom`: rename 'length correction factor' to 'length correction
+   parameter'. :py:func:`pyteomics.achrom.get_RCs_vary_lcf` was renamed to
+   :py:func:`pyteomics.achrom.get_RCs_vary_lcp`, `length_correction_factor`
+   keyword argument of achrom.get_RCs() was renamed to `lcp`.
 
