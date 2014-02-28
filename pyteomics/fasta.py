@@ -368,3 +368,7 @@ def parse(header, flavour='auto', parsers=None):
                         flavour, e.message))
 
 chain = aux._make_chain(read)
+decoy_chain = aux._make_chain(decoy_db)
+decoy_chain.__doc__ = """Generate a decoy db for multiple FASTA files.
+Positional arguments should be file names or file objects. Keyword arguments are
+passed to :py:func:`decoy_db`."""
