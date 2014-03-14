@@ -326,6 +326,86 @@ def _make_chain(reader):
     _chain.from_iterable = _from_iterable
     return _chain
 
+def _make_filter(read, is_decoy, key):
+    """Create a function that reads PSMs from a file and filters them to
+    the desired FDR level (estimated by TDA), returning the top PSMs
+    sorted by ``key``.
+    """
+    @_file_reader()
+    def filter(source, fdr, key=key, is_decoy=is_decoy, remove_decoy=True,
+            *args, **kwargs):
+        @_keepstate
+        def get_scores(s):
+            scores = []
+            with read(s, *args, **kwargs) as f:
+                for psm in f:
+                    scores.append((key(psm), is_decoy(psm)))
+            return scores
+
+        dtype = np.dtype([('score', np.float64), ('is_decoy', np.uint8)])
+        scores = np.array(get_scores(source), dtype=dtype)
+        scores.sort()
+        cumsum = scores['is_decoy'].cumsum(dtype=np.float32)
+        ind = np.arange(1, scores.size+1)
+        if remove_decoy:
+            local_fdr =  cumsum / (ind - cumsum)
+        else:
+            local_fdr = 2. * cumsum / ind
+        try:
+            cutoff = scores[np.nonzero(local_fdr < fdr)[0][-1]][0]
+        except IndexError:
+            cutoff = scores['score'].min() - 1.
+        with read(source, *args, **kwargs) as f:
+            for p in f:
+                if not remove_decoy or not is_decoy(p):
+                    if key(p) < cutoff:
+                        yield p
+
+    @contextmanager
+    def _filter(source, fdr, key=key, is_decoy=is_decoy, remove_decoy=True,
+            *args, **kwargs):
+        """Read ``source`` and yield only the PSMs that form a set with
+        estimated false discovery rate (FDR) not exceeding ``fdr``.
+
+        Parameters
+        ----------
+        source : file or str
+            File to read PSMs from.
+        fdr : float, 0 <= fdr <= 1
+            Desired FDR level.
+        key : function, optional
+            A function used for sorting of PSMs. Should accept exactly one
+            argument (PSM) and return a number (the smaller the better). The
+            default is a function that extracts e-value from the PSM.
+        is_decoy : function, optional
+            A function used to determine if the PSM is decoy or not. Should
+            accept exactly one argument (PSM) and return a truthy value if the
+            PSM should be considered decoy.
+        remove_decoy : bool, optional
+            Defines whether decoy matches should be removed from the output.
+
+            .. note:: If set to :py:const:`False`, then the decoy PSMs will
+               be taken into account when estimating FDR.
+        *args, **kwargs : passed to the :py:func:`read` function.
+
+        Yields
+        ------
+        out : iterator
+        """
+        yield filter(source, fdr, key=key, is_decoy=is_decoy,
+                remove_decoy=remove_decoy, *args, **kwargs)
+
+    return _filter
+
+def _make_fdr(is_decoy):
+    def fdr(psms, is_decoy=is_decoy):
+        total, decoy = 0, 0
+        for psm in psms:
+            total += 1
+            if is_decoy(psm):
+                decoy += 1
+        return decoy / total
+
 ### End of file helpers section ###
 
 def _parse_charge(s, list_only=False):
