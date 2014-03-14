@@ -23,7 +23,16 @@ Data access
   :py:func:`read` - iterate through peptide-spectrum matches in an X!Tandem
   output file. Data from a single PSM are converted to a human-readable dict.
 
+  :py:func:`filter` - iterate through peptide-spectrum matches in an X!Tandem
+  output file, yielding only top PSMs and keeping false discovery rate (FDR) at
+  the desired level. The FDR is estimated using the target-decoy approach (TDA).
+
   :py:func:`iterfind` - iterate over elements in an X!Tandem file.
+
+Auxiliary
+---------
+
+  :py:func:`is_decoy` - determine if a PSM is from the decoy database.
 
 -------------------------------------------------------------------------------
 """
@@ -42,7 +51,8 @@ Data access
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import  itertools as it
+import itertools as it
+import operator
 import numpy as np
 from . import auxiliary as aux
 
@@ -137,3 +147,22 @@ _iterfind_env = {'get_info_smart': _get_info_smart}
 iterfind = aux._make_iterfind(_iterfind_env)
 
 chain = aux._make_chain(read)
+
+def is_decoy(psm, prefix='DECOY_'):
+    """Given a PSM dict, return :py:const:`True` if all protein names for
+    the PSM start with ``prefix``, and :py:const:`False` otherwise.
+
+    Parameters
+    ----------
+    psm : dict
+        A dict, as yielded by :py:func:`read`.
+    prefix : str, optional
+        A prefix used to mark decoy proteins. Default is "DECOY_".
+
+    Returns
+    -------
+    out : bool
+    """
+    return all(prot['label'].startswith(prefix) for prot in psm['protein'])
+
+filter = aux._make_filter(read, is_decoy, operator.itemgetter('expect'))
