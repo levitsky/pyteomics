@@ -34,6 +34,8 @@ Auxiliary
 
   :py:func:`is_decoy` - determine if a PSM is from the decoy database.
 
+  :py:func:`fdr` - estimate the FDR in a data set using TDA.
+
 -------------------------------------------------------------------------------
 """
 
@@ -166,3 +168,4 @@ def is_decoy(psm, prefix='DECOY_'):
     return all(prot['label'].startswith(prefix) for prot in psm['protein'])
 
 filter = aux._make_filter(read, is_decoy, operator.itemgetter('expect'))
+fdr = aux._make_fdr(is_decoy)

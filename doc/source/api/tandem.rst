@@ -2,4 +2,5 @@
    :members:
 
    .. autofunction:: filter
+   .. autofunction:: fdr
    .. autofunction:: iterfind
