@@ -383,9 +383,14 @@ def _make_filter(read, is_decoy, key):
             PSM should be considered decoy.
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
+            Default is :py:const:`True`.
 
             .. note:: If set to :py:const:`False`, then the decoy PSMs will
-               be taken into account when estimating FDR.
+               be taken into account when estimating FDR. Refer to the
+               documentation of :py:func:`fdr` for math; basically, if
+               ``remove_decoy`` is :py:const:`True`, then formula 1 is used
+               to control output FDR, otherwise it's formula 2.
+
         *args, **kwargs : passed to the :py:func:`read` function.
 
         Yields
@@ -398,13 +403,47 @@ def _make_filter(read, is_decoy, key):
     return _filter
 
 def _make_fdr(is_decoy):
-    def fdr(psms, is_decoy=is_decoy):
+    def fdr(psms, formula=1, is_decoy=is_decoy):
+        """Estimate FDR of a data set using TDA.
+        Two formulas can be used. The first one (default) is:
+
+        .. math::
+
+                FDR = \\frac{N_{decoy}}{N_{target}}
+
+        The second formula is:
+
+        .. math::
+
+                FDR = \\frac{2 * N_{decoy}}{N_{total}}
+
+        Parameters
+        ----------
+        psms : iterable
+            An iterable of PSMs, e.g. as returned by :py:func:`read`.
+        formula : int, optional
+            Can be either 1 or 2, defines which formula should be used for FDR
+            estimation. Default is 1.
+        is_decoy : callable, optional
+            Shoould accept exactly one argument (PSM) and return a truthy value
+            if the PSM is considered decoy. Default is :py:func:`is_decoy`.
+
+        Returns
+        -------
+        out : float
+            The estimation of FDR, between 0 and 1.
+        """
+        if formula not in {1, 2}:
+            raise PyteomicsError("`formula` must be either 1 or 2")
         total, decoy = 0, 0
         for psm in psms:
             total += 1
             if is_decoy(psm):
                 decoy += 1
-        return decoy / total
+        if formula == 1:
+            return float(decoy) / (total - decoy)
+        return 2. * decoy / total
+    return fdr
 
 ### End of file helpers section ###
 
