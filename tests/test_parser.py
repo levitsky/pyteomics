@@ -116,4 +116,7 @@ class ParserTest(unittest.TestCase):
                     self.assertFalse(valid(bad, labels=self.labels))
 
 if __name__ == '__main__':
+    import doctest
+    from pyteomics import parser
+    doctest.testmod(parser)
     unittest.main()

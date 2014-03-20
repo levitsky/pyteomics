@@ -32,10 +32,10 @@ Operations on polypeptide sequences
   amino acid residues.
 
   :py:func:`tostring` - convert a parsed sequence to a string.
-  
+
   :py:func:`amino_acid_composition` - get numbers of each amino acid
   residue in a peptide.
-  
+
   :py:func:`cleave` - cleave a polypeptide using a given rule of
   enzymatic digestion.
 
@@ -72,7 +72,7 @@ Data
   :py:data:`std_labels` - a list of all standard sequence
   elements, amino acid residues and terminal modifications.
 
-  :py:const:`expasy_rules` - a dict with the regular expressions of
+  :py:data:`expasy_rules` - a dict with the regular expressions of
   cleavage rules for the most popular proteolytic enzymes.
 
 -------------------------------------------------------------------------------
@@ -453,13 +453,15 @@ def amino_acid_composition(sequence,
 
     Examples
     --------
-    >>> amino_acid_composition('PEPTIDE')
-    {'I': 1, 'P': 2, 'E': 2, 'T': 1, 'D': 1}
-    >>> amino_acid_composition('PEPTDE', term_aa=True)
-    {'ctermE': 1, 'E': 1, 'D': 1, 'P': 1, 'T': 1, 'ntermP': 1}
-    >>> amino_acid_composition('PEPpTIDE',\
-    labels=std_labels+['pT'])
-    {'I': 1, 'P': 2, 'E': 2, 'D': 1, 'pT': 1}
+    >>> amino_acid_composition('PEPTIDE') == \
+            {'I': 1, 'P': 2, 'E': 2, 'T': 1, 'D': 1}
+    True
+    >>> amino_acid_composition('PEPTDE', term_aa=True) == \
+            {'ctermE': 1, 'E': 1, 'D': 1, 'P': 1, 'T': 1, 'ntermP': 1}
+    True
+    >>> amino_acid_composition('PEPpTIDE', labels=std_labels+['pT']) == \
+            {'I': 1, 'P': 2, 'E': 2, 'D': 1, 'pT': 1}
+    True
     """
     labels = kwargs.get('labels', std_labels)
 
@@ -519,10 +521,11 @@ def cleave(sequence, rule, missed_cleavages=0, overlap=False):
 
     Examples
     --------
-    >>> cleave('AKAKBK', expasy_rules['trypsin'], 0)
-    set(['AK', 'BK'])
-    >>> cleave('AKAKBKCK', expasy_rules['trypsin'], 2)
-    set(['CK', 'AKBK', 'BKCK', 'AKAK', 'AKBKCK', 'AK', 'AKAKBK', 'BK'])
+    >>> cleave('AKAKBK', expasy_rules['trypsin'], 0) == {'AK', 'BK'}
+    True
+    >>> cleave('AKAKBKCK', expasy_rules['trypsin'], 2) == \
+            {'CK', 'AKBK', 'BKCK', 'AKAK', 'AKBKCK', 'AK', 'AKAKBK', 'BK'}
+    True
 
     """
     peptides = set()
