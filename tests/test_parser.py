@@ -22,8 +22,9 @@ class ParserTest(unittest.TestCase):
                 parse('PEPTIDE', split=True))
         self.assertEqual(['P', 'E', 'P', 'T', 'I', 'D', 'E'],
                 parse('H-PEPTIDE'))
-        self.assertEqual(['H-', 'P', 'E', 'P', 'T', 'I', 'D', 'E', '-OH'],
-                parse('PEPTIDE', show_unmodified_termini=True))
+        for seq in ['PEPTIDE', 'H-PEPTIDE', 'PEPTIDE-OH', 'H-PEPTIDE-OH']:
+            self.assertEqual(['H-', 'P', 'E', 'P', 'T', 'I', 'D', 'E', '-OH'],
+                parse(seq, show_unmodified_termini=True))
         self.assertEqual(['T', 'E', 'pS', 'T', 'oxM'],
                 parse('TEpSToxM', labels=std_labels + ['pS', 'oxM']))
         self.assertEqual(
