@@ -352,13 +352,13 @@ def _make_filter(read, is_decoy, key):
         else:
             local_fdr = 2. * cumsum / ind
         try:
-            cutoff = scores[np.nonzero(local_fdr < fdr)[0][-1]][0]
+            cutoff = scores[np.nonzero(local_fdr <= fdr)[0][-1]][0]
         except IndexError:
             cutoff = scores['score'].min() - 1.
         with read(source, *args, **kwargs) as f:
             for p in f:
                 if not remove_decoy or not is_decoy(p):
-                    if key(p) < cutoff:
+                    if key(p) <= cutoff:
                         yield p
 
     @contextmanager

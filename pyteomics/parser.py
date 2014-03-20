@@ -62,10 +62,10 @@ Data
 ----
 
   :py:data:`std_amino_acids` - a list of the 20 standard amino acid IUPAC codes.
-  
+
   :py:data:`std_nterm` - the standard N-terminal modification (the
   unmodified group is a single atom of hydrogen).
-  
+
   :py:data:`std_cterm` - the standard C-terminal modification (the
   unmodified group is hydroxyl).
 
@@ -146,8 +146,8 @@ def length(sequence, **kwargs):
     ----------
     sequence : str or list or dict
         A string with a polypeptide sequence, a list with a parsed sequence or
-        a dict of amino acid composition.        
-    labels : list, optional    
+        a dict of amino acid composition.
+    labels : list, optional
         A list of allowed labels for amino acids and terminal modifications
         (default is `std_labels`, the 20 standard amino acids, N-terminal H-
         and C-terminal -OH).
@@ -158,14 +158,14 @@ def length(sequence, **kwargs):
     7
     >>> length('H-PEPTIDE-OH')
     7
-    """    
+    """
     labels = kwargs.get('labels', std_labels)
 
     if isinstance(sequence, str) or isinstance(sequence, list):
         if isinstance(sequence, str):
             parsed_sequence = parse(sequence, labels=labels)
         else:
-            parsed_sequence = sequence            
+            parsed_sequence = sequence
         num_term_groups = 0
         if is_term_mod(parsed_sequence[0]):
             num_term_groups += 1
@@ -173,7 +173,7 @@ def length(sequence, **kwargs):
             num_term_groups += 1
         return len(parsed_sequence) - num_term_groups
     elif isinstance(sequence, dict):
-        return sum(amount for aa, amount in sequence.items() 
+        return sum(amount for aa, amount in sequence.items()
                     if not is_term_mod(aa))
 
     raise PyteomicsError('Unsupported type of sequence.')
@@ -186,19 +186,19 @@ def _split_label(label):
         else:
             return (label[:-1], label[-1])
 
-def parse(sequence,               
+def parse(sequence,
                    show_unmodified_termini=False, split=False,
                    allow_unknown_modifications=False,
                    **kwargs):
     """Parse a sequence string written in modX notation into a list of
     labels or (if `split` argument is :py:const:`True`) into a list of
-    tuples representing amino acid residues and their modifications. 
+    tuples representing amino acid residues and their modifications.
 
     Parameters
     ----------
     sequence : str
         The sequence of a polypeptide.
-    show_unmodified_termini : bool, optional   
+    show_unmodified_termini : bool, optional
         If :py:const:`True` then the unmodified N- and C-termini are explicitly
         shown in the returned list. Default value is :py:const:`False`.
     split : bool, optional
@@ -206,13 +206,13 @@ def parse(sequence,
         elements: terminal modification, modification, residue. Default value is
         :py:const:`False`.
     allow_unknown_modifications : bool, optional
-        If :py:const:`True` then do not raise an exception when an unknown 
+        If :py:const:`True` then do not raise an exception when an unknown
         modification of a known amino acid residue is found in the sequence.
         Default value is :py:const:`False`.
     labels : container, optional
         A list (set, tuple, etc.) of allowed labels for amino acids,
         modifications and terminal modifications (default is the 20
-        standard amino acids, N-terminal 'H-' and C-terminal '-OH'). 
+        standard amino acids, N-terminal 'H-' and C-terminal '-OH').
 
         New in ver. 1.2.2: separate labels for modifications (such as 'p' or 'ox')
         are now allowed.
@@ -236,59 +236,89 @@ def parse(sequence,
     [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',), ('z', 'E', '-OH')]
     """
     labels = kwargs.get('labels', std_labels)
-    backbone_sequence = str(sequence)
+    sequence = str(sequence)
 
-    # Determine the N-terminal modification.
-    nterm = std_nterm
-    for aa in labels:
-        if is_term_mod(aa) and backbone_sequence.startswith(aa):
-            nterm = aa
-            backbone_sequence = backbone_sequence[len(nterm):]
-            break
-
-    # Determine the C-terminal modification.
-    cterm = std_cterm
-    j = backbone_sequence.find('-')
-    if j != -1:
-        for aa in labels:
-            if is_term_mod(aa) and backbone_sequence[j:] == aa:
-                cterm = aa
-                backbone_sequence = backbone_sequence[:j]
-                break
-
-    # Parse the polypeptide backbone.
-    i = 0
-    parsed_sequence = []
-    while i < len(backbone_sequence):
-        amino_acid_found = False
-        for aa in labels:
-            if backbone_sequence.startswith(aa, i) and is_modX(aa):
-                parsed_sequence.append(aa)
-                amino_acid_found = True
-                break
-
-        if not amino_acid_found:
-            j = i+2
-            while j <= len(backbone_sequence):
-                try:
-                    mod, res = _split_label(backbone_sequence[i:j])
-                except PyteomicsError:
-                    pass
-                else:
-                    if ((mod in labels and res in labels) or 
-                        (allow_unknown_modifications and res in labels)):
-
-                        parsed_sequence.append(backbone_sequence[i:j])
-                        amino_acid_found = True
-                        break
-                finally:
-                    j += 1
-
-        if not amino_acid_found:
+    nterm, cterm = std_nterm, std_cterm
+    parsed_sequence = None
+    hyphen_ind = [i for i, c in enumerate(sequence) if c == '-']
+    hyphen_count = len(hyphen_ind)
+    if hyphen_count > 2: raise PyteomicsError('Invalid sequence: ' + sequence)
+    elif hyphen_count == 2:
+        nterm = sequence[:hyphen_ind[0]+1]
+        if nterm not in labels:
             raise PyteomicsError(
-                'Unknown amino acid in sequence %s at position %d: %s' % (
-                    backbone_sequence, i+1, backbone_sequence[i:]))
-        i += len(parsed_sequence[-1])
+                    'Unknown N-terminal group {} in sequence {}'.format(nterm,
+                        sequence))
+        cterm = sequence[hyphen_ind[1]:]
+        if cterm not in labels:
+            raise PyteomicsError(
+                    'Unknown C-terminal group {} in seqience {}'.format(cterm,
+                        sequence))
+        sequence = sequence[hyphen_ind[0]+1 : hyphen_ind[1]]
+    elif hyphen_count == 1:
+        # find out which terminal group is missing
+        nterm = sequence[:hyphen_ind[0]+1]
+        parsed_sequence_1 = None
+        if nterm in labels:
+            try:
+                parsed_sequence_1 = parse(sequence[hyphen_ind[0]+1:],
+                   False, False, allow_unknown_modifications, **kwargs)
+            except PyteomicsError:
+                nterm = std_nterm
+        else:
+            nterm = std_nterm
+        cterm = sequence[hyphen_ind[0]:]
+        if cterm in labels:
+            try:
+                parsed_sequence_2 = parse(sequence[:hyphen_ind[0]],
+                   False, False, allow_unknown_modifications, **kwargs)
+            except PyteomicsError:
+                if parsed_sequence_1 is None:
+                    raise
+                parsed_sequence = parsed_sequence_1
+                cterm = std_cterm
+            else:
+                if parsed_sequence_1 is not None:
+                    raise PyteomicsError('Ambiguous sequence: ' + sequence)
+                parsed_sequence = parsed_sequence_2
+        else:
+            cterm = std_cterm
+            parsed_sequence = parsed_sequence_1
+
+    if parsed_sequence is None:
+        # Parse the polypeptide backbone.
+        i = 0
+        parsed_sequence = []
+        while i < len(sequence):
+            amino_acid_found = False
+            for aa in labels:
+                if sequence.startswith(aa, i) and is_modX(aa):
+                    parsed_sequence.append(aa)
+                    amino_acid_found = True
+                    break
+
+            if not amino_acid_found:
+                j = i+2
+                while j <= len(sequence):
+                    try:
+                        mod, res = _split_label(sequence[i:j])
+                    except PyteomicsError:
+                        pass
+                    else:
+                        if ((mod in labels and res in labels) or
+                            (allow_unknown_modifications and res in labels)):
+
+                            parsed_sequence.append(sequence[i:j])
+                            amino_acid_found = True
+                            break
+                    finally:
+                        j += 1
+
+            if not amino_acid_found:
+                raise PyteomicsError(
+                    'Unknown amino acid in sequence %s at position %d: %s' % (
+                        sequence, i+1, sequence[i:]))
+            i += len(parsed_sequence[-1])
 
     # Append terminal labels.
     if show_unmodified_termini or nterm != std_nterm:
@@ -315,7 +345,7 @@ def parse(sequence,
             tuples.append(_split_label(parsed_sequence[-2]) + (parsed_sequence[-1],))
         else:
             tuples.extend(_split_label(x) for x in parsed_sequence[-2:])
-        
+
         return tuples
 
     return parsed_sequence
@@ -358,7 +388,7 @@ def fast_valid(sequence, labels=std_labels):
 
 def tostring(parsed_sequence, show_unmodified_termini=True):
     """Create a string from a parsed sequence.
-    
+
     Parameters
     ----------
     parsed_sequence : iterable
@@ -444,7 +474,7 @@ def amino_acid_composition(sequence,
 
     aa_dict = {}
 
-    # Process terminal amino acids.    
+    # Process terminal amino acids.
     if term_aa:
         nterm_aa_position = 1 if is_term_mod(parsed_sequence[0]) else 0
         cterm_aa_position = (
@@ -457,20 +487,20 @@ def amino_acid_composition(sequence,
     # Process core amino acids.
     for aa in parsed_sequence:
         aa_dict[aa] = aa_dict.get(aa, 0) + 1
-        
+
     return aa_dict
 
 @memoize()
 def cleave(sequence, rule, missed_cleavages=0, overlap=False):
     """Cleaves a polypeptide sequence using a given rule.
-    
+
     Parameters
     ----------
     sequence : str
         The sequence of a polypeptide.
-    rule : str    
+    rule : str
         A string with a regular expression describing the C-terminal site of
-        cleavage.    
+        cleavage.
     missed_cleavages : int, optional
         The maximal number of allowed missed cleavages. Defaults to 0.
     overlap : bool, optional
@@ -564,10 +594,10 @@ def isoforms(sequence, **kwargs):
 
     Parameters
     ----------
-    
+
     sequence : str
         Peptide sequence to modify.
-    
+
     variable_mods : dict, optional
         A dict of variable modifications in the following format:
         :py:const:`{'label1': ['X', 'Y', ...], 'label2': ['X', 'A', 'B', ...]}`
@@ -575,13 +605,13 @@ def isoforms(sequence, **kwargs):
         **Note**: several variable modifications can occur on amino acids of the
         same type, but in the output each amino acid residue will be modified
         at most once (apart from terminal modifications).
-    
+
     fixed_mods : dict, optional
         A dict of fixed modifications in the same format.
-        
+
         **Note**: if a residue is affected by a fixed modification, no variable
         modifications will be applied to it (apart from terminal modifications).
-    
+
     labels : list, optional
         A list of amino acid labels containing all the labels present in
         `sequence`. Modified entries will be added automatically.
@@ -593,7 +623,7 @@ def isoforms(sequence, **kwargs):
         :py:const:`True` means they will be treated as unmodified.
 
         **Note**: If :py:const:`True`, then supplying fixed mods is pointless.
-        
+
     show_unmodified_termini : bool, optional
         If :py:const:`True` then the unmodified N- and C-termini are explicitly
         shown in the returned sequences. Default value is :py:const:`False`.
@@ -612,7 +642,7 @@ def isoforms(sequence, **kwargs):
         the specified modifications are yielded obe by one.
     """
     def main(group): # index of the residue (capital letter) in `group`
-        temp = [i for i, x in enumerate(group) if 
+        temp = [i for i, x in enumerate(group) if
                 (not is_term_mod(x)) and x.isupper()]
         if len(temp) != 1: raise PyteomicsError('Invalid group: %s' % group)
         return temp[0], group[temp[0]]
@@ -634,7 +664,7 @@ def isoforms(sequence, **kwargs):
             if not group[m-1].endswith('-'):
                 if override: group[m-1] = mod
             else: group.insert(m, mod)
-        return tuple(group)            
+        return tuple(group)
 
     variable_mods = kwargs.get('variable_mods', {})
     fixed_mods = kwargs.get('fixed_mods', {})
@@ -654,14 +684,14 @@ def isoforms(sequence, **kwargs):
     # Start with N-terminal mods and regular mods on the N-terminal residue
     second = set(apply_mod(parsed[0], m) for m, r in variable_mods.items()
             if main(parsed[0])[1] in r and not is_term_mod(m)).union([parsed[0]])
-    first = chain((apply_mod(group, mod) for group in second 
+    first = chain((apply_mod(group, mod) for group in second
             for mod, res in variable_mods.items()
         if (mod.endswith('-') or mod.startswith('-') and len(parsed) == 1)
         and main(group)[1] in res), second)
     states = [set(first).union([parsed[0]])]
     # Continue with regular mods
     states.extend({group}.union(set(apply_mod(group, mod)
-            for mod in variable_mods if 
+            for mod in variable_mods if
                 main(group)[1] in variable_mods[mod] and not is_term_mod(mod)))
         for group in parsed[1:-1])
     # Finally add C-terminal mods and regular mods on the C-terminal residue
@@ -669,7 +699,7 @@ def isoforms(sequence, **kwargs):
         second = set(apply_mod(parsed[-1], m) for m, r in variable_mods.items()
                     if main(parsed[-1])[1] in r and not is_term_mod(m)
                 ).union((parsed[-1],))
-        first = chain((apply_mod(group, mod) for group in second 
+        first = chain((apply_mod(group, mod) for group in second
                 for mod, res in variable_mods.items()
             if mod.startswith('-') and main(group)[1] in res), second)
         states.append(set(first).union((parsed[-1],)))
@@ -681,7 +711,7 @@ def isoforms(sequence, **kwargs):
             for form in product(*states))
     else:
         raise PyteomicsError('Unsupported value of "format": {}'.format(format_))
-    
+
 
 if __name__ == "__main__":
     import doctest
