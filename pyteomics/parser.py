@@ -45,6 +45,8 @@ Operations on polypeptide sequences
 Auxiliary commands
 ------------------
 
+  :py:func:`coverage` - calculate the sequence coverage of a protein by peptides.
+
   :py:func:`length` - calculate the number of amino acid
   residues in a polypeptide.
 
@@ -96,6 +98,7 @@ Data
 import re
 from collections import deque
 from itertools import chain, product
+import numpy as np
 from .auxiliary import PyteomicsError, memoize
 
 std_amino_acids = ['Q','W','E','R','T','Y','I','P','A','S',
@@ -454,13 +457,13 @@ def amino_acid_composition(sequence,
     Examples
     --------
     >>> amino_acid_composition('PEPTIDE') == \
-            {'I': 1, 'P': 2, 'E': 2, 'T': 1, 'D': 1}
+    {'I': 1, 'P': 2, 'E': 2, 'T': 1, 'D': 1}
     True
     >>> amino_acid_composition('PEPTDE', term_aa=True) == \
-            {'ctermE': 1, 'E': 1, 'D': 1, 'P': 1, 'T': 1, 'ntermP': 1}
+    {'ctermE': 1, 'E': 1, 'D': 1, 'P': 1, 'T': 1, 'ntermP': 1}
     True
     >>> amino_acid_composition('PEPpTIDE', labels=std_labels+['pT']) == \
-            {'I': 1, 'P': 2, 'E': 2, 'D': 1, 'pT': 1}
+    {'I': 1, 'P': 2, 'E': 2, 'D': 1, 'pT': 1}
     True
     """
     labels = kwargs.get('labels', std_labels)
@@ -524,7 +527,7 @@ def cleave(sequence, rule, missed_cleavages=0, overlap=False):
     >>> cleave('AKAKBK', expasy_rules['trypsin'], 0) == {'AK', 'BK'}
     True
     >>> cleave('AKAKBKCK', expasy_rules['trypsin'], 2) == \
-            {'CK', 'AKBK', 'BKCK', 'AKAK', 'AKBKCK', 'AK', 'AKAKBK', 'BK'}
+    {'CK', 'AKBK', 'BKCK', 'AKAK', 'AKBKCK', 'AK', 'AKAKBK', 'BK'}
     True
 
     """
@@ -715,6 +718,38 @@ def isoforms(sequence, **kwargs):
             for form in product(*states))
     else:
         raise PyteomicsError('Unsupported value of "format": {}'.format(format_))
+
+def coverage(protein, peptides):
+    """Calculate how much of ``protein`` is covered by ``peptides``.
+    Peptides can overlap. If a peptide is found multiple times in ``protein``,
+    it contributes more to the overall coverage.
+
+    .. warning::
+        Modifications and terminal groups will not be handled correctly.
+
+    Parameters
+    ----------
+    protein : str
+        A protein sequence.
+    peptides : iterable
+        An iterable of peptide sequences.
+
+    Returns
+    -------
+    out : float
+        The sequence coverage, between 0 and 1.
+
+    Examples
+    --------
+    >>> coverage('PEPTIDES'*100, ['PEP', 'EPT'])
+    0.5
+    """
+    mask = np.zeros(len(protein), dtype=np.int8)
+    for peptide in peptides:
+        i = [m.start() for m in re.finditer('(?={})'.format(peptide), protein)]
+        for j in i:
+            mask[j:j+len(peptide)] = 1
+    return mask.sum(dtype=float) / mask.size
 
 
 if __name__ == "__main__":
