@@ -278,7 +278,8 @@ def parse(sequence,
                 parsed_sequence = parsed_sequence_1
                 cterm = std_cterm
             else:
-                if parsed_sequence_1 is not None:
+                if parsed_sequence_1 is not None and (
+                        parsed_sequence_1 != parsed_sequence_1):
                     raise PyteomicsError('Ambiguous sequence: ' + sequence)
                 parsed_sequence = parsed_sequence_2
         else:
