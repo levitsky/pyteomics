@@ -346,3 +346,23 @@ _iterfind_env = {'get_info_smart': _get_info_smart}
 iterfind = aux._make_iterfind(_iterfind_env)
 
 chain = aux._make_chain(read)
+
+def is_decoy(psm, prefix='DECOY_'):
+    """Given a PSM dict, return :py:const:`True` if all protein names for
+    the PSM start with ``prefix``, and :py:const:`False` otherwise.
+
+    Parameters
+    ----------
+    psm : dict
+        A dict, as yielded by :py:func:`read`.
+    prefix : str, optional
+        A prefix used to mark decoy proteins. Default is "DECOY_".
+
+    Returns
+    -------
+    out : bool
+    """
+    return all(protein['protein'].startswith(prefix)
+            for sh in psm['search_hit'] for protein in sh['proteins'])
+
+fdr = aux._make_fdr(is_decoy)
