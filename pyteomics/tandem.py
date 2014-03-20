@@ -126,7 +126,7 @@ def _schema_info(_, **kw):
     'bools', 'lists', 'intlists', 'floatlists', 'charlists'."""
 
     return {'ints': {
-        ('group', 'z')} | {('domain', k) for k in [
+        ('group', 'z'), ('aa', 'at')} | {('domain', k) for k in [
             'missed_cleavages', 'start', 'end', 'y_ions', 'b_ions',
             'a_ions', 'x_ions', 'c_ions', 'z_ions']},
 
@@ -136,10 +136,13 @@ def _schema_info(_, **kw):
                        'expect', 'hyperscore', 'b_score', 'y_score',
                        'a_score', 'x_score', 'c_score', 'z_score',
                        'nextscore', 'delta', 'mh']} | {
-                   ('protein', 'expect'), ('protein', 'sumI')},
+                   ('protein', 'expect'), ('protein', 'sumI'),
+                   ('aa', 'modified')},
 
-            'bools': set(), 'lists': {'group', 'trace', 'attribute', 'protein'},
-            'floatlists': {('values', 'values')}, 'intlists': set(), 'charlists': set()}
+            'bools': set(),
+            'lists': {'group', 'trace', 'attribute', 'protein', 'aa'},
+            'floatlists': {('values', 'values')},
+            'intlists': set(), 'charlists': set()}
 
 _getinfo_env = {'keys': {'domain'}, 'schema_info': _schema_info,
     'get_info_smart': _get_info_smart}

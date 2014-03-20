@@ -15,6 +15,8 @@ New function :py:func:`pyteomics.fasta.decoy_chain`, a chained version of
 
 Fix in :py:func:`pyteomics.parser.parse` to cover some fancy corner cases.
 
+Bugfix in :py:mod:`tandem`: modification info is now fully extracted.
+
 2.3.0
 -----
 
