@@ -145,7 +145,12 @@ class ChargeList(list):
             self.extend(map(Charge,
                 re.split(r'(?:,\s*)|(?:\s*and\s*)', args[0])))
         else:
-            super(ChargeList, self).__init__(*args, **kwargs)
+            try:
+                super(ChargeList, self).__init__(
+                        sorted(set(args[0])), *args[1:], **kwargs)
+            except:
+                super(ChargeList, self).__init__(*args, **kwargs)
+            self[:] = map(Charge, self)
 
     def __str__(self):
         if len(self) > 1:
