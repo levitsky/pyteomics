@@ -724,8 +724,8 @@ def coverage(protein, peptides):
     Peptides can overlap. If a peptide is found multiple times in ``protein``,
     it contributes more to the overall coverage.
 
-    .. warning::
-        Modifications and terminal groups will not be handled correctly.
+    .. note::
+        Modifications and terminal groups are discarded.
 
     Parameters
     ----------
@@ -744,11 +744,13 @@ def coverage(protein, peptides):
     >>> coverage('PEPTIDES'*100, ['PEP', 'EPT'])
     0.5
     """
+    protein = re.sub(r'[^A-Z]', '', protein)
     mask = np.zeros(len(protein), dtype=np.int8)
     for peptide in peptides:
-        i = [m.start() for m in re.finditer('(?={})'.format(peptide), protein)]
-        for j in i:
-            mask[j:j+len(peptide)] = 1
+        indices = [m.start() for m in re.finditer(
+            '(?={})'.format(re.sub(r'[^A-Z]', '', peptide)), protein)]
+        for i in indices:
+            mask[i:i+len(peptide)] = 1
     return mask.sum(dtype=float) / mask.size
 
 
