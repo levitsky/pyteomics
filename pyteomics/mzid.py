@@ -186,3 +186,21 @@ def read(source, **kwargs):
     return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
 
 chain = aux._make_chain(read)
+
+def is_decoy(psm):
+    """Given a PSM dict, return :py:const:`True` if all proteins in the dict
+    are marked as decoy, and :py:const:`False` otherwise.
+
+    Parameters
+    ----------
+    psm : dict
+        A dict, as yielded by :py:func:`read`.
+
+    Returns
+    -------
+    out : bool
+    """
+    return all(pe['isDecoy'] for sii in psm['SpectrumIdentificationItem']
+            for pe in sii['PeptideEvidenceRef'])
+
+fdr = aux._make_fdr(is_decoy)
