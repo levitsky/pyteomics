@@ -27,7 +27,7 @@ class MassTest(unittest.TestCase):
             'H+': {0: (5.0, 1.0),
                    5: (5.0, 1.0)},
             }
-        
+
         self.mass_H = mass.nist_mass['H'][0][0]
         self.mass_O = mass.nist_mass['O'][0][0]
         self.test_aa_mass = {'X': 1.0, 'Y': 2.0, 'Z': 3.0}
@@ -163,7 +163,7 @@ class MassTest(unittest.TestCase):
                                     mass_data=self.mass_data),
                 mass.calculate_mass(formula='ABCDE'+'H+%d' % (charge,),
                                     mass_data=self.mass_data))
-            
+
             self.assertEqual(
                 mass.calculate_mass(formula='ABCDE',
                                     ion_type='M', 
@@ -200,7 +200,7 @@ class MassTest(unittest.TestCase):
                 mass_data=self.mass_data),
             mass.Composition({'F[6]': 1, 'F[7]': 0},
                              mass_data=self.mass_data))
-        
+
         self.assertEqual(
             mass.most_probable_isotopic_composition(
                 formula='F10',
@@ -215,19 +215,19 @@ class MassTest(unittest.TestCase):
                 mass_data=self.mass_data),
             mass.Composition({'A': 20, 'F[6]': 7, 'F[7]': 3},
                              mass_data=self.mass_data))
-                        
+
     def test_isotopic_composition_abundance(self):
         for peplen in range(1,10):
             self.assertAlmostEqual(
                 mass.isotopic_composition_abundance(formula='F[6]' * peplen,
                                                     mass_data=self.mass_data),
                 self.mass_data['F'][6][1] ** peplen)
-            
+
             self.assertAlmostEqual(
                 mass.isotopic_composition_abundance(formula='AF[6]' * peplen,
                                                     mass_data=self.mass_data),
                 self.mass_data['F'][6][1] ** peplen)
-            
+
             self.assertAlmostEqual(
                 mass.isotopic_composition_abundance(
                     formula='A[1]F[6]' * peplen,
