@@ -74,6 +74,7 @@ Data
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import division
 import math
 from . import parser
 from .auxiliary import PyteomicsError, _xpath, _local_name
@@ -710,17 +711,16 @@ def isotopic_composition_abundance(*args, **kwargs):
 
     # Calculate relative abundance.
     mass_data = kwargs.get('mass_data', nist_mass)
-    relative_abundance = 1.0
+    num1, num2, denom = 1, 1, 1
     for element_name, isotope_dict in isotopic_composition.items():
-        relative_abundance *= math.factorial(sum(isotope_dict.values()))
+        num1 *= math.factorial(sum(isotope_dict.values()))
         for isotope_num, isotope_content in isotope_dict.items():
-            relative_abundance /= math.factorial(isotope_content)
+            denom *= math.factorial(isotope_content)
             if isotope_num:
-                relative_abundance *= (
-                    mass_data[element_name][isotope_num][1]
-                    ** isotope_content)
+                num2 *= (mass_data[element_name][isotope_num][1]
+                        ** isotope_content)
 
-    return relative_abundance
+    return num2 * (num1 / denom)
 
 std_aa_mass = {
     'G': 57.02146,
