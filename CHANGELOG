@@ -20,6 +20,9 @@ Bugfix in :py:mod:`tandem`: modification info is now fully extracted.
 In :py:mod:`mass`, :py:func:`isotopic_composition_abundance` is now able to
 calculate abundances for larger molecules.
 
+.. note::
+    Rounding errors may be significant in this case.
+
 2.3.0
 -----
 
