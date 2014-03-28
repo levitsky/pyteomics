@@ -9,29 +9,31 @@ for the most detailed information on the format.
 Data manipulation
 -----------------
 
-  :py:func:`read` - iterate through entries in a FASTA database
+  :py:func:`read` - iterate through entries in a FASTA database.
 
-  :py:func:`write` - write entries to a FASTA database
+  :py:func:`chain` - read multiple files at once.
 
-  :py:func:`parse` - parse a FASTA header
+  :py:func:`write` - write entries to a FASTA database.
+
+  :py:func:`parse` - parse a FASTA header.
 
 Decoy database generation
 -------------------------
 
-  :py:func:`decoy_sequence` - generate a decoy sequence from a given sequence
+  :py:func:`decoy_sequence` - generate a decoy sequence from a given sequence.
 
   :py:func:`decoy_db` - generate entries for a decoy database from a given FASTA
-  database
+  database.
 
-  :py:func:`decoy_chain` - a version of :py:func:`decoy_db` for multiple files
+  :py:func:`decoy_chain` - a version of :py:func:`decoy_db` for multiple files.
 
-  :py:func:`write_decoy_db` - generate a decoy database and print it to a file
+  :py:func:`write_decoy_db` - generate a decoy database and print it to a file.
 
 Auxiliary
 ----------
 
   :py:data:`std_parsers` - a dictionary with parsers for known FASTA header
-  formats
+  formats.
 
 -------------------------------------------------------------------------------
 """

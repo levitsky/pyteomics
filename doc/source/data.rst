@@ -21,6 +21,7 @@ General Notes
         >>> reader = mgf.read('tests/test.mgf')
         >>> for spectrum in reader:
         >>>    ...
+        >>> reader.close()
 
    ... but it is recommended to do:
 

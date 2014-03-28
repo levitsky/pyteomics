@@ -23,6 +23,8 @@ Functions
   :py:func:`read` - iterate through spectra in MGF file. Data from a
   single spectrum are converted to a human-readable dict.
 
+  :py:func:`chain` - read multiple files at once.
+
   :py:func:`read_header` - get a dict with common parameters for all spectra
   from the beginning of MGF file.
 
