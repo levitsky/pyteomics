@@ -23,12 +23,23 @@ Data access
   :py:func:`read` - iterate through peptide-spectrum matches in a pepXML
   file. Data for a single spectrum are converted to an easy-to-use dict.
 
+  :py:func:`chain` - read multiple files at once.
+
+  :py:func:`iterfind` - iterate over elements in a pepXML file.
+
+Miscellaneous
+-------------
+
+  :py:func:`fdr` - estimate the false discovery rate of a PSM set using the
+  target-decoy approach.
+
+  :py:func:`is_decoy` - determine whether a PSM is decoy or not.
+
   :py:func:`roc_curve` - get a receiver-operator curve (min peptideprophet
   probability is a sample vs. false discovery rate) of peptideprophet analysis.
 
   :py:func:`version_info` - get version information about the pepXML file.
 
-  :py:func:`iterfind` - iterate over elements in a pepXML file.
 
 -------------------------------------------------------------------------------
 """
@@ -349,7 +360,9 @@ chain = aux._make_chain(read)
 
 def is_decoy(psm, prefix='DECOY_'):
     """Given a PSM dict, return :py:const:`True` if all protein names for
-    the PSM start with ``prefix``, and :py:const:`False` otherwise.
+    the PSM start with ``prefix``, and :py:const:`False` otherwise. This
+    function might not work for some pepXML flavours. Use the source to get the
+    idea and suit it to your needs.
 
     Parameters
     ----------

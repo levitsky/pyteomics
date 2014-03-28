@@ -22,9 +22,14 @@ Data access
   single spectrum are converted to a human-readable dict. Spectra themselves are
   stored under 'm/z array' and 'intensity array' keys.
 
-  :py:func:`version_info` - get version information about the mzML file
+  :py:func:`chain` - read multiple mzML files at once.
 
   :py:func:`iterfind` - iterate over elements in the mzML file.
+
+Miscellaneous
+-------------
+
+  :py:func:`version_info` - get version information about the mzML file.
 
 -------------------------------------------------------------------------------
 

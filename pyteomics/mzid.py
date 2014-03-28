@@ -23,11 +23,22 @@ Data access
   :py:func:`read` - iterate through peptide-spectrum matches in a mzIdentML
   file. Data from a single PSM group are converted to a human-readable dict.
 
+  :py:func:`chain` - read multiple files at once.
+
   :py:func:`get_by_id` - get an element by its ID and extract the data from it.
+
+  :py:func:`iterfind` - iterate over elements in an mzIdentML file.
+
+Miscellaneous
+-------------
 
   :py:func:`version_info` - get information about mzIdentML version and schema.
 
-  :py:func:`iterfind` - iterate over elements in an mzIdentML file.
+  :py:func:`is_decoy` - determine if a "SpectrumIdentificationResult" should be
+  consiudered decoy.
+
+  :py:func:`fdr` - estimate the false discovery rate of a set of identifications
+  using the target-decoy approach.
 
 -------------------------------------------------------------------------------
 """

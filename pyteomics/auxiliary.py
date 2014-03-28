@@ -382,10 +382,14 @@ def _make_filter(read, is_decoy, key):
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better). The
             default is a function that extracts e-value from the PSM.
-        is_decoy : function, optional
+        is_decoy : callable, optional
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
             PSM should be considered decoy.
+
+            .. warning::
+                The default function may not work
+                with your files, because format flavours are too diverse!
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
@@ -432,6 +436,10 @@ def _make_fdr(is_decoy):
         is_decoy : callable, optional
             Shoould accept exactly one argument (PSM) and return a truthy value
             if the PSM is considered decoy. Default is :py:func:`is_decoy`.
+
+            .. warning::
+                The default function may not work
+                with your files, because format flavours are too diverse!
 
         Returns
         -------

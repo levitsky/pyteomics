@@ -23,6 +23,8 @@ Data access
   :py:func:`read` - iterate through peptide-spectrum matches in an X!Tandem
   output file. Data from a single PSM are converted to a human-readable dict.
 
+  :py:func:`chain` - read multiple files at once.
+
   :py:func:`filter` - iterate through peptide-spectrum matches in an X!Tandem
   output file, yielding only top PSMs and keeping false discovery rate (FDR) at
   the desired level. The FDR is estimated using the target-decoy approach (TDA).
