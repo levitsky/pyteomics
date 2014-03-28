@@ -23,6 +23,9 @@ class FastaTest(unittest.TestCase):
         self.fasta_file.seek(0)
         self.fasta_entries_long = list(read(self.fasta_file))
 
+    def tearDown(self):
+        self.fasta_file.close()
+
     def test_simple_read_long_comments(self):
         self.assertEqual(self.fasta_entries_long,
                          [('test sequence test sequence 2', 'TEST'),
