@@ -1,2 +1,5 @@
 .. automodule:: pyteomics.fasta
-   :members: 
+   :members:
+   :exclude-members: Protein
+
+   .. autofunction:: decoy_chain

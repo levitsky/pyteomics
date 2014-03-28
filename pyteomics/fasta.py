@@ -23,13 +23,15 @@ Decoy database generation
   :py:func:`decoy_db` - generate entries for a decoy database from a given FASTA
   database
 
+  :py:func:`decoy_chain` - a version of :py:func:`decoy_db` for multiple files
+
   :py:func:`write_decoy_db` - generate a decoy database and print it to a file
 
 Auxiliary
 ----------
 
-:py:data:`std_parsers` - a dictionary with parsers for known FASTA header
-formats.
+  :py:data:`std_parsers` - a dictionary with parsers for known FASTA header
+  formats
 
 -------------------------------------------------------------------------------
 """
@@ -369,6 +371,6 @@ def parse(header, flavour='auto', parsers=None):
 
 chain = aux._make_chain(read)
 decoy_chain = aux._make_chain(decoy_db)
-decoy_chain.__doc__ = """Generate a decoy db for multiple FASTA files.
+decoy_chain.__doc__ = """Generate a decoy database for multiple FASTA files.
 Positional arguments should be file names or file objects. Keyword arguments are
 passed to :py:func:`decoy_db`."""
