@@ -3,42 +3,11 @@ Data access
 
 The following section is dedicated to data manipulation. **Pyteomics** aims to
 support the most common formats of (LC-)MS/MS data, peptide identification
-files and protein databases.
+files and protein databases. Be sure to check out the general notes at the
+bottom.
 
-General Notes
--------------
+.. contents:: Document contents
 
- - Throughout this section we use
-   :py:func:`pyteomics.auxiliary.print_tree` to display the structure of the
-   data returned by various parsers.
-
- - All file parsers support the ``with`` syntax, but do not require it. So you
-   can do:
-
-   .. code-block :: python
-
-        >>> from pyteomics import mgf
-        >>> reader = mgf.read('tests/test.mgf')
-        >>> for spectrum in reader:
-        >>>    ...
-        >>> reader.close()
-
-   ... but it is recommended to do:
-
-   .. code-block :: python
-
-        >>> from pyteomics import mgf
-        >>> with mgf.read('tests/test.mgf') as reader:
-        >>>     for spectrum in reader:
-        >>>        ...
-
- - All modules described here have three functions for reading data:
-   :py:func:`read`, :py:func:`chain` and :py:func:`chain.from_iterable`.
-   The latter two (`added in version 2.3 <changelog.html>`_) are convenient for
-   reading multiple files of the same type.
-   ``chain('f1', 'f2')`` is equivalent to ``chain.from_iterable(['f1', 'f2'])``.
-   :py:func:`chain` and :py:func:`chain.from_iterable` only support the
-   ``with`` syntax.
 
 mzML
 ----
@@ -450,4 +419,80 @@ method. It currently supports two modes: *‘reverse’* and *‘random’*.
     ‘TPPIDEE'
     >>> fasta.decoy_sequence('PEPTIDE', 'random')
     'PTIDEPE'
+
+
+General Notes
+-------------
+
+ - Throughout this section we use
+   :py:func:`pyteomics.auxiliary.print_tree` to display the structure of the
+   data returned by various parsers.
+
+ - All file parsers support the ``with`` syntax, but do not require it. So you
+   can do:
+
+   .. code-block :: python
+
+        >>> from pyteomics import mgf
+        >>> reader = mgf.read('tests/test.mgf')
+        >>> for spectrum in reader:
+        >>>    ...
+        >>> reader.close()
+
+   ... but it is recommended to do:
+
+   .. code-block :: python
+
+        >>> from pyteomics import mgf
+        >>> with mgf.read('tests/test.mgf') as reader:
+        >>>     for spectrum in reader:
+        >>>        ...
+
+ - All modules described here have three functions for reading data:
+   :py:func:`read`, :py:func:`chain` and :py:func:`chain.from_iterable`.
+   The latter two (`added in version 2.3 <changelog.html>`_) are convenient for
+   reading multiple files of the same type.
+
+   ``chain('f1', 'f2')`` is equivalent to ``chain.from_iterable(['f1', 'f2'])``.
+   :py:func:`chain` and :py:func:`chain.from_iterable` only support the
+   ``with`` syntax. If you don't want to use the ``with`` syntax, you can just
+   use the :py:mod:`itertools` functions :py:func:`chain` and
+   :py:func:`chain.from_iterable`.
+
+ - Three modules for reading proteomics search engine output (:py:mod:`tandem`,
+   :py:mod:`pepxml` and :py:mod:`mzid`) expose similar functions
+   :py:func:`is_decoy`, :py:func:`fdr` and :py:func:`!filter`. These functions
+   implement the widely used Target-Decoy Approach to estimation of False
+   Discovery Rate (FDR).
+
+   The :py:func:`is_decoy` function is supposed to determine if a particular
+   spectrum identification is coming from the decoy database. In :py:mod:`tandem`
+   and :py:mod:`pepxml` this is done by checking if the protein description/name
+   starts with a certain prefix. In :py:mod:`mzid`, a boolean value that stores
+   this information in the PSM dict is used.
+
+   .. warning ::
+        Because of the variety of the software producing files in pepXML and
+        mzIdentML formats, the :py:func:`is_decoy` function provided in the
+        corresponding modules may not work for your specific files. In this case
+        you will have to refer to the source of
+        :py:func:`pyteomics.pepxml.is_decoy` and
+        :py:func:`pyteomics.mzid.is_decoy` and create your own function in a
+        similar manner.
+
+   The :py:func:`fdr` function estimates the FDR in a set of PSMs by counting
+   the decoy matches. Since it is using the :py:func:`is_decoy` function, the
+   warning above applies. You can supply a custom function so that :py:func:`fdr`
+   works for your data.
+
+   The :py:func:`!filter` function works like :py:func:`read`, but instead of
+   yielding all PSMs, it filters them to a certain level of FDR. PSM filtering
+   also requires counting decoy matches (see above), but it also implies sorting
+   the PSMs by some kind of a score. This score cannot be universal due to the
+   above-mentioned reasons, and it can be specified as a user-defined function.
+   So once again,
+
+   .. warning ::
+        The default parameters of :py:func:`!filter` may not work for your files.
+
 
