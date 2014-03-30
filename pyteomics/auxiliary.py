@@ -336,7 +336,7 @@ def _make_filter(read, is_decoy, key):
     the desired FDR level (estimated by TDA), returning the top PSMs
     sorted by ``key``.
     """
-    @_file_reader()
+    @_file_reader('rb')
     def filter(source, fdr, key=key, is_decoy=is_decoy, remove_decoy=True,
             *args, **kwargs):
         @_keepstate
@@ -381,7 +381,7 @@ def _make_filter(read, is_decoy, key):
         key : function, optional
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better). The
-            default is a function that extracts e-value from the PSM.
+            default is a function that tries to extract e-value from the PSM.
         is_decoy : callable, optional
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
@@ -389,7 +389,7 @@ def _make_filter(read, is_decoy, key):
 
             .. warning::
                 The default function may not work
-                with your files, because format flavours are too diverse!
+                with your files, because format flavours are diverse.
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
@@ -728,7 +728,6 @@ def _make_iterfind(env):
         Note: you can do much more powerful filtering using plain Python.
         The path can be absolute or "free". Please don't specify
         namespaces."""
-
         try:
             path, _, cond = re.match(pattern_path, path).groups()
         except AttributeError:
