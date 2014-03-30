@@ -215,3 +215,5 @@ def is_decoy(psm):
             for pe in sii['PeptideEvidenceRef'])
 
 fdr = aux._make_fdr(is_decoy)
+filter = aux._make_filter(read, is_decoy, lambda x: min(
+    sii['mascot:expectation value'] for sii in x['SpectrumIdentificationItem']))
