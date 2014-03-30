@@ -4,7 +4,7 @@
 New functions for filtering to a certain FDR level based on target-decoy
 strategy, as well as for FDR estimation, in :py:mod:`pyteomics.tandem`,
 :py:mod:`pyteomics.pepxml` and :py:mod:`pyteomics.mzid`. The functions are
-called :py:func:`filter` (beware of shadowing the built-in function) and
+called :py:func:`!filter` (beware of shadowing the built-in function) and
 :py:func:`fdr` (in each of the modules).
 
 New function :py:func:`pyteomics.parser.coverage` for sequence coverage
