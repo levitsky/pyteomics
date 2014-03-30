@@ -379,3 +379,5 @@ def is_decoy(psm, prefix='DECOY_'):
             for sh in psm['search_hit'] for protein in sh['proteins'])
 
 fdr = aux._make_fdr(is_decoy)
+filter = aux._make_filter(read, is_decoy, lambda x: min(
+    sh['search_score']['expect'] for sh in x['search_hit']))
