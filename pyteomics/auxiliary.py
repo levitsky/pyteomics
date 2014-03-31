@@ -202,18 +202,20 @@ def memoize(maxsize=1000):
 
 ### Next section: File reading helpers
 def _keepstate(func):
-    """Decorator to help keep the position in open file passed as first argument
-    to functions"""
+    """Decorator to help keep the position in open files passed as
+    positional arguments to functions"""
     @wraps(func)
-    def wrapped(source, *args, **kwargs):
-        if hasattr(source, 'seek') and hasattr(source, 'tell'):
-            pos = source.tell()
-            source.seek(0)
-            res = func(source, *args, **kwargs)
-            source.seek(pos)
-            return res
-        else:
-            return func(source, *args, **kwargs)
+    def wrapped(*args, **kwargs):
+        positions = [getattr(arg, 'seek', None) and
+                getattr(arg, 'tell', type(None))() for arg in args]
+        for arg, pos in zip(args, positions):
+            if pos is not None:
+                arg.seek(0)
+        res = func(*args, **kwargs)
+        for arg, pos in zip(args, positions):
+            if pos is not None:
+                arg.seek(pos)
+        return res
     return wrapped
 
 class _file_obj(object):
@@ -336,19 +338,23 @@ def _make_filter(read, is_decoy, key):
     the desired FDR level (estimated by TDA), returning the top PSMs
     sorted by ``key``.
     """
-    @_file_reader('rb')
-    def filter(source, fdr, key=key, is_decoy=is_decoy, remove_decoy=True,
-            *args, **kwargs):
+    def filter(*args, **kwargs):
         @_keepstate
-        def get_scores(s):
+        def get_scores(*args, **kwargs):
             scores = []
-            with read(s, *args, **kwargs) as f:
+            with read(*args, **kwargs) as f:
                 for psm in f:
-                    scores.append((key(psm), is_decoy(psm)))
+                    scores.append((keyf(psm), isdecoy(psm)))
             return scores
-
+        try:
+            fdr = kwargs.pop('fdr')
+        except KeyError:
+            raise PyteomicsError('Keyword argument required: fdr')
+        isdecoy = kwargs.pop('is_decoy', is_decoy)
+        remove_decoy = kwargs.pop('remove_decoy', True)
+        keyf = kwargs.pop('key', key)
         dtype = np.dtype([('score', np.float64), ('is_decoy', np.uint8)])
-        scores = np.array(get_scores(source), dtype=dtype)
+        scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
         scores.sort()
         cumsum = scores['is_decoy'].cumsum(dtype=np.float32)
         ind = np.arange(1, scores.size+1)
@@ -360,22 +366,22 @@ def _make_filter(read, is_decoy, key):
             cutoff = scores[np.nonzero(local_fdr <= fdr)[0][-1]][0]
         except IndexError:
             cutoff = scores['score'].min() - 1.
-        with read(source, *args, **kwargs) as f:
+        with read(*args, **kwargs) as f:
             for p in f:
-                if not remove_decoy or not is_decoy(p):
-                    if key(p) <= cutoff:
+                if not remove_decoy or not isdecoy(p):
+                    if keyf(p) <= cutoff:
                         yield p
 
     @contextmanager
-    def _filter(source, fdr, key=key, is_decoy=is_decoy, remove_decoy=True,
-            *args, **kwargs):
-        """Read ``source`` and yield only the PSMs that form a set with
+    def _filter(*args, **kwargs):
+        """Read ``args`` and yield only the PSMs that form a set with
         estimated false discovery rate (FDR) not exceeding ``fdr``.
 
         Parameters
         ----------
-        source : file or str
-            File to read PSMs from.
+        positional args : file or str
+            Files to read PSMs from. All positional arguments are treated as
+            files. The rest of the arguments must be named.
         fdr : float, 0 <= fdr <= 1
             Desired FDR level.
         key : function, optional
@@ -400,14 +406,13 @@ def _make_filter(read, is_decoy, key):
                ``remove_decoy`` is :py:const:`True`, then formula 1 is used
                to control output FDR, otherwise it's formula 2.
 
-        *args, **kwargs : passed to the :py:func:`read` function.
+        **kwargs : passed to the :py:func:`chain` function.
 
         Yields
         ------
         out : iterator
         """
-        yield filter(source, fdr, key=key, is_decoy=is_decoy,
-                remove_decoy=remove_decoy, *args, **kwargs)
+        yield filter(*args, **kwargs)
 
     return _filter
 
