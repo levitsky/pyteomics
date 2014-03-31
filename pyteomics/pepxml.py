@@ -25,6 +25,8 @@ Data access
 
   :py:func:`chain` - read multiple files at once.
 
+  :py:func:`filter` - filter PSMs from a pepXML file to a specific FDR using TDA.
+
   :py:func:`iterfind` - iterate over elements in a pepXML file.
 
 Miscellaneous

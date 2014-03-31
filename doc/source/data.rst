@@ -490,6 +490,8 @@ General Notes
    also requires counting decoy matches (see above), but it also implies sorting
    the PSMs by some kind of a score. This score cannot be universal due to the
    above-mentioned reasons, and it can be specified as a user-defined function.
+   For instance, the default sorting key in :py:func:`pyteomics.mzid.filter` is
+   only expected to work with mzIdentML files created with Mascot.
    So once again,
 
    .. warning ::

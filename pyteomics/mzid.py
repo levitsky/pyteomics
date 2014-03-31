@@ -20,10 +20,13 @@ key.
 Data access
 -----------
 
-  :py:func:`read` - iterate through peptide-spectrum matches in a mzIdentML
+  :py:func:`read` - iterate through peptide-spectrum matches in an mzIdentML
   file. Data from a single PSM group are converted to a human-readable dict.
 
   :py:func:`chain` - read multiple files at once.
+
+  :py:func:`filter` - read an mzIdentML file and filter to a certain FDR using
+  TDA.
 
   :py:func:`get_by_id` - get an element by its ID and extract the data from it.
 
