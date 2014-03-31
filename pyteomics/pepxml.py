@@ -384,3 +384,4 @@ def is_decoy(psm, prefix='DECOY_'):
 fdr = aux._make_fdr(is_decoy)
 filter = aux._make_filter(chain, is_decoy, lambda x: min(
     sh['search_score']['expect'] for sh in x['search_hit']))
+filter.chain = aux._make_chain(filter)
