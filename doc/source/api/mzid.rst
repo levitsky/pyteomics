@@ -5,3 +5,4 @@
     .. autofunction:: iterfind
     .. autofunction:: fdr
     .. autofunction:: chain
+    .. autofunction:: filter
