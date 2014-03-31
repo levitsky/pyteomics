@@ -220,3 +220,4 @@ def is_decoy(psm):
 fdr = aux._make_fdr(is_decoy)
 filter = aux._make_filter(chain, is_decoy, lambda x: min(
     sii['mascot:expectation value'] for sii in x['SpectrumIdentificationItem']))
+filter.chain = aux._make_chain(filter)

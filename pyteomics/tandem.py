@@ -175,3 +175,4 @@ def is_decoy(psm, prefix='DECOY_'):
 
 filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'))
 fdr = aux._make_fdr(is_decoy)
+filter.chain = aux._make_chain(filter)
