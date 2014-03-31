@@ -25,8 +25,8 @@ Data access
 
   :py:func:`chain` - read multiple files at once.
 
-  :py:func:`filter` - read an mzIdentML file and filter to a certain FDR using
-  TDA.
+  :py:func:`filter` - read a chain of mzIdentML files and filter to a certain
+  FDR using TDA.
 
   :py:func:`get_by_id` - get an element by its ID and extract the data from it.
 
