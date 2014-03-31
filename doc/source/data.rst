@@ -485,7 +485,7 @@ General Notes
    warning above applies. You can supply a custom function so that :py:func:`fdr`
    works for your data.
 
-   The :py:func:`!filter` function works like :py:func:`read`, but instead of
+   The :py:func:`!filter` function works like :py:func:`chain`, but instead of
    yielding all PSMs, it filters them to a certain level of FDR. PSM filtering
    also requires counting decoy matches (see above), but it also implies sorting
    the PSMs by some kind of a score. This score cannot be universal due to the
