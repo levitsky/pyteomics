@@ -154,11 +154,11 @@ class MassTest(unittest.TestCase):
                  for atom in 'ABCDE'
                  for isotope in self.mass_data[atom] if isotope != 0]))
 
-        # Calculate m/z of an ion. 
+        # Calculate m/z of an ion.
         for charge in [1,2,3]:
             self.assertEqual(
                 mass.calculate_mass(formula='ABCDE',
-                                    ion_type='M', 
+                                    ion_type='M',
                                     charge=charge,
                                     mass_data=self.mass_data),
                 mass.calculate_mass(formula='ABCDE'+'H+%d' % (charge,),
@@ -166,7 +166,7 @@ class MassTest(unittest.TestCase):
 
             self.assertEqual(
                 mass.calculate_mass(formula='ABCDE',
-                                    ion_type='M', 
+                                    ion_type='M',
                                     charge=charge,
                                     mass_data=self.mass_data),
                 (mass.calculate_mass(formula='ABCDE',
@@ -178,7 +178,7 @@ class MassTest(unittest.TestCase):
                 auxiliary.PyteomicsError,
                 mass.calculate_mass,
                 **{'formula': 'ABCDEH+%d' % charge,
-                   'ion_type': 'M', 
+                   'ion_type': 'M',
                    'charge': charge,
                    'mass_data': self.mass_data})
 
@@ -240,6 +240,13 @@ class MassTest(unittest.TestCase):
         self.assertGreater(0.00001,
                 max(abs(x['mono_mass'] - mass.calculate_mass(x['composition'],
                     mass_data=db.mass_data)) for x in db.mods))
+
+    def test_nist_mass(self):
+        self.assertTrue(all(abs(g[0][1]-1) < 1e-6 for g in mass.nist_mass.values()))
+        for g in mass.nist_mass.values():
+            s = sum(p[1] for num, p in g.items() if num)
+            self.assertTrue(abs(s-1) < 1e-6 or abs(s) < 1e-6)
+
 
 if __name__ == '__main__':
     unittest.main()
