@@ -25,10 +25,19 @@ Data access
 
   :py:func:`chain` - read multiple files at once.
 
+  :py:func:`chain.from_iterable` - read multiple files at once, using an
+  iterable of files.
+
   :py:func:`filter` - iterate through peptide-spectrum matches in a chain of
   X!Tandem output files, yielding only top PSMs and keeping false discovery rate
   (FDR) at the desired level. The FDR is estimated using the target-decoy
   approach (TDA).
+
+  :py:func:`filter.chain` - chain a series of filters applied independently to
+  several files.
+
+  :py:func:`filter.chain.from_iterable` - chain a series of filters applied
+  independently to an iterable of files.
 
   :py:func:`iterfind` - iterate over elements in an X!Tandem file.
 
@@ -154,7 +163,7 @@ _get_info = aux._make_get_info(_getinfo_env)
 _iterfind_env = {'get_info_smart': _get_info_smart}
 iterfind = aux._make_iterfind(_iterfind_env)
 
-chain = aux._make_chain(read)
+chain = aux._make_chain(read, 'read')
 
 def is_decoy(psm, prefix='DECOY_'):
     """Given a PSM dict, return :py:const:`True` if all protein names for
@@ -175,4 +184,4 @@ def is_decoy(psm, prefix='DECOY_'):
 
 filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'))
 fdr = aux._make_fdr(is_decoy)
-filter.chain = aux._make_chain(filter)
+filter.chain = aux._make_chain(filter, 'filter')

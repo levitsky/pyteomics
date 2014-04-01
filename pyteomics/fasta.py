@@ -13,6 +13,9 @@ Data manipulation
 
   :py:func:`chain` - read multiple files at once.
 
+  :py:func:`chain.from_iterable` - read multiple files at once, using an
+  iterable of files.
+
   :py:func:`write` - write entries to a FASTA database.
 
   :py:func:`parse` - parse a FASTA header.
@@ -26,6 +29,9 @@ Decoy database generation
   database.
 
   :py:func:`decoy_chain` - a version of :py:func:`decoy_db` for multiple files.
+
+  :py:func:`decoy_chain.from_iterable` - like :py:func:`decoy_chain`, but with
+  an iterable of files.
 
   :py:func:`write_decoy_db` - generate a decoy database and print it to a file.
 
@@ -371,8 +377,5 @@ def parse(header, flavour='auto', parsers=None):
                     'The error message was: {}'.format(
                         flavour, e.message))
 
-chain = aux._make_chain(read)
-decoy_chain = aux._make_chain(decoy_db)
-decoy_chain.__doc__ = """Generate a decoy database for multiple FASTA files.
-Positional arguments should be file names or file objects. Keyword arguments are
-passed to :py:func:`decoy_db`."""
+chain = aux._make_chain(read, 'read')
+decoy_chain = aux._make_chain(decoy_db, 'decoy_db')

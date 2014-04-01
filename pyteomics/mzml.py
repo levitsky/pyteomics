@@ -24,6 +24,9 @@ Data access
 
   :py:func:`chain` - read multiple mzML files at once.
 
+  :py:func:`chain.from_iterable` - read multiple files at once, using an
+  iterable of files.
+
   :py:func:`iterfind` - iterate over elements in the mzML file.
 
 Miscellaneous
@@ -214,4 +217,4 @@ _get_info = aux._make_get_info(_getinfo_env)
 _iterfind_env = {'get_info_smart': _get_info_smart}
 iterfind = aux._make_iterfind(_iterfind_env)
 
-chain = aux._make_chain(read)
+chain = aux._make_chain(read, 'read')
