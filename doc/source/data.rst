@@ -1,4 +1,4 @@
-Data access
+Data Access
 ===========
 
 The following section is dedicated to data manipulation. **Pyteomics** aims to
@@ -462,8 +462,8 @@ General Notes
  - Three modules for reading proteomics search engine output (:py:mod:`tandem`,
    :py:mod:`pepxml` and :py:mod:`mzid`) expose similar functions
    :py:func:`is_decoy`, :py:func:`fdr` and :py:func:`!filter`. These functions
-   implement the widely used Target-Decoy Approach to estimation of False
-   Discovery Rate (FDR).
+   (`added in version 2.4 <changelog.html>`_) implement the widely used
+   Target-Decoy Approach (TDA) to estimation of False Discovery Rate (FDR).
 
    The :py:func:`is_decoy` function is supposed to determine if a particular
    spectrum identification is coming from the decoy database. In :py:mod:`tandem`
@@ -497,4 +497,8 @@ General Notes
    .. warning ::
         The default parameters of :py:func:`!filter` may not work for your files.
 
-
+   There are also :py:func:`filter.chain` and
+   :py:func:`filter.chain.from_iterable`. These are different from
+   :py:func:`!filter` in that they apply FDR filtering to all files separately
+   and then provide a reader over top PSMs of all files, whereas
+   :py:func:`!filter` pools all PSMs together and applies a single threshold.
