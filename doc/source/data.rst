@@ -7,6 +7,7 @@ files and protein databases. Be sure to check out the general notes at the
 bottom.
 
 .. contents:: Document contents
+    :backlinks: top
 
 
 mzML

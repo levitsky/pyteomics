@@ -7,7 +7,7 @@ strategy, as well as for FDR estimation, in :py:mod:`pyteomics.tandem`,
 called :py:func:`!filter` (beware of shadowing the built-in function) and
 :py:func:`fdr` (in each of the modules). Chained versions
 :py:func:`filter.chain` and :py:func:`filter.chain.from_iterable` are
-also available. See `Data Access <data.html>`_ for more info.
+also available. See `Data Access <data.html#general-notes>`_ for more info.
 
 New function :py:func:`pyteomics.parser.coverage` for sequence coverage
 calculation.
