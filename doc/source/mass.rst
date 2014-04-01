@@ -250,11 +250,3 @@ is stored in the :py:data:`pyteomics.mass.nist_mass` dictionary.
 The zero key stands for the unspecified isotopic state. The data about isotopes
 are stored as tuples *(accurate mass, relative abundance)*.
 
-At the moment, :py:data:`pyteomics.mass.nist_mass` has the data only for the
-atoms of organic chemistry, the proton and electron:
-
-.. code-block:: python
-
-    >>> mass.nist_mass.keys()
-    ['H+', 'C', 'P', 'e*', 'H', 'S', 'O', 'N']
-
