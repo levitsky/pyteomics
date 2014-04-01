@@ -25,6 +25,9 @@ Functions
 
   :py:func:`chain` - read multiple files at once.
 
+  :py:func:`chain.from_iterable` - read multiple files at once, using an
+  iterable of files.
+
   :py:func:`read_header` - get a dict with common parameters for all spectra
   from the beginning of MGF file.
 
@@ -264,4 +267,4 @@ def write(spectra, output=None, header=''):
         output.write('\n')
         return output
 
-chain = aux._make_chain(read)
+chain = aux._make_chain(read, 'read')

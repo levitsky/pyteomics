@@ -296,7 +296,7 @@ def _file_reader(mode='r'):
         return helper
     return decorator
 
-def _make_chain(reader):
+def _make_chain(reader, readername):
     def _iter(files, kwargs):
         for f in files:
             with reader(f, **kwargs) as r:
@@ -311,24 +311,23 @@ def _make_chain(reader):
 
     @contextmanager
     def _chain(*files, **kwargs):
-        """Chain :py:func:`read` for several files.
-        Positional arguments should be file names or file objects.
-        Keyword arguments are passed to the :py:func:`read` function.
-        """
         yield chain(*files, **kwargs)
+    _chain.__doc__ = """Chain :py:func:`{0}` for several files.
+        Positional arguments should be file names or file objects.
+        Keyword arguments are passed to the :py:func:`{0}` function.
+        """.format(readername)
 
     @contextmanager
     def _from_iterable(files, **kwargs):
-        """Chain :py:func:`read` for several files.
-        Keyword arguments are passed to the :py:func:`read` function.
+        yield from_iterable(files, **kwargs)
+    _from_iterable.__doc__ = """Chain :py:func:`{0}` for several files.
+        Keyword arguments are passed to the :py:func:`{0}` function.
 
         Parameters
         ----------
         files : iterable
             Iterable of file names or file objects.
-        """
-        yield from_iterable(files, **kwargs)
-
+        """.format(readername)
 
     _chain.from_iterable = _from_iterable
     return _chain
@@ -444,7 +443,7 @@ def _make_fdr(is_decoy):
 
             .. warning::
                 The default function may not work
-                with your files, because format flavours are too diverse!
+                with your files, because format flavours are diverse.
 
         Returns
         -------

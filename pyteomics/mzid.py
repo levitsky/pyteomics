@@ -25,8 +25,17 @@ Data access
 
   :py:func:`chain` - read multiple files at once.
 
+  :py:func:`chain.from_iterable` - read multiple files at once, using an
+  iterable of files.
+
   :py:func:`filter` - read a chain of mzIdentML files and filter to a certain
   FDR using TDA.
+
+  :py:func:`filter.chain` - chain a series of filters applied independently to
+  several files.
+
+  :py:func:`filter.chain.from_iterable` - chain a series of filters applied
+  independently to an iterable of files.
 
   :py:func:`get_by_id` - get an element by its ID and extract the data from it.
 
@@ -199,7 +208,7 @@ def read(source, **kwargs):
 
     return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
 
-chain = aux._make_chain(read)
+chain = aux._make_chain(read, 'read')
 
 def is_decoy(psm):
     """Given a PSM dict, return :py:const:`True` if all proteins in the dict
@@ -220,4 +229,4 @@ def is_decoy(psm):
 fdr = aux._make_fdr(is_decoy)
 filter = aux._make_filter(chain, is_decoy, lambda x: min(
     sii['mascot:expectation value'] for sii in x['SpectrumIdentificationItem']))
-filter.chain = aux._make_chain(filter)
+filter.chain = aux._make_chain(filter, 'filter')
