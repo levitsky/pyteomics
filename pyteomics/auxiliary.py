@@ -7,6 +7,13 @@ Math
 
   :py:func:`linear_regression` - a wrapper for numpy linear regression
 
+Data access
+-----------
+
+  :py:func:`filter` - filter PSMs to specified FDR level using TDA.
+
+  :py:func:`filter.chain` - a chained version of :py:func:`filter`.
+
 Project infrastructure
 ----------------------
 
@@ -420,6 +427,7 @@ def _make_filter(read, is_decoy, key):
 _iter = _make_chain(contextmanager(lambda x: (yield x)), 'iter')
 
 filter = _make_filter(_iter, None, None)
+filter.chain = _make_chain(filter, 'filter')
 filter.__doc__ = """Iterate ``args`` and yield only the PSMs that form a set with
         estimated false discovery rate (FDR) not exceeding ``fdr``.
 
