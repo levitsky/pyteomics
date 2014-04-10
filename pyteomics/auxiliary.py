@@ -354,6 +354,8 @@ def _make_filter(read, is_decoy, key):
         keyf = kwargs.pop('key', key)
         dtype = np.dtype([('score', np.float64), ('is_decoy', np.uint8)])
         scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
+        if not scores.size:
+            raise StopIteration
         scores.sort()
         cumsum = scores['is_decoy'].cumsum(dtype=np.float32)
         ind = np.arange(1, scores.size+1)
@@ -383,7 +385,7 @@ def _make_filter(read, is_decoy, key):
             files. The rest of the arguments must be named.
         fdr : float, 0 <= fdr <= 1
             Desired FDR level.
-        key : function, optional
+        key : callable, optional
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better). The
             default is a function that tries to extract e-value from the PSM.
@@ -407,13 +409,48 @@ def _make_filter(read, is_decoy, key):
 
         **kwargs : passed to the :py:func:`chain` function.
 
-        Yields
-        ------
+        Returns
+        -------
         out : iterator
         """
         yield filter(*args, **kwargs)
 
     return _filter
+
+_iter = _make_chain(contextmanager(lambda x: (yield x)), 'iter')
+
+filter = _make_filter(_iter, None, None)
+filter.__doc__ = """Iterate ``args`` and yield only the PSMs that form a set with
+        estimated false discovery rate (FDR) not exceeding ``fdr``.
+
+        Parameters
+        ----------
+        positional args : containers
+            Containers to read PSMs from. All positional arguments are chained.
+            Keyword arguments are not supported, except for those listed below.
+        fdr : float, 0 <= fdr <= 1
+            Desired FDR level.
+        key : callable
+            A function used for sorting of PSMs. Should accept exactly one
+            argument (PSM) and return a number (the smaller the better).
+        is_decoy : callable
+            A function used to determine if the PSM is decoy or not. Should
+            accept exactly one argument (PSM) and return a truthy value if the
+            PSM should be considered decoy.
+        remove_decoy : bool, optional
+            Defines whether decoy matches should be removed from the output.
+            Default is :py:const:`True`.
+
+            .. note:: If set to :py:const:`False`, then the decoy PSMs will
+               be taken into account when estimating FDR. Refer to the
+               documentation of :py:func:`fdr` for math; basically, if
+               ``remove_decoy`` is :py:const:`True`, then formula 1 is used
+               to control output FDR, otherwise it's formula 2.
+
+        Returns
+        -------
+        out : iterator
+        """
 
 def _make_fdr(is_decoy):
     def fdr(psms, formula=1, is_decoy=is_decoy):
