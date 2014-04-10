@@ -503,3 +503,8 @@ General Notes
    :py:func:`!filter` in that they apply FDR filtering to all files separately
    and then provide a reader over top PSMs of all files, whereas
    :py:func:`!filter` pools all PSMs together and applies a single threshold.
+
+   If you want to filter a list representing PSMs in arbitrary format, you can
+   use :py:func:`pyteomics.auxiliary.filter`. Instead of files it takes lists
+   (or other containers) of PSMs. The rest is the same as for other
+   :py:func:`!filter` functions.
