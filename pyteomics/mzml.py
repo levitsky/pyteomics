@@ -167,47 +167,8 @@ def _get_info_smart(source, element, **kw):
 _version_info_env = {'format': 'mzML', 'element': 'mzML'}
 version_info = aux._make_version_info(_version_info_env)
 
-_schema_defaults = {'ints': {
-    ('spectrum', 'index'),
-     ('instrumentConfigurationList', 'count'),
-     ('binaryDataArray', 'encodedLength'),
-     ('cvList', 'count'),
-     ('binaryDataArray', 'arrayLength'),
-     ('scanWindowList', 'count'),
-     ('componentList', 'count'),
-     ('sourceFileList', 'count'),
-     ('productList', 'count'),
-     ('referenceableParamGroupList', 'count'),
-     ('scanList', 'count'),
-     ('spectrum', 'defaultArrayLength'),
-     ('dataProcessingList', 'count'),
-     ('sourceFileRefList', 'count'),
-     ('scanSettingsList', 'count'),
-     ('selectedIonList', 'count'),
-     ('chromatogram', 'defaultArrayLength'),
-     ('precursorList', 'count'),
-     ('chromatogram', 'index'),
-     ('processingMethod', 'order'),
-     ('targetList', 'count'),
-     ('sampleList', 'count'),
-     ('softwareList', 'count'),
-     ('binaryDataArrayList', 'count'),
-     ('spectrumList', 'count'),
-     ('chromatogramList', 'count')},
-        'floats': {},
-        'bools': {},
-        'lists': {'scan', 'spectrum', 'sample', 'cv', 'dataProcessing',
-            'cvParam', 'source', 'userParam', 'detector', 'product',
-            'referenceableParamGroupRef', 'selectedIon', 'sourceFileRef',
-            'binaryDataArray', 'analyzer', 'scanSettings',
-            'instrumentConfiguration', 'chromatogram', 'target',
-            'processingMethod', 'precursor', 'sourceFile',
-            'referenceableParamGroup', 'contact', 'scanWindow', 'software'},
-        'intlists': {},
-        'floatlists': {},
-        'charlists': {}}
 _schema_env = {'format': 'mzML', 'version_info': version_info,
-        'default_version': '1.1.0', 'defaults': _schema_defaults}
+        'default_version': '1.1.0', 'defaults': aux._mzml_schema_defaults}
 _schema_info = aux._make_schema_info(_schema_env)
 
 _getinfo_env = {'keys': {'binaryDataArrayList'}, 'schema_info': _schema_info,
