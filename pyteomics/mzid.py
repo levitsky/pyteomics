@@ -116,56 +116,11 @@ def get_by_id(source, elem_id):
                 elem.clear()
     return None
 
-_schema_defaults = {'ints': {('DBSequence', 'length'),
-                     ('IonType', 'charge'),
-                     ('BibliographicReference', 'year'),
-                     ('SubstitutionModification', 'location'),
-                     ('PeptideEvidence', 'end'),
-                     ('Enzyme', 'missedCleavages'),
-                     ('PeptideEvidence', 'start'),
-                     ('Modification', 'location'),
-                     ('SpectrumIdentificationItem', 'rank'),
-                     ('SpectrumIdentificationItem', 'chargeState')},
-            'floats': {('SubstitutionModification', 'monoisotopicMassDelta'),
-                     ('SpectrumIdentificationItem', 'experimentalMassToCharge'),
-                     ('Residue', 'mass'),
-                     ('SpectrumIdentificationItem', 'calculatedPI'),
-                     ('Modification', 'avgMassDelta'),
-                     ('SearchModification', 'massDelta'),
-                     ('Modification', 'monoisotopicMassDelta'),
-                     ('SubstitutionModification', 'avgMassDelta'),
-                     ('SpectrumIdentificationItem', 'calculatedMassToCharge')},
-            'bools': {('PeptideEvidence', 'isDecoy'),
-                     ('SearchModification', 'fixedMod'),
-                     ('Enzymes', 'independent'),
-                     ('Enzyme', 'semiSpecific'),
-                     ('SpectrumIdentificationItem', 'passThreshold'),
-                     ('ProteinDetectionHypothesis', 'passThreshold')},
-            'lists': {'SourceFile', 'SpectrumIdentificationProtocol',
-                    'ProteinDetectionHypothesis', 'SpectraData', 'Enzyme',
-                    'Modification', 'MassTable', 'DBSequence',
-                    'InputSpectra', 'cv', 'IonType', 'SearchDatabaseRef',
-                    'Peptide', 'SearchDatabase', 'ContactRole', 'cvParam',
-                    'ProteinAmbiguityGroup', 'SubSample',
-                    'SpectrumIdentificationItem', 'TranslationTable',
-                    'AmbiguousResidue', 'SearchModification',
-                    'SubstitutionModification', 'PeptideEvidenceRef',
-                    'PeptideEvidence', 'SpecificityRules',
-                    'SpectrumIdentificationResult', 'Filter', 'FragmentArray',
-                    'InputSpectrumIdentifications', 'BibliographicReference',
-                    'SpectrumIdentification', 'Sample', 'Affiliation',
-                    'PeptideHypothesis',
-                    'Measure', 'SpectrumIdentificationItemRef'},
-            'intlists': {('IonType', 'index'), ('MassTable', 'msLevel')},
-            'floatlists': {('FragmentArray', 'values')},
-            'charlists': {('Modification', 'residues'),
-                    ('SearchModification', 'residues')}}
-
 _version_info_env = {'format': 'mzIdentML', 'element': 'MzIdentML'}
 version_info = aux._make_version_info(_version_info_env)
 
 _schema_env = {'format': 'MzIdentML', 'version_info': version_info,
-        'default_version': '1.1.0', 'defaults': _schema_defaults}
+        'default_version': '1.1.0', 'defaults': aux._mzid_schema_defaults}
 _schema_info = aux._make_schema_info(_schema_env)
 
 # 'keys' should contain keys whose value is a dict
