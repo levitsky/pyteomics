@@ -14,6 +14,8 @@ Data access
 
   :py:func:`filter.chain` - a chained version of :py:func:`filter`.
 
+  :py:func:`fdr` - estimate FDR in a set of PSMs using TDA.
+
 Project infrastructure
 ----------------------
 
@@ -507,6 +509,7 @@ def _make_fdr(is_decoy):
         return 2. * decoy / total
     return fdr
 
+fdr = _make_fdr(None)
 ### End of file helpers section ###
 
 def _parse_charge(s, list_only=False):
