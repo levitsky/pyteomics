@@ -1,3 +1,10 @@
+2.4.1
+-----
+
+New function :py:func:`pyteomics.auxiliary.filter` for filtering lists
+of PSMs not coming directly from files in supported formats. Also, a
+format-agnostic helper function :py:func:`pyteomics.auxiliary.fdr`.
+
 2.4.0
 -----
 
