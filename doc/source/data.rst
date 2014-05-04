@@ -484,11 +484,12 @@ General Notes
    The :py:func:`fdr` function estimates the FDR in a set of PSMs by counting
    the decoy matches. Since it is using the :py:func:`is_decoy` function, the
    warning above applies. You can supply a custom function so that :py:func:`fdr`
-   works for your data.
+   works for your data. :py:func:`fdr` can also be imported from,
+    :py:mod:`auxiliary`, where it has no default for :py:func:`is_decoy`.
 
    The :py:func:`!filter` function works like :py:func:`chain`, but instead of
    yielding all PSMs, it filters them to a certain level of FDR. PSM filtering
-   also requires counting decoy matches (see above), but it also implies sorting
+   requires counting decoy matches, too (see above), but it also implies sorting
    the PSMs by some kind of a score. This score cannot be universal due to the
    above-mentioned reasons, and it can be specified as a user-defined function.
    For instance, the default sorting key in :py:func:`pyteomics.mzid.filter` is
@@ -503,3 +504,8 @@ General Notes
    :py:func:`!filter` in that they apply FDR filtering to all files separately
    and then provide a reader over top PSMs of all files, whereas
    :py:func:`!filter` pools all PSMs together and applies a single threshold.
+
+   If you want to filter a list representing PSMs in arbitrary format, you can
+   use :py:func:`pyteomics.auxiliary.filter`. Instead of files it takes lists
+   (or other containers) of PSMs. The rest is the same as for other
+   :py:func:`!filter` functions.
