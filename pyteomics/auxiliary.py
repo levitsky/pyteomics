@@ -510,6 +510,35 @@ def _make_fdr(is_decoy):
     return fdr
 
 fdr = _make_fdr(None)
+fdr.__doc__ = """Estimate FDR of a data set using TDA.
+        Two formulas can be used. The first one (default) is:
+
+        .. math::
+
+                FDR = \\frac{N_{decoy}}{N_{target}}
+
+        The second formula is:
+
+        .. math::
+
+                FDR = \\frac{2 * N_{decoy}}{N_{total}}
+
+        Parameters
+        ----------
+        psms : iterable
+            An iterable of PSMs.
+        formula : int, optional
+            Can be either 1 or 2, defines which formula should be used for FDR
+            estimation. Default is 1.
+        is_decoy : callable
+            Shoould accept exactly one argument (PSM) and return a truthy value
+            if the PSM is considered decoy. Default is :py:func:`is_decoy`.
+
+        Returns
+        -------
+        out : float
+            The estimation of FDR, between 0 and 1.
+        """
 ### End of file helpers section ###
 
 def _parse_charge(s, list_only=False):
