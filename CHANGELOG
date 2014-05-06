@@ -1,3 +1,10 @@
+2.4.2
+-----
+
+Bugfix in :py:func:`pyteomics.mass.most_probable_isotopic_composition`.
+The bug manifested itself after version **2.4.0**, when
+:py:data:`pyteomics.mass.nist_mass` was expanded.
+
 2.4.1
 -----
 
