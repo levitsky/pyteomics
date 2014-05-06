@@ -198,23 +198,25 @@ class MassTest(unittest.TestCase):
             mass.most_probable_isotopic_composition(
                 formula='F',
                 mass_data=self.mass_data),
-            mass.Composition({'F[6]': 1, 'F[7]': 0},
-                             mass_data=self.mass_data))
+            (mass.Composition({'F[6]': 1, 'F[7]': 0},
+                             mass_data=self.mass_data), 0.7))
 
         self.assertEqual(
             mass.most_probable_isotopic_composition(
                 formula='F10',
                 mass_data=self.mass_data),
-            mass.Composition({'F[6]': 7, 'F[7]': 3},
-                             mass_data=self.mass_data))
+            (mass.Composition({'F[6]': 7, 'F[7]': 3},
+                             mass_data=self.mass_data),
+            (0.3)**3 * (0.7)**7 * 120))
 
         self.assertEqual(
             mass.most_probable_isotopic_composition(
                 formula='A20F10',
                 elements_with_isotopes = ['F'],
                 mass_data=self.mass_data),
-            mass.Composition({'A': 20, 'F[6]': 7, 'F[7]': 3},
-                             mass_data=self.mass_data))
+            (mass.Composition({'A': 20, 'F[6]': 7, 'F[7]': 3},
+                             mass_data=self.mass_data),
+            (0.3)**3 * (0.7)**7 * 120))
 
     def test_isotopic_composition_abundance(self):
         for peplen in range(1,10):
