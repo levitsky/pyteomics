@@ -634,7 +634,9 @@ def most_probable_isotopic_composition(*args, **kwargs):
             isotopic_composition[element_name] = composition[element_name]
 
     return (isotopic_composition,
-            isotopic_composition_abundance(isotopic_composition))
+            isotopic_composition_abundance(
+                composition=isotopic_composition,
+                mass_data=mass_data))
 
 def isotopic_composition_abundance(*args, **kwargs):
     """Calculate the relative abundance of a given isotopic composition
