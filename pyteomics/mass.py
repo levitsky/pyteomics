@@ -608,7 +608,8 @@ def most_probable_isotopic_composition(*args, **kwargs):
             # Take the two most abundant isotopes.
             first_iso, second_iso = sorted(
                 [(i[0], i[1][1])
-                 for i in mass_data[element_name].items() if i[0]])[:2]
+                     for i in mass_data[element_name].items() if i[0]],
+                key=lambda x: -x[1])[:2]
 
             # Write the number of isotopes of the most abundant type.
             first_iso_str = _make_isotope_string(element_name, first_iso[0])
