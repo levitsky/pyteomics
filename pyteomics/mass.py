@@ -559,10 +559,10 @@ def calculate_mass(*args, **kwargs):
 def most_probable_isotopic_composition(*args, **kwargs):
     """Calculate the most probable isotopic composition of a peptide
     molecule/ion defined by a sequence string, parsed sequence,
-    chemical formula or Composition object.
+    chemical formula or :py:class:`Composition` object.
 
-    Note that if a sequence string is supplied then the isotopic
-    composition is calculated for a polypeptide with standard
+    Note that if a sequence string without terminal groups is supplied then the
+    isotopic composition is calculated for a polypeptide with standard
     terminal groups (H- and -OH).
 
     For each element, only two most abundant isotopes are considered.
@@ -575,20 +575,21 @@ def most_probable_isotopic_composition(*args, **kwargs):
         A polypeptide sequence string in modX notation.
     parsed_sequence : list of str, optional
         A polypeptide sequence parsed into a list of amino acids.
-    composition : Composition, optional
-        A Composition object with the elemental composition of a substance.
+    composition : :py:class:`Composition`, optional
+        A :py:class:`Composition` object with the elemental composition of a
+        substance.
     elements_with_isotopes : list of str
         A list of elements to be considered in isotopic distribution
         (by default, every element has a isotopic distribution).
     aa_comp : dict, optional
         A dict with the elemental composition of the amino acids (the
-        default value is std_aa_comp).
+        default value is :py:data:`std_aa_comp`).
     mass_data : dict, optional
         A dict with the masses of chemical elements (the default
-        value is :py:data:`nist_mass`). 
+        value is :py:data:`nist_mass`).
     ion_comp : dict, optional
         A dict with the relative elemental compositions of peptide ion
-        fragments (default is std_ion_comp).
+        fragments (default is :py:data:`std_ion_comp`).
 
     Returns
     -------
@@ -632,7 +633,8 @@ def most_probable_isotopic_composition(*args, **kwargs):
         else:
             isotopic_composition[element_name] = composition[element_name]
 
-    return isotopic_composition
+    return (isotopic_composition,
+            isotopic_composition_abundance(isotopic_composition))
 
 def isotopic_composition_abundance(*args, **kwargs):
     """Calculate the relative abundance of a given isotopic composition
