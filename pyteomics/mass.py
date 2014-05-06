@@ -78,7 +78,7 @@ from __future__ import division
 import math
 from . import parser
 from .auxiliary import PyteomicsError, _xpath, _local_name
-from .auxiliary import _nist_mass as nist_mass
+from .auxiliary import _nist_mass
 from itertools import chain
 from collections import defaultdict
 try:
@@ -90,6 +90,14 @@ from datetime import datetime
 import re
 import operator
 
+nist_mass = _nist_mass
+"""
+A dict with the exact element masses downloaded from the NIST website:
+http://www.nist.gov/pml/data/comp.cfm . There are entries for each
+element containing the masses and relative abundances of several
+abundant isotopes and a separate entry for undefined isotope with zero
+key, mass of the most abundant isotope and 1.0 abundance.
+"""
 
 def _make_isotope_string(element_name, isotope_num):
     """Form a string label for an isotope."""
@@ -638,7 +646,7 @@ def isotopic_composition_abundance(*args, **kwargs):
         A Composition object with the isotopic composition of a substance.
     mass_data : dict, optional
         A dict with the masses of chemical elements (the default
-        value is :py:data:`nist_mass`). 
+        value is :py:data:`nist_mass`).
 
     Returns
     -------

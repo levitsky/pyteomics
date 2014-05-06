@@ -4162,13 +4162,6 @@ _nist_mass = {'Ac': {0: (227, 1.0),
   109: (108.94924, 0.0),
   110: (109.95287, 0.0)},
  'e*': {0: (0.00054857990943, 1.0)}}
-"""
-A dict with the exact element masses downloaded from the NIST website:
-http://www.nist.gov/pml/data/comp.cfm . There are entries for each
-element containing the masses and relative abundances of several
-abundant isotopes and a separate entry for undefined isotope with zero
-key, mass of the most abundant isotope and 1.0 abundance.
-"""
 
 _mzml_schema_defaults = {'ints': {
     ('spectrum', 'index'),
