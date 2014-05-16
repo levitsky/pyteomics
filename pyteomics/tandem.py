@@ -129,7 +129,7 @@ def read(source, read_schema=True):
        An iterator over dicts with PSM properties.
     """
 
-    for g in iterfind(source, 'group[type=model]',
+    for g in iterfind(source, 'group[type="model"]',
             recursive=True, read_schema=True):
         del g['type']
         yield g
