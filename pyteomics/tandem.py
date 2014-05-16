@@ -73,9 +73,9 @@ from . import auxiliary as aux
 def _get_info_smart(source, element, **kw):
     info = _get_info(source, element, **kw)
     # handy simplifications below
-    if isinstance(info.get('note'), dict
-            ) and set(info['note']) == {'label', 'note'}:
-        info['note'] = info['note']['note']
+    if isinstance(info.get('note'), list
+            ) and info['note'] and set(info['note'][0]) == {'label', 'note'}:
+        info['note'] = info['note'][0]['note']
     if 'protein' in info and 'label' in info:
         del info['label']
     if 'group' in info:
