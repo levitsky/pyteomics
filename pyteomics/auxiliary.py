@@ -68,6 +68,7 @@ import sys
 from contextlib import contextmanager
 import socket
 import warnings
+import ast
 warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
 
 class PyteomicsError(Exception):
@@ -795,7 +796,7 @@ def _make_iterfind(env):
             lhs, sign, rhs = re.match(pattern_cond, cond).groups()
             if lhs in d:
                 return getattr(operator, func[sign])(
-                        d[lhs], type(d[lhs])(rhs))
+                        d[lhs], ast.literal_eval(rhs))
             return False
         except (AttributeError, KeyError, ValueError):
             raise PyteomicsError('Invalid condition: ' + cond)
