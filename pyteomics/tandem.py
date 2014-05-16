@@ -152,7 +152,7 @@ def _schema_info(_, **kw):
                    ('aa', 'modified')},
 
             'bools': set(),
-            'lists': {'group', 'trace', 'attribute', 'protein', 'aa'},
+            'lists': {'group', 'trace', 'attribute', 'protein', 'aa', 'note'},
             'floatlists': {('values', 'values')},
             'intlists': set(), 'charlists': set()}
 
