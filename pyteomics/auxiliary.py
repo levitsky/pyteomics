@@ -774,8 +774,8 @@ def _make_get_info(env):
     return _get_info
 
 def _make_iterfind(env):
-    pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}\w+)\])?')
-    pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*(\w+)$')
+    pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
+    pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
     def get_rel_path(element, names):
         if not names:
             yield element
@@ -794,7 +794,8 @@ def _make_iterfind(env):
         try:
             lhs, sign, rhs = re.match(pattern_cond, cond).groups()
             if lhs in d:
-                return getattr(operator, func[sign])(d[lhs], type(d[lhs])(rhs))
+                return getattr(operator, func[sign])(
+                        d[lhs], type(d[lhs])(rhs))
             return False
         except (AttributeError, KeyError, ValueError):
             raise PyteomicsError('Invalid condition: ' + cond)
