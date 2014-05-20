@@ -5,15 +5,20 @@ setup.py file for pyteomics
 '''
 
 from distutils.core import setup
+import re
 
-version = open('VERSION').readline().strip()
+with open('VERSION') as v:
+    version = next(v).strip()
+with open('README') as r, open('INSTALL') as i:
+    long_description = re.sub(r':py:\w+:`([^`]+)`',
+            lambda m: '**{}**'.format(m.group(1)),
+            ''.join(r) + '\n' + ''.join(i))
 
 setup(
     name = 'pyteomics',
     version = version,
     description      = '''A framework for proteomics data analysis.''',
-    long_description = (''.join(open('README').readlines()) + '\n'
-                        + ''.join(open('INSTALL').readlines())),
+    long_description = long_description,
     author           = 'Anton Goloborodko & Lev Levitsky',
     author_email     = 'pyteomics@googlegroups.com',
     url              = 'http://hg.theorchromo.ru/pyteomics',
