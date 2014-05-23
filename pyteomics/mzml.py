@@ -55,7 +55,6 @@ Miscellaneous
 import numpy
 import zlib
 import base64
-from lxml import etree
 from . import auxiliary as aux
 
 def _decode_base64_data_array(source, dtype, is_compressed):
