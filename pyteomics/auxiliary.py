@@ -56,7 +56,6 @@ Helpers
 from __future__ import print_function
 import numpy as np
 from functools import wraps
-from lxml import etree
 from traceback import format_exc
 import re
 import operator
@@ -581,6 +580,7 @@ def _local_name(element):
     return element.tag
 
 def _make_version_info(env):
+    from lxml import etree
     @_keepstate
     def version_info(source):
         with _file_obj(source, 'rb') as s:
@@ -609,6 +609,7 @@ def _make_version_info(env):
     return version_info
 
 def _make_schema_info(env):
+    from lxml import etree
     @memoize(100)
     def _schema_info(source, **kwargs):
         read_schema = kwargs.get('read_schema', True)
@@ -796,6 +797,7 @@ def _make_get_info(env):
     return _get_info
 
 def _make_iterfind(env):
+    from lxml import etree
     pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
     pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
     def get_rel_path(element, names):
