@@ -362,6 +362,7 @@ def _make_filter(read, is_decoy, key):
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         remove_decoy = kwargs.pop('remove_decoy', True)
         keyf = kwargs.pop('key', key)
+        ratio = kwargs.pop('ratio', 1)
         dtype = np.dtype([('score', np.float64), ('is_decoy', np.uint8)])
         scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
         if not scores.size:
@@ -370,9 +371,9 @@ def _make_filter(read, is_decoy, key):
         cumsum = scores['is_decoy'].cumsum(dtype=np.float32)
         ind = np.arange(1, scores.size+1)
         if remove_decoy:
-            local_fdr =  cumsum / (ind - cumsum)
+            local_fdr =  cumsum / (ind - cumsum) / ratio
         else:
-            local_fdr = 2. * cumsum / ind
+            local_fdr = 2. * cumsum / ind / ratio
         try:
             cutoff = scores[np.nonzero(local_fdr <= fdr)[0][-1]][0]
         except IndexError:
@@ -416,6 +417,11 @@ def _make_filter(read, is_decoy, key):
                documentation of :py:func:`fdr` for math; basically, if
                ``remove_decoy`` is :py:const:`True`, then formula 1 is used
                to control output FDR, otherwise it's formula 2.
+        ratio : float, optional
+            The size ratio between the decoy and target databases. Default is
+            ``1``. In theory, the "size" of the database is the number of
+            theoretical peptides eligible for assignment to spectra that are
+            produced by *in silico* cleavage of that database.
 
         **kwargs : passed to the :py:func:`chain` function.
 
@@ -457,6 +463,11 @@ filter.__doc__ = """Iterate ``args`` and yield only the PSMs that form a set wit
                documentation of :py:func:`fdr` for math; basically, if
                ``remove_decoy`` is :py:const:`True`, then formula 1 is used
                to control output FDR, otherwise it's formula 2.
+        ratio : float, optional
+            The size ratio between the decoy and target databases. Default is
+            ``1``. In theory, the "size" of the database is the number of
+            theoretical peptides eligible for assignment to spectra that are
+            produced by *in silico* cleavage of that database.
 
         Returns
         -------
@@ -464,19 +475,19 @@ filter.__doc__ = """Iterate ``args`` and yield only the PSMs that form a set wit
         """
 
 def _make_fdr(is_decoy):
-    def fdr(psms, formula=1, is_decoy=is_decoy):
+    def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1):
         """Estimate FDR of a data set using TDA.
         Two formulas can be used. The first one (default) is:
 
         .. math::
 
-                FDR = \\frac{N_{decoy}}{N_{target}}
+                FDR = \\frac{N_{decoy}}{N_{target} * ratio}
 
         The second formula is:
 
         .. math::
 
-                FDR = \\frac{2 * N_{decoy}}{N_{total}}
+                FDR = \\frac{2 * N_{decoy}}{N_{total} * ratio}
 
         Parameters
         ----------
@@ -484,7 +495,7 @@ def _make_fdr(is_decoy):
             An iterable of PSMs, e.g. as returned by :py:func:`read`.
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
-            estimation. Default is 1.
+            estimation. Default is ``1``.
         is_decoy : callable, optional
             Shoould accept exactly one argument (PSM) and return a truthy value
             if the PSM is considered decoy. Default is :py:func:`is_decoy`.
@@ -492,6 +503,11 @@ def _make_fdr(is_decoy):
             .. warning::
                 The default function may not work
                 with your files, because format flavours are diverse.
+        ratio : float, optional
+            The size ratio between the decoy and target databases. Default is
+            ``1``. In theory, the "size" of the database is the number of
+            theoretical peptides eligible for assignment to spectra that are
+            produced by *in silico* cleavage of that database.
 
         Returns
         -------
@@ -506,8 +522,8 @@ def _make_fdr(is_decoy):
             if is_decoy(psm):
                 decoy += 1
         if formula == 1:
-            return float(decoy) / (total - decoy)
-        return 2. * decoy / total
+            return float(decoy) / (total - decoy) / ratio
+        return 2. * decoy / total / ratio
     return fdr
 
 fdr = _make_fdr(None)
@@ -516,13 +532,13 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA.
 
         .. math::
 
-                FDR = \\frac{N_{decoy}}{N_{target}}
+                FDR = \\frac{N_{decoy}}{N_{target} * ratio}
 
         The second formula is:
 
         .. math::
 
-                FDR = \\frac{2 * N_{decoy}}{N_{total}}
+                FDR = \\frac{2 * N_{decoy}}{N_{total} * ratio}
 
         Parameters
         ----------
@@ -530,10 +546,15 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA.
             An iterable of PSMs.
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
-            estimation. Default is 1.
+            estimation. Default is ``1``.
         is_decoy : callable
             Shoould accept exactly one argument (PSM) and return a truthy value
-            if the PSM is considered decoy. Default is :py:func:`is_decoy`.
+            if the PSM is considered decoy.
+        ratio : float, optional
+            The size ratio between the decoy and target databases. Default is
+            ``1``. In theory, the "size" of the database is the number of
+            theoretical peptides eligible for assignment to spectra that are
+            produced by *in silico* cleavage of that database.
 
         Returns
         -------

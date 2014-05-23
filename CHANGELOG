@@ -1,3 +1,9 @@
+2.4.3
+-----
+
+Added the ``ratio`` keyword argument for FDR calculation.
+Minor changes in :py:func:`iterfind` functions of file parsers.
+
 2.4.2
 -----
 
