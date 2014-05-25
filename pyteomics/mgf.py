@@ -54,7 +54,6 @@ Functions
 from . import auxiliary as aux
 import numpy as np
 from itertools import cycle
-import sys
 
 _comments = '#;!/'
 

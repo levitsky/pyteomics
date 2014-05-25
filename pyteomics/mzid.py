@@ -70,7 +70,6 @@ Miscellaneous
 #   limitations under the License.
 
 from lxml import etree
-import numpy
 from . import auxiliary as aux
 
 def _get_info_smart(source, element, **kw):
@@ -100,7 +99,7 @@ def get_by_id(source, elem_id):
 
     Returns
     -------
-    out : :py:class:`lxml.etree.Element` or :py:const:`None`
+    out : :py:class:`dict` or :py:const:`None`
     """
 
     found = False

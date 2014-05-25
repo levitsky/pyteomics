@@ -341,6 +341,8 @@ def _make_chain(reader, readername):
     _chain.from_iterable = _from_iterable
     return _chain
 
+### End of file helpers section ###
+
 def _make_filter(read, is_decoy, key):
     """Create a function that reads PSMs from a file and filters them to
     the desired FDR level (estimated by TDA), returning the top PSMs
@@ -560,7 +562,6 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA.
         out : float
             The estimation of FDR, between 0 and 1.
         """
-### End of file helpers section ###
 
 def _parse_charge(s, list_only=False):
     if not list_only:
