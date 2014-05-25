@@ -235,7 +235,7 @@ def write(spectra, output=None, header=''):
             output.write('\n\nBEGIN IONS\n')
             output.write('\n'.join('{}={}'.format(key.upper(), val)
                 for key, val in spectrum['params'].items() if not
-                (val == head_dict.get(key) and
+                (val == head_dict.get(key) or
                 # handle PEPMASS and CHARGE later
                 (key.lower() in {'pepmass', 'charge'} and
                     not isinstance(val, (str, int, float))))))
