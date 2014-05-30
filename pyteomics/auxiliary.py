@@ -797,8 +797,10 @@ def _make_get_info(env):
         return info
     return _get_info
 
+
 def _make_iterfind(env):
     from lxml import etree
+    parse = memoize(1)(etree.parse)
     pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
     pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
     def get_rel_path(element, names):
@@ -826,7 +828,7 @@ def _make_iterfind(env):
             raise PyteomicsError('Invalid condition: ' + cond)
 
     @_keepstate
-    def iterfind(source, path, optimize='ram', **kwargs):
+    def iterfind(source, path, iterative=True, **kwargs):
         """Parse ``source`` and yield info on elements with specified local name
         or by specified "XPath". Only local names separated with slashes are
         accepted. An asterisk (`*`) means any element.
@@ -848,9 +850,9 @@ def _make_iterfind(env):
         else:
             absolute = True
             path = path[1:]
-        nodes = path.rstrip('/').lower().split('/')
-        localname = nodes[0]
-        if optimize == 'ram':
+        nodes = path.rstrip('/').split('/')
+        if iterative:
+            localname = nodes[0].lower()
             found = False
             for ev, elem in etree.iterparse(source, events=('start', 'end'),
                     remove_comments=True):
@@ -871,16 +873,14 @@ def _make_iterfind(env):
                             found -= 1
                     if not found:
                         elem.clear()
-        elif optimize == 'cpu':
-            tree = etree.parse(source)
+        else:
+            tree = parse(source)
             xpath = ('/' if absolute else '//') + '/'.join(
                     '*[local-name()="{}"]'.format(node) for node in nodes)
             for elem in tree.xpath(xpath):
                 info = env['get_info_smart'](source, elem, **kwargs)
                 if cond is None or satisfied(info, cond):
                     yield info
-        else:
-            raise PyteomicsError('"optimize" must be either "cpu" or "ram".')
     return iterfind
 
 def _xpath(tree, path, ns=None):

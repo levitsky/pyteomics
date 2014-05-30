@@ -131,7 +131,7 @@ _iterfind_env = {'get_info_smart': _get_info_smart}
 iterfind = aux._make_iterfind(_iterfind_env)
 
 @aux._file_reader('rb')
-def read(source, **kwargs):
+def read(source, iterative=False, **kwargs):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
@@ -160,7 +160,8 @@ def read(source, **kwargs):
        An iterator over the dicts with PSM properties.
     """
 
-    return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
+    return iterfind(source, 'SpectrumIdentificationResult',
+            iterative=iterative, **kwargs)
 
 chain = aux._make_chain(read, 'read')
 
