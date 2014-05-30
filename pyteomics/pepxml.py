@@ -150,7 +150,7 @@ def _get_info_smart(source, element, **kw):
     return info
 
 @aux._file_reader('rb')
-def read(source, read_schema=True):
+def read(source, read_schema=True, iterative=False):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
@@ -170,7 +170,8 @@ def read(source, read_schema=True):
        An iterator over dicts with PSM properties.
     """
 
-    return iterfind(source, 'spectrum_query', read_schema=read_schema)
+    return iterfind(source, 'spectrum_query',
+            read_schema=read_schema, iterative=iterative)
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.
