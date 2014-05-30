@@ -826,7 +826,7 @@ def _make_iterfind(env):
             raise PyteomicsError('Invalid condition: ' + cond)
 
     @_keepstate
-    def iterfind(source, path, **kwargs):
+    def iterfind(source, path, optimize='ram', **kwargs):
         """Parse ``source`` and yield info on elements with specified local name
         or by specified "XPath". Only local names separated with slashes are
         accepted. An asterisk (`*`) means any element.
@@ -839,7 +839,6 @@ def _make_iterfind(env):
             path, _, cond = re.match(pattern_path, path).groups()
         except AttributeError:
             raise PyteomicsError('Invalid path: ' + path)
-
         if path.startswith('//') or not path.startswith('/'):
             absolute = False
             if path.startswith('//'):
@@ -851,25 +850,37 @@ def _make_iterfind(env):
             path = path[1:]
         nodes = path.rstrip('/').lower().split('/')
         localname = nodes[0]
-        found = False
-        for ev, elem in etree.iterparse(source, events=('start', 'end'),
-                remove_comments=True):
-            name_lc = _local_name(elem).lower()
-            if ev == 'start':
-                if name_lc == localname or localname == '*':
-                    found += True
-            else:
-                if name_lc == localname or localname == '*':
-                    if (absolute and elem.getparent() is None
-                            ) or not absolute:
-                        for child in get_rel_path(elem, nodes[1:]):
-                            info = env['get_info_smart'](source, child, **kwargs)
-                            if cond is None or satisfied(info, cond):
-                                yield info
-                    if not localname == '*':
-                        found -= 1
-                if not found:
-                    elem.clear()
+        if optimize == 'ram':
+            found = False
+            for ev, elem in etree.iterparse(source, events=('start', 'end'),
+                    remove_comments=True):
+                name_lc = _local_name(elem).lower()
+                if ev == 'start':
+                    if name_lc == localname or localname == '*':
+                        found += True
+                else:
+                    if name_lc == localname or localname == '*':
+                        if (absolute and elem.getparent() is None
+                                ) or not absolute:
+                            for child in get_rel_path(elem, nodes[1:]):
+                                info = env['get_info_smart'](
+                                        source, child, **kwargs)
+                                if cond is None or satisfied(info, cond):
+                                    yield info
+                        if not localname == '*':
+                            found -= 1
+                    if not found:
+                        elem.clear()
+        elif optimize == 'cpu':
+            tree = etree.parse(source)
+            xpath = ('/' if absolute else '//') + '/'.join(
+                    '*[local-name()="{}"]'.format(node) for node in nodes)
+            for elem in tree.xpath(xpath):
+                info = env['get_info_smart'](source, elem, **kwargs)
+                if cond is None or satisfied(info, cond):
+                    yield info
+        else:
+            raise PyteomicsError('"optimize" must be either "cpu" or "ram".')
     return iterfind
 
 def _xpath(tree, path, ns=None):

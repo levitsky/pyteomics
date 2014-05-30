@@ -109,7 +109,7 @@ def _get_info_smart(source, element, **kw):
     return info
 
 @aux._file_reader('rb')
-def read(source, read_schema=True):
+def read(source, read_schema=True, optimize='cpu'):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
@@ -130,7 +130,7 @@ def read(source, read_schema=True):
     """
 
     for g in iterfind(source, 'group[type="model"]',
-            recursive=True, read_schema=True):
+            recursive=True, read_schema=True, optimize=optimize):
         del g['type']
         yield g
 
