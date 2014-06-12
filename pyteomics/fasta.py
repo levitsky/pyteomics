@@ -368,14 +368,14 @@ def parse(header, flavour='auto', parsers=None):
                 return parser(header)
             except:
                 pass
-        raise aux.PyteomicsError('Unknown FASTA header format.')
+        raise aux.PyteomicsError('Unknown FASTA header format: ' + header)
     elif flavour.lower() in known:
         try:
             return known[flavour.lower()](header)
         except Exception as e:
-            raise aux.PyteomicsError('Could not parse as {}. '
-                    'The error message was: {}'.format(
-                        flavour, e.message))
+            raise aux.PyteomicsError('Could not parse header as "{}". '
+                    'The error message was: {}: {}. Header: "{}"'.format(
+                        flavour, type(e).__name__, e.args[0], header))
 
 chain = aux._make_chain(read, 'read')
 decoy_chain = aux._make_chain(decoy_db, 'decoy_db')
