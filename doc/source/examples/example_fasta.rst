@@ -144,7 +144,7 @@ the sample allows us to use a scatter plot.
 
 .. literalinclude:: example_fasta.py
    :language: python
-   :lines: 100-111
+   :lines: 97-109
 
 As you can see, the retention times of peptides lying in a narrow mass window
 turn out to be substantially correlated.
