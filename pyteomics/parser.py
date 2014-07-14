@@ -536,7 +536,7 @@ def cleave(sequence, rule, missed_cleavages=0, overlap=False):
     for i in chain(map(lambda x: x.end(), re.finditer(rule, sequence)),
                    [None]):
         cleavage_sites.append(i)
-        for j in range(0, len(cleavage_sites)-1):
+        for j in range(len(cleavage_sites)-1):
             peptides.add(sequence[cleavage_sites[j]:cleavage_sites[-1]])
         if overlap and i not in {0, None}:
             peptides.update(
@@ -547,44 +547,44 @@ def cleave(sequence, rule, missed_cleavages=0, overlap=False):
     return peptides
 
 expasy_rules = {
-    'arg-c':         'R',
-    'asp-n':         '\w(?=D)',
-    'bnps-skatole' : 'W',
-    'caspase 1':     '(?<=[FWYL]\w[HAT])D(?=[^PEDQKR])',
-    'caspase 2':     '(?<=DVA)D(?=[^PEDQKR])',
-    'caspase 3':     '(?<=DMQ)D(?=[^PEDQKR])',
-    'caspase 4':     '(?<=LEV)D(?=[^PEDQKR])',
-    'caspase 5':     '(?<=[LW]EH)D',
-    'caspase 6':     '(?<=VE[HI])D(?=[^PEDQKR])',
-    'caspase 7':     '(?<=DEV)D(?=[^PEDQKR])',
-    'caspase 8':     '(?<=[IL]ET)D(?=[^PEDQKR])',
-    'caspase 9':     '(?<=LEH)D',
-    'caspase 10':    '(?<=IEA)D',
-    'chymotrypsin low specificity' : '([FY](?=[^P]))|(W(?=[^MP]))',
-    'chymotrypsin high specificity':
-        '([FLY](?=[^P]))|(W(?=[^MP]))|(M(?=[^PY]))|(H(?=[^DMPW]))',
-    'clostripain':   'R',
-    'cnbr':          'M',
-    'enterokinase':  '(?<=[DN][DN][DN])K',
-    'factor xa':     '(?<=[AFGILTVM][DE]G)R',
-    'formic acid':   'D',
-    'glutamyl endopeptidase': 'E',
-    'granzyme b':    '(?<=IEP)D',
-    'hydroxylamine': 'N(?=G)',
-    'iodosobezoic acid': 'W',
-    'lysc':          'K',
-    'ntcb':          '\w(?=C)',
-    'pepsin ph1.3':  '((?<=[^HKR][^P])[^R](?=[FLWY][^P]))|'
-                     '((?<=[^HKR][^P])[FLWY](?=\w[^P]))',
-    'pepsin ph2.0':  '((?<=[^HKR][^P])[^R](?=[FL][^P]))|'
-                     '((?<=[^HKR][^P])[FL](?=\w[^P]))',
-    'proline endopeptidase': '(?<=[HKR])P(?=[^P])',
-    'proteinase k':  '[AEFILTVWY]',
-    'staphylococcal peptidase i': '(?<=[^E])E',
-    'thermolysin':   '[^DE](?=[AFILMV])',
-    'thrombin':      '((?<=G)R(?=G))|'
-                     '((?<=[AFGILTVM][AFGILTVWA]P)R(?=[^DE][^DE]))',
-    'trypsin':       '([KR](?=[^P]))|((?<=W)K(?=P))|((?<=M)R(?=P))'
+    'arg-c':         r'R',
+    'asp-n':         r'\w(?=D)',
+    'bnps-skatole' : r'W',
+    'caspase 1':     r'(?<=[FWYL]\w[HAT])D(?=[^PEDQKR])',
+    'caspase 2':     r'(?<=DVA)D(?=[^PEDQKR])',
+    'caspase 3':     r'(?<=DMQ)D(?=[^PEDQKR])',
+    'caspase 4':     r'(?<=LEV)D(?=[^PEDQKR])',
+    'caspase 5':     r'(?<=[LW]EH)D',
+    'caspase 6':     r'(?<=VE[HI])D(?=[^PEDQKR])',
+    'caspase 7':     r'(?<=DEV)D(?=[^PEDQKR])',
+    'caspase 8':     r'(?<=[IL]ET)D(?=[^PEDQKR])',
+    'caspase 9':     r'(?<=LEH)D',
+    'caspase 10':    r'(?<=IEA)D',
+    'chymotrypsin high specificity' : r'([FY](?=[^P]))|(W(?=[^MP]))',
+    'chymotrypsin low specificity':
+        r'([FLY](?=[^P]))|(W(?=[^MP]))|(M(?=[^PY]))|(H(?=[^DMPW]))',
+    'clostripain':   r'R',
+    'cnbr':          r'M',
+    'enterokinase':  r'(?<=[DE]{3})K',
+    'factor xa':     r'(?<=[AFGILTVM][DE]G)R',
+    'formic acid':   r'D',
+    'glutamyl endopeptidase': r'E',
+    'granzyme b':    r'(?<=IEP)D',
+    'hydroxylamine': r'N(?=G)',
+    'iodosobezoic acid': r'W',
+    'lysc':          r'K',
+    'ntcb':          r'\w(?=C)',
+    'pepsin ph1.3':  r'((?<=[^HKR][^P])[^R](?=[FLWY][^P]))|'
+                     r'((?<=[^HKR][^P])[FLWY](?=\w[^P]))',
+    'pepsin ph2.0':  r'((?<=[^HKR][^P])[^R](?=[FL][^P]))|'
+                     r'((?<=[^HKR][^P])[FL](?=\w[^P]))',
+    'proline endopeptidase': r'(?<=[HKR])P(?=[^P])',
+    'proteinase k':  r'[AEFILTVWY]',
+    'staphylococcal peptidase i': r'(?<=[^E])E',
+    'thermolysin':   r'[^DE](?=[AFILMV])',
+    'thrombin':      r'((?<=G)R(?=G))|'
+                     r'((?<=[AFGILTVM][AFGILTVWA]P)R(?=[^DE][^DE]))',
+    'trypsin':       r'([KR](?=[^P]))|((?<=W)K(?=P))|((?<=M)R(?=P))'
     }
 """
 This dict contains regular expressions for cleavage rules of the most
