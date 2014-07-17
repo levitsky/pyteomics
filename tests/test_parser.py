@@ -62,8 +62,6 @@ class ParserTest(unittest.TestCase):
                 self.assertIn(elem, seq)
             self.assertTrue(any(elem == seq
                 for elem in cleave(seq, expasy_rules['trypsin'], len(seq))))
-            self.assertTrue(any(elem == seq
-                for elem in cleave(seq, expasy_rules['trypsin'], len(seq), overlap=True)))
 
     def test_isoforms_simple(self):
         self.assertEqual(

@@ -497,25 +497,21 @@ def amino_acid_composition(sequence,
     return aa_dict
 
 @memoize()
-def cleave(sequence, rule, missed_cleavages=0, overlap=False):
+def cleave(sequence, rule, missed_cleavages=0):
     """Cleaves a polypeptide sequence using a given rule.
 
     Parameters
     ----------
     sequence : str
         The sequence of a polypeptide.
-    rule : str
-        A string with a regular expression describing the C-terminal site of
-        cleavage.
+    rule : str or compiled regex
+        A regular expression describing the site of cleavage. It is recommended
+        to design the regex so that it matches only the residue whose C-terminal
+        bond is to be cleaved. All additional requirements should be specified
+        using `lookaround assertions
+        <http://www.regular-expressions.info/lookaround.html>`_.
     missed_cleavages : int, optional
         The maximal number of allowed missed cleavages. Defaults to 0.
-    overlap : bool, optional
-        Set this to :py:const:`True` if the cleavage rule is complex and
-        it is important to get all possible peptides when the matching
-        subsequences overlap (e.g. 'XX' produces overlapping matches when
-        the sequence contains 'XXX'). Default is :py:const:`False`.
-        Use with caution: enabling this results in exponentially growing
-        execution time.
 
     Returns
     -------
@@ -531,19 +527,17 @@ def cleave(sequence, rule, missed_cleavages=0, overlap=False):
     True
 
     """
-    peptides = set()
+    return set(_cleave(sequence, rule, missed_cleavages))
+
+@memoize()
+def _cleave(sequence, rule, missed_cleavages=0):
+    peptides = []
     cleavage_sites = deque([0], maxlen=missed_cleavages+2)
     for i in chain(map(lambda x: x.end(), re.finditer(rule, sequence)),
                    [None]):
         cleavage_sites.append(i)
         for j in range(len(cleavage_sites)-1):
-            peptides.add(sequence[cleavage_sites[j]:cleavage_sites[-1]])
-        if overlap and i not in {0, None}:
-            peptides.update(
-                    cleave(sequence[i:], rule, missed_cleavages, overlap))
-
-    if '' in peptides:
-        peptides.remove('')
+            peptides.append(sequence[cleavage_sites[j]:cleavage_sites[-1]])
     return peptides
 
 expasy_rules = {
