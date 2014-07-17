@@ -540,6 +540,23 @@ def _cleave(sequence, rule, missed_cleavages=0):
             peptides.append(sequence[cleavage_sites[j]:cleavage_sites[-1]])
     return peptides
 
+def cleavage_sites(sequence, rule):
+    """Count the number of sites where ``sequence`` can be cleaved using
+    the given ``rule`` (e.g. number of miscleavages for a peptide).
+
+    Parameters
+    ----------
+    sequence : str
+        The sequence of a polypeptide.
+    rule : str or compiled regex
+        A regular expression describing the site of cleavage. It is recommended
+        to design the regex so that it matches only the residue whose C-terminal
+        bond is to be cleaved. All additional requirements should be specified
+        using `lookaround assertions
+        <http://www.regular-expressions.info/lookaround.html>`_.
+    """
+    return len(_cleave(sequence, rule)) - 1
+
 expasy_rules = {
     'arg-c':         r'R',
     'asp-n':         r'\w(?=D)',
