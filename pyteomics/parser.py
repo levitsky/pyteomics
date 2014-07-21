@@ -473,7 +473,13 @@ def amino_acid_composition(sequence,
             allow_unknown_modifications=allow_unknown_modifications,
             labels=labels)
     elif isinstance(sequence, list):
-        parsed_sequence = sequence
+        if sequence and isinstance(sequence[0], tuple):
+            parsed_sequence = parse(tostring(sequence, True),
+                show_unmodified_termini,
+                allow_unknown_modifications=allow_unknown_modifications,
+                labels=labels)
+        else:
+            parsed_sequence = sequence
     else:
         raise PyteomicsError('Unsupported type of a sequence.'
                 'Must be str or list, not %s' % type(sequence))
