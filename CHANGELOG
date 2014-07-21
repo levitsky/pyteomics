@@ -1,6 +1,8 @@
 2.4.4
 -----
 
+:py:func:`pyteomics.parser.amino_acid_composition` now accepts "split"
+parsed sequences.
 Cleavage rules in :py:data:`pyteomics.parser.expasy_rules` updated.
 
 2.4.3
