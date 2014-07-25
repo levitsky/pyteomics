@@ -1,7 +1,14 @@
 2.4.4
 -----
 
+:py:func:`pyteomics.parser.amino_acid_composition` now accepts "split"
+parsed sequences.
 Cleavage rules in :py:data:`pyteomics.parser.expasy_rules` updated.
+Helper function :py:func:`pyteomics.parser.num_sites` counts the number
+of cleavage sites in a sequence.
+The boolean ``overlap`` parameter in :py:func`pyteomics.parser.cleave` is
+replaced with an integer ``min_length``.
+
 
 2.4.3
 -----
