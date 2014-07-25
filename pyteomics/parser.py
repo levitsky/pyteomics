@@ -497,7 +497,7 @@ def amino_acid_composition(sequence,
     return aa_dict
 
 @memoize()
-def cleave(sequence, rule, missed_cleavages=0):
+def cleave(sequence, rule, missed_cleavages=0, min_length=0):
     """Cleaves a polypeptide sequence using a given rule.
 
     Parameters
@@ -511,7 +511,9 @@ def cleave(sequence, rule, missed_cleavages=0):
         using `lookaround assertions
         <http://www.regular-expressions.info/lookaround.html>`_.
     missed_cleavages : int, optional
-        The maximal number of allowed missed cleavages. Defaults to 0.
+        Maximum number of allowed missed cleavages. Defaults to 0.
+    min_length : int, optional
+        Minimum peptide length. Defaults to 0.
 
     Returns
     -------
@@ -527,20 +529,24 @@ def cleave(sequence, rule, missed_cleavages=0):
     True
 
     """
-    return set(_cleave(sequence, rule, missed_cleavages))
+    return set(_cleave(sequence, rule, missed_cleavages, min_length))
 
 @memoize()
-def _cleave(sequence, rule, missed_cleavages=0):
+def _cleave(sequence, rule, missed_cleavages=0, min_length=0):
+    """Like :py:func:`cleave`, but the result is a list. Refer toi
+    :py:func:`cleave` for explanation of parameters.
+    """
     peptides = []
     cleavage_sites = deque([0], maxlen=missed_cleavages+2)
     for i in chain(map(lambda x: x.end(), re.finditer(rule, sequence)),
                    [None]):
-        cleavage_sites.append(i)
+        if i is None or i - cleavage_sites[-1] >= min_length:
+            cleavage_sites.append(i)
         for j in range(len(cleavage_sites)-1):
             peptides.append(sequence[cleavage_sites[j]:cleavage_sites[-1]])
     return peptides
 
-def cleavage_sites(sequence, rule):
+def num_sites(sequence, rule):
     """Count the number of sites where ``sequence`` can be cleaved using
     the given ``rule`` (e.g. number of miscleavages for a peptide).
 
@@ -554,6 +560,11 @@ def cleavage_sites(sequence, rule):
         bond is to be cleaved. All additional requirements should be specified
         using `lookaround assertions
         <http://www.regular-expressions.info/lookaround.html>`_.
+
+    Returns
+    -------
+    out : int
+        Number of cleavage sites.
     """
     return len(_cleave(sequence, rule)) - 1
 
