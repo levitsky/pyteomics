@@ -14,7 +14,7 @@ equation.
 Examples
 --------
 
-Both functions in the module accepts input in form of a modX sequence, 
+Both functions in the module accept input in the form of a *modX* sequence, 
 a parsed sequence or a dict with amino acid composition.
 
 .. code-block:: python
