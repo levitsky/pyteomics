@@ -41,6 +41,12 @@ Data
 
   :py:data:`pK_rodwell` - a set of pK from [#Rodwell]_.
 
+  :py:data:`pK_bjellqvist` - a set of pK from [#Bjellqvist]_.
+
+  :py:data:`pK_nterm_bjellqvist` - a set of N-terminal pK from [#Bjellqvist]_.
+
+  :py:data:`pK_cterm_bjellqvist` - a set of C-terminal pK from [#Bjellqvist]_.
+
 References
 ----------
 
@@ -66,11 +72,17 @@ References
    focusing patterns. Analytical Biochemistry, 1982, 119 (2), 440-449.
    `Link. <http://dx.doi.org/10.1016/0003-2697(82)90611-X>`_
 
+.. [#Bjellqvist] Bjellqvist, B., Basse, B., Olsen, E. and Celis, J.E.
+    Reference points for comparisons of two-dimensional maps of proteins from
+    different human cell types defined in a pH scale where isoelectric points correlate
+    with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
+    `Link. <http://dx.doi.org/10.1002/elps.1150150171>`_
+
 -------------------------------------------------------------------------------
 
 """
 
-#   Copyright 2012 Anton Goloborodko, Lev Levitsky
+# Copyright 2012 Anton Goloborodko, Lev Levitsky
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -86,6 +98,7 @@ References
 
 from . import parser
 from .auxiliary import PyteomicsError
+
 
 def charge(sequence, pH, **kwargs):
     """Calculate the charge of a polypeptide in given pH or list of pHs using
@@ -110,6 +123,14 @@ def charge(sequence, pH, **kwargs):
         charge_in_ionized_state), a tuple per ionizable group. The default
         value is `pK_lehninger`.
 
+    pK_nterm : dict {str: [(float, int),]}, optional
+    pK_cterm : dict {str: [(float, int),]}, optional
+        Sets of pK of N-terminal and C-terminal (respectively) amino acids'
+        ionizable groups. Dicts with the same structure as ``pK``. These
+        values (if present) are used for N-terminal and C-terminal residues,
+        respectively. If given, ``sequence`` must be a :py:class:`str` or a
+        :py:class:`list`. The default value is an empty dict.
+
     Returns
     -------
     out : float or list of floats or None    
@@ -118,7 +139,14 @@ def charge(sequence, pH, **kwargs):
     """
 
     # Get the list of valid modX labels.
-    pK = kwargs.get('pK', pK_lehninger)
+    pK_nterm = {}
+    pK_cterm = {}
+    if isinstance(sequence, str) or isinstance(sequence, list):
+        pK_nterm = kwargs.get('pK_nterm', {})
+        pK_cterm = kwargs.get('pK_cterm', {})
+    elif isinstance(sequence,dict) and (("pK_nterm" in kwargs) or ("pK_cterm" in kwargs)):
+        raise PyteomicsError('Can not use terminal features for %s' % type(sequence))
+    pK = kwargs.get('pK', pK_lehninger).copy()
     labels = list(parser.std_labels)
     for label in pK:
         if label not in labels:
@@ -132,7 +160,11 @@ def charge(sequence, pH, **kwargs):
         peptide_dict = sequence
     else:
         raise PyteomicsError('Unsupported type of sequence: %s' % type(sequence))
-
+    if isinstance(sequence, str) or isinstance(sequence, list):
+        if sequence[0] in pK_nterm:
+            pK['H-'] = pK_nterm[sequence[0]]
+        if sequence[-1] in pK_cterm:
+            pK['-OH'] = pK_cterm[sequence[-1]]
     # Check if a sequence was parsed with `show_unmodified_termini` enabled.
     num_term_mod = 0
     for aa in peptide_dict:
@@ -140,7 +172,7 @@ def charge(sequence, pH, **kwargs):
             num_term_mod += 1
     if num_term_mod != 2:
         raise PyteomicsError('Parsed sequences must contain unmodified termini.')
-        
+
     # Process the case when pH is a single float.
     pH_list = pH if isinstance(pH, list) else [pH,]
 
@@ -151,14 +183,15 @@ def charge(sequence, pH, **kwargs):
         for aa in peptide_dict:
             for ionizable_group in pK.get(aa, []):
                 charge += peptide_dict[aa] * ionizable_group[1] * (
-                    1.0 
+                    1.0
                     / (1.0 + 10 ** (ionizable_group[1]
                                   * (pH_value - ionizable_group[0]))))
         charge_list.append(charge)
-    
+
     return charge_list[0] if len(charge_list) == 1 else charge_list
 
-def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
+
+def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.0001, **kwargs):
     """Calculate the isoelectric point of a polypeptide using a given set
     of amino acids' electrochemical properties.
 
@@ -189,19 +222,22 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
     """
 
     pK = kwargs.get('pK', pK_lehninger)
-
+    pK_nterm = {}
+    pK_cterm = {}
+    if isinstance(sequence, str) or isinstance(sequence, list):
+        pK_nterm = kwargs.get('pK_nterm', {})
+        pK_cterm = kwargs.get('pK_cterm', {})
+    elif isinstance(sequence,dict) and (("pK_nterm" in kwargs) or ("pK_cterm" in kwargs)):
+        raise PyteomicsError('Can not use terminal features for %s' % type(sequence))
     # The algorithm is based on the fact that charge(pH) is a monotonic function.
     left_x, right_x = pI_range
-    left_y = charge(sequence, left_x, pK=pK)
-    right_y = charge(sequence, right_x, pK=pK)
-
+    left_y = charge(sequence, left_x, pK=pK, pK_cterm=pK_cterm, pK_nterm=pK_nterm)
+    right_y = charge(sequence, right_x, pK=pK, pK_cterm=pK_cterm, pK_nterm=pK_nterm)
     while (right_x - left_x) > precision_pI:
         if left_y * right_y > 0:
             return left_x if abs(left_y) < abs(right_y) else right_x
-        
         middle_x = (left_x + right_x) / 2.0
-        middle_y = charge(sequence, middle_x, pK=pK)
-        
+        middle_y = charge(sequence, middle_x, pK=pK, pK_cterm=pK_cterm, pK_nterm=pK_nterm)
         if middle_y * left_y < 0:
             right_x = middle_x
             right_y = middle_y
@@ -209,6 +245,7 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
             left_x = middle_x
             left_y = middle_y
     return (left_x + right_x) / 2.0
+
 
 pK_lehninger = {
     'E': [(4.25, -1),],
@@ -258,21 +295,69 @@ pKs for NH2- and -OH are taken from `pK_sillero`.
 """
 
 pK_rodwell = {
-    'E': [(4.25, -1),],
-    'R': [(11.5, +1),],
-    'Y': [(10.7, -1),],
-    'D': [(3.86, -1),],
-    'H': [(6.0, +1),],
-    'K': [(11.5, +1),],
-    'C': [(8.33, -1),],
-    'H-': [(8.0, +1),],
-    '-OH':  [(3.1, -1),],
-    }
+    'E': [(4.25, -1), ],
+    'R': [(11.5, +1), ],
+    'Y': [(10.7, -1), ],
+    'D': [(3.86, -1), ],
+    'H': [(6.0, +1), ],
+    'K': [(11.5, +1), ],
+    'C': [(8.33, -1), ],
+    'H-': [(8.0, +1), ],
+    '-OH': [(3.1, -1), ],
+}
 """A set of pK from Rodwell, J. Heterogeneity of component bands in
 isoelectric focusing patterns. Analytical Biochemistry, vol. 119 (2),
 pp. 440-449, 1982.
 """
 
+pK_bjellqvist = {
+    'E': [(4.45, -1), ],
+    'R': [(12.0, +1), ],
+    'Y': [(10.0, -1), ],
+    'D': [(4.05, -1), ],
+    'H': [(5.98, +1), ],
+    'K': [(10.00, +1), ],
+    'C': [(9.0, -1), ],
+    'H-': [(7.5, +1), ],
+    '-OH': [(3.55, -1), ],
+}
+"""
+A set of pK from Bjellqvist, B., Basse, B., Olsen, E. and Celis, J.E.
+Reference points for comparisons of two-dimensional maps of proteins from
+different human cell types defined in a pH scale where isoelectric points correlate
+with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
+"""
+
+pK_nterm_bjellqvist = {
+    'A': [(7.59, 1)],
+    'M': [(7.0, 1)],
+    'S': [(6.93, 1)],
+    'P': [(8.36, 1)],
+    'T': [(6.82, 1)],
+    'V': [(7.44, 1)],
+    'E': [(7.7, 1)]
+}
+"""
+A set of N-terminal pK from Bjellqvist, B., Basse, B., Olsen, E. and Celis, J.E.
+Reference points for comparisons of two-dimensional maps of proteins from
+different human cell types defined in a pH scale where isoelectric points correlate
+with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
+"""
+
+pK_cterm_bjellqvist = {
+    'D': [(4.55, -1)],
+    'E': [(4.75, -1)]
+}
+"""
+A set of C
+-terminal pK from Bjellqvist, B., Basse, B., Olsen, E. and Celis, J.E.
+Reference points for comparisons of two-dimensional maps of proteins from
+different human cell types defined in a pH scale where isoelectric points correlate
+with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
+"""
+
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()
+
