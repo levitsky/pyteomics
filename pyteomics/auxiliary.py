@@ -68,6 +68,7 @@ from contextlib import contextmanager
 import socket
 import warnings
 import ast
+import types
 warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
 
 class PyteomicsError(Exception):
@@ -360,6 +361,8 @@ def _make_filter(read, is_decoy, key):
             fdr = kwargs.pop('fdr')
         except KeyError:
             raise PyteomicsError('Keyword argument required: fdr')
+        args = [arg if not isinstance(arg, types.GeneratorType)
+                else list(arg) for arg in args]
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         remove_decoy = kwargs.pop('remove_decoy', True)
         keyf = kwargs.pop('key', key)
