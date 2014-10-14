@@ -7,7 +7,11 @@ Cleavage rules in :py:data:`pyteomics.parser.expasy_rules` updated.
 Helper function :py:func:`pyteomics.parser.num_sites` counts the number
 of cleavage sites in a sequence.
 The boolean ``overlap`` parameter in :py:func`pyteomics.parser.cleave` is
-replaced with an integer ``min_length``.
+replaced with an integer ``min_length``. Since ``min_length`` uses
+:py:func:`length`, the ``labels`` keyword argument is now accepted by
+:py:func:`cleave` and :py:func:`num_sites`, if needed. With ``labels`` and
+carefully designed cleavage rules, all cleavage functions work with modX
+sequences.
 
 
 2.4.3
