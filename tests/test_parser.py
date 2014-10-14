@@ -58,18 +58,37 @@ class ParserTest(unittest.TestCase):
     def test_cleave(self):
         for seq in self.simple_sequences:
             for elem in cleave(
-                    seq, expasy_rules['trypsin'], int(random.uniform(1, 10))):
+                    seq, expasy_rules['trypsin'], int(random.uniform(1, 10)),
+                    labels=uppercase):
                 self.assertIn(elem, seq)
             self.assertTrue(any(elem == seq
-                for elem in cleave(seq, expasy_rules['trypsin'], len(seq))))
+                for elem in cleave(seq, expasy_rules['trypsin'], len(seq),
+                    labels=uppercase)))
+
+    def test_cleave_min_length(self):
+        for seq in self.simple_sequences:
+            ml = random.uniform(1, 5)
+            for elem in cleave(
+                    seq, expasy_rules['trypsin'], int(random.uniform(1, 10)),
+                    ml, labels=uppercase):
+                self.assertTrue(len(elem) >= ml)
+
+    def test_num_sites(self):
+        self.assertEqual(
+                num_sites('RKCDE', 'K'), 1)
+        self.assertEqual(
+                num_sites('RKCDE', 'E'), 0)
+        self.assertEqual(
+                num_sites('RKCDE', 'Z'), 0)
 
     def test_isoforms_simple(self):
         self.assertEqual(
-                set(isoforms('PEPTIDE', variable_mods={'xx': ['A', 'B', 'P', 'E']})),
+                set(isoforms('PEPTIDE',
+                    variable_mods={'xx': ['A', 'B', 'P', 'E']})),
                 {'PEPTIDE', 'PEPTIDxxE', 'PExxPTIDE', 'PExxPTIDxxE', 'PxxEPTIDE',
-                     'PxxEPTIDxxE', 'PxxExxPTIDE', 'PxxExxPTIDxxE', 'xxPEPTIDE', 'xxPEPTIDxxE',
-                     'xxPExxPTIDE', 'xxPExxPTIDxxE', 'xxPxxEPTIDE', 'xxPxxEPTIDxxE',
-                     'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE'})
+                     'PxxEPTIDxxE', 'PxxExxPTIDE', 'PxxExxPTIDxxE', 'xxPEPTIDE',
+                     'xxPEPTIDxxE', 'xxPExxPTIDE', 'xxPExxPTIDxxE', 'xxPxxEPTIDE',
+                     'xxPxxEPTIDxxE', 'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE'})
 
     def test_isoforms_len(self):
         for j in range(50):
