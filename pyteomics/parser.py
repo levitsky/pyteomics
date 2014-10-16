@@ -97,7 +97,7 @@ Data
 
 import re
 from collections import deque
-from itertools import chain, product
+import itertools as it
 import numpy as np
 from .auxiliary import PyteomicsError, memoize
 
@@ -547,7 +547,7 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=1, **kwargs):
     """
     peptides = []
     cleavage_sites = deque([0], maxlen=missed_cleavages+2)
-    for i in chain(map(lambda x: x.end(), re.finditer(rule, sequence)),
+    for i in it.chain(map(lambda x: x.end(), re.finditer(rule, sequence)),
                    [None]):
         cleavage_sites.append(i)
         for j in range(len(cleavage_sites)-1):
@@ -660,12 +660,16 @@ def isoforms(sequence, **kwargs):
         `sequence`. Modified entries will be added automatically.
         Defaults to :py:data:`std_labels`.
 
+    max_mods : int or None, optional
+        Number of modifications that can occur simultaneously on a peptide,
+        excluding fixed modifications. If :py:const:`None` or if ``max_mods``
+        is greater than the number of modification sites, all possible
+        isoforms are generated. Default is :py:const:`None`.
+
     override : bool, optional
         Defines how to handle the residues that are modified in the input.
         :py:const:`False` means that they will be preserved (default).
         :py:const:`True` means they will be treated as unmodified.
-
-        **Note**: If :py:const:`True`, then supplying fixed mods is pointless.
 
     show_unmodified_termini : bool, optional
         If :py:const:`True` then the unmodified N- and C-termini are explicitly
@@ -680,7 +684,7 @@ def isoforms(sequence, **kwargs):
     Returns
     -------
 
-    out : iterator over strings
+    out : iterator over strings or lists
         All possible unique polypeptide sequences resulting from
         the specified modifications are yielded obe by one.
     """
@@ -696,7 +700,8 @@ def isoforms(sequence, **kwargs):
     # if the modification is not applicable, `label` is returned
         group = list(label)
         m = main(group)[0]
-        if m == 0 and not is_term_mod(mod): group.insert(0, mod)
+        if m == 0 and not is_term_mod(mod):
+            group.insert(0, mod)
         elif mod.startswith('-') and (group[-1] == std_cterm or (
             group[-1].startswith('-') and override)):
             group[-1] = mod
@@ -705,17 +710,21 @@ def isoforms(sequence, **kwargs):
             group[0] = mod
         elif not is_term_mod(mod):
             if not group[m-1].endswith('-'):
-                if override: group[m-1] = mod
-            else: group.insert(m, mod)
+                if override:
+                    group[m-1] = mod
+            else:
+                group.insert(m, mod)
         return tuple(group)
 
     variable_mods = kwargs.get('variable_mods', {})
     fixed_mods = kwargs.get('fixed_mods', {})
     labels = kwargs.get('labels', std_labels)
     parsed = parse(sequence, True, True,
-            labels=labels+list(fixed_mods.keys()))
+            labels=labels+list(fixed_mods))
     override = kwargs.get('override', False)
     show_unmodified_termini = kwargs.get('show_unmodified_termini', False)
+    max_mods = kwargs.get('max_mods')
+    format_ = kwargs.get('format', 'str')
 
     # Apply fixed modifications
     for cmod in fixed_mods:
@@ -727,31 +736,55 @@ def isoforms(sequence, **kwargs):
     # Start with N-terminal mods and regular mods on the N-terminal residue
     second = set(apply_mod(parsed[0], m) for m, r in variable_mods.items()
             if main(parsed[0])[1] in r and not is_term_mod(m)).union([parsed[0]])
-    first = chain((apply_mod(group, mod) for group in second
+    first = it.chain((apply_mod(group, mod) for group in second
             for mod, res in variable_mods.items()
-        if (mod.endswith('-') or mod.startswith('-') and len(parsed) == 1)
+        if (mod.endswith('-') or (mod.startswith('-') and len(parsed) == 1))
         and main(group)[1] in res), second)
-    states = [set(first).union([parsed[0]])]
+    states = [[parsed[0]] + list(set(first).difference({parsed[0]}))]
     # Continue with regular mods
-    states.extend({group}.union(set(apply_mod(group, mod)
+    states.extend([group] + list(set(apply_mod(group, mod)
             for mod in variable_mods if
-                main(group)[1] in variable_mods[mod] and not is_term_mod(mod)))
+                main(group)[1] in variable_mods[mod] and not is_term_mod(mod)
+                ).difference({group}))
         for group in parsed[1:-1])
     # Finally add C-terminal mods and regular mods on the C-terminal residue
     if len(parsed) > 1:
         second = set(apply_mod(parsed[-1], m) for m, r in variable_mods.items()
                     if main(parsed[-1])[1] in r and not is_term_mod(m)
                 ).union((parsed[-1],))
-        first = chain((apply_mod(group, mod) for group in second
+        first = it.chain((apply_mod(group, mod) for group in second
                 for mod, res in variable_mods.items()
             if mod.startswith('-') and main(group)[1] in res), second)
-        states.append(set(first).union((parsed[-1],)))
+        states.append([parsed[-1]] + list(set(first).difference({parsed[-1]})))
 
-    format_ = kwargs.get('format', 'str')
-    if format_ == 'split': return product(*states)
+    sites = [s for s in enumerate(states) if len(s[1]) > 1]
+    if max_mods is None or max_mods > len(sites):
+        possible_states = it.product(*states)
+    else:
+        state_lists = []
+        for m in range(max_mods+1):
+            for comb in it.combinations(sites, m):
+                skel = [[s[0]] for s in states]
+                for i, e in comb:
+                    skel[i] = e[1:]
+                state_lists.append(skel)
+        possible_states = it.chain.from_iterable(
+                it.product(*skel) for skel in state_lists)
+
+    if format_ == 'split':
+        def strip_std_terms():
+            for ps in possible_states:
+                ps = list(ps)
+                if not show_unmodified_termini:
+                    if ps[0][0] == std_nterm:
+                        ps[0] = ps[0][1:]
+                    if ps[-1][-1] == std_cterm:
+                        ps[-1] = ps[-1][:-1]
+                yield ps
+        return strip_std_terms()
     elif format_ == 'str':
         return (tostring(form, show_unmodified_termini)
-            for form in product(*states))
+            for form in possible_states)
     else:
         raise PyteomicsError('Unsupported value of "format": {}'.format(format_))
 

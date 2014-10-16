@@ -1,4 +1,4 @@
-2.4.4
+2.5.0
 -----
 
  - :py:func:`pyteomics.parser.amino_acid_composition` now accepts "split"
@@ -18,6 +18,8 @@
 
  - Bugfix in :py:func:`pyteomics.auxiliary.filter`, which didn't work correctly
    with iterators.
+
+ - Added a new parameter ``max_mods`` in :py:func:`pyteomics.parser.isoforms`.
 
 2.4.3
 -----

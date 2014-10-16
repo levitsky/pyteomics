@@ -8,7 +8,8 @@ class ParserTest(unittest.TestCase):
             int(random.uniform(1, 20)))) for j in range(10)]
         self.labels = ['A', 'B', 'C', 'N', 'X']
         self.extlabels = self.labels[:]
-        self.potential = {'pot': ['X', 'A', 'B'], 'otherpot': ['A', 'C'], 'N-': ['N'], '-C': ['C']}
+        self.potential = {'pot': ['X', 'A', 'B'], 'otherpot': ['A', 'C'],
+                'N-': ['N'], '-C': ['C']}
         self.constant = {'const': ['B']}
         self.extlabels.extend(('pot', 'otherpot', 'const', '-C', 'N-'))
 
@@ -106,6 +107,19 @@ class ParserTest(unittest.TestCase):
                         length(p, labels=self.extlabels))
             self.assertEqual(forms, (3**pp.count('A')) *
                     (2**(pp.count('X')+pp.count('C'))) * 2**N)
+
+    def test_isoforms_maxmods(self):
+        for j in range(50):
+            L = random.randint(1, 10)
+            M = random.randint(1, 10)
+            peptide = ''.join([random.choice(self.labels) for _ in range(L)])
+            modseqs = isoforms(peptide, variable_mods=self.potential,
+                    labels=self.labels,
+                    max_mods=M, format='split')
+            pp = parse(peptide, labels=self.extlabels, split=True)
+            for ms in modseqs:
+                self.assertEqual(len(pp), len(ms))
+                self.assertLessEqual(sum(i != j for i, j in zip(pp, ms)), M)
 
     def test_fast_valid(self):
         for j in range(50):
