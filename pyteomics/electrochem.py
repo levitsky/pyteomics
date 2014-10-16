@@ -26,7 +26,7 @@ Main functions
 --------------
 
   :py:func:`charge` - calculate the charge of a polypeptide
-  
+
   :py:func:`pI` - calculate the isoelectric point of a polypeptide
 
 Data
@@ -99,7 +99,7 @@ def charge(sequence, pH, **kwargs):
 
     Parameters
     ----------
-    sequence : str or list or dict    
+    sequence : str or list or dict
         A string with a polypeptide sequence, a list with a parsed
         sequence or a dict of amino acid composition.
     pH : float or list of floats
@@ -139,7 +139,7 @@ def charge(sequence, pH, **kwargs):
             num_term_mod += 1
     if num_term_mod != 2:
         raise PyteomicsError('Parsed sequences must contain unmodified termini.')
-        
+
     # Process the case when pH is a single float.
     pH_list = pH if isinstance(pH, list) else [pH,]
 
@@ -150,11 +150,11 @@ def charge(sequence, pH, **kwargs):
         for aa in peptide_dict:
             for ionizable_group in pK.get(aa, []):
                 charge += peptide_dict[aa] * ionizable_group[1] * (
-                    1.0 
+                    1.0
                     / (1.0 + 10 ** (ionizable_group[1]
                                   * (pH_value - ionizable_group[0]))))
         charge_list.append(charge)
-    
+
     return charge_list[0] if len(charge_list) == 1 else charge_list
 
 def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
@@ -169,7 +169,7 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
 
     Parameters
     ----------
-    sequence : str or list or dict    
+    sequence : str or list or dict
         A string with a polypeptide sequence, a list with a parsed
         sequence or a dict of amino acid composition.
     pI_range : tuple (float, float)
@@ -181,7 +181,7 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
         are amino acid labels and the values are lists of tuples (pK,
         charge_in_ionized_state), a tuple per ionizable group. The default
         value is `pK_lehninger`.
-        
+
     Returns
     -------
     out : float
@@ -197,10 +197,10 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
     while (right_x - left_x) > precision_pI:
         if left_y * right_y > 0:
             return left_x if abs(left_y) < abs(right_y) else right_x
-        
+
         middle_x = (left_x + right_x) / 2.0
         middle_y = charge(sequence, middle_x, pK=pK)
-        
+
         if middle_y * left_y < 0:
             right_x = middle_x
             right_y = middle_y

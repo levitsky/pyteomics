@@ -190,6 +190,10 @@ def _split_label(label):
         else:
             return (label[:-1], label[-1])
 
+_modX_sequence = re.compile(r'^([^-]+-)?((?:[a-z]*[A-Z])+)(-[^-]+)?$')
+_modX_group = re.compile(r'[a-z]*[A-Z]')
+_modX_split = re.compile(r'([a-z]*)([A-Z])')
+
 def parse(sequence,
                    show_unmodified_termini=False, split=False,
                    allow_unknown_modifications=False,
@@ -239,119 +243,64 @@ def parse(sequence,
     >>> parse('zPEPzTIDzE', True, True, labels=std_labels+['z'])
     [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',), ('z', 'E', '-OH')]
     """
-    labels = kwargs.get('labels', std_labels)
     sequence = str(sequence)
 
-    nterm, cterm = std_nterm, std_cterm
-    parsed_sequence = None
-    hyphen_ind = [i for i, c in enumerate(sequence) if c == '-']
-    hyphen_count = len(hyphen_ind)
-    if hyphen_count > 2: raise PyteomicsError('Invalid sequence: ' + sequence)
-    elif hyphen_count == 2:
-        nterm = sequence[:hyphen_ind[0]+1]
-        if nterm not in labels:
-            raise PyteomicsError(
-                    'Unknown N-terminal group {} in sequence {}'.format(nterm,
-                        sequence))
-        cterm = sequence[hyphen_ind[1]:]
-        if cterm not in labels:
-            raise PyteomicsError(
-                    'Unknown C-terminal group {} in seqience {}'.format(cterm,
-                        sequence))
-        sequence = sequence[hyphen_ind[0]+1 : hyphen_ind[1]]
-    elif hyphen_count == 1:
-        # find out which terminal group is missing
-        nterm = sequence[:hyphen_ind[0]+1]
-        parsed_sequence_1 = None
-        if nterm in labels:
-            try:
-                parsed_sequence_1 = parse(sequence[hyphen_ind[0]+1:],
-                   False, False, allow_unknown_modifications, **kwargs)
-            except PyteomicsError:
-                nterm = std_nterm
-        else:
-            nterm = std_nterm
-        cterm = sequence[hyphen_ind[0]:]
-        if cterm in labels:
-            try:
-                parsed_sequence_2 = parse(sequence[:hyphen_ind[0]],
-                   False, False, allow_unknown_modifications, **kwargs)
-            except PyteomicsError:
-                if parsed_sequence_1 is None:
-                    raise
-                parsed_sequence = parsed_sequence_1
-                cterm = std_cterm
-            else:
-                if parsed_sequence_1 is not None and (
-                        parsed_sequence_1 != parsed_sequence_1):
-                    raise PyteomicsError('Ambiguous sequence: ' + sequence)
-                parsed_sequence = parsed_sequence_2
-        else:
-            cterm = std_cterm
-            parsed_sequence = parsed_sequence_1
+    try:
+        n, body, c = re.match(_modX_sequence, sequence).groups()
+    except AttributeError:
+        raise PyteomicsError('Not a valid modX sequence: ' + sequence)
 
-    if parsed_sequence is None:
-        # Parse the polypeptide backbone.
-        i = 0
-        parsed_sequence = []
-        while i < len(sequence):
-            amino_acid_found = False
-            for aa in labels:
-                if sequence.startswith(aa, i) and is_modX(aa):
-                    parsed_sequence.append(aa)
-                    amino_acid_found = True
-                    break
+    # Check for allowed labels, if they were explicitly given
+    labels = kwargs.get('labels')
+    # labels help save the day when only one terminal group is given
+    if c is None and n is not None:
+        if labels is None:
+            labels = std_labels
+        # we can try to resolve the ambiguity
+        if n != std_nterm and n not in labels:
+            # n is the body then
+            c = '-' + body
+            body = n[:-1]
+            n = None
 
-            if not amino_acid_found:
-                j = i+2
-                while j <= len(sequence):
-                    try:
-                        mod, res = _split_label(sequence[i:j])
-                    except PyteomicsError:
-                        pass
-                    else:
-                        if ((mod in labels and res in labels) or
-                            (allow_unknown_modifications and res in labels)):
+    # Actual parsing
+    if split:
+        parsed_sequence = [g if g[0] else (g[1],) for g in re.findall(
+            _modX_split, body)]
+    else:
+        parsed_sequence = re.findall(_modX_group, body)
+    nterm, cterm = (n or std_nterm), (c or std_cterm)
 
-                            parsed_sequence.append(sequence[i:j])
-                            amino_acid_found = True
-                            break
-                    finally:
-                        j += 1
-
-            if not amino_acid_found:
+    if labels is not None:
+        for term, std_term in zip([nterm, cterm], [std_nterm, std_cterm]):
+            if (term != std_term and
+                    term not in labels and
+                    not allow_unknown_modifications):
                 raise PyteomicsError(
-                    'Unknown amino acid in sequence %s at position %d: %s' % (
-                        sequence, i+1, sequence[i:]))
-            i += len(parsed_sequence[-1])
+                            'Unknown label: {}'.format(term))
+        for group in parsed_sequence:
+            if split:
+                mod, X = group if len(group) == 2 else ('', group[0])
+            else:
+                mod, X = re.match(_modX_split, group).groups()
+            if ((not mod) and X not in labels) or not ((mod+X in labels) or (
+                X in labels and (
+                    mod in labels or allow_unknown_modifications))):
+                raise PyteomicsError(
+                        'Unknown label: {}'.format(group))
 
     # Append terminal labels.
     if show_unmodified_termini or nterm != std_nterm:
-        parsed_sequence.insert(0, nterm)
-    if show_unmodified_termini or cterm != std_cterm:
-        parsed_sequence.append(cterm)
-
-    # Make a list of tuples instead of list of labels
-    if split:
-        if sum(1 for aa in parsed_sequence if not is_term_mod(aa)) == 1:
-            result = []
-            for x in parsed_sequence:
-                if is_term_mod(x): result.append(x)
-                else: result.extend(_split_label(x))
-            return [tuple(result)]
-
-        tuples = []
-        start = 0
-        if is_term_mod(parsed_sequence[0]):
-            tuples.append((parsed_sequence[0],) + _split_label(parsed_sequence[1]))
-            start = 2
-        tuples.extend(_split_label(x) for x in parsed_sequence[start:-2])
-        if is_term_mod(parsed_sequence[-1]):
-            tuples.append(_split_label(parsed_sequence[-2]) + (parsed_sequence[-1],))
+        if split:
+            parsed_sequence[0] = (nterm,) + parsed_sequence[0]
         else:
-            tuples.extend(_split_label(x) for x in parsed_sequence[-2:])
+            parsed_sequence.insert(0, nterm)
+    if show_unmodified_termini or cterm != std_cterm:
+        if split:
+            parsed_sequence[-1] = parsed_sequence[-1] + (cterm,)
+        else:
+            parsed_sequence.append(cterm)
 
-        return tuples
 
     return parsed_sequence
 
