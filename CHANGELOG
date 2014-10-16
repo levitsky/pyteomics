@@ -9,6 +9,14 @@
  - Helper function :py:func:`pyteomics.parser.num_sites` counts the number
    of cleavage sites in a sequence.
 
+ - Bugfix in :py:func:`pyteomics.auxiliary.filter`, which didn't work correctly
+   with iterators.
+
+ - Added a new parameter ``max_mods`` in :py:func:`pyteomics.parser.isoforms`.
+
+API changes
+-----------
+
  - The boolean ``overlap`` parameter in :py:func:`pyteomics.parser.cleave` is
    replaced with an integer ``min_length``. Since ``min_length`` uses
    :py:func:`pyteomics.parser.length`, the ``labels`` keyword argument is now
@@ -16,10 +24,15 @@
    ``labels`` and carefully designed cleavage rules, all cleavage functions work
    with modX sequences.
 
- - Bugfix in :py:func:`pyteomics.auxiliary.filter`, which didn't work correctly
-   with iterators.
+ - The ``labels`` argument in :py:func:`pyteomics.parser.parse` and related
+   functions has changed its meaning. :py:func:`parse` won't raise an exception
+   for non-standard labels in sequences, if the ``labels`` keyword argument is
+   not given.
 
- - Added a new parameter ``max_mods`` in :py:func:`pyteomics.parser.isoforms`.
+ - The *modX* notation specification is now more strict to avoid ambiguity:
+   only zero or two terminal groups can be present in a *modX* sequence.
+   Sequences with one terminal group specified will be supported where possible,
+   but be advised that sequences such as "H-OH" are intrinsically ambiguous.
 
 2.4.3
 -----
