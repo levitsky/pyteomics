@@ -238,7 +238,7 @@ def is_decoy(psm, prefix='DECOY_'):
     out : bool
     """
     return all(protein['protein'].startswith(prefix)
-            for sh in psm['search_hit'] for protein in sh['proteins'])
+            for protein in  psm['search_hit'][0]['proteins'])
 
 fdr = aux._make_fdr(is_decoy)
 filter = aux._make_filter(chain, is_decoy, lambda x: min(

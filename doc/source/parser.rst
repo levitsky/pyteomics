@@ -5,14 +5,15 @@ modX
 ----
 
 **Pyteomics** uses a custom IUPAC-derived peptide sequence notation named **modX**.
-As in the IUPAC notation, each amino acid residue is represented by a capital 
+As in the IUPAC notation, each amino acid residue is represented by a capital
 letter, but it may preceded by an arbitrary number of small letters to show
-modification. Terminal modifications are separated from the backbone sequence by 
+modification. Terminal modifications are separated from the backbone sequence by
 a hyphen (‘-’). By default, both termini are assumed to be unmodified, which can be
-shown explicitly by 'H-' for N-terminal hydrogen and '-OH' for C-terminal hydroxyl. 
+shown explicitly by 'H-' for N-terminal hydrogen and '-OH' for C-terminal hydroxyl.
 
-*“H-HoxMMdaN”* is an example of a valid sequence in modX. See 
-:doc:`api/parser` for additional information.
+``“H-HoxMMdaN-OH”`` is an example of a valid sequence in *modX*. See
+:doc:`api/parser` for additional information. Note that it is recommended to show
+either zero or 2 terminal group in a *modX* sequence.
 
 Sequence operations
 -------------------
@@ -49,19 +50,22 @@ A *modX* sequence can be translated to a list of amino acid residues with
     ['Ac-', 'P', 'E', 'pT', 'I', 'D', 'E']
 
 In the last example we supplied two arguments, the sequence itself
-and 'labels'. The latter is used to specify what labels are allowed for amino 
+and 'labels'. The latter is used to specify what labels are allowed for amino
 acid residues and terminal modifications. :py:data:`std_labels` is a predefined
 set of labels for the twenty standard amino acids, 'H-' for N-terminal hydrogen
 and '-OH' for C-terminal hydroxyl. In this example we specified the codes for
-phosphorylated threonine and N-terminal acetylation. The same 'labels' argument 
-should be supplied to the other functions in this module if a sequence has
-modifications.
+phosphorylated threonine and N-terminal acetylation.
+
+Since version 2.5, specifying ``labels`` is *never mandatory*. If this argument
+is not supplied, no checks will be made. However, the last example won't work
+without ``labels``, because it has **only one terminal group shown**, which is
+**discouraged**.
 
 :py:func:`parse` has another mode, in which it returns tuples:
 
 .. code-block:: python
 
-    >>> parser.parse('Ac-PEpTIDE', labels=parser.std_labels+['Ac-', 'p'], split=True)
+    >>> parser.parse('Ac-PEpTIDE-OH', split=True)
     [('Ac-', 'P'), ('E',), ('p', 'T'), ('I',), ('D',), ('E',)]
 
 Also, note what we supply as `labels` here: 'p' instead of 'pT'. That means that
@@ -74,11 +78,11 @@ Use :py:func:`pyteomics.parser.length` instead:
 .. code-block:: python
 
     >>> from pyteomics import parser
-    >>> parser.length('aVRILLaVIGNE', labels=parser.std_labels+['aV'])
+    >>> parser.length('aVRILLaVIGNE')
     10
 
 The :py:func:`pyteomics.parser.amino_acid_composition` function accepts a sequence
-and returnsa *dictionary* with amino acid labels as *keys* and integer numbers as
+and returns a *dictionary* with amino acid labels as *keys* and integer numbers as
 *values*, corresponding to the number of times each residue occurs in the sequence:
 
 .. code-block:: python
@@ -87,8 +91,8 @@ and returnsa *dictionary* with amino acid labels as *keys* and integer numbers a
     >>> parser.amino_acid_composition('PEPTIDE')
     {'I': 1.0, 'P': 2.0, 'E': 2.0, 'T': 1.0, 'D': 1.0}
 
-:py:func:`pyteomics.parser.cleave` is a method to perform *in silico* cleavage. The
-requiered arguments are the sequence, the rule for enzyme specificity and the 
+:py:func:`pyteomics.parser.cleave` is a method to perform *in silico* cleavage.
+The requiered arguments are the sequence, the rule for enzyme specificity and the
 number of missed cleavages allowed. Note that each product peptide is reported
 only once:
 
@@ -98,18 +102,18 @@ only once:
     >>> parser.cleave('AKAKBK', parser.expasy_rules['trypsin'], 0)
     ['AK', 'BK']
 
-:py:data:`pyteomics.parser.expasy_rules` is a predefined *dict* with the clevage rules
-for the most common proteases.
+:py:data:`pyteomics.parser.expasy_rules` is a predefined :py:class:`dict` with
+the clevage rules for the most common proteases.
 
 All possible modified sequences of a peptide can be obtained with
 :py:func:`pyteomics.parser.isoforms`:
 
-.. code-block:: python
+.. code-bloc k:: python
 
     >>> from pyteomics import parser
     >>> forms = parser.isoforms('PEPTIDE', variable_mods={'p': ['T'], 'ox': ['P']})
     >>> for seq in forms: print seq
-    ... 
+    ...
     oxPEPpTIDE
     oxPEPTIDE
     oxPEoxPpTIDE
