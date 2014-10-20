@@ -151,9 +151,7 @@ def length(sequence, **kwargs):
         A string with a polypeptide sequence, a list with a parsed sequence or
         a dict of amino acid composition.
     labels : list, optional
-        A list of allowed labels for amino acids and terminal modifications
-        (default is `std_labels`, the 20 standard amino acids, N-terminal H-
-        and C-terminal -OH).
+        A list of allowed labels for amino acids and terminal modifications.
 
     Examples
     --------
@@ -218,11 +216,10 @@ def parse(sequence,
         Default value is :py:const:`False`.
     labels : container, optional
         A list (set, tuple, etc.) of allowed labels for amino acids,
-        modifications and terminal modifications (default is the 20
-        standard amino acids, N-terminal 'H-' and C-terminal '-OH').
-
-        New in ver. 1.2.2: separate labels for modifications (such as 'p' or 'ox')
-        are now allowed.
+        modifications and terminal modifications. By default, all possible
+        *modX* labels are allowed.
+        Separate labels for modifications (such as 'p' or 'ox')
+        can be supplied, which means they are applicable to all residues.
 
     Returns
     -------
@@ -390,13 +387,11 @@ def amino_acid_composition(sequence,
         artificially modified with `nterm` or `cterm` modification.
         Default value is :py:const:`False`.
     allow_unknown_modifications : bool, optional
-        If :py:const:`True` then do not raise an exception when an unknown 
+        If :py:const:`True` then do not raise an exception when an unknown
         modification of a known amino acid residue is found in the sequence.
         Default value is :py:const:`False`.
     labels : list, optional
-        A list of allowed labels for amino acids and terminal modifications
-        (default is the 20 standard amino acids, N-terminal 'H-' and C-terminal
-        '-OH').
+        A list of allowed labels for amino acids and terminal modifications.
 
     Returns
     -------
@@ -451,7 +446,7 @@ def amino_acid_composition(sequence,
 
     return aa_dict
 
-def cleave(sequence, rule, missed_cleavages=0, min_length=0, **kwargs):
+def cleave(sequence, rule, missed_cleavages=0, min_length=1, **kwargs):
     """Cleaves a polypeptide sequence using a given rule.
 
     Parameters
@@ -469,9 +464,7 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=0, **kwargs):
     min_length : int, optional
         Minimum peptide length. Defaults to 0.
     labels : list, optional
-        A list of allowed labels for amino acids and terminal modifications
-        (default is the 20 standard amino acids, N-terminal 'H-' and C-terminal
-        '-OH').
+        A list of allowed labels for amino acids and terminal modifications.
 
     Returns
     -------
@@ -500,7 +493,7 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=1, **kwargs):
         cleavage_sites.append(i)
         for j in range(len(cleavage_sites)-1):
             seq = sequence[cleavage_sites[j]:cleavage_sites[-1]]
-            if length(seq, **kwargs) > min_length:
+            if length(seq, **kwargs) >= min_length:
                 peptides.append(seq)
     return peptides
 
@@ -519,9 +512,7 @@ def num_sites(sequence, rule, **kwargs):
         using `lookaround assertions
         <http://www.regular-expressions.info/lookaround.html>`_.
     labels : list, optional
-        A list of allowed labels for amino acids and terminal modifications
-        (default is the 20 standard amino acids, N-terminal 'H-' and C-terminal
-        '-OH').
+        A list of allowed labels for amino acids and terminal modifications.
 
     Returns
     -------
