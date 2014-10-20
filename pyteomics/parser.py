@@ -230,10 +230,15 @@ def parse(sequence,
         Default value is :py:const:`False`.
     labels : container, optional
         A list (set, tuple, etc.) of allowed labels for amino acids,
-        modifications and terminal modifications. By default, all possible
-        *modX* labels are allowed.
+        modifications and terminal modifications.
+        If not provided, no checks will be done.
         Separate labels for modifications (such as 'p' or 'ox')
         can be supplied, which means they are applicable to all residues.
+
+        .. warning::
+            Avoid using sequences with only one terminal group, as they are
+            ambiguous. If you provide one, ``labels`` (or :py:const:`std_labels`)
+            will be used to resolve the ambiguity.
 
     Returns
     -------
