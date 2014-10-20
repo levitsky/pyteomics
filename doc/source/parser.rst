@@ -5,13 +5,13 @@ modX
 ----
 
 **Pyteomics** uses a custom IUPAC-derived peptide sequence notation named **modX**.
-As in the IUPAC notation, each amino acid residue is represented by a capital 
+As in the IUPAC notation, each amino acid residue is represented by a capital
 letter, but it may preceded by an arbitrary number of small letters to show
-modification. Terminal modifications are separated from the backbone sequence by 
+modification. Terminal modifications are separated from the backbone sequence by
 a hyphen (‘-’). By default, both termini are assumed to be unmodified, which can be
-shown explicitly by 'H-' for N-terminal hydrogen and '-OH' for C-terminal hydroxyl. 
+shown explicitly by 'H-' for N-terminal hydrogen and '-OH' for C-terminal hydroxyl.
 
-*“H-HoxMMdaN”* is an example of a valid sequence in modX. See 
+``“H-HoxMMdaN”`` is an example of a valid sequence in modX. See
 :doc:`api/parser` for additional information.
 
 Sequence operations

@@ -9,6 +9,10 @@
  - Helper function :py:func:`pyteomics.parser.num_sites` counts the number
    of cleavage sites in a sequence.
 
+ - Helper function :py:func:`pyteomics.parser.match_modX` does essentially
+   the same as :py:func:`pyteomics.parser.is_modX`, but returns a
+   :py:class:`re.match` object or :py:const:`None` instead of a :py:class:`bool`.
+
  - Bugfix in :py:func:`pyteomics.auxiliary.filter`, which didn't work correctly
    with iterators.
 
@@ -21,8 +25,8 @@ API changes
    replaced with an integer ``min_length``. Since ``min_length`` uses
    :py:func:`pyteomics.parser.length`, the ``labels`` keyword argument is now
    accepted by :py:func:`cleave` and :py:func:`num_sites`, if needed. With
-   ``labels`` and carefully designed cleavage rules, all cleavage functions work
-   with modX sequences.
+   carefully designed cleavage rules, all cleavage functions work
+   with *modX* sequences.
 
  - The ``labels`` argument in :py:func:`pyteomics.parser.parse` and related
    functions has changed its meaning. :py:func:`parse` won't raise an exception

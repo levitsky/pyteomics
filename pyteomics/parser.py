@@ -127,6 +127,19 @@ def is_term_mod(label):
     """
     return label.startswith('-') or label.endswith('-')
 
+def match_modX(label):
+    """Check if `label` is a valid 'modX' label.
+
+    Parameters
+    ----------
+    label : str
+
+    Returns
+    -------
+    out : re.match or None
+    """
+    return re.match(_modX_split, label)
+
 def is_modX(label):
     """Check if `label` is a valid 'modX' label.
 
@@ -138,8 +151,7 @@ def is_modX(label):
     -------
     out : bool
     """
-    return label and ((len(label) == 1 and label.isupper()) or
-            (label[:-1].islower() and label[-1].isupper()))
+    return bool(match_modX(label))
 
 def length(sequence, **kwargs):
     """Calculate the number of amino acid residues in a polypeptide
@@ -180,12 +192,14 @@ def length(sequence, **kwargs):
     raise PyteomicsError('Unsupported type of sequence.')
 
 def _split_label(label):
-        if not is_modX(label):
-            raise PyteomicsError('Cannot split a non-modX label: %s' % label)
-        if len(label) == 1:
-            return (label, )
-        else:
-            return (label[:-1], label[-1])
+    try:
+        mod, X = match_modX(label).groups()
+    except AttributeError:
+        raise PyteomicsError('Cannot split a non-modX label: %s' % label)
+    if not mod:
+        return (X,)
+    else:
+        return mod, X
 
 _modX_sequence = re.compile(r'^([^-]+-)?((?:[a-z]*[A-Z])+)(-[^-]+)?$')
 _modX_group = re.compile(r'[a-z]*[A-Z]')
