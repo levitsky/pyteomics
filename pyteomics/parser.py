@@ -163,11 +163,10 @@ def length(sequence, **kwargs):
     7
     """
     if not sequence: return 0
-    labels = kwargs.get('labels', std_labels)
 
     if isinstance(sequence, str) or isinstance(sequence, list):
         if isinstance(sequence, str):
-            parsed_sequence = parse(sequence, labels=labels)
+            parsed_sequence = parse(sequence, **kwargs)
         else:
             parsed_sequence = sequence
         num_term_groups = 0
@@ -556,7 +555,7 @@ expasy_rules = {
     'glutamyl endopeptidase': r'E',
     'granzyme b':    r'(?<=IEP)D',
     'hydroxylamine': r'N(?=G)',
-    'iodosobezoic acid': r'W',
+    'iodosobenzoic acid': r'W',
     'lysc':          r'K',
     'ntcb':          r'\w(?=C)',
     'pepsin ph1.3':  r'((?<=[^HKR][^P])[^R](?=[FLWY][^P]))|'
