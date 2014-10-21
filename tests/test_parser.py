@@ -80,6 +80,8 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(
                 num_sites('RKCDE', 'E'), 0)
         self.assertEqual(
+                num_sites('RKCDE', 'R'), 1)
+        self.assertEqual(
                 num_sites('RKCDE', 'Z'), 0)
 
     def test_isoforms_simple(self):

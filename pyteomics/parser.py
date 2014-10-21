@@ -465,7 +465,7 @@ def amino_acid_composition(sequence,
 
     return aa_dict
 
-def cleave(sequence, rule, missed_cleavages=0, min_length=1, **kwargs):
+def cleave(sequence, rule, missed_cleavages=0, min_length=None, **kwargs):
     """Cleaves a polypeptide sequence using a given rule.
 
     Parameters
@@ -501,7 +501,7 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=1, **kwargs):
     """
     return set(_cleave(sequence, rule, missed_cleavages, min_length, **kwargs))
 
-def _cleave(sequence, rule, missed_cleavages=0, min_length=1, **kwargs):
+def _cleave(sequence, rule, missed_cleavages=0, min_length=None, **kwargs):
     """Like :py:func:`cleave`, but the result is a list. Refer to
     :py:func:`cleave` for explanation of parameters.
     """
@@ -512,8 +512,9 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=1, **kwargs):
         cleavage_sites.append(i)
         for j in range(len(cleavage_sites)-1):
             seq = sequence[cleavage_sites[j]:cleavage_sites[-1]]
-            if length(seq, **kwargs) >= min_length:
-                peptides.append(seq)
+            if seq:
+                if min_length is None or length(seq, **kwargs) >= min_length:
+                    peptides.append(seq)
     return peptides
 
 def num_sites(sequence, rule, **kwargs):
