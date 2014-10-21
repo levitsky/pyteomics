@@ -480,8 +480,8 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, **kwargs):
         <http://www.regular-expressions.info/lookaround.html>`_.
     missed_cleavages : int, optional
         Maximum number of allowed missed cleavages. Defaults to 0.
-    min_length : int, optional
-        Minimum peptide length. Defaults to 0.
+    min_length : int or None, optional
+        Minimum peptide length. Defaults to :py:const:`None`.
     labels : list, optional
         A list of allowed labels for amino acids and terminal modifications.
 
