@@ -108,7 +108,7 @@ the clevage rules for the most common proteases.
 All possible modified sequences of a peptide can be obtained with
 :py:func:`pyteomics.parser.isoforms`:
 
-.. code-bloc k:: python
+.. code-block:: python
 
     >>> from pyteomics import parser
     >>> forms = parser.isoforms('PEPTIDE', variable_mods={'p': ['T'], 'ox': ['P']})
