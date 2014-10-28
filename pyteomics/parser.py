@@ -17,13 +17,14 @@ form of 'modX', i.e.:
 The valid examples of modX amino acid labels are: 'G', 'pS', 'oxM'. This rule
 allows to combine read- and parseability.
 
-Besides the sequence of amino acid residues, modX has a rule to specif
+Besides the sequence of amino acid residues, modX has a rule to specify
 terminal modifications of a polypeptide. Such a label should start or
 end with a hyphen. The default N-terminal amine group and C-terminal
 carboxyl group may not be shown explicitly.
 
-Therefore, the valid examples of peptide sequences in modX are: "GAGA",
-"H-PEPTIDE", "TEST-NH2".
+Therefore, valid examples of peptide sequences in modX are: "GAGA",
+"H-PEPTIDE-OH", "H-TEST-NH2". It is not recommmended to specify only one
+terminal group.
 
 Operations on polypeptide sequences
 -----------------------------------
