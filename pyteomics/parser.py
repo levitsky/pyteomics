@@ -618,6 +618,7 @@ def isoforms(sequence, **kwargs):
         A list of amino acid labels containing all the labels present in
         `sequence`. Modified entries will be added automatically.
         Defaults to :py:data:`std_labels`.
+        Not required since version 2.5.
 
     max_mods : int or None, optional
         Number of modifications that can occur simultaneously on a peptide,
@@ -677,9 +678,10 @@ def isoforms(sequence, **kwargs):
 
     variable_mods = kwargs.get('variable_mods', {})
     fixed_mods = kwargs.get('fixed_mods', {})
-    labels = kwargs.get('labels', std_labels)
-    parsed = parse(sequence, True, True,
-            labels=labels+list(fixed_mods))
+    parse_kw = {}
+    if 'labels' in kwargs:
+        parse_kw['labels'] = list(kwargs['labels']) + list(fixed_mods)
+    parsed = parse(sequence, True, True, **parse_kw)
     override = kwargs.get('override', False)
     show_unmodified_termini = kwargs.get('show_unmodified_termini', False)
     max_mods = kwargs.get('max_mods')
@@ -720,15 +722,15 @@ def isoforms(sequence, **kwargs):
     if max_mods is None or max_mods > len(sites):
         possible_states = it.product(*states)
     else:
-        state_lists = []
-        for m in range(max_mods+1):
-            for comb in it.combinations(sites, m):
-                skel = [[s[0]] for s in states]
-                for i, e in comb:
-                    skel[i] = e[1:]
-                state_lists.append(skel)
+        def state_lists():
+            for m in range(max_mods+1):
+                for comb in it.combinations(sites, m):
+                    skel = [[s[0]] for s in states]
+                    for i, e in comb:
+                        skel[i] = e[1:]
+                    yield skel
         possible_states = it.chain.from_iterable(
-                it.product(*skel) for skel in state_lists)
+                it.product(*skel) for skel in state_lists())
 
     if format_ == 'split':
         def strip_std_terms():
