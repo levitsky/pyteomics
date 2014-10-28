@@ -1,3 +1,12 @@
+2.5.1
+-----
+
+ - Bugfixes in :py:func:`pyteomics.parser.isoforms`:
+  - handling of the `labels` argument is now in accordance with new policy
+  - solved memory problems when using `max_mods`
+ - :py:func:`pyteomics.parser.cleave` does not require a valid *modX* sequence
+   by default.
+
 2.5.0
 -----
 
@@ -19,7 +28,7 @@
  - Added a new parameter ``max_mods`` in :py:func:`pyteomics.parser.isoforms`.
 
 API changes
------------
+...........
 
  - The boolean ``overlap`` parameter in :py:func:`pyteomics.parser.cleave` is
    replaced with an integer ``min_length``. Since ``min_length`` uses
