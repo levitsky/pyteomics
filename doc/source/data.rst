@@ -54,8 +54,8 @@ contained in an mzML file. Here is an example of its output:
      ->  ->  ->  -> scan window lower limit
      ->  ->  ->  -> scan window upper limit
      ->  -> [Thermo Trailer Extra]Monoisotopic M/Z:
-     -> no combination   
-     
+     -> no combination
+
 
 MGF
 ---
@@ -69,8 +69,8 @@ reading and writing MGF files.
 Similar to :py:mod:`pyteomics.mzml`, :py:mod:`pyteomics.mgf` has a
 :py:func:`read` function. It allows iterating through spectrum entries.
 Spectra are represented as :py:class:`dictionaries`. MS/MS peak lists are stored
-as :py:class:`numpy.array` objects :py:obj:`masses` and :py:obj:`intensities`.
-Parameters are stored as a :py:class:`dict` under 'params' key.
+as :py:class:`numpy.ndarray` objects `mass array` and `intensity array`.
+Parameters are stored as a :py:class:`dict` under `params` key.
 
 Here is an example of use:
 
