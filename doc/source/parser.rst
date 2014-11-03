@@ -93,14 +93,14 @@ and returns a *dictionary* with amino acid labels as *keys* and integer numbers 
 
 :py:func:`pyteomics.parser.cleave` is a method to perform *in silico* cleavage.
 The requiered arguments are the sequence, the rule for enzyme specificity and the
-number of missed cleavages allowed. Note that each product peptide is reported
-only once:
+number of missed cleavages allowed (optional). :py:func:`cleave` returns a
+:py:class:`set` of product peptides.
 
 .. code-block:: python
 
     >>> from pyteomics import parser
     >>> parser.cleave('AKAKBK', parser.expasy_rules['trypsin'], 0)
-    ['AK', 'BK']
+    {'AK', 'BK'}
 
 :py:data:`pyteomics.parser.expasy_rules` is a predefined :py:class:`dict` with
 the clevage rules for the most common proteases.
