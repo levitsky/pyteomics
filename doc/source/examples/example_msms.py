@@ -1,6 +1,5 @@
 # This is written in Python 2 for simplicity
 # Can be done forward-compatible easily, though
-import matplotlib.pyplot as plt
 from pyteomics import mgf, pepxml, mass
 import os
 from urllib import urlretrieve
