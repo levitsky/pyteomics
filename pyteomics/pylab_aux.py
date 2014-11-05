@@ -43,7 +43,7 @@ See also
 #   limitations under the License.
 
 import pylab
-import numpy
+import numpy as np
 from .auxiliary import linear_regression, PyteomicsError
 
 def plot_line(a, b, **kwargs):
@@ -130,20 +130,20 @@ def plot_function_3d(x, y, function, **kwargs):
     """
     import mpl_toolkits.mplot3d.axes3d as pylab3d
     ax = pylab3d.Axes3D(pylab.gcf())
-    X, Y = numpy.meshgrid(x, y)
+    X, Y = np.meshgrid(x, y)
     Z = []
     for y_value in y:
         Z.append([])
         for x_value in x:
             Z[-1].append(function(x_value, y_value))
-    Z = numpy.array(Z)
+    Z = np.array(Z)
     plot_type = kwargs.get('plot_type', 'surface')
     if plot_type == 'surface':
         ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=pylab.cm.jet)
     elif plot_type == 'wireframe':
         ax.plot_wireframe(X, Y, Z, cmap=pylab.cm.jet)
     elif plot_type == 'scatter':
-        ax.scatter3D(numpy.ravel(X), numpy.ravel(Y), numpy.ravel(Z))
+        ax.scatter3D(np.ravel(X), np.ravel(Y), np.ravel(Z))
     elif plot_type == 'contour':
         num_contours = kwargs.get('num_contours', 50)
         ax.contour3D(X, Y, Z, num_contours, cmap=pylab.cm.jet)
@@ -176,13 +176,13 @@ def plot_function_contour(x, y, function, **kwargs):
         The title. Empty by default.
 
     """
-    X, Y = numpy.meshgrid(x, y)
+    X, Y = np.meshgrid(x, y)
     Z = []
     for y_value in y:
         Z.append([])
         for x_value in x:
             Z[-1].append(function(x_value, y_value))
-    Z = numpy.array(Z)
+    Z = np.array(Z)
     num_contours = kwargs.get('num_contours', 50)
     if kwargs.get('filling', True):
         pylab.contourf(X, Y, Z, num_contours, cmap=pylab.cm.jet)
