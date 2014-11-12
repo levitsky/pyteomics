@@ -58,7 +58,7 @@ import numpy as np
 from functools import wraps
 from traceback import format_exc
 import re
-import operator
+import operator as op
 try: # Python 2.7
     from urllib2 import urlopen, URLError
 except ImportError: # Python 3.x
@@ -367,11 +367,17 @@ def _make_filter(read, is_decoy, key):
         remove_decoy = kwargs.pop('remove_decoy', True)
         keyf = kwargs.pop('key', key)
         ratio = kwargs.pop('ratio', 1)
+        reverse = kwargs.pop('reverse', False)
+        better = [op.le, op.ge][reverse]
         dtype = np.dtype([('score', np.float64), ('is_decoy', np.uint8)])
         scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
         if not scores.size:
             raise StopIteration
-        scores.sort()
+        if not reverse:
+            keys = scores['is_decoy'], scores['score']
+        else:
+            keys = scores['is_decoy'], -scores['score']
+        scores = scores[np.lexsort(keys)]
         cumsum = scores['is_decoy'].cumsum(dtype=np.float32)
         ind = np.arange(1, scores.size+1)
         if remove_decoy:
@@ -381,11 +387,12 @@ def _make_filter(read, is_decoy, key):
         try:
             cutoff = scores[np.nonzero(local_fdr <= fdr)[0][-1]][0]
         except IndexError:
-            cutoff = scores['score'].min() - 1.
+            cutoff = (scores['score'].min() - 1. if not reverse
+                    else scores['score'].max() + 1.)
         with read(*args, **kwargs) as f:
             for p in f:
                 if not remove_decoy or not isdecoy(p):
-                    if keyf(p) <= cutoff:
+                    if better(keyf(p), cutoff):
                         yield p
 
     @contextmanager
@@ -404,6 +411,10 @@ def _make_filter(read, is_decoy, key):
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better). The
             default is a function that tries to extract e-value from the PSM.
+        reverse : bool, optional
+            If :py:const:`True`, then PSMs are sorted in descending order,
+            i.e. the value of the key function is higher for better PSMs.
+            Default is :py:const:`False`.
         is_decoy : callable, optional
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
@@ -822,7 +833,7 @@ def _make_iterfind(env):
         try:
             lhs, sign, rhs = re.match(pattern_cond, cond).groups()
             if lhs in d:
-                return getattr(operator, func[sign])(
+                return getattr(op, func[sign])(
                         d[lhs], ast.literal_eval(rhs))
             return False
         except (AttributeError, KeyError, ValueError):
