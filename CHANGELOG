@@ -2,6 +2,9 @@
 -----
 
  - New parameter `reverse` in all :py:func:`!filter` functions.
+ - New function :py:func:`pyteomics.mass.fast_mass2`, which is analogous to
+   :py:func:`pyteomicsmass.fast_mass`, but supports full *modX* notation and
+   is several times slower.
 
 2.5.1
 -----
