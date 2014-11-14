@@ -430,7 +430,7 @@ def amino_acid_composition(sequence,
     {'I': 1, 'P': 2, 'E': 2, 'D': 1, 'pT': 1}
     True
     """
-    labels = kwargs.get('labels', std_labels)
+    labels = kwargs.get('labels')
 
     if isinstance(sequence, str):
         parsed_sequence = parse(sequence, show_unmodified_termini,
