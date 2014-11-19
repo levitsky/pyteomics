@@ -13,8 +13,7 @@ class ElectrochemTest(unittest.TestCase):
             abs(charge('H-AAA-OH', 14.0) + 1.0) < 0.01)
         self.assertTrue(
             abs(charge('H-AAA-OH', (2.34 + 9.69) / 2.0)) < 0.01)
-        self.assertRaises(PyteomicsError, charge, 'O', 7)
-        
+
     def test_charge_input(self):
         for i in range(0, 14):
             self.assertAlmostEqual(
@@ -39,4 +38,3 @@ class ElectrochemTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-                         
