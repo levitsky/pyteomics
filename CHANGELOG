@@ -7,8 +7,8 @@
    is several times slower.
  - Fix in :py:func:`pyteomics.pepxml.read` for compatibility with files
    produced with Mascot2XML utility.
- - Unknown labels now allowed in :py:mod:`pyteomics.electrochem` functions
-   in accordance with new general policy.
+ - Unknown labels now allowed in :py:mod:`pyteomics.electrochem` and
+   :py:mod:`pyteomics.achrom` functions in accordance with new general policy.
 
 2.5.1
 -----
