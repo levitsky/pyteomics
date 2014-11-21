@@ -746,7 +746,7 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         (default is std_aa_mass);
     ion_comp : dict, optional
         A dict with the relative elemental compositions of peptide ion
-        fragments (default is std_ion_comp).
+        fragments (default is :py:data:`std_ion_comp`).
 
     Returns
     -------
@@ -761,6 +761,76 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
 
     mass_data = kwargs.get('mass_data', nist_mass)
     mass += mass_data['H'][0][0] * 2 + mass_data['O'][0][0]
+
+    if ion_type:
+        try:
+            icomp = kwargs.get('ion_comp', std_ion_comp)[ion_type]
+        except KeyError:
+            raise PyteomicsError('Unknown ion type: {}'.format(ion_type))
+
+        mass += sum(mass_data[element][0][0] * num
+             for element, num in icomp.items())
+
+    if charge:
+        mass = (mass + mass_data['H+'][0][0] * charge) / charge
+
+    return mass
+
+def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
+    """Calculate monoisotopic mass of an ion using the fast
+    algorithm. *modX* notation is fully supported.
+
+    Parameters
+    ----------
+    sequence : str
+        A polypeptide sequence string.
+    ion_type : str, optional
+        If specified, then the polypeptide is considered to be
+        in a form of corresponding ion. Do not forget to
+        specify the charge state!
+    charge : int, optional
+        If not 0 then m/z is calculated: the mass is increased
+        by the corresponding number of proton masses and divided
+        by z.
+    mass_data : dict, optional
+        A dict with the masses of chemical elements (the default
+        value is :py:data:`nist_mass`).
+    aa_mass : dict, optional
+        A dict with the monoisotopic mass of amino acid residues
+        (default is std_aa_mass);
+    ion_comp : dict, optional
+        A dict with the relative elemental compositions of peptide ion
+        fragments (default is :py:data:`std_ion_comp`).
+
+    Returns
+    -------
+    mass : float
+        Monoisotopic mass or m/z of a peptide molecule/ion.
+    """
+    aa_mass = kwargs.get('aa_mass', std_aa_mass)
+    mass_data = kwargs.get('mass_data', nist_mass)
+    aa_mass.setdefault('H-', mass_data['H'][0][0])
+    aa_mass.setdefault('-OH', mass_data['H'][0][0] + mass_data['O'][0][0])
+    try:
+        comp = parser.amino_acid_composition(sequence,
+                show_unmodified_termini=True,
+                allow_unknown_modifications=True,
+                labels=aa_mass)
+    except PyteomicsError:
+        raise PyteomicsError('Mass not specified for label(s): {}'.format(
+            ', '.join(set(parser.parse(sequence)).difference(aa_mass))))
+
+    try:
+        mass = 0
+        for aa, num in comp.items():
+            if aa in aa_mass:
+                mass += aa_mass[aa] * num
+            else:
+                mod, X = parser._split_label(aa)
+                mass += (aa_mass[mod] + aa_mass[X]) * num
+    except KeyError as e:
+        raise PyteomicsError(
+                'Unspecified mass for modification: "{}"'.format(e.args[0]))
 
     if ion_type:
         try:

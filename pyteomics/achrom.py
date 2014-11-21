@@ -389,7 +389,7 @@ def get_RCs(sequences, RTs, lcp = -0.21,
     True
     """
 
-    labels = kwargs.get('labels', parser.std_labels)
+    labels = kwargs.get('labels')
 
     # Make a list of all amino acids present in the sample.
     peptide_dicts = [
@@ -516,7 +516,7 @@ def get_RCs_vary_lcp(sequences, RTs,
     >>> abs(RCs['aa']['A'] - 1) + abs(RCs['lcp']) + abs(RCs['const']) < 1e-6
     True
     """
-    labels = kwargs.get('labels', parser.std_labels)
+    labels = kwargs.get('labels')
 
     best_r = -1.1
     best_RC_dict = {}

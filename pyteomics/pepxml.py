@@ -90,7 +90,14 @@ def _get_info_smart(source, element, **kw):
         'int': {'start_scan', 'end_scan', 'index'},
         'bool': {'is_rejected'},
         'floatarray': {'all_ntt_prob'}}
-    converters = {'float': float, 'int': int,
+    def safe_float(s):
+        try:
+            return float(s)
+        except ValueError:
+            if s.startswith('+-0'): return 0
+            return None
+
+    converters = {'float': safe_float, 'int': int,
             'bool': lambda x: x.lower() in {'1', 'true'},
             'floatarray': lambda x: list(map(float, x[1:-1].split(',')))}
     for k, v in dict(info).items():
