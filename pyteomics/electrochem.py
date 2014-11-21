@@ -116,17 +116,11 @@ def charge(sequence, pH, **kwargs):
         A single value of charge or a list of charges.
     """
 
-    # Get the list of valid modX labels.
     pK = kwargs.get('pK', pK_lehninger)
-    labels = list(parser.std_labels)
-    for label in pK:
-        if label not in labels:
-            labels.append(label)
 
     # Parse the sequence.
     if isinstance(sequence, str) or isinstance(sequence, list):
-        peptide_dict = parser.amino_acid_composition(sequence, True, False,
-                                                     labels=labels)
+        peptide_dict = parser.amino_acid_composition(sequence, True, False)
     elif isinstance(sequence, dict):
         peptide_dict = sequence
     else:

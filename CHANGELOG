@@ -1,3 +1,15 @@
+2.5.2
+-----
+
+ - New parameter `reverse` in all :py:func:`!filter` functions.
+ - New function :py:func:`pyteomics.mass.fast_mass2`, which is analogous to
+   :py:func:`pyteomicsmass.fast_mass`, but supports full *modX* notation and
+   is several times slower.
+ - Fix in :py:func:`pyteomics.pepxml.read` for compatibility with files
+   produced with Mascot2XML utility.
+ - Unknown labels now allowed in :py:mod:`pyteomics.electrochem` and
+   :py:mod:`pyteomics.achrom` functions in accordance with new general policy.
+
 2.5.1
 -----
 

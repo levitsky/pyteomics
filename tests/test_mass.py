@@ -59,9 +59,18 @@ class MassTest(unittest.TestCase):
         for pep in self.random_peptides:
             self.assertAlmostEqual(
                 mass.fast_mass(pep, aa_mass=self.test_aa_mass),
-                sum([pep.count(aa) * self.test_aa_mass[aa]
-                     for aa in self.test_aa_mass])
-                + self.mass_H * 2.0 + self.mass_O )
+                sum(pep.count(aa) * m
+                     for aa, m in self.test_aa_mass.items())
+                + self.mass_H * 2.0 + self.mass_O)
+
+    def test_fast_mass2(self):
+        for pep in self.random_peptides:
+            self.assertAlmostEqual(
+                mass.fast_mass2(pep, aa_mass=self.test_aa_mass),
+                sum(pep.count(aa) * m
+                     for aa, m in self.test_aa_mass.items())
+                + self.mass_H * 2.0 + self.mass_O)
+
 
     def test_Composition_dict(self):
         # Test Composition from a dict.

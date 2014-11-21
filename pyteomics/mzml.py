@@ -52,7 +52,7 @@ Miscellaneous
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import numpy
+import numpy as np
 import zlib
 import base64
 from . import auxiliary as aux
@@ -77,7 +77,7 @@ def _decode_base64_data_array(source, dtype, is_compressed):
     decoded_source = base64.b64decode(source.encode('ascii'))
     if is_compressed:
         decoded_source = zlib.decompress(decoded_source)
-    output = numpy.frombuffer(decoded_source, dtype=dtype)
+    output = np.frombuffer(decoded_source, dtype=dtype)
     return output
 
 @aux._file_reader('rb')
@@ -146,7 +146,7 @@ def _get_info_smart(source, element, **kw):
             array = _decode_base64_data_array(
                             b, dtype, compressed)
         else:
-            array = numpy.array([], dtype=dtype)
+            array = np.array([], dtype=dtype)
         for k in info:
             if k.endswith(' array') and not info[k]:
                 info = {k: array}
