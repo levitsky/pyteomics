@@ -1,7 +1,7 @@
 # Maintainer: Lev Levitsky <levlev at mail dot ru>
 pkgname=python-pyteomics
-pkgver=2.5.1
-pkgrel=2
+pkgver=2.5.2
+pkgrel=1
 pkgdesc="A framework for proteomics data analysis."
 arch=('any')
 url="http://pythonhosted.org/pyteomics"
