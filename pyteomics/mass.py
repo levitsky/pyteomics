@@ -406,6 +406,14 @@ class Composition(defaultdict):
         else:
             self._from_dict(kwargs)
 
+    def __reduce__(self):
+        class_, args, state, list_iterator, dict_iterator = super(Composition, self).__reduce__()
+        # Override the reduce of defaultdict so we do not provide the `int` type as the first argument
+        # which prevents from correctly unpickling the object
+        args = ()
+        return class_, args, state, list_iterator, dict_iterator
+
+
 std_aa_comp.update({
     'A':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1}),
     'C':   Composition({'H': 5, 'C': 3, 'S': 1, 'O': 1, 'N': 1}),
