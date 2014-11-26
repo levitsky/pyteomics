@@ -258,6 +258,26 @@ class MassTest(unittest.TestCase):
             s = sum(p[1] for num, p in g.items() if num)
             self.assertTrue(abs(s-1) < 1e-6 or abs(s) < 1e-6)
 
+    def test_composition_objects_are_pickleable(self):
+
+
+
+        dict_ = mass.Composition(self.d, mass_data=self.mass_data)
+        formula = mass.Composition(formula='ABCDE',
+                         mass_data={atom: {0: (1.0, 1.0)} for atom in 'ABCDE'})
+        sequence = mass.Composition(sequence='XYZ', aa_comp=self.aa_comp)
+        parsed_sequence = mass.Composition(parsed_sequence=['X', 'Y', 'Z'],
+                             aa_comp=self.aa_comp)
+        split_sequence = mass.Composition(split_sequence=[('X',), ('Y',), ('Z',)],
+                             aa_comp=self.aa_comp)
+
+        import pickle
+        self.assertEqual(dict_, pickle.loads(pickle.dumps(dict_)))
+        self.assertEqual(formula, pickle.loads(pickle.dumps(formula)))
+        self.assertEqual(sequence, pickle.loads(pickle.dumps(sequence)))
+        self.assertEqual(parsed_sequence, pickle.loads(pickle.dumps(parsed_sequence)))
+        self.assertEqual(split_sequence, pickle.loads(pickle.dumps(split_sequence)))
+
 
 if __name__ == '__main__':
     unittest.main()
