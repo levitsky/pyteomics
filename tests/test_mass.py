@@ -259,9 +259,6 @@ class MassTest(unittest.TestCase):
             self.assertTrue(abs(s-1) < 1e-6 or abs(s) < 1e-6)
 
     def test_composition_objects_are_pickleable(self):
-
-
-
         dict_ = mass.Composition(self.d, mass_data=self.mass_data)
         formula = mass.Composition(formula='ABCDE',
                          mass_data={atom: {0: (1.0, 1.0)} for atom in 'ABCDE'})
