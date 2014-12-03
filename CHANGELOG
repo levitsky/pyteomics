@@ -3,6 +3,8 @@
 
  - Universally applicable modifications are now allowed in
    :py:func:`pyteomics.parser.isoforms`.
+ - It is now also possible to specify non-terminal modifications which are
+   only applicable to terminal residues.
 
 2.5.2
 -----
