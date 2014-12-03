@@ -1,3 +1,9 @@
+2.5.3
+-----
+
+ - Universally applicable modifications are now allowed in
+   :py:func:`pyteomics.parser.isoforms`.
+
 2.5.2
 -----
 
