@@ -605,9 +605,14 @@ def isoforms(sequence, **kwargs):
         A dict of variable modifications in the following format:
         :py:const:`{'label1': ['X', 'Y', ...], 'label2': ['X', 'A', 'B', ...]}`
 
-        **Note**: several variable modifications can occur on amino acids of the
-        same type, but in the output each amino acid residue will be modified
-        at most once (apart from terminal modifications).
+        Keys in the dict are modification labels (terminal modifications allowed).
+        Values are iterables of residue labels (one letter each) or
+        :py:const:`True`. If a value for a modification is :py:const:`True`,
+        it is applicable to any residue (useful for terminal modifications).
+
+        .. note:: Several variable modifications can occur on amino acids of the
+                  same type, but in the output each amino acid residue will be
+                  modified at most once (apart from terminal modifications).
 
     fixed_mods : dict, optional
         A dict of fixed modifications in the same format.
@@ -691,32 +696,38 @@ def isoforms(sequence, **kwargs):
     # Apply fixed modifications
     for cmod in fixed_mods:
         for i, group in enumerate(parsed):
-            if main(group)[1] in fixed_mods[cmod]:
+            if fixed_mods[cmod] == True or main(group)[1] in fixed_mods[cmod]:
                 parsed[i] = apply_mod(group, cmod)
 
     # Create a list of possible states for each group
     # Start with N-terminal mods and regular mods on the N-terminal residue
     second = set(apply_mod(parsed[0], m) for m, r in variable_mods.items()
-            if main(parsed[0])[1] in r and not is_term_mod(m)).union([parsed[0]])
+                if (r == True or
+                    main(parsed[0])[1] in r)
+                and not is_term_mod(m)
+                ).union([parsed[0]])
     first = it.chain((apply_mod(group, mod) for group in second
             for mod, res in variable_mods.items()
         if (mod.endswith('-') or (mod.startswith('-') and len(parsed) == 1))
-        and main(group)[1] in res), second)
+        and (res == True or main(group)[1] in res)), second)
     states = [[parsed[0]] + list(set(first).difference({parsed[0]}))]
     # Continue with regular mods
     states.extend([group] + list(set(apply_mod(group, mod)
-            for mod in variable_mods if
-                main(group)[1] in variable_mods[mod] and not is_term_mod(mod)
+            for mod in variable_mods if (
+                variable_mods[mod] == True or
+                main(group)[1] in variable_mods[mod]) and not is_term_mod(mod)
                 ).difference({group}))
         for group in parsed[1:-1])
     # Finally add C-terminal mods and regular mods on the C-terminal residue
     if len(parsed) > 1:
         second = set(apply_mod(parsed[-1], m) for m, r in variable_mods.items()
-                    if main(parsed[-1])[1] in r and not is_term_mod(m)
+                    if (r == True or main(parsed[-1])[1] in r)
+                    and not is_term_mod(m)
                 ).union((parsed[-1],))
         first = it.chain((apply_mod(group, mod) for group in second
                 for mod, res in variable_mods.items()
-            if mod.startswith('-') and main(group)[1] in res), second)
+            if mod.startswith('-') and (
+                res == True or main(group)[1] in res)), second)
         states.append([parsed[-1]] + list(set(first).difference({parsed[-1]})))
 
     sites = [s for s in enumerate(states) if len(s[1]) > 1]

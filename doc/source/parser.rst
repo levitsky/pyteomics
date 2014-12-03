@@ -68,6 +68,13 @@ without ``labels``, because it has **only one terminal group shown**, which is
     >>> parser.parse('Ac-PEpTIDE-OH', split=True)
     [('Ac-', 'P'), ('E',), ('p', 'T'), ('I',), ('D',), ('E',)]
 
+or:
+
+.. code-block:: python
+
+    >>> parser.parse('Ac-PEpTIDE-OH', split=True, labels=parser.std_labels+['Ac-', 'p'])
+    [('Ac-', 'P'), ('E',), ('p', 'T'), ('I',), ('D',), ('E',)]
+
 Also, note what we supply as `labels` here: 'p' instead of 'pT'. That means that
 'p' is a modification applicable to any residue.
 
