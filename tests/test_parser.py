@@ -108,6 +108,12 @@ class ParserTest(unittest.TestCase):
                         variable_mods={'x': True})),
                     2**len(seq))
 
+    def test_isoforms_terminal(self):
+        self.assertEqual(
+                set(isoforms('PEPTIDE',
+                    variable_mods={'xx': ['ntermP'], 'yy-': 'P'})),
+                {'PEPTIDE', 'xxPEPTIDE', 'yy-PEPTIDE', 'yy-xxPEPTIDE'})
+
     def test_isoforms_len(self):
         for j in range(50):
             L = random.randint(1, 10)

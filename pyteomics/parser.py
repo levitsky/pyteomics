@@ -609,6 +609,9 @@ def isoforms(sequence, **kwargs):
         Values are iterables of residue labels (one letter each) or
         :py:const:`True`. If a value for a modification is :py:const:`True`,
         it is applicable to any residue (useful for terminal modifications).
+        You can use values such as 'ntermX' or 'ctermY' to specify that a
+        mdofication only occurs when the residue is in the terminal position.
+        This is *not needed* for terminal modifications.
 
         .. note:: Several variable modifications can occur on amino acids of the
                   same type, but in the output each amino acid residue will be
@@ -703,7 +706,9 @@ def isoforms(sequence, **kwargs):
     # Start with N-terminal mods and regular mods on the N-terminal residue
     second = set(apply_mod(parsed[0], m) for m, r in variable_mods.items()
                 if (r == True or
-                    main(parsed[0])[1] in r)
+                    main(parsed[0])[1] in r or
+                    'nterm' + main(parsed[0])[1] in r or
+                    (len(parsed) == 1 and 'cterm' + main(parsed[0])[1] in r))
                 and not is_term_mod(m)
                 ).union([parsed[0]])
     first = it.chain((apply_mod(group, mod) for group in second
@@ -721,7 +726,9 @@ def isoforms(sequence, **kwargs):
     # Finally add C-terminal mods and regular mods on the C-terminal residue
     if len(parsed) > 1:
         second = set(apply_mod(parsed[-1], m) for m, r in variable_mods.items()
-                    if (r == True or main(parsed[-1])[1] in r)
+                    if (r == True or
+                        main(parsed[-1])[1] in r or
+                        'cterm' + main(parsed[-1])[1] in r)
                     and not is_term_mod(m)
                 ).union((parsed[-1],))
         first = it.chain((apply_mod(group, mod) for group in second
