@@ -126,7 +126,7 @@ def is_term_mod(label):
     -------
     out : bool
     """
-    return label.startswith('-') or label.endswith('-')
+    return label[0] == '-' or label[-1] == '-'
 
 def match_modX(label):
     """Check if `label` is a valid 'modX' label.

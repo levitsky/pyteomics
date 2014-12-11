@@ -106,8 +106,7 @@ def read(source=None, ignore_comments=False, parser=None):
         if not stripped_string:
             continue
 
-        is_comment = (stripped_string.startswith('>')
-                      or stripped_string.startswith(';'))
+        is_comment = (stripped_string[0] in '>;')
         if is_comment:
             # If it is a continuing comment
             if len(accumulated_strings) == 1:
