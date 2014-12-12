@@ -5,6 +5,7 @@
    :py:func:`pyteomics.parser.isoforms`.
  - It is now also possible to specify non-terminal modifications which are
    only applicable to terminal residues.
+ - Performance improvements.
 
 2.5.2
 -----
