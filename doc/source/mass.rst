@@ -68,7 +68,7 @@ you need to add the information about its elemental composition to the
 :py:data:`pyteomics.mass.std_aa_comp` dictionary used in the calculations by
 default.
 
- .. code-block:: python
+.. code-block:: python
 
     >>> from pyteomics import mass
     >>> mass.std_aa_comp['pT'] = mass.Composition(
@@ -169,12 +169,22 @@ optimized and simplified version of this function named
 :py:func:`pyteomics.mass.fast_mass`. It works only with unmodified sequences in
 standard one-letter IUPAC notation. Like :py:func:`pyteomics.mass.calculate_mass`,
 :py:func:`pyteomics.mass.fast_mass` can calculate *m/z* when provided with ion
-type and charge.
+type and charge. Amino acid masses can be specified via the ``aa_mass`` argument.
 
 .. code-block:: python
 
     >>> from pyteomicss import mass
     >>> mass.fast_mass('PEPTIDE')
+    799.3599446837036
+
+If you need to calculate the mass or *m/z* for a peptide with modifications
+and/or non-standard terminal groups, but don't want to specify all compositions,
+you can also use the :py:func:`pyteomics.mass.fast_mass2` function. It uses
+``aa_mass`` the same way as :py:func:`fast_mass`, but has full *modX* support:
+
+.. code-block:: python
+
+    >>> mass.fast_mass2('H-PEPTIDE-OH')
     799.3599446837036
 
 Isotopes
