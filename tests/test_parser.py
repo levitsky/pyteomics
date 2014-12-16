@@ -150,6 +150,7 @@ class ParserTest(unittest.TestCase):
             peptide = ''.join([random.choice(self.labels) for _ in range(L)])
             self.assertTrue(fast_valid(peptide, labels=self.labels))
             self.assertTrue(valid(peptide, labels=self.labels))
+            self.assertTrue(valid(peptide))
             for aa in set(peptide):
                 bad = peptide.replace(aa, 'Z')
                 self.assertFalse(fast_valid(bad, labels=self.labels))
@@ -162,6 +163,7 @@ class ParserTest(unittest.TestCase):
             peptide = ''.join([random.choice(self.labels) for _ in range(L)])
             modseqs = isoforms(peptide, variable_mods=self.potential,
                     fixed_mods=self.constant, labels=self.labels)
+            self.assertFalse(valid('H-' + peptide, labels=self.labels))
             for s in modseqs:
                 self.assertTrue(valid(s, labels=self.extlabels))
                 for aa in set(peptide):
