@@ -228,17 +228,26 @@ def parse(sequence,
     allow_unknown_modifications : bool, optional
         If :py:const:`True` then do not raise an exception when an unknown
         modification of a known amino acid residue is found in the sequence.
+        This also includes terminal groups.
         Default value is :py:const:`False`.
+
+        .. note::
+            Since version 2.5, this parameter has effect only if `labels`
+            are provided.
     labels : container, optional
-        A list (set, tuple, etc.) of allowed labels for amino acids,
+        A container of allowed labels for amino acids,
         modifications and terminal modifications.
         If not provided, no checks will be done.
         Separate labels for modifications (such as 'p' or 'ox')
         can be supplied, which means they are applicable to all residues.
 
         .. warning::
+            If `show_unmodified_termini` is set to :py:const:`True`, standard
+            terminal groups need to be present in `labels`.
+
+        .. warning::
             Avoid using sequences with only one terminal group, as they are
-            ambiguous. If you provide one, ``labels`` (or :py:const:`std_labels`)
+            ambiguous. If you provide one, `labels` (or :py:const:`std_labels`)
             will be used to resolve the ambiguity.
 
     Returns
@@ -287,11 +296,11 @@ def parse(sequence,
         parsed_sequence = re.findall(_modX_group, body)
     nterm, cterm = (n or std_nterm), (c or std_cterm)
 
+    # Check against `labels` if given
     if labels is not None:
-        for term, std_term in zip([nterm, cterm], [std_nterm, std_cterm]):
-            if (term != std_term and
-                    term not in labels and
-                    not allow_unknown_modifications):
+        labels = set(labels)
+        for term, std_term in zip([n, c], [std_nterm, std_cterm]):
+            if term and term not in labels and not allow_unknown_modifications:
                 raise PyteomicsError(
                             'Unknown label: {}'.format(term))
         for group in parsed_sequence:
@@ -305,7 +314,7 @@ def parse(sequence,
                 raise PyteomicsError(
                         'Unknown label: {}'.format(group))
 
-    # Append terminal labels.
+    # Append terminal labels
     if show_unmodified_termini or nterm != std_nterm:
         if split:
             parsed_sequence[0] = (nterm,) + parsed_sequence[0]
