@@ -1,3 +1,16 @@
+2.5.3
+-----
+
+ - Universally applicable modifications are now allowed in
+   :py:func:`pyteomics.parser.isoforms`.
+ - It is now also possible to specify non-terminal modifications which are
+   only applicable to terminal residues.
+ - Fix in :py:func:`pyteomics.parser.parse`: if the `labels` argument is
+   provided, it needs to contain standard terminal groups if they are present
+   in the sequence or if `show_unmodified_termini` is set to :py:const:`True`.
+ - :py:class:`pyteomics.mass.Composition` instances are now pickleable.
+ - Performance improvements.
+
 2.5.2
 -----
 

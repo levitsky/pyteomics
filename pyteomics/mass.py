@@ -104,7 +104,7 @@ def _make_isotope_string(element_name, isotope_num):
     if isotope_num == 0:
         return element_name
     else:
-        return '%s[%d]' % (element_name, isotope_num)
+        return '{}[{}]'.format(element_name, isotope_num)
 
 def _parse_isotope_string(label):
     """Parse an string with an isotope label and return the element name and
@@ -115,13 +115,9 @@ def _parse_isotope_string(label):
     >>> _parse_isotope_string('C[12]')
     ('C', 12)
     """
-    if label.endswith(']'):
-        isotope_num = int(label[label.find('[')+1:-1])
-        element_name = label[:label.find('[')]
-    else:
-        isotope_num = 0
-        element_name = label
-    return (element_name, isotope_num)
+    element_name, num = re.match(_isotope_string, label).groups()
+    isotope_num = int(num) if num else 0
+    return element_name, isotope_num
 
 # Initialize std_aa_comp before the Composition class
 # description, fill it later.
@@ -129,6 +125,10 @@ std_aa_comp = {}
 """A dictionary with elemental compositions of the twenty standard
 amino acid residues and standard H- and -OH terminal groups.
 """
+
+_isotope_string = r'^([A-Z][a-z+]*)(?:\[(\d+)\])?$'
+_atom = r'([A-Z][a-z+]*)(?:\[(\d+)\])?([+-]?\d+)?'
+_formula = r'^({})*$'.format(_atom)
 
 class Composition(defaultdict):
     """
@@ -247,59 +247,13 @@ class Composition(defaultdict):
         self._from_parsed_sequence(parsed_sequence, aa_comp)
 
     def _from_formula(self, formula, mass_data):
-        # Parsing a formula backwards.
-        prev_chem_symbol_start = len(formula)
-        i = len(formula) - 1
-
-        while i >= 0:
-            # Read backwards until a non-number character is met.
-            if (formula[i].isdigit() or formula[i] == '-'):
-                i -= 1
-                continue
-
-            else:
-                # If the number of atoms is omitted then it is 1.
-                if i+1 == prev_chem_symbol_start:
-                    num_atoms = 1
-                else:
-                    try:
-                        num_atoms = int(formula[i+1:prev_chem_symbol_start])
-                    except ValueError:
-                        raise PyteomicsError(
-                            'Badly-formed number of atoms: %s' % formula)
-
-                # Read isotope number if specified, else it is undefined (=0).
-                if formula[i] == ']':
-                    bra_pos = formula.rfind('[', 0, i)
-                    if bra_pos == -1:
-                        raise PyteomicsError(
-                            'Badly-formed isotope number: %s' % formula)
-                    try:
-                        isotope_num = int(formula[bra_pos+1:i])
-                    except ValueError:
-                        raise PyteomicsError(
-                            'Badly-formed isotope number: %s' % formula)
-                    i = bra_pos - 1
-                else:
-                    isotope_num = 0
-
-                # Match the element name to the mass_data.
-                element_found = False
-                # Sort the keys from longest to shortest to workaround
-                # the overlapping keys issue
-                for element_name in sorted(mass_data, key=len, reverse=True):
-                    if formula.endswith(element_name, 0, i+1):
-                        isotope_string = _make_isotope_string(
-                            element_name, isotope_num)
-                        self[isotope_string] += num_atoms
-                        i -= len(element_name)
-                        prev_chem_symbol_start = i + 1
-                        element_found = True
-                        break
-
-                if not element_found:
-                    raise PyteomicsError(
-                        'Unknown chemical element in the formula: %s' % formula)
+        if not re.match(_formula, formula):
+            raise PyteomicsError('Invalid formula: ' + formula)
+        for elem, isotope, number in re.findall(_atom, formula):
+            if not elem in mass_data:
+                raise PyteomicsError('Unknown chemical element: ' + elem)
+            self[_make_isotope_string(elem, int(isotope) if isotope else 0)
+                    ] += int(number) if number else 1
 
     def _from_dict(self, comp):
         for isotope_string, num_atoms in comp.items():
@@ -521,7 +475,6 @@ def calculate_mass(*args, **kwargs):
     -------
         mass : float
     """
-
     mass_data = kwargs.get('mass_data', nist_mass)
     ion_comp = kwargs.get('ion_comp', std_ion_comp)
     # Make a deep copy of `composition` keyword argument.

@@ -452,14 +452,14 @@ def get_RCs(sequences, RTs, lcp = -0.21,
         for term_label in ['nterm', 'cterm']:
             # Check if there are terminal RCs remaining undefined.
             undefined_term_RCs = [aa for aa in RC_dict['aa']
-                                if not aa[1:].startswith('term')
+                                if aa[1:5] != 'term'
                                 and term_label + aa not in RC_dict['aa']]
             if not undefined_term_RCs:
                 continue
 
             # Find a linear relationship between internal and terminal RCs.
             defined_term_RCs = [aa for aa in RC_dict['aa']
-                              if not aa[1:].startswith('term')
+                              if aa[1:5] != 'term'
                               and term_label + aa in RC_dict['aa']]
 
             a, b, r, stderr = linear_regression(
