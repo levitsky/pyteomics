@@ -93,6 +93,27 @@ class ParserTest(unittest.TestCase):
                      'xxPEPTIDxxE', 'xxPExxPTIDE', 'xxPExxPTIDxxE', 'xxPxxEPTIDE',
                      'xxPxxEPTIDxxE', 'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE'})
 
+    def test_isoforms_universal(self):
+        self.assertEqual(
+                set(isoforms('PEPTIDE',
+                    variable_mods={'xx-': True})),
+                {'PEPTIDE', 'xx-PEPTIDE'})
+        self.assertEqual(
+                set(isoforms('PEPTIDE',
+                    variable_mods={'-xx': True})),
+                {'PEPTIDE', 'PEPTIDE-xx'})
+        for seq in self.simple_sequences:
+            self.assertEqual(
+                    sum(1 for _ in isoforms(seq,
+                        variable_mods={'x': True})),
+                    2**len(seq))
+
+    def test_isoforms_terminal(self):
+        self.assertEqual(
+                set(isoforms('PEPTIDE',
+                    variable_mods={'xx': ['ntermP'], 'yy-': 'P'})),
+                {'PEPTIDE', 'xxPEPTIDE', 'yy-PEPTIDE', 'yy-xxPEPTIDE'})
+
     def test_isoforms_len(self):
         for j in range(50):
             L = random.randint(1, 10)
@@ -129,6 +150,7 @@ class ParserTest(unittest.TestCase):
             peptide = ''.join([random.choice(self.labels) for _ in range(L)])
             self.assertTrue(fast_valid(peptide, labels=self.labels))
             self.assertTrue(valid(peptide, labels=self.labels))
+            self.assertTrue(valid(peptide))
             for aa in set(peptide):
                 bad = peptide.replace(aa, 'Z')
                 self.assertFalse(fast_valid(bad, labels=self.labels))
@@ -141,6 +163,7 @@ class ParserTest(unittest.TestCase):
             peptide = ''.join([random.choice(self.labels) for _ in range(L)])
             modseqs = isoforms(peptide, variable_mods=self.potential,
                     fixed_mods=self.constant, labels=self.labels)
+            self.assertFalse(valid('H-' + peptide, labels=self.labels))
             for s in modseqs:
                 self.assertTrue(valid(s, labels=self.extlabels))
                 for aa in set(peptide):
