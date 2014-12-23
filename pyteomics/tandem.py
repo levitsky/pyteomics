@@ -177,6 +177,8 @@ def is_decoy(psm, prefix='DECOY_'):
     """
     return all(prot['label'].startswith(prefix) for prot in psm['protein'])
 
-filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'))
+local_fdr = aux._make_local_fdr(chain, is_decoy, operator.itemgetter('expect'))
+filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'),
+        local_fdr)
 fdr = aux._make_fdr(is_decoy)
 filter.chain = aux._make_chain(filter, 'filter')

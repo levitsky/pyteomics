@@ -248,6 +248,8 @@ def is_decoy(psm, prefix='DECOY_'):
             for protein in  psm['search_hit'][0]['proteins'])
 
 fdr = aux._make_fdr(is_decoy)
-filter = aux._make_filter(chain, is_decoy, lambda x: min(
-    sh['search_score']['expect'] for sh in x['search_hit']))
+_key = lambda x: min(
+    sh['search_score']['expect'] for sh in x['search_hit'])
+local_fdr = aux._make_local_fdr(chain, is_decoy, _key)
+filter = aux._make_filter(chain, is_decoy, _key, local_fdr)
 filter.chain = aux._make_chain(filter, 'filter')
