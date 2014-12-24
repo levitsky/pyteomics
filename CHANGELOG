@@ -1,3 +1,10 @@
+2.5.4
+-----
+
+ - New functions :py:func:`local_fdr` in :py:mod:`pepxml`, :py:mod:`mzid`, and
+   :py:mod:`tandem`. The function returns a NumPy array with PSM scores and
+   corresponding values of local FDR.
+
 2.5.3
 -----
 
