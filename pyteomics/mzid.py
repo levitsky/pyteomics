@@ -85,7 +85,7 @@ def _get_info_smart(source, element, **kw):
                 **kwargs)
 
 @aux._keepstate
-def get_by_id(source, elem_id):
+def get_by_id(source, elem_id, **kwargs):
     """Parse ``source`` and return the element with `id` attribute equal to
     ``elem_id``. Returns :py:const:`None` if no such element is found.
 
@@ -119,7 +119,7 @@ def get_by_id(source, elem_id):
             get_by_id.id_dict[source] = id_dict
         else:
             get_by_id.id_dict = {source: id_dict}
-    return _get_info_smart(source, get_by_id.id_dict[source][elem_id])
+    return _get_info_smart(source, get_by_id.id_dict[source][elem_id], **kwargs)
 
 _version_info_env = {'format': 'mzIdentML', 'element': 'MzIdentML'}
 version_info = aux._make_version_info(_version_info_env)
@@ -137,7 +137,7 @@ _iterfind_env = {'get_info_smart': _get_info_smart}
 iterfind = aux._make_iterfind(_iterfind_env)
 
 @aux._file_reader('rb')
-def read(source, **kwargs):
+def read(source, iterative=False, **kwargs):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
@@ -166,7 +166,8 @@ def read(source, **kwargs):
        An iterator over the dicts with PSM properties.
     """
 
-    return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
+    return iterfind(source, 'SpectrumIdentificationResult',
+            iterative=iterative, **kwargs)
 
 chain = aux._make_chain(read, 'read')
 
