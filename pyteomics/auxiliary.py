@@ -845,16 +845,11 @@ def _make_get_info(env):
         # resolve refs
         # loop is needed to resolve refs pulled from other refs
         if retrieve_refs:
-            while True:
-                refs = False
-                for k, v in dict(info).items():
-                    if k.endswith('_ref'):
-                        refs = True
-                        info.update(env['get_by_id'](source, v))
-                        del info[k]
-                        del info['id']
-                if not refs:
-                    break
+            for k, v in dict(info).items():
+                if k.endswith('_ref'):
+                    info.update(env['get_by_id'](source, v, retrieve_refs=True))
+                    del info[k]
+                    info.pop('id', None)
         # flatten the excessive nesting
         for k, v in dict(info).items():
             if k in env['keys']:
@@ -871,8 +866,10 @@ def _make_get_info(env):
         return info
     return _get_info
 
+
 def _make_iterfind(env):
     from lxml import etree
+    parse = memoize(1)(etree.parse)
     pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
     pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
     def get_rel_path(element, names):
@@ -900,7 +897,7 @@ def _make_iterfind(env):
             raise PyteomicsError('Invalid condition: ' + cond)
 
     @_keepstate
-    def iterfind(source, path, **kwargs):
+    def iterfind(source, path, iterative=True, **kwargs):
         """Parse ``source`` and yield info on elements with specified local name
         or by specified "XPath". Only local names separated with slashes are
         accepted. An asterisk (`*`) means any element.
@@ -913,7 +910,6 @@ def _make_iterfind(env):
             path, _, cond = re.match(pattern_path, path).groups()
         except AttributeError:
             raise PyteomicsError('Invalid path: ' + path)
-
         if path.startswith('//') or not path.startswith('/'):
             absolute = False
             if path.startswith('//'):
@@ -923,27 +919,37 @@ def _make_iterfind(env):
         else:
             absolute = True
             path = path[1:]
-        nodes = path.rstrip('/').lower().split('/')
-        localname = nodes[0]
-        found = False
-        for ev, elem in etree.iterparse(source, events=('start', 'end'),
-                remove_comments=True):
-            name_lc = _local_name(elem).lower()
-            if ev == 'start':
-                if name_lc == localname or localname == '*':
-                    found += True
-            else:
-                if name_lc == localname or localname == '*':
-                    if (absolute and elem.getparent() is None
-                            ) or not absolute:
-                        for child in get_rel_path(elem, nodes[1:]):
-                            info = env['get_info_smart'](source, child, **kwargs)
-                            if cond is None or satisfied(info, cond):
-                                yield info
-                    if not localname == '*':
-                        found -= 1
-                if not found:
-                    elem.clear()
+        nodes = path.rstrip('/').split('/')
+        if iterative:
+            localname = nodes[0].lower()
+            found = False
+            for ev, elem in etree.iterparse(source, events=('start', 'end'),
+                    remove_comments=True):
+                name_lc = _local_name(elem).lower()
+                if ev == 'start':
+                    if name_lc == localname or localname == '*':
+                        found += True
+                else:
+                    if name_lc == localname or localname == '*':
+                        if (absolute and elem.getparent() is None
+                                ) or not absolute:
+                            for child in get_rel_path(elem, nodes[1:]):
+                                info = env['get_info_smart'](
+                                        source, child, **kwargs)
+                                if cond is None or satisfied(info, cond):
+                                    yield info
+                        if not localname == '*':
+                            found -= 1
+                    if not found:
+                        elem.clear()
+        else:
+            tree = parse(source)
+            xpath = ('/' if absolute else '//') + '/'.join(
+                    '*[local-name()="{}"]'.format(node) for node in nodes)
+            for elem in tree.xpath(xpath):
+                info = env['get_info_smart'](source, elem, **kwargs)
+                if cond is None or satisfied(info, cond):
+                    yield info
     return iterfind
 
 def _xpath(tree, path, ns=None):
