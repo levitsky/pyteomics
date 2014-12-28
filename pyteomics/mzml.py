@@ -95,6 +95,11 @@ def read(source, read_schema=True, iterative=True):
         parameters. Disable this to avoid waiting on long network connections or
         if you don't like to get the related warnings.
 
+    iterative : bool, optional
+        Defines whether iterative parsing should be used. It helps reduce
+        memory usage at almost the same parsing speed. Default is
+        :py:const:`True`.
+
     Returns
     -------
     out : iterator

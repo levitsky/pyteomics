@@ -155,6 +155,13 @@ def read(source, **kwargs):
         automatically added to the results. The file processing time will
         increase. Default is :py:const:`False`.
 
+    iterative : bool, optional
+        Specifies whether iterative XML parsing should be used. Iterative
+        parsing significantly reduces memory usage and may be just a little
+        slower. When `retrieve_refs` is :py:const:`True`, however, it is
+        highly recommended to disable iterative parsing if possible.
+        Default value is the opposite of `retrieve_refs`.
+
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
         mentioned in the mzIdentML header (default). Otherwise, use default
@@ -166,7 +173,9 @@ def read(source, **kwargs):
     out : iterator
        An iterator over the dicts with PSM properties.
     """
-
+    kwargs = kwargs.copy()
+    if kwargs.get('iterative') is None:
+        kwargs['iterative'] = not kwargs.get('retrieve_refs')
     return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
 
 chain = aux._make_chain(read, 'read')
