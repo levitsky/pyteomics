@@ -847,7 +847,9 @@ def _make_get_info(env):
         if retrieve_refs:
             for k, v in dict(info).items():
                 if k.endswith('_ref'):
-                    info.update(env['get_by_id'](source, v, retrieve_refs=True))
+                    info.update(env['get_by_id'](source, v,
+                        retrieve_refs=True,
+                        tree=kw.get('tree')))
                     del info[k]
                     info.pop('id', None)
         # flatten the excessive nesting
@@ -869,7 +871,10 @@ def _make_get_info(env):
 
 def _make_iterfind(env):
     from lxml import etree
-    parse = memoize(1)(etree.parse)
+    @memoize(1)
+    def parse(source):
+        p = etree.XMLParser(remove_comments=True)
+        return etree.parse(source, parser=p)
     pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
     pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
     def get_rel_path(element, names):
@@ -947,7 +952,7 @@ def _make_iterfind(env):
             xpath = ('/' if absolute else '//') + '/'.join(
                     '*[local-name()="{}"]'.format(node) for node in nodes)
             for elem in tree.xpath(xpath):
-                info = env['get_info_smart'](source, elem, **kwargs)
+                info = env['get_info_smart'](source, elem, tree=tree, **kwargs)
                 if cond is None or satisfied(info, cond):
                     yield info
     return iterfind

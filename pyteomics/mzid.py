@@ -101,25 +101,26 @@ def get_by_id(source, elem_id, **kwargs):
     -------
     out : :py:class:`dict` or :py:const:`None`
     """
-    if not hasattr(get_by_id, 'id_dict') or source not in get_by_id.id_dict:
-        stack = 0
-        id_dict = {}
+    if kwargs.get('tree') is None:
+        found = False
         for event, elem in etree.iterparse(source, events=('start', 'end'),
                 remove_comments=True):
             if event == 'start':
-                if 'id' in elem.attrib:
-                    stack += 1
+                if elem.attrib.get('id') == elem_id:
+                    found = True
             else:
-                if 'id' in elem.attrib:
-                    stack -= 1
-                    id_dict[elem.attrib['id']] = elem
-                elif stack == 0:
+                if elem.attrib.get('id') == elem_id:
+                    return _get_info_smart(source, elem, **kwargs)
+                if not found:
                     elem.clear()
-        if hasattr(get_by_id, 'id_dict'):
-            get_by_id.id_dict[source] = id_dict
-        else:
-            get_by_id.id_dict = {source: id_dict}
+        return None
+    if not hasattr(get_by_id, 'id_dict'):
+        get_by_id.id_dict = {}
+    if source not in get_by_id.id_dict:
+        ids = kwargs['tree'].xpath('//*[@id]')
+        get_by_id.id_dict[source] = {e.attrib['id']: e for e in ids}
     return _get_info_smart(source, get_by_id.id_dict[source][elem_id], **kwargs)
+
 
 _version_info_env = {'format': 'mzIdentML', 'element': 'MzIdentML'}
 version_info = aux._make_version_info(_version_info_env)
@@ -137,7 +138,7 @@ _iterfind_env = {'get_info_smart': _get_info_smart}
 iterfind = aux._make_iterfind(_iterfind_env)
 
 @aux._file_reader('rb')
-def read(source, iterative=False, **kwargs):
+def read(source, **kwargs):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
@@ -166,8 +167,7 @@ def read(source, iterative=False, **kwargs):
        An iterator over the dicts with PSM properties.
     """
 
-    return iterfind(source, 'SpectrumIdentificationResult',
-            iterative=iterative, **kwargs)
+    return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
 
 chain = aux._make_chain(read, 'read')
 
