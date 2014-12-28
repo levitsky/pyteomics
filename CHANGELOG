@@ -5,6 +5,10 @@
    :py:mod:`tandem`. The function returns a NumPy array with PSM scores and
    corresponding values of local FDR.
 
+ - New parameter `iterative` in :py:func:`read` functions of XML parsing
+   modules. Parsing of mzIdentML files with ``retrieve_refs=True`` got
+   significantly faster.
+
 2.5.3
 -----
 

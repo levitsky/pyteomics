@@ -109,13 +109,18 @@ def _get_info_smart(source, element, **kw):
     return info
 
 @aux._file_reader('rb')
-def read(source, iterative=False):
+def read(source, iterative=True):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
     ----------
     source : str or file
         A path to a target X!Tandem output file or the file object itself.
+
+    iterative : bool, optional
+        Defines whether iterative parsing should be used. It helps reduce
+        memory usage at almost the same parsing speed. Default is
+        :py:const:`True`.
 
     Returns
     -------
