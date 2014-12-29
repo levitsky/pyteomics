@@ -114,13 +114,22 @@ def get_by_id(source, elem_id, **kwargs):
                 if not found:
                     elem.clear()
         return None
-    if not hasattr(get_by_id, 'id_dict'):
-        get_by_id.id_dict = {}
-    if source not in get_by_id.id_dict:
-        ids = kwargs['tree'].xpath('//*[@id]')
-        get_by_id.id_dict[source] = {e.attrib['id']: e for e in ids}
-    return _get_info_smart(source, get_by_id.id_dict[source][elem_id], **kwargs)
-
+    if not hasattr(get_by_id, 'id_dict') or source not in get_by_id.id_dict:
+        stack = 0
+        id_dict = {}
+        for event, elem in etree.iterparse(source, events=('start', 'end'),
+                remove_comments=True):
+            if event == 'start':
+                if 'id' in elem.attrib:
+                    stack += 1
+            else:
+                if 'id' in elem.attrib:
+                    stack -= 1
+                    id_dict[elem.attrib['id']] = elem
+                elif stack == 0:
+                    elem.clear()
+        get_by_id.id_dict = {source: id_dict}
+    return _get_info_smart(source, get_by_id.id_dict[source][elem_id])
 
 _version_info_env = {'format': 'mzIdentML', 'element': 'MzIdentML'}
 version_info = aux._make_version_info(_version_info_env)
