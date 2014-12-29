@@ -129,7 +129,7 @@ def get_by_id(source, elem_id, **kwargs):
                 elif stack == 0:
                     elem.clear()
         get_by_id.id_dict = {source: id_dict}
-    return _get_info_smart(source, get_by_id.id_dict[source][elem_id])
+    return _get_info_smart(source, get_by_id.id_dict[source][elem_id], **kwargs)
 
 _version_info_env = {'format': 'mzIdentML', 'element': 'MzIdentML'}
 version_info = aux._make_version_info(_version_info_env)
