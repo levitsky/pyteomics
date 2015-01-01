@@ -81,7 +81,7 @@ def _decode_base64_data_array(source, dtype, is_compressed):
     return output
 
 @aux._file_reader('rb')
-def read(source, read_schema=True):
+def read(source, read_schema=True, iterative=True):
     """Parse ``source`` and iterate through spectra.
 
     Parameters
@@ -95,13 +95,19 @@ def read(source, read_schema=True):
         parameters. Disable this to avoid waiting on long network connections or
         if you don't like to get the related warnings.
 
+    iterative : bool, optional
+        Defines whether iterative parsing should be used. It helps reduce
+        memory usage at almost the same parsing speed. Default is
+        :py:const:`True`.
+
     Returns
     -------
     out : iterator
        An iterator over the dicts with spectra properties.
     """
 
-    return iterfind(source, 'spectrum', read_schema=read_schema)
+    return iterfind(source, 'spectrum',
+            read_schema=read_schema, iterative=iterative)
 
 def _get_info_smart(source, element, **kw):
     name = aux._local_name(element)

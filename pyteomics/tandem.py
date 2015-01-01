@@ -109,13 +109,18 @@ def _get_info_smart(source, element, **kw):
     return info
 
 @aux._file_reader('rb')
-def read(source):
+def read(source, iterative=True):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
     ----------
     source : str or file
         A path to a target X!Tandem output file or the file object itself.
+
+    iterative : bool, optional
+        Defines whether iterative parsing should be used. It helps reduce
+        memory usage at almost the same parsing speed. Default is
+        :py:const:`True`.
 
     Returns
     -------
@@ -124,7 +129,7 @@ def read(source):
     """
 
     for g in iterfind(source, 'group[type="model"]',
-            recursive=True, read_schema=False):
+            recursive=True, read_schema=False, iterative=iterative):
         del g['type']
         yield g
 
@@ -177,6 +182,8 @@ def is_decoy(psm, prefix='DECOY_'):
     """
     return all(prot['label'].startswith(prefix) for prot in psm['protein'])
 
-filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'))
+local_fdr = aux._make_local_fdr(chain, is_decoy, operator.itemgetter('expect'))
+filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'),
+        local_fdr)
 fdr = aux._make_fdr(is_decoy)
 filter.chain = aux._make_chain(filter, 'filter')
