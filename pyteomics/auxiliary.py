@@ -902,12 +902,13 @@ def _make_iterfind(env):
             raise PyteomicsError('Invalid condition: ' + cond)
 
     @_keepstate
-    def iterfind(source, path, iterative=True, **kwargs):
-        """Parse ``source`` and yield info on elements with specified local name
+    def iterfind(source, path, iterative=None, **kwargs):
+        """Parse `source` and yield info on elements with specified local name
         or by specified "XPath". Only local names separated with slashes are
-        accepted. An asterisk (`*`) means any element.
+        accepted. An asterisk (``*``) means any element.
         You can specify a single condition in the end, such as:
-        "/path/to/element[some_value>1.5]"
+        ``"/path/to/element[some_value>1.5]"``.
+
         Note: you can do much more powerful filtering using plain Python.
         The path can be absolute or "free". Please don't specify
         namespaces."""
@@ -925,6 +926,8 @@ def _make_iterfind(env):
             absolute = True
             path = path[1:]
         nodes = path.rstrip('/').split('/')
+        if iterative is None:
+            iterative = not kwargs.get('retrieve_refs')
         if iterative:
             localname = nodes[0].lower()
             found = False

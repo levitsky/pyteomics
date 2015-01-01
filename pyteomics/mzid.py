@@ -182,9 +182,6 @@ def read(source, **kwargs):
     out : iterator
        An iterator over the dicts with PSM properties.
     """
-    kwargs = kwargs.copy()
-    if kwargs.get('iterative') is None:
-        kwargs['iterative'] = not kwargs.get('retrieve_refs')
     return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
 
 chain = aux._make_chain(read, 'read')
