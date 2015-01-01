@@ -344,48 +344,108 @@ def _make_chain(reader, readername):
 
 ### End of file helpers section ###
 
-def _make_filter(read, is_decoy, key):
-    """Create a function that reads PSMs from a file and filters them to
-    the desired FDR level (estimated by TDA), returning the top PSMs
-    sorted by ``key``.
-    """
-    def filter(*args, **kwargs):
+def _make_local_fdr(read, is_decoy, key):
+    """Create a function that reads PSMs from a file and calculates local FDR
+    for each value of `key`."""
+    def local_fdr(*args, **kwargs):
+        """Read `args` and return a NumPy array with scores and values of local
+        FDR.
+
+        Parameters
+        ----------
+        positional args : file or str
+            Files to read PSMs from. All positional arguments are treated as
+            files. The rest of the arguments must be named.
+        key : callable, optional
+            A function used for sorting of PSMs. Should accept exactly one
+            argument (PSM) and return a number (the smaller the better). The
+            default is a function that tries to extract e-value from the PSM.
+        reverse : bool, optional
+            If :py:const:`True`, then PSMs are sorted in descending order,
+            i.e. the value of the key function is higher for better PSMs.
+            Default is :py:const:`False`.
+        is_decoy : callable, optional
+            A function used to determine if the PSM is decoy or not. Should
+            accept exactly one argument (PSM) and return a truthy value if the
+            PSM should be considered decoy.
+
+            .. warning::
+                The default function may not work
+                with your files, because format flavours are diverse.
+        remove_decoy : bool, optional
+            Defines whether decoy matches should be removed from the output.
+            Default is :py:const:`True`.
+
+            .. note:: If set to :py:const:`False`, then the decoy PSMs will
+               be taken into account when estimating FDR. Refer to the
+               documentation of :py:func:`fdr` for math; basically, if
+               `remove_decoy` is :py:const:`True`, then formula 1 is used
+               to control output FDR, otherwise it's formula 2.
+        ratio : float, optional
+            The size ratio between the decoy and target databases. Default is
+            ``1``. In theory, the "size" of the database is the number of
+            theoretical peptides eligible for assignment to spectra that are
+            produced by *in silico* cleavage of that database.
+
+        **kwargs : passed to the :py:func:`chain` function.
+
+        Returns
+        -------
+        out : numpy.ndarray
+        """
         @_keepstate
         def get_scores(*args, **kwargs):
             scores = []
             with read(*args, **kwargs) as f:
                 for psm in f:
-                    scores.append((keyf(psm), isdecoy(psm)))
+                    scores.append((keyf(psm), isdecoy(psm), None))
             return scores
-        try:
-            fdr = kwargs.pop('fdr')
-        except KeyError:
-            raise PyteomicsError('Keyword argument required: fdr')
         args = [arg if not isinstance(arg, types.GeneratorType)
                 else list(arg) for arg in args]
-        isdecoy = kwargs.pop('is_decoy', is_decoy)
-        remove_decoy = kwargs.pop('remove_decoy', True)
         keyf = kwargs.pop('key', key)
         ratio = kwargs.pop('ratio', 1)
         reverse = kwargs.pop('reverse', False)
-        better = [op.le, op.ge][reverse]
-        dtype = np.dtype([('score', np.float64), ('is_decoy', np.uint8)])
+        remove_decoy = kwargs.pop('remove_decoy', True)
+        isdecoy = kwargs.pop('is_decoy', is_decoy)
+        dtype = np.dtype([('score', np.float64), ('is decoy', np.uint8),
+            ('local FDR', np.float64)])
         scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
         if not scores.size:
             raise StopIteration
         if not reverse:
-            keys = scores['is_decoy'], scores['score']
+            keys = scores['is decoy'], scores['score']
         else:
-            keys = scores['is_decoy'], -scores['score']
+            keys = scores['is decoy'], -scores['score']
         scores = scores[np.lexsort(keys)]
-        cumsum = scores['is_decoy'].cumsum(dtype=np.float32)
+        cumsum = scores['is decoy'].cumsum(dtype=np.float32)
         ind = np.arange(1, scores.size+1)
         if remove_decoy:
-            local_fdr =  cumsum / (ind - cumsum) / ratio
+            scores['local FDR'] = cumsum / (ind - cumsum) / ratio
         else:
-            local_fdr = 2. * cumsum / ind / ratio
+            scores['local FDR'] = 2. * cumsum / ind / ratio
+        return scores
+    return local_fdr
+
+
+def _make_filter(read, is_decoy, key, local_fdr):
+    """Create a function that reads PSMs from a file and filters them to
+    the desired FDR level (estimated by TDA), returning the top PSMs
+    sorted by `key`.
+    """
+    def filter(*args, **kwargs):
         try:
-            cutoff = scores[np.nonzero(local_fdr <= fdr)[0][-1]][0]
+            fdr = kwargs.pop('fdr')
+        except KeyError:
+            raise PyteomicsError('Keyword argument required: fdr')
+
+        keyf = kwargs.get('key', key)
+        reverse = kwargs.get('reverse', False)
+        better = [op.le, op.ge][bool(reverse)]
+        remove_decoy = kwargs.get('remove_decoy', True)
+        isdecoy = kwargs.get('is_decoy', is_decoy)
+        scores = local_fdr(*args, **kwargs)
+        try:
+            cutoff = scores[np.nonzero(scores['local FDR'] <= fdr)[0][-1]][0]
         except IndexError:
             cutoff = (scores['score'].min() - 1. if not reverse
                     else scores['score'].max() + 1.)
@@ -397,8 +457,8 @@ def _make_filter(read, is_decoy, key):
 
     @contextmanager
     def _filter(*args, **kwargs):
-        """Read ``args`` and yield only the PSMs that form a set with
-        estimated false discovery rate (FDR) not exceeding ``fdr``.
+        """Read `args` and yield only the PSMs that form a set with
+        estimated false discovery rate (FDR) not exceeding `fdr`.
 
         Parameters
         ----------
@@ -430,7 +490,7 @@ def _make_filter(read, is_decoy, key):
             .. note:: If set to :py:const:`False`, then the decoy PSMs will
                be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
-               ``remove_decoy`` is :py:const:`True`, then formula 1 is used
+               `remove_decoy` is :py:const:`True`, then formula 1 is used
                to control output FDR, otherwise it's formula 2.
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
@@ -449,8 +509,8 @@ def _make_filter(read, is_decoy, key):
     return _filter
 
 _iter = _make_chain(contextmanager(lambda x: (yield x)), 'iter')
-
-filter = _make_filter(_iter, None, None)
+local_fdr = _make_local_fdr(_iter, None, None)
+filter = _make_filter(_iter, None, None, local_fdr)
 filter.chain = _make_chain(filter, 'filter')
 filter.__doc__ = """Iterate ``args`` and yield only the PSMs that form a set with
         estimated false discovery rate (FDR) not exceeding ``fdr``.
@@ -590,7 +650,7 @@ def _parse_charge(s, list_only=False):
 
 def _local_name(element):
     """Strip namespace from the XML element's name"""
-    if element.tag.startswith('{'):
+    if element.tag and element.tag[0] == '{':
         return element.tag.rsplit('}', 1)[1]
     return element.tag
 
@@ -785,16 +845,13 @@ def _make_get_info(env):
         # resolve refs
         # loop is needed to resolve refs pulled from other refs
         if retrieve_refs:
-            while True:
-                refs = False
-                for k, v in dict(info).items():
-                    if k.endswith('_ref'):
-                        refs = True
-                        info.update(env['get_by_id'](source, v))
-                        del info[k]
-                        del info['id']
-                if not refs:
-                    break
+            for k, v in dict(info).items():
+                if k.endswith('_ref'):
+                    info.update(env['get_by_id'](source, v,
+                        retrieve_refs=True,
+                        tree=kw.get('tree')))
+                    del info[k]
+                    info.pop('id', None)
         # flatten the excessive nesting
         for k, v in dict(info).items():
             if k in env['keys']:
@@ -811,8 +868,13 @@ def _make_get_info(env):
         return info
     return _get_info
 
+
 def _make_iterfind(env):
     from lxml import etree
+    @memoize(1)
+    def parse(source):
+        p = etree.XMLParser(remove_comments=True)
+        return etree.parse(source, parser=p)
     pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
     pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
     def get_rel_path(element, names):
@@ -840,7 +902,7 @@ def _make_iterfind(env):
             raise PyteomicsError('Invalid condition: ' + cond)
 
     @_keepstate
-    def iterfind(source, path, **kwargs):
+    def iterfind(source, path, iterative=True, **kwargs):
         """Parse ``source`` and yield info on elements with specified local name
         or by specified "XPath". Only local names separated with slashes are
         accepted. An asterisk (`*`) means any element.
@@ -853,7 +915,6 @@ def _make_iterfind(env):
             path, _, cond = re.match(pattern_path, path).groups()
         except AttributeError:
             raise PyteomicsError('Invalid path: ' + path)
-
         if path.startswith('//') or not path.startswith('/'):
             absolute = False
             if path.startswith('//'):
@@ -863,27 +924,37 @@ def _make_iterfind(env):
         else:
             absolute = True
             path = path[1:]
-        nodes = path.rstrip('/').lower().split('/')
-        localname = nodes[0]
-        found = False
-        for ev, elem in etree.iterparse(source, events=('start', 'end'),
-                remove_comments=True):
-            name_lc = _local_name(elem).lower()
-            if ev == 'start':
-                if name_lc == localname or localname == '*':
-                    found += True
-            else:
-                if name_lc == localname or localname == '*':
-                    if (absolute and elem.getparent() is None
-                            ) or not absolute:
-                        for child in get_rel_path(elem, nodes[1:]):
-                            info = env['get_info_smart'](source, child, **kwargs)
-                            if cond is None or satisfied(info, cond):
-                                yield info
-                    if not localname == '*':
-                        found -= 1
-                if not found:
-                    elem.clear()
+        nodes = path.rstrip('/').split('/')
+        if iterative:
+            localname = nodes[0].lower()
+            found = False
+            for ev, elem in etree.iterparse(source, events=('start', 'end'),
+                    remove_comments=True):
+                name_lc = _local_name(elem).lower()
+                if ev == 'start':
+                    if name_lc == localname or localname == '*':
+                        found += True
+                else:
+                    if name_lc == localname or localname == '*':
+                        if (absolute and elem.getparent() is None
+                                ) or not absolute:
+                            for child in get_rel_path(elem, nodes[1:]):
+                                info = env['get_info_smart'](
+                                        source, child, **kwargs)
+                                if cond is None or satisfied(info, cond):
+                                    yield info
+                        if not localname == '*':
+                            found -= 1
+                    if not found:
+                        elem.clear()
+        else:
+            tree = parse(source)
+            xpath = ('/' if absolute else '//') + '/'.join(
+                    '*[local-name()="{}"]'.format(node) for node in nodes)
+            for elem in tree.xpath(xpath):
+                info = env['get_info_smart'](source, elem, tree=tree, **kwargs)
+                if cond is None or satisfied(info, cond):
+                    yield info
     return iterfind
 
 def _xpath(tree, path, ns=None):

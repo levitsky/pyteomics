@@ -157,7 +157,7 @@ def _get_info_smart(source, element, **kw):
     return info
 
 @aux._file_reader('rb')
-def read(source, read_schema=True):
+def read(source, read_schema=True, iterative=True):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
     Parameters
@@ -171,13 +171,19 @@ def read(source, read_schema=True):
         parameters. Disable this to avoid waiting on long network connections or
         if you don't like to get the related warnings.
 
+    iterative : bool, optional
+        Defines whether iterative parsing should be used. It helps reduce
+        memory usage at almost the same parsing speed. Default is
+        :py:const:`True`.
+
     Returns
     -------
     out : iterator
        An iterator over dicts with PSM properties.
     """
 
-    return iterfind(source, 'spectrum_query', read_schema=read_schema)
+    return iterfind(source, 'spectrum_query',
+            read_schema=read_schema, iterative=iterative)
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.
@@ -248,6 +254,8 @@ def is_decoy(psm, prefix='DECOY_'):
             for protein in  psm['search_hit'][0]['proteins'])
 
 fdr = aux._make_fdr(is_decoy)
-filter = aux._make_filter(chain, is_decoy, lambda x: min(
-    sh['search_score']['expect'] for sh in x['search_hit']))
+_key = lambda x: min(
+    sh['search_score']['expect'] for sh in x['search_hit'])
+local_fdr = aux._make_local_fdr(chain, is_decoy, _key)
+filter = aux._make_filter(chain, is_decoy, _key, local_fdr)
 filter.chain = aux._make_chain(filter, 'filter')

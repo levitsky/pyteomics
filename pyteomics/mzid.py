@@ -85,7 +85,7 @@ def _get_info_smart(source, element, **kw):
                 **kwargs)
 
 @aux._keepstate
-def get_by_id(source, elem_id):
+def get_by_id(source, elem_id, **kwargs):
     """Parse ``source`` and return the element with `id` attribute equal to
     ``elem_id``. Returns :py:const:`None` if no such element is found.
 
@@ -101,19 +101,35 @@ def get_by_id(source, elem_id):
     -------
     out : :py:class:`dict` or :py:const:`None`
     """
-
-    found = False
-    for event, elem in etree.iterparse(source, events=('start', 'end'),
-            remove_comments=True):
-        if event == 'start':
-            if elem.attrib.get('id') == elem_id:
-                found = True
-        else:
-            if elem.attrib.get('id') == elem_id:
-                return _get_info_smart(source, elem)
-            if not found:
-                elem.clear()
-    return None
+    if kwargs.get('tree') is None:
+        found = False
+        for event, elem in etree.iterparse(source, events=('start', 'end'),
+                remove_comments=True):
+            if event == 'start':
+                if elem.attrib.get('id') == elem_id:
+                    found = True
+            else:
+                if elem.attrib.get('id') == elem_id:
+                    return _get_info_smart(source, elem, **kwargs)
+                if not found:
+                    elem.clear()
+        return None
+    if not hasattr(get_by_id, 'id_dict') or source not in get_by_id.id_dict:
+        stack = 0
+        id_dict = {}
+        for event, elem in etree.iterparse(source, events=('start', 'end'),
+                remove_comments=True):
+            if event == 'start':
+                if 'id' in elem.attrib:
+                    stack += 1
+            else:
+                if 'id' in elem.attrib:
+                    stack -= 1
+                    id_dict[elem.attrib['id']] = elem
+                elif stack == 0:
+                    elem.clear()
+        get_by_id.id_dict = {source: id_dict}
+    return _get_info_smart(source, get_by_id.id_dict[source][elem_id], **kwargs)
 
 _version_info_env = {'format': 'mzIdentML', 'element': 'MzIdentML'}
 version_info = aux._make_version_info(_version_info_env)
@@ -148,6 +164,13 @@ def read(source, **kwargs):
         automatically added to the results. The file processing time will
         increase. Default is :py:const:`False`.
 
+    iterative : bool, optional
+        Specifies whether iterative XML parsing should be used. Iterative
+        parsing significantly reduces memory usage and may be just a little
+        slower. When `retrieve_refs` is :py:const:`True`, however, it is
+        highly recommended to disable iterative parsing if possible.
+        Default value is the opposite of `retrieve_refs`.
+
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
         mentioned in the mzIdentML header (default). Otherwise, use default
@@ -159,7 +182,9 @@ def read(source, **kwargs):
     out : iterator
        An iterator over the dicts with PSM properties.
     """
-
+    kwargs = kwargs.copy()
+    if kwargs.get('iterative') is None:
+        kwargs['iterative'] = not kwargs.get('retrieve_refs')
     return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
 
 chain = aux._make_chain(read, 'read')
@@ -181,6 +206,8 @@ def is_decoy(psm):
             for pe in sii['PeptideEvidenceRef'])
 
 fdr = aux._make_fdr(is_decoy)
-filter = aux._make_filter(chain, is_decoy, lambda x: min(
-    sii['mascot:expectation value'] for sii in x['SpectrumIdentificationItem']))
+_key = lambda x: min(
+    sii['mascot:expectation value'] for sii in x['SpectrumIdentificationItem'])
+local_fdr = aux._make_local_fdr(chain, is_decoy, _key)
+filter = aux._make_filter(chain, is_decoy, _key, local_fdr)
 filter.chain = aux._make_chain(filter, 'filter')
