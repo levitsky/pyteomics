@@ -871,10 +871,19 @@ def _make_get_info(env):
 
 def _make_iterfind(env):
     from lxml import etree
-    @memoize(1)
     def parse(source):
-        p = etree.XMLParser(remove_comments=True)
-        return etree.parse(source, parser=p)
+        if not hasattr(parse, 'cache'):
+            parse.cache = {}
+        try:
+            try:
+                return parse.cache[source.name]
+            except AttributeError:
+                return parse.cache[source]
+        except KeyError:
+            p = etree.XMLParser(remove_comments=True)
+            tree = etree.parse(source, parser=p)
+            parse.cache = {getattr(source, 'name', source): tree}
+            return tree
     pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
     pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
     def get_rel_path(element, names):
