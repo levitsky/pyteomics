@@ -871,10 +871,19 @@ def _make_get_info(env):
 
 def _make_iterfind(env):
     from lxml import etree
-    @memoize(1)
     def parse(source):
-        p = etree.XMLParser(remove_comments=True)
-        return etree.parse(source, parser=p)
+        if not hasattr(parse, 'cache'):
+            parse.cache = {}
+        try:
+            try:
+                return parse.cache[source.name]
+            except AttributeError:
+                return parse.cache[source]
+        except KeyError:
+            p = etree.XMLParser(remove_comments=True)
+            tree = etree.parse(source, parser=p)
+            parse.cache = {getattr(source, 'name', source): tree}
+            return tree
     pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
     pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
     def get_rel_path(element, names):
@@ -902,12 +911,13 @@ def _make_iterfind(env):
             raise PyteomicsError('Invalid condition: ' + cond)
 
     @_keepstate
-    def iterfind(source, path, iterative=True, **kwargs):
-        """Parse ``source`` and yield info on elements with specified local name
+    def iterfind(source, path, iterative=None, **kwargs):
+        """Parse `source` and yield info on elements with specified local name
         or by specified "XPath". Only local names separated with slashes are
-        accepted. An asterisk (`*`) means any element.
+        accepted. An asterisk (``*``) means any element.
         You can specify a single condition in the end, such as:
-        "/path/to/element[some_value>1.5]"
+        ``"/path/to/element[some_value>1.5]"``.
+
         Note: you can do much more powerful filtering using plain Python.
         The path can be absolute or "free". Please don't specify
         namespaces."""
@@ -925,6 +935,8 @@ def _make_iterfind(env):
             absolute = True
             path = path[1:]
         nodes = path.rstrip('/').split('/')
+        if iterative is None:
+            iterative = not kwargs.get('retrieve_refs')
         if iterative:
             localname = nodes[0].lower()
             found = False
