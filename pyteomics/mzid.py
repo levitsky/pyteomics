@@ -101,7 +101,8 @@ def get_by_id(source, elem_id, **kwargs):
     -------
     out : :py:class:`dict` or :py:const:`None`
     """
-    if kwargs.get('tree') is None:
+    tree = kwargs.get('tree')
+    if tree is None:
         found = False
         for event, elem in etree.iterparse(source, events=('start', 'end'),
                 remove_comments=True):
@@ -114,7 +115,7 @@ def get_by_id(source, elem_id, **kwargs):
                 if not found:
                     elem.clear()
         return None
-    if not hasattr(get_by_id, 'id_dict') or source not in get_by_id.id_dict:
+    if not hasattr(get_by_id, 'id_dict') or tree not in get_by_id.id_dict:
         stack = 0
         id_dict = {}
         for event, elem in etree.iterparse(source, events=('start', 'end'),
@@ -128,8 +129,8 @@ def get_by_id(source, elem_id, **kwargs):
                     id_dict[elem.attrib['id']] = elem
                 elif stack == 0:
                     elem.clear()
-        get_by_id.id_dict = {source: id_dict}
-    return _get_info_smart(source, get_by_id.id_dict[source][elem_id], **kwargs)
+        get_by_id.id_dict = {tree: id_dict}
+    return _get_info_smart(source, get_by_id.id_dict[tree][elem_id], **kwargs)
 
 _version_info_env = {'format': 'mzIdentML', 'element': 'MzIdentML'}
 version_info = aux._make_version_info(_version_info_env)
@@ -182,9 +183,6 @@ def read(source, **kwargs):
     out : iterator
        An iterator over the dicts with PSM properties.
     """
-    kwargs = kwargs.copy()
-    if kwargs.get('iterative') is None:
-        kwargs['iterative'] = not kwargs.get('retrieve_refs')
     return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
 
 chain = aux._make_chain(read, 'read')
