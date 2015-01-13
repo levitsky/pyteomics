@@ -1,3 +1,9 @@
+2.5.5
+-----
+
+Fix for a memory leak in :py:func:`pyteomics.mzid.get_by_id`, which affects
+:py:func:`pyteomics.mzid.read` with ``retrieve_refs=True``.
+
 2.5.4
 -----
 
