@@ -70,7 +70,7 @@ Miscellaneous
 #   limitations under the License.
 
 from . import auxiliary as aux
-from .xml_parser import XMLParserBase
+from .xml_parser import XMLParserBase, _mzid_schema_defaults
 
 class MzIdentMLParser(XMLParserBase):
     file_formatformat = "mzIdentML"
