@@ -78,6 +78,10 @@ class XMLParserBase(object):
     # Configurable plugin logic
     converters = XMLValueConverter.converters()
 
+    # Must be implemented by subclasses
+    def get_info_smart(self, element, **kwargs):
+        raise NotImplementedError
+
     def __init__(self, source, read_schema=True, **kwargs):
         self.source = _file_obj(source, 'rb')
 
@@ -301,21 +305,6 @@ class XMLParserBase(object):
             info = {name: info.popitem()[1]}
         return info
 
-    def get_info_smart(self, element, **kwargs):
-        """Extract the info in a smart way depending on the element type"""
-        name = _local_name(element)
-        kwargs = dict(kwargs)
-        rec = kwargs.pop("recursive", None)
-
-        # Try not to recursively unpack the root element
-        # unless the user really wants to.
-        if name == self.root_element:
-            return self.get_info(element, rec if rec is not None else False,
-                                 **kwargs)
-        else:
-            return self.get_info(element, rec if rec is not None else True,
-                                 **kwargs)
-
     @_oo_keepstate
     def _build_id_cache(self):
         '''Constructs a cache for each element in the document, indexed by id
@@ -441,20 +430,9 @@ class XMLParserBase(object):
             yield i
 
 
-class MzIdentMLParser(XMLParserBase):
-    file_formatformat = "mzIdentML"
-    root_element = "MzIdentML"
-    version_info_element = "MzIdentML"
-    default_schema = _mzid_schema_defaults
-    default_version = "1.1.0"
-    default_iter_tag = "SpectrumIdentificationResult"
-    structures_to_flatten = {'Fragmentation'}
-
-
 # XPath emulator tools
 pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
 pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
-
 
 def get_rel_path(element, names):
     if not names:
@@ -468,7 +446,6 @@ def get_rel_path(element, names):
                 else:
                     for gchild in get_rel_path(child, names[1:]):
                         yield gchild
-
 
 def satisfied(d, cond):
     func = {'<': 'lt', '<=': 'le', '=': 'eq', '==': 'eq',
