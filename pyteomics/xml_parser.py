@@ -27,16 +27,10 @@ def _oo_keepstate(func):
     positional arguments to functions"""
     @wraps(func)
     def wrapped(self, *args, **kwargs):
-        self._position = self.tell()
+        position = self.tell()
         self.seek(0)
-
-        try:
-            res = func(self, *args, **kwargs)
-        except Exception as e:
-            self.source.file.seek(self._position)
-            raise e
-
-        self.seek(self._position)
+        res = func(self, *args, **kwargs)
+        self.seek(position)
         return res
     return wrapped
 
@@ -90,9 +84,6 @@ class XMLParserBase(object):
     def __init__(self, source, read_schema=True, **kwargs):
         self.source = _file_obj(source, 'rb')
 
-        # Set by @_oo_keepstate
-        self._position = None
-
         self.id_dict = {}
         self.tree = None
 
@@ -103,12 +94,30 @@ class XMLParserBase(object):
 
         self.retrieve_refs = kwargs.pop("retrieve_refs", False)
         self.iterative = kwargs.pop("iterative", not self.retrieve_refs)
+        self._iter = self.iterfind(self.default_iter_tag,
+                               iterative=self.iterative,
+                               retrieve_refs=self.retrieve_refs)
+    def __iter__(self):
+        return self._iter
 
-    def seek(self, i):
-        self.source.file.seek(i)
+    def __next__(self):
+        try:
+            return next(self._iter)
+        except StopIteration:
+            self.__exit__(None, None, None)
+            raise
 
-    def tell(self):
-        return self.source.file.tell()
+    next = __next__  # Python 2 support
+
+    # context manager support
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.source.__exit__(*args, **kwargs)
+
+    def __getattr__(self, attr):
+        return getattr(self.source, attr)
 
     @_oo_keepstate
     def get_version_info(self, element):
@@ -126,12 +135,12 @@ class XMLParserBase(object):
             A (version, schema URL) tuple, both elements are strings or None.
         """
         vinfo = None
-        for _, elem in etree.iterparse(self.source, events=('start',), remove_comments=True):
+        for _, elem in etree.iterparse(
+                self.source, events=('start',), remove_comments=True):
             if _local_name(elem) == element:
-                vinfo = (elem.attrib.get('version'), elem.attrib.get(('{{{}}}'.format(
-                    elem.nsmap['xsi']) if 'xsi' in elem.nsmap else '') + 'schemaLocation'))
-                break
-        return vinfo
+                return (elem.attrib.get('version'),
+                        elem.attrib.get(('{{{}}}'.format(elem.nsmap['xsi'])
+                            if 'xsi' in elem.nsmap else '') + 'schemaLocation'))
 
     @_oo_keepstate
     def get_schema_info(self, read_schema=True):
@@ -243,7 +252,6 @@ class XMLParserBase(object):
                 del info[k]
                 info.pop('id', None)
 
-    @_oo_keepstate
     def get_info(self, element, recursive=False, retrieve_refs=False, **kw):
         """Extract info from element's attributes, possibly recursive.
         <cvParam> and <userParam> elements are treated in a special way."""
@@ -384,8 +392,6 @@ class XMLParserBase(object):
         Note: you can do much more powerful filtering using plain Python.
         The path can be absolute or "free". Please don't specify
         namespaces."""
-        if self.tree is None:
-            self._parse_tree()
         try:
             path, _, cond = re.match(pattern_path, path).groups()
         except AttributeError:
@@ -403,7 +409,7 @@ class XMLParserBase(object):
         if iterative:
             localname = nodes[0].lower()
             found = False
-            for ev, elem in etree.iterparse(self.source, events=('start', 'end'),
+            for ev, elem in etree.iterparse(self, events=('start', 'end'),
                     remove_comments=True):
                 name_lc = _local_name(elem).lower()
                 if ev == 'start':
@@ -421,19 +427,14 @@ class XMLParserBase(object):
                     if not found:
                         elem.clear()
         else:
+            if self.tree is None:
+                self._parse_tree()
             xpath = ('/' if absolute else '//') + '/'.join(
                     '*[local-name()="{}"]'.format(node) for node in nodes)
             for elem in self.tree.xpath(xpath):
                 info = self.get_info_smart(elem, tree=self.tree, **kwargs)
                 if cond is None or satisfied(info, cond):
                     yield info
-
-    def __iter__(self):
-        for i in self.iterfind(self.default_iter_tag,
-                               iterative=self.iterative,
-                               retrieve_refs=self.retrieve_refs):
-            yield i
-
 
 # XPath emulator tools
 pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')

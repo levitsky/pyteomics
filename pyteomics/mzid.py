@@ -70,7 +70,7 @@ Miscellaneous
 #   limitations under the License.
 
 from . import auxiliary as aux
-from .xml_parser import XMLParserBase, _mzid_schema_defaults
+from .xml_parser import XMLParserBase, _mzid_schema_defaults, _local_name
 
 class MzIdentMLParser(XMLParserBase):
     file_formatformat = "mzIdentML"
@@ -97,7 +97,6 @@ class MzIdentMLParser(XMLParserBase):
                                  **kwargs)
 
 
-@aux._file_reader('rb')
 def read(source, **kwargs):
     """Parse ``source`` and iterate through peptide-spectrum matches.
 
@@ -133,7 +132,7 @@ def read(source, **kwargs):
     out : iterator
        An iterator over the dicts with PSM properties.
     """
-    return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
+    return MzIdentMLParser(source, **kwargs)
 
 chain = aux._make_chain(read, 'read')
 
