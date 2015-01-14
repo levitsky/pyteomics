@@ -1,13 +1,18 @@
 import re
 import warnings
-
+warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
+import socket
 from functools import wraps
 from traceback import format_exc
-
+import operator as op
+import ast
 import numpy as np
 from lxml import etree
-
-from pyteomics.auxiliary import _file_obj, PyteomicsError, urlopen, URLError, _mzid_schema_defaults
+from .auxiliary import _file_obj, PyteomicsError
+try: # Python 2.7
+    from urllib2 import urlopen, URLError
+except ImportError: # Python 3.x
+    from urllib.request import urlopen, URLError
 
 
 def _local_name(element):
@@ -458,3 +463,50 @@ def satisfied(d, cond):
         return False
     except (AttributeError, KeyError, ValueError):
         raise PyteomicsError('Invalid condition: ' + cond)
+
+_mzid_schema_defaults = {'ints': {('DBSequence', 'length'),
+                     ('IonType', 'charge'),
+                     ('BibliographicReference', 'year'),
+                     ('SubstitutionModification', 'location'),
+                     ('PeptideEvidence', 'end'),
+                     ('Enzyme', 'missedCleavages'),
+                     ('PeptideEvidence', 'start'),
+                     ('Modification', 'location'),
+                     ('SpectrumIdentificationItem', 'rank'),
+                     ('SpectrumIdentificationItem', 'chargeState')},
+            'floats': {('SubstitutionModification', 'monoisotopicMassDelta'),
+                     ('SpectrumIdentificationItem', 'experimentalMassToCharge'),
+                     ('Residue', 'mass'),
+                     ('SpectrumIdentificationItem', 'calculatedPI'),
+                     ('Modification', 'avgMassDelta'),
+                     ('SearchModification', 'massDelta'),
+                     ('Modification', 'monoisotopicMassDelta'),
+                     ('SubstitutionModification', 'avgMassDelta'),
+                     ('SpectrumIdentificationItem', 'calculatedMassToCharge')},
+            'bools': {('PeptideEvidence', 'isDecoy'),
+                     ('SearchModification', 'fixedMod'),
+                     ('Enzymes', 'independent'),
+                     ('Enzyme', 'semiSpecific'),
+                     ('SpectrumIdentificationItem', 'passThreshold'),
+                     ('ProteinDetectionHypothesis', 'passThreshold')},
+            'lists': {'SourceFile', 'SpectrumIdentificationProtocol',
+                    'ProteinDetectionHypothesis', 'SpectraData', 'Enzyme',
+                    'Modification', 'MassTable', 'DBSequence',
+                    'InputSpectra', 'cv', 'IonType', 'SearchDatabaseRef',
+                    'Peptide', 'SearchDatabase', 'ContactRole', 'cvParam',
+                    'ProteinAmbiguityGroup', 'SubSample',
+                    'SpectrumIdentificationItem', 'TranslationTable',
+                    'AmbiguousResidue', 'SearchModification',
+                    'SubstitutionModification', 'PeptideEvidenceRef',
+                    'PeptideEvidence', 'SpecificityRules',
+                    'SpectrumIdentificationResult', 'Filter', 'FragmentArray',
+                    'InputSpectrumIdentifications', 'BibliographicReference',
+                    'SpectrumIdentification', 'Sample', 'Affiliation',
+                    'PeptideHypothesis',
+                    'Measure', 'SpectrumIdentificationItemRef'},
+            'intlists': {('IonType', 'index'), ('MassTable', 'msLevel')},
+            'floatlists': {('FragmentArray', 'values')},
+            'charlists': {('Modification', 'residues'),
+                    ('SearchModification', 'residues')}}
+
+
