@@ -69,83 +69,33 @@ Miscellaneous
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from lxml import etree
 from . import auxiliary as aux
+from .xml_parser import XMLParserBase
 
-def _get_info_smart(source, element, **kw):
-    """Extract the info in a smart way depending on the element type"""
-    name = aux._local_name(element)
-    kwargs = dict(kw)
-    rec = kwargs.pop('recursive', None)
-    if name == 'MzIdentML':
-        return _get_info(source, element, rec if rec is not None else False,
-                **kwargs)
-    else:
-        return _get_info(source, element, rec if rec is not None else True,
-                **kwargs)
+class MzIdentMLParser(XMLParserBase):
+    file_formatformat = "mzIdentML"
+    root_element = "MzIdentML"
+    version_info_element = "MzIdentML"
+    default_schema = _mzid_schema_defaults
+    default_version = "1.1.0"
+    default_iter_tag = "SpectrumIdentificationResult"
+    structures_to_flatten = {'Fragmentation'}
 
-@aux._keepstate
-def get_by_id(source, elem_id, **kwargs):
-    """Parse ``source`` and return the element with `id` attribute equal to
-    ``elem_id``. Returns :py:const:`None` if no such element is found.
+    def get_info_smart(self, element, **kwargs):
+        """Extract the info in a smart way depending on the element type"""
+        name = _local_name(element)
+        kwargs = dict(kwargs)
+        rec = kwargs.pop("recursive", None)
 
-    Parameters
-    ----------
-    source : str or file
-        A path to a target mzIdentML file of the file object itself.
+        # Try not to recursively unpack the root element
+        # unless the user really wants to.
+        if name == self.root_element:
+            return self.get_info(element, rec if rec is not None else False,
+                                 **kwargs)
+        else:
+            return self.get_info(element, rec if rec is not None else True,
+                                 **kwargs)
 
-    elem_id : str
-        The value of the `id` attribute to match.
-
-    Returns
-    -------
-    out : :py:class:`dict` or :py:const:`None`
-    """
-    tree = kwargs.get('tree')
-    if tree is None:
-        found = False
-        for event, elem in etree.iterparse(source, events=('start', 'end'),
-                remove_comments=True):
-            if event == 'start':
-                if elem.attrib.get('id') == elem_id:
-                    found = True
-            else:
-                if elem.attrib.get('id') == elem_id:
-                    return _get_info_smart(source, elem, **kwargs)
-                if not found:
-                    elem.clear()
-        return None
-    if not hasattr(get_by_id, 'id_dict') or tree not in get_by_id.id_dict:
-        stack = 0
-        id_dict = {}
-        for event, elem in etree.iterparse(source, events=('start', 'end'),
-                remove_comments=True):
-            if event == 'start':
-                if 'id' in elem.attrib:
-                    stack += 1
-            else:
-                if 'id' in elem.attrib:
-                    stack -= 1
-                    id_dict[elem.attrib['id']] = elem
-                elif stack == 0:
-                    elem.clear()
-        get_by_id.id_dict = {tree: id_dict}
-    return _get_info_smart(source, get_by_id.id_dict[tree][elem_id], **kwargs)
-
-_version_info_env = {'format': 'mzIdentML', 'element': 'MzIdentML'}
-version_info = aux._make_version_info(_version_info_env)
-
-_schema_env = {'format': 'MzIdentML', 'version_info': version_info,
-        'default_version': '1.1.0', 'defaults': aux._mzid_schema_defaults}
-_schema_info = aux._make_schema_info(_schema_env)
-
-# 'keys' should contain keys whose value is a dict
-_get_info_env = {'keys':  {'Fragmentation',}, 'schema_info': _schema_info,
-        'get_info_smart': _get_info_smart, 'get_by_id': get_by_id}
-_get_info = aux._make_get_info(_get_info_env)
-
-_iterfind_env = {'get_info_smart': _get_info_smart}
-iterfind = aux._make_iterfind(_iterfind_env)
 
 @aux._file_reader('rb')
 def read(source, **kwargs):
