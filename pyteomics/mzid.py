@@ -98,7 +98,7 @@ class MzIdentMLParser(XMLParserBase):
 
 
 def read(source, **kwargs):
-    """Parse ``source`` and iterate through peptide-spectrum matches.
+    """Parse `source` and iterate through peptide-spectrum matches.
 
     Parameters
     ----------
