@@ -92,8 +92,6 @@ class XMLParserBase(object):
         self.schema_info = self.get_schema_info(read_schema)
         self.source.file.seek(0)
 
-        self.retrieve_refs = kwargs.get("retrieve_refs", False)
-        self.iterative = kwargs.get("iterative", not self.retrieve_refs)
         self._iter = self.iterfind(self.default_iter_tag, **kwargs)
 
     def __iter__(self):
@@ -242,28 +240,26 @@ class XMLParserBase(object):
         else:
             return {'name': element.attrib['name']}
 
-    def _retrieve_refs(self, info, tree=None):
+    def _retrieve_refs(self, info, **kwargs):
         '''Retrieves and embeds the data for each attribute in `info` that
         ends in _ref. Removes the id attribute from `info`'''
         for k, v in dict(info).items():
             if k.endswith('_ref'):
-                info.update(self.get_by_id(v, retrieve_refs=True, tree=tree))
+                info.update(self.get_by_id(v, retrieve_refs=True))
                 del info[k]
                 info.pop('id', None)
 
-    def get_info(self, element, recursive=False, retrieve_refs=False, **kw):
+    def get_info(self, element, **kwargs):
         """Extract info from element's attributes, possibly recursive.
         <cvParam> and <userParam> elements are treated in a special way."""
         name = _local_name(element)
-        kwargs = dict(recursive=recursive, retrieve_refs=retrieve_refs)
-        kwargs.update(kw)
         schema_info = self.schema_info
         if name in {'cvParam', 'userParam'}:
             return self.handle_param(element)
 
         info = dict(element.attrib)
         # process subelements
-        if recursive:
+        if kwargs.get('recursive'):
             for child in element.iterchildren():
                 cname = _local_name(child)
                 if cname in {'cvParam', 'userParam'}:
@@ -298,8 +294,8 @@ class XMLParserBase(object):
                     info[k] = a(v)
 
         # resolve refs
-        if retrieve_refs:
-            self._retrieve_refs(info, kw.get("tree"))
+        if kwargs.get('retrieve_refs'):
+            self._retrieve_refs(info, **kwargs)
 
         # flatten the excessive nesting
         for k, v in dict(info).items():
@@ -321,7 +317,7 @@ class XMLParserBase(object):
     def _build_id_cache(self):
         '''Constructs a cache for each element in the document, indexed by id
         attribute'''
-        self.id_dict = None
+        if self.id_dict: return
         stack = 0
         id_dict = {}
         for event, elem in etree.iterparse(self.source, events=('start', 'end'),
@@ -338,8 +334,8 @@ class XMLParserBase(object):
         self.id_dict = id_dict
 
     @_oo_keepstate
-    def get_by_id(self, elem_id, tree=None, **kwargs):
-        """Parse ``source`` and return the element with `id` attribute equal to
+    def get_by_id(self, elem_id, **kwargs):
+        """Parse `source` and return the element with `id` attribute equal to
         `elem_id`. Returns :py:const:`None` if no such element is found.
 
         Parameters
@@ -354,9 +350,7 @@ class XMLParserBase(object):
         -------
         out : :py:class:`dict` or :py:const:`None`
         """
-        # Carried tree over from functional implementation. A better name to describe what it
-        # means? If None, don't use id_dict
-        if self.tree is None and tree is None:
+        if kwargs.get('iterative'):
             found = False
             for event, elem in etree.iterparse(self.source,
                     events=('start', 'end'), remove_comments=True):
@@ -365,21 +359,21 @@ class XMLParserBase(object):
                         found = True
                 else:
                     if elem.attrib.get('id') == elem_id:
-                        return self.get_info_smart(elem, **kwargs)
+                        return self.get_info_smart(elem, retrieve_refs=True)
                     if not found:
                         elem.clear()
             return None
         # Otherwise do build and use the id_dict to cache elements
         else:
-            if len(self.id_dict) == 0:
-                self._build_id_cache()
+            self._build_id_cache()
             return self.get_info_smart(self.id_dict[elem_id], **kwargs)
 
     @_oo_keepstate
     def _parse_tree(self):
         '''Build and store the ElementTree instance for `self.source`'''
-        p = etree.XMLParser(remove_comments=True)
-        self.tree = etree.parse(self.source, parser=p)
+        if self.tree is None:
+            p = etree.XMLParser(remove_comments=True)
+            self.tree = etree.parse(self.source, parser=p)
 
     @_oo_keepstate
     def iterfind(self, path, iterative=True, **kwargs):

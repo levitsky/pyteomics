@@ -73,7 +73,7 @@ from . import auxiliary as aux
 from .xml_parser import XMLParserBase, _mzid_schema_defaults, _local_name
 
 class MzIdentMLParser(XMLParserBase):
-    file_formatformat = "mzIdentML"
+    file_format = "mzIdentML"
     root_element = "MzIdentML"
     version_info_element = "MzIdentML"
     default_schema = _mzid_schema_defaults
@@ -90,10 +90,10 @@ class MzIdentMLParser(XMLParserBase):
         # Try not to recursively unpack the root element
         # unless the user really wants to.
         if name == self.root_element:
-            return self.get_info(element, rec if rec is not None else False,
+            return self.get_info(element, recursive=(rec if rec is not None else False),
                                  **kwargs)
         else:
-            return self.get_info(element, rec if rec is not None else True,
+            return self.get_info(element, recursive=(rec if rec is not None else True),
                                  **kwargs)
 
 
