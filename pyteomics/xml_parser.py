@@ -92,11 +92,10 @@ class XMLParserBase(object):
         self.schema_info = self.get_schema_info(read_schema)
         self.source.file.seek(0)
 
-        self.retrieve_refs = kwargs.pop("retrieve_refs", False)
-        self.iterative = kwargs.pop("iterative", not self.retrieve_refs)
-        self._iter = self.iterfind(self.default_iter_tag,
-                               iterative=self.iterative,
-                               retrieve_refs=self.retrieve_refs)
+        self.retrieve_refs = kwargs.get("retrieve_refs", False)
+        self.iterative = kwargs.get("iterative", not self.retrieve_refs)
+        self._iter = self.iterfind(self.default_iter_tag, **kwargs)
+
     def __iter__(self):
         return self._iter
 
