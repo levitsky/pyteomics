@@ -45,6 +45,9 @@ Miscellaneous
   :py:func:`fdr` - estimate the false discovery rate of a PSM set using the
   target-decoy approach.
 
+  :py:func:`local_fdr` - get an array of scores and lcoal FDR values for a PSM
+  set using the target-decoy approach.
+
   :py:func:`is_decoy` - determine whether a PSM is decoy or not.
 
   :py:func:`roc_curve` - get a receiver-operator curve (min peptideprophet

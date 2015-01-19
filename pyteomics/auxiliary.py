@@ -14,6 +14,9 @@ Data access
 
   :py:func:`filter.chain` - a chained version of :py:func:`filter`.
 
+  :py:func:`local_fdr` - get an array of scores and local FDR for a set of PSMs
+  using TDA.
+
   :py:func:`fdr` - estimate FDR in a set of PSMs using TDA.
 
 Project infrastructure

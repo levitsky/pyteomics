@@ -52,6 +52,9 @@ Miscellaneous
   :py:func:`fdr` - estimate the false discovery rate of a set of identifications
   using the target-decoy approach.
 
+  :py:func:`local_fdr` - get an array of scores and local FDR for a set of
+  identifications using the target-decoy approach.
+
 -------------------------------------------------------------------------------
 """
 

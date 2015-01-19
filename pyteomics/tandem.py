@@ -48,6 +48,9 @@ Auxiliary
 
   :py:func:`fdr` - estimate the FDR in a data set using TDA.
 
+  :py:func:`local_fdr` - get an array of scores and local FDRs in a data set
+  using TDA.
+
 -------------------------------------------------------------------------------
 """
 
