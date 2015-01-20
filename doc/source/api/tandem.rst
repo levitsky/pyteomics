@@ -30,4 +30,5 @@
             Iterable of file names or file objects.
 
    .. autofunction:: fdr
+   .. autofunction:: local_fdr
    .. autofunction:: iterfind
