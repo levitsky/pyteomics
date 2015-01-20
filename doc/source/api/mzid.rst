@@ -4,6 +4,7 @@
     .. autofunction:: version_info
     .. autofunction:: iterfind
     .. autofunction:: fdr
+    .. autofunction:: local_fdr
     .. autofunction:: chain
     .. py:function :: chain.from_iterable(files, **kwargs)
 
