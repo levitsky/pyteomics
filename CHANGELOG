@@ -1,3 +1,9 @@
+2.5.6
+-----
+
+In :py:func:`pyteomics.mgf.write`, the order of keys and the format of values
+are now controlled via module-level variables.
+
 2.5.5
 -----
 
