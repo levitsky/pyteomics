@@ -355,6 +355,9 @@ using its unique ID.
 FASTA
 -----
 
+Simple reading
+..............
+
 To extract data from FASTA databases, use the :py:func:`pyteomics.fasta.read`
 function.
 
@@ -370,18 +373,22 @@ returns a *generator object* instead of a
 
 .. code-block:: python
 
-    >>> from pyteomics import fasta
-    >>> for descr, seq in fasta.read('my.fasta'):
-    >>>    ...
-
-You can also use attributes to access description and sequence:
-
-.. code-block:: python
-
-    >>> from pyteomics import fasta
     >>> with fasta.read('my.fasta') as reader:
     >>>    for descr, seq in reader:
     >>>       ...
+
+Tuples yielded by :py:func:`fasta.read` are actually
+:py:class:`collections.namedtuple` instances, so you can also use attributes to
+access description and sequence:
+
+.. code-block:: python
+
+    >>> with fasta.read('my.fasta') as reader:
+    >>>    descr_list = [item.description for item in reader]
+
+
+Description parsing
+...................
 
 You can specify a function that will be applied to the FASTA headers for
 your convenience. :py:data:`pyteomics.fasta.std_parsers` has some pre-defined
@@ -395,6 +402,9 @@ You can also create a FASTA file using a sequence of (description, sequence)
     >>> from pyteomics import fasta
     >>> entries = [('Protein 1', 'PEPTIDE'*1000), ('Protein 2', 'PEPTIDE'*2000)]
     >>> fasta.write(entries, 'target-file.fasta')
+
+Writing
+.......
 
 Another common task is to generate a *decoy database*. **Pyteomics** allows
 that by means of the :py:func:`pyteomics.fasta.decoy_db` and
@@ -417,7 +427,7 @@ method. It currently supports two modes: *‘reverse’* and *‘random’*.
     >>> fasta.decoy_sequence('PEPTIDE', 'reverse')
     'EDITPEP'
     >>> fasta.decoy_sequence('PEPTIDE', 'random')
-    ‘TPPIDEE'
+    'TPPIDEE'
     >>> fasta.decoy_sequence('PEPTIDE', 'random')
     'PTIDEPE'
 
@@ -484,8 +494,8 @@ General Notes
    The :py:func:`fdr` function estimates the FDR in a set of PSMs by counting
    the decoy matches. Since it is using the :py:func:`is_decoy` function, the
    warning above applies. You can supply a custom function so that :py:func:`fdr`
-   works for your data. :py:func:`fdr` can also be imported from,
-    :py:mod:`auxiliary`, where it has no default for :py:func:`is_decoy`.
+   works for your data. :py:func:`fdr` can also be imported from
+   :py:mod:`auxiliary`, where it has no default for :py:func:`is_decoy`.
 
    The :py:func:`!filter` function works like :py:func:`chain`, but instead of
    yielding all PSMs, it filters them to a certain level of FDR. PSM filtering
