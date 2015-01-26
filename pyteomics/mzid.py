@@ -82,6 +82,13 @@ class MzIdentMLParser(xml.XMLParserBase):
     default_iter_tag = "SpectrumIdentificationResult"
     structures_to_flatten = {'Fragmentation'}
 
+    def __init__(self, source, **kwargs):
+        super(MzIdentMLParser, self).__init__(source, **kwargs)
+        if kwargs.pop('build_id_cache', False):
+            self.build_id_cache()
+        else:
+            self.id_dict = {}
+
     def get_info_smart(self, element, **kwargs):
         """Extract the info in a smart way depending on the element type"""
         name = xml._local_name(element)
@@ -107,10 +114,9 @@ class MzIdentMLParser(xml.XMLParserBase):
                 info.pop('id', None)
 
     @xml._keepstate
-    def _build_id_cache(self):
+    def build_id_cache(self):
         '''Constructs a cache for each element in the document, indexed by id
         attribute'''
-        if self.id_dict: return
         stack = 0
         id_dict = {}
         for event, elem in etree.iterparse(self.source, events=('start', 'end'),
@@ -125,6 +131,9 @@ class MzIdentMLParser(xml.XMLParserBase):
                 elif stack == 0:
                     elem.clear()
         self.id_dict = id_dict
+
+    def clear_id_cache(self):
+        self.id_dict = {}
 
     @xml._keepstate
     def get_by_id(self, elem_id, **kwargs):
