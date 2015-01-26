@@ -70,38 +70,54 @@ class XMLValueConverter(object):
 
 
 class XMLParserBase(object):
-    """Base class for all format-specific XML parsers"""
+    """Base class for all format-specific XML parsers. The instances can be used
+    as context managers and as iterators.
+    """
     # Configurable data
     file_format = "XML"
-    root_element = None
-    version_info_element = None
-    default_schema = {}
-    default_version = 0
-    default_iter_tag = None
-    structures_to_flatten = []
+    _root_element = None
+    _default_schema = {}
+    _default_version = 0
+    _default_iter_tag = None
+    _structures_to_flatten = []
 
     # Configurable plugin logic
-    converters = XMLValueConverter.converters()
+    _converters = XMLValueConverter.converters()
 
     # Must be implemented by subclasses
-    def get_info_smart(self, element, **kwargs):
+    def _get_info_smart(self, element, **kwargs):
         raise NotImplementedError
 
     def __init__(self, source, read_schema=True, **kwargs):
-        """Create an XML parser object"""
+        """Create an XML parser object.
+
+        Parameters
+        ----------
+        source : str or file
+            File name or file-like object corresponding to an XML file.
+        read_schema : bool, optional
+            Defines whether schema file referenced in the file header
+            should be used to extract information about value conversion.
+            Default is :py:const:`True`.
+        iterative : bool, optional
+            Defines whether an :py:class:`ElementTree` object should be
+            constructed and stored on the instance or if iterative parsing
+            should be used instead. Iterative parsing keeps the memory usage
+            low for large XML files. Default is :py:const:`True`.
+        """
         self.source = _file_obj(source, 'rb')
 
         if kwargs.pop('iterative', True):
-            self.tree = None
+            self._tree = None
         else:
             self.build_tree()
 
         # For handling
-        self.version_info = self.get_version_info()
-        self.schema_info = self.get_schema_info(read_schema)
+        self.version_info = self._get_version_info()
+        self.schema_info = self._get_schema_info(read_schema)
         self.source.file.seek(0)
 
-        self._iter = self.iterfind(self.default_iter_tag, **kwargs)
+        self._iter = self.iterfind(self._default_iter_tag, **kwargs)
 
     def __iter__(self):
         return self._iter
@@ -126,7 +142,7 @@ class XMLParserBase(object):
         return getattr(self.source, attr)
 
     @_keepstate
-    def get_version_info(self):
+    def _get_version_info(self):
         """
         Provide version information about the XML file.
 
@@ -138,22 +154,22 @@ class XMLParserBase(object):
         vinfo = None
         for _, elem in etree.iterparse(
                 self.source, events=('start',), remove_comments=True):
-            if _local_name(elem) == self.root_element:
+            if _local_name(elem) == self._root_element:
                 return (elem.attrib.get('version'),
                         elem.attrib.get(('{{{}}}'.format(elem.nsmap['xsi'])
                             if 'xsi' in elem.nsmap else '') + 'schemaLocation'))
 
     @_keepstate
-    def get_schema_info(self, read_schema=True):
+    def _get_schema_info(self, read_schema=True):
         """Stores defaults for the schema, tries to retrieve the schema for
         other versions. Keys are: 'floats', 'ints', 'bools', 'lists',
         'intlists', 'floatlists', 'charlists'."""
         if not read_schema:
-            return self.default_schema
+            return self._default_schema
 
         version, schema = self.version_info
-        if version == self.default_version:
-            return self.default_schema
+        if version == self._default_version:
+            return self._default_schema
 
         ret = {}
         try:
@@ -211,13 +227,13 @@ class XMLParserBase(object):
                 "Using defaults for {3}.\n"
                 "You can disable reading the schema by specifying "
                 "`read_schema=False`.".format(self.file_format, version,
-                    schema_url, self.default_version))
+                    schema_url, self._default_version))
             else:
-                warnings.warn("Unknown {0} version `{1}`. "
+                warnings.warn("Unknown {0._file_format} version `{1}`. "
                     "Attempt to use schema\n"
                     "information from <{2}> failed.\n"
                     "Exception information:\n{3}\n"
-                    "Falling back to defaults for {0[default_version]}\n"
+                    "Falling back to defaults for {0._default_version}\n"
                     "NOTE: This is just a warning, probably from a badly-"
                     "generated XML file.\nYou will still most probably get "
                     "decent results.\nLook here for suppressing warnings:\n"
@@ -228,12 +244,11 @@ class XMLParserBase(object):
                     "If you think this shouldn't have happened, please "
                     "report this to\n"
                     "http://hg.theorchromo.ru/pyteomics/issues\n"
-                    "".format(self.file_format, version, schema_url,
-                        format_exc()))
-            ret = self.default_schemau
+                    "".format(self, version, schema_url, format_exc()))
+            ret = self._default_schema
         return ret
 
-    def handle_param(self, element, **kwargs):
+    def _handle_param(self, element, **kwargs):
         """Unpacks cvParam and userParam tags into key-value pairs"""
         if 'value' in element.attrib:
             try:
@@ -244,13 +259,13 @@ class XMLParserBase(object):
         else:
             return {'name': element.attrib['name']}
 
-    def get_info(self, element, **kwargs):
+    def _get_info(self, element, **kwargs):
         """Extract info from element's attributes, possibly recursive.
         <cvParam> and <userParam> elements are treated in a special way."""
         name = _local_name(element)
         schema_info = self.schema_info
         if name in {'cvParam', 'userParam'}:
-            return self.handle_param(element)
+            return self._handle_param(element)
 
         info = dict(element.attrib)
         # process subelements
@@ -258,7 +273,7 @@ class XMLParserBase(object):
             for child in element.iterchildren():
                 cname = _local_name(child)
                 if cname in {'cvParam', 'userParam'}:
-                    newinfo = self.handle_param(child, **kwargs)
+                    newinfo = self._handle_param(child, **kwargs)
                     if not ('name' in info and 'name' in newinfo):
                         info.update(newinfo)
                     else:
@@ -267,10 +282,10 @@ class XMLParserBase(object):
                         info['name'].append(newinfo.pop('name'))
                 else:
                     if cname not in schema_info['lists']:
-                        info[cname] = self.get_info_smart(child, **kwargs)
+                        info[cname] = self._get_info_smart(child, **kwargs)
                     else:
                         info.setdefault(cname, []).append(
-                                self.get_info_smart(child, **kwargs))
+                                self._get_info_smart(child, **kwargs))
 
         # process element text
         if element.text and element.text.strip():
@@ -282,7 +297,7 @@ class XMLParserBase(object):
                     return stext
 
         # convert types
-        converters = self.converters
+        converters = self._converters
         for k, v in info.items():
             for t, a in converters.items():
                 if (_local_name(element), k) in schema_info[t]:
@@ -294,7 +309,7 @@ class XMLParserBase(object):
 
         # flatten the excessive nesting
         for k, v in dict(info).items():
-            if k in self.structures_to_flatten:
+            if k in self._structures_to_flatten:
                 info.update(v)
                 del info[k]
 
@@ -310,12 +325,14 @@ class XMLParserBase(object):
 
     @_keepstate
     def build_tree(self):
-        """Build and store the ElementTree instance for `self.source`"""
+        """Build and store the :py:class:`ElementTree` instance for
+        :py:data:`self.source`"""
         p = etree.XMLParser(remove_comments=True)
-        self.tree = etree.parse(self.source, parser=p)
+        self._tree = etree.parse(self.source, parser=p)
 
     def clear_tree(self):
-        self.tree = None
+        """Remove the saved :py:class:`ElementTree`."""
+        self._tree = None
 
     @_keepstate
     def iterfind(self, path, **kwargs):
@@ -351,7 +368,7 @@ class XMLParserBase(object):
             absolute = True
             path = path[1:]
         nodes = path.rstrip('/').split('/')
-        if not self.tree:
+        if not self._tree:
             localname = nodes[0].lower()
             found = False
             for ev, elem in etree.iterparse(self, events=('start', 'end'),
@@ -364,7 +381,7 @@ class XMLParserBase(object):
                     if name_lc == localname or localname == '*':
                         if (absolute and elem.getparent() is None) or not absolute:
                             for child in get_rel_path(elem, nodes[1:]):
-                                info = self.get_info_smart(child, **kwargs)
+                                info = self._get_info_smart(child, **kwargs)
                                 if cond is None or satisfied(info, cond):
                                     yield info
                         if not localname == '*':
@@ -374,8 +391,8 @@ class XMLParserBase(object):
         else:
             xpath = ('/' if absolute else '//') + '/'.join(
                     '*[local-name()="{}"]'.format(node) for node in nodes)
-            for elem in self.tree.xpath(xpath):
-                info = self.get_info_smart(elem, tree=self.tree, **kwargs)
+            for elem in self._tree.xpath(xpath):
+                info = self._get_info_smart(elem, **kwargs)
                 if cond is None or satisfied(info, cond):
                     yield info
 
@@ -410,7 +427,15 @@ def satisfied(d, cond):
 
 def xpath(tree, path, ns=None):
     """Return the results of XPath query with added namespaces.
-    Assumes the ns declaration is on the root element or absent."""
+    Assumes the ns declaration is on the root element or absent.
+
+    Parameters
+    ----------
+
+    tree : ElementTree
+    path : str
+    ns   : str or None, optional
+    """
     if hasattr(tree, 'getroot'):
         root = tree.getroot()
     else:
