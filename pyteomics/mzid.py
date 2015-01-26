@@ -69,21 +69,22 @@ Miscellaneous
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from lxml import etree
 from . import auxiliary as aux
-from .xml_parser import XMLParserBase, _mzid_schema_defaults, _local_name
+from . import xml
 
-class MzIdentMLParser(XMLParserBase):
+class MzIdentMLParser(xml.XMLParserBase):
     file_format = "mzIdentML"
     root_element = "MzIdentML"
     version_info_element = "MzIdentML"
-    default_schema = _mzid_schema_defaults
+    default_schema = xml._mzid_schema_defaults
     default_version = "1.1.0"
     default_iter_tag = "SpectrumIdentificationResult"
     structures_to_flatten = {'Fragmentation'}
 
     def get_info_smart(self, element, **kwargs):
         """Extract the info in a smart way depending on the element type"""
-        name = _local_name(element)
+        name = xml._local_name(element)
         kwargs = dict(kwargs)
         rec = kwargs.pop("recursive", None)
 
@@ -95,6 +96,70 @@ class MzIdentMLParser(XMLParserBase):
         else:
             return self.get_info(element, recursive=(rec if rec is not None else True),
                                  **kwargs)
+
+    def _retrieve_refs(self, info, **kwargs):
+        '''Retrieves and embeds the data for each attribute in `info` that
+        ends in _ref. Removes the id attribute from `info`'''
+        for k, v in dict(info).items():
+            if k.endswith('_ref'):
+                info.update(self.get_by_id(v, retrieve_refs=True))
+                del info[k]
+                info.pop('id', None)
+
+    @xml._keepstate
+    def _build_id_cache(self):
+        '''Constructs a cache for each element in the document, indexed by id
+        attribute'''
+        if self.id_dict: return
+        stack = 0
+        id_dict = {}
+        for event, elem in etree.iterparse(self.source, events=('start', 'end'),
+                remove_comments=True):
+            if event == 'start':
+                if 'id' in elem.attrib:
+                    stack += 1
+            else:
+                if 'id' in elem.attrib:
+                    stack -= 1
+                    id_dict[elem.attrib['id']] = elem
+                elif stack == 0:
+                    elem.clear()
+        self.id_dict = id_dict
+
+    @xml._keepstate
+    def get_by_id(self, elem_id, **kwargs):
+        """Parse `self.source` and return the element with `id` attribute equal
+        to `elem_id`. Returns :py:const:`None` if no such element is found.
+
+        Parameters
+        ----------
+        source : str or file
+            A path to a target mzIdentML file of the file object itself.
+
+        elem_id : str
+            The value of the `id` attribute to match.
+
+        Returns
+        -------
+        out : :py:class:`dict` or :py:const:`None`
+        """
+        if kwargs.get('iterative'):
+            found = False
+            for event, elem in etree.iterparse(self.source,
+                    events=('start', 'end'), remove_comments=True):
+                if event == 'start':
+                    if elem.attrib.get('id') == elem_id:
+                        found = True
+                else:
+                    if elem.attrib.get('id') == elem_id:
+                        return self.get_info_smart(elem, retrieve_refs=True)
+                    if not found:
+                        elem.clear()
+            return None
+        # Otherwise do build and use the id_dict to cache elements
+        else:
+            self._build_id_cache()
+            return self.get_info_smart(self.id_dict[elem_id], **kwargs)
 
 
 def read(source, **kwargs):

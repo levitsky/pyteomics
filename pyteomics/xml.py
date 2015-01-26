@@ -22,7 +22,7 @@ def _local_name(element):
     return element.tag
 
 
-def _oo_keepstate(func):
+def _keepstate(func):
     """Decorator to help keep the position in open files passed as
     positional arguments to functions"""
     @wraps(func)
@@ -116,7 +116,7 @@ class XMLParserBase(object):
     def __getattr__(self, attr):
         return getattr(self.source, attr)
 
-    @_oo_keepstate
+    @_keepstate
     def get_version_info(self, element):
         """
         Provide version information about the {0} file.
@@ -139,7 +139,7 @@ class XMLParserBase(object):
                         elem.attrib.get(('{{{}}}'.format(elem.nsmap['xsi'])
                             if 'xsi' in elem.nsmap else '') + 'schemaLocation'))
 
-    @_oo_keepstate
+    @_keepstate
     def get_schema_info(self, read_schema=True):
         """Stores defaults for the schema, tries to retrieve the schema for
         other versions. Keys are: 'floats', 'ints', 'bools', 'lists',
@@ -240,15 +240,6 @@ class XMLParserBase(object):
         else:
             return {'name': element.attrib['name']}
 
-    def _retrieve_refs(self, info, **kwargs):
-        '''Retrieves and embeds the data for each attribute in `info` that
-        ends in _ref. Removes the id attribute from `info`'''
-        for k, v in dict(info).items():
-            if k.endswith('_ref'):
-                info.update(self.get_by_id(v, retrieve_refs=True))
-                del info[k]
-                info.pop('id', None)
-
     def get_info(self, element, **kwargs):
         """Extract info from element's attributes, possibly recursive.
         <cvParam> and <userParam> elements are treated in a special way."""
@@ -313,69 +304,14 @@ class XMLParserBase(object):
             info = {name: info.popitem()[1]}
         return info
 
-    @_oo_keepstate
-    def _build_id_cache(self):
-        '''Constructs a cache for each element in the document, indexed by id
-        attribute'''
-        if self.id_dict: return
-        stack = 0
-        id_dict = {}
-        for event, elem in etree.iterparse(self.source, events=('start', 'end'),
-                remove_comments=True):
-            if event == 'start':
-                if 'id' in elem.attrib:
-                    stack += 1
-            else:
-                if 'id' in elem.attrib:
-                    stack -= 1
-                    id_dict[elem.attrib['id']] = elem
-                elif stack == 0:
-                    elem.clear()
-        self.id_dict = id_dict
-
-    @_oo_keepstate
-    def get_by_id(self, elem_id, **kwargs):
-        """Parse `source` and return the element with `id` attribute equal to
-        `elem_id`. Returns :py:const:`None` if no such element is found.
-
-        Parameters
-        ----------
-        source : str or file
-            A path to a target mzIdentML file of the file object itself.
-
-        elem_id : str
-            The value of the `id` attribute to match.
-
-        Returns
-        -------
-        out : :py:class:`dict` or :py:const:`None`
-        """
-        if kwargs.get('iterative'):
-            found = False
-            for event, elem in etree.iterparse(self.source,
-                    events=('start', 'end'), remove_comments=True):
-                if event == 'start':
-                    if elem.attrib.get('id') == elem_id:
-                        found = True
-                else:
-                    if elem.attrib.get('id') == elem_id:
-                        return self.get_info_smart(elem, retrieve_refs=True)
-                    if not found:
-                        elem.clear()
-            return None
-        # Otherwise do build and use the id_dict to cache elements
-        else:
-            self._build_id_cache()
-            return self.get_info_smart(self.id_dict[elem_id], **kwargs)
-
-    @_oo_keepstate
+    @_keepstate
     def _parse_tree(self):
         '''Build and store the ElementTree instance for `self.source`'''
         if self.tree is None:
             p = etree.XMLParser(remove_comments=True)
             self.tree = etree.parse(self.source, parser=p)
 
-    @_oo_keepstate
+    @_keepstate
     def iterfind(self, path, iterative=True, **kwargs):
         """Parse `source` and yield info on elements with specified local name
         or by specified "XPath". Only local names separated with slashes are
