@@ -74,6 +74,7 @@ from . import auxiliary as aux
 from . import xml
 
 class MzIdentMLParser(xml.XMLParserBase):
+    """Parser class for MzIdentML files."""
     file_format = "mzIdentML"
     root_element = "MzIdentML"
     default_schema = xml._mzid_schema_defaults
@@ -97,15 +98,17 @@ class MzIdentMLParser(xml.XMLParserBase):
         # Try not to recursively unpack the root element
         # unless the user really wants to.
         if name == self.root_element:
-            return self.get_info(element, recursive=(rec if rec is not None else False),
-                                 **kwargs)
+            return self.get_info(element,
+                    recursive=(rec if rec is not None else False),
+                    **kwargs)
         else:
-            return self.get_info(element, recursive=(rec if rec is not None else True),
-                                 **kwargs)
+            return self.get_info(element,
+                    recursive=(rec if rec is not None else True),
+                    **kwargs)
 
     def _retrieve_refs(self, info, **kwargs):
-        '''Retrieves and embeds the data for each attribute in `info` that
-        ends in _ref. Removes the id attribute from `info`'''
+        """Retrieves and embeds the data for each attribute in `info` that
+        ends in _ref. Removes the id attribute from `info`"""
         for k, v in dict(info).items():
             if k.endswith('_ref'):
                 info.update(self.get_by_id(v, retrieve_refs=True))
@@ -114,8 +117,8 @@ class MzIdentMLParser(xml.XMLParserBase):
 
     @xml._keepstate
     def build_id_cache(self):
-        '''Constructs a cache for each element in the document, indexed by id
-        attribute'''
+        """Constructs a cache for each element in the document, indexed by id
+        attribute"""
         stack = 0
         id_dict = {}
         for event, elem in etree.iterparse(self.source, events=('start', 'end'),
