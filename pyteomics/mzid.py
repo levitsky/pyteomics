@@ -76,7 +76,6 @@ from . import xml
 class MzIdentMLParser(xml.XMLParserBase):
     file_format = "mzIdentML"
     root_element = "MzIdentML"
-    version_info_element = "MzIdentML"
     default_schema = xml._mzid_schema_defaults
     default_version = "1.1.0"
     default_iter_tag = "SpectrumIdentificationResult"
@@ -142,9 +141,6 @@ class MzIdentMLParser(xml.XMLParserBase):
 
         Parameters
         ----------
-        source : str or file
-            A path to a target mzIdentML file of the file object itself.
-
         elem_id : str
             The value of the `id` attribute to match.
 
@@ -152,7 +148,7 @@ class MzIdentMLParser(xml.XMLParserBase):
         -------
         out : :py:class:`dict` or :py:const:`None`
         """
-        if kwargs.get('iterative'):
+        if not self.id_dict:
             found = False
             for event, elem in etree.iterparse(self.source,
                     events=('start', 'end'), remove_comments=True):
@@ -165,14 +161,20 @@ class MzIdentMLParser(xml.XMLParserBase):
                     if not found:
                         elem.clear()
             return None
-        # Otherwise do build and use the id_dict to cache elements
         else:
-            self._build_id_cache()
-            return self.get_info_smart(self.id_dict[elem_id], **kwargs)
+            try:
+                return self.get_info_smart(self.id_dict[elem_id], **kwargs)
+            except KeyError:
+                raise PyteomicsError(
+                        'Key {} not found in cache.'.format(elem_id))
 
 
 def read(source, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
+
+    .. note:: This function is provided for backward compatibility only.
+        It simply creates an :py:class:`MzIdentMLParser` instance using
+        provided arguments and returns it.
 
     Parameters
     ----------
@@ -203,13 +205,83 @@ def read(source, **kwargs):
 
     Returns
     -------
-    out : iterator
+    out : MzIdentMLParser
        An iterator over the dicts with PSM properties.
     """
+    kwargs = kwargs.copy()
+    kwargs['build_id_cache'] = kwargs.get('build_id_cache',
+            kwargs.get('retrieve_refs'))
     return MzIdentMLParser(source, **kwargs)
 
 def iterfind(source, path, **kwargs):
+    """Parse `source` and yield info on elements with specified local
+    name or by specified "XPath".
+
+    .. note:: This function is provided for backward compatibility only.
+        If you do multiple :py:func:`iterfind` calls on one file, you should
+        create an :py:class:`MzIdentMLParser` object and use its
+        :py:meth:`!iterfind` method.
+
+    Parameters
+    ----------
+    source : str or file
+        File name or file-like object.
+    path : str
+        Element name or XPath-like expression. Only local names separated
+        with slashes are accepted. An asterisk (`*`) means any element.
+        You can specify a single condition in the end, such as:
+        ``"/path/to/element[some_value>1.5]"``
+        Note: you can do much more powerful filtering using plain Python.
+        The path can be absolute or "free". Please don't specify
+        namespaces.
+
+    Returns
+    -------
+    out : iterator
+    """
     return MzIdentMLParser(source, **kwargs).iterfind(path, **kwargs)
+
+def version_info(source):
+    """
+    Provide version information about the XML file.
+
+    .. note:: This function is provided for backward compatibility only.
+        It simply creates an :py:class:`MzIdentMLParser` instance using
+        provided arguments and returns its :py:data:`!version_info` attribute.
+
+    Parameters
+    ----------
+    source : str or file
+        File name or file-like object.
+
+    Returns
+    -------
+    out : tuple
+        A (version, schema URL) tuple, both elements are strings or None.
+    """
+    return MzIdentMLParser(source).version_info
+
+def get_by_id(source, elem_id, **kwargs):
+    """Parse `source` and return the element with `id` attribute equal
+    to `elem_id`. Returns :py:const:`None` if no such element is found.
+
+    .. note:: This function is provided for backward compatibility only.
+        If you do multiple :py:func:`get_by_id` calls on one file, you should
+        create an :py:class:`MzIdentMLParser` object and use its
+        :py:meth:`!get_by_id` method.
+
+    Parameters
+    ----------
+    source : str or file
+        A path to a target mzIdentML file of the file object itself.
+
+    elem_id : str
+        The value of the `id` attribute to match.
+
+    Returns
+    -------
+    out : :py:class:`dict` or :py:const:`None`
+    """
 
 chain = aux._make_chain(read, 'read')
 
