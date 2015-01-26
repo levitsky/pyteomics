@@ -77,8 +77,8 @@ Data
 from __future__ import division
 import math
 from . import parser
-from .auxiliary import PyteomicsError, _xpath, _local_name
-from .auxiliary import _nist_mass
+from .auxiliary import PyteomicsError, _nist_mass
+from .xml import xpath, _local_name
 from itertools import chain
 from collections import defaultdict
 try:
@@ -817,8 +817,8 @@ class Unimod():
     def __init__(self, source='http://www.unimod.org/xml/unimod.xml'):
         """Create a database and fill it from XML file retrieved from `source`.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
 
         source : str or file, optional
             A file-like object or a URL to read from. Don't forget the 'file://'
@@ -893,8 +893,8 @@ class Unimod():
 
     def _xpath(self, path, element=None):
         if element is None:
-            return _xpath(self._tree, path, 'umod')
-        return _xpath(element, path, 'umod')
+            return xpath(self._tree, path, 'umod')
+        return xpath(element, path, 'umod')
 
     def _mass_data(self):
         massdata = defaultdict(dict)

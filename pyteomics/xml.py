@@ -413,6 +413,25 @@ def satisfied(d, cond):
     except (AttributeError, KeyError, ValueError):
         raise PyteomicsError('Invalid condition: ' + cond)
 
+def xpath(tree, path, ns=None):
+    """Return the results of XPath query with added namespaces.
+    Assumes the ns declaration is on the root element or absent."""
+    if hasattr(tree, 'getroot'):
+        root = tree.getroot()
+    else:
+        root = tree
+        while root.getparent() is not None:
+            root = root.getparent()
+    ns = root.nsmap.get(ns)
+    def repl(m):
+        s = m.group(1)
+        if not ns: return s
+        if not s: return 'd:'
+        return '/d:'
+    new_path = re.sub('(\/|^)(?![\*\/])', repl, path)
+    n_s = ({'d': ns} if ns else None)
+    return tree.xpath(new_path, namespaces=n_s)
+
 _mzid_schema_defaults = {'ints': {('DBSequence', 'length'),
                      ('IonType', 'charge'),
                      ('BibliographicReference', 'year'),

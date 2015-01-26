@@ -216,21 +216,6 @@ def roc_curve(source):
 
     return sorted(roc_curve, key=lambda x: x['min_prob'])
 
-_version_info_env = {'format': 'pepXML', 'element': 'msms_pipeline_analysis'}
-version_info = aux._make_version_info(_version_info_env)
-
-_schema_env = {'format': 'pepXML', 'version_info': version_info,
-        'default_version': '1.15', 'defaults': aux._pepxml_schema_defaults}
-_schema_info = aux._make_schema_info(_schema_env)
-
-_getinfo_env = {'keys': {'search_score_summary', 'modification_info'},
-        'schema_info': _schema_info,
-        'get_info_smart': _get_info_smart}
-_get_info = aux._make_get_info(_getinfo_env)
-
-_iterfind_env = {'get_info_smart': _get_info_smart}
-iterfind = aux._make_iterfind(_iterfind_env)
-
 chain = aux._make_chain(read, 'read')
 
 def is_decoy(psm, prefix='DECOY_'):

@@ -169,18 +169,4 @@ def _get_info_smart(source, element, **kw):
 
     return info
 
-_version_info_env = {'format': 'mzML', 'element': 'mzML'}
-version_info = aux._make_version_info(_version_info_env)
-
-_schema_env = {'format': 'mzML', 'version_info': version_info,
-        'default_version': '1.1.0', 'defaults': aux._mzml_schema_defaults}
-_schema_info = aux._make_schema_info(_schema_env)
-
-_getinfo_env = {'keys': {'binaryDataArrayList'}, 'schema_info': _schema_info,
-        'get_info_smart': _get_info_smart}
-_get_info = aux._make_get_info(_getinfo_env)
-
-_iterfind_env = {'get_info_smart': _get_info_smart}
-iterfind = aux._make_iterfind(_iterfind_env)
-
 chain = aux._make_chain(read, 'read')
