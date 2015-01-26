@@ -97,7 +97,7 @@ class XMLParserBase(object):
             self.build_tree()
 
         # For handling
-        self.version_info = self.get_version_info(self.version_info_element)
+        self.version_info = self.get_version_info()
         self.schema_info = self.get_schema_info(read_schema)
         self.source.file.seek(0)
 
@@ -126,14 +126,9 @@ class XMLParserBase(object):
         return getattr(self.source, attr)
 
     @_keepstate
-    def get_version_info(self, element):
+    def get_version_info(self):
         """
         Provide version information about the XML file.
-
-        Parameters
-        ----------
-        source : str or file
-            file object or path to file
 
         Returns
         -------
@@ -143,7 +138,7 @@ class XMLParserBase(object):
         vinfo = None
         for _, elem in etree.iterparse(
                 self.source, events=('start',), remove_comments=True):
-            if _local_name(elem) == element:
+            if _local_name(elem) == self.root_element:
                 return (elem.attrib.get('version'),
                         elem.attrib.get(('{{{}}}'.format(elem.nsmap['xsi'])
                             if 'xsi' in elem.nsmap else '') + 'schemaLocation'))
