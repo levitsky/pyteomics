@@ -1,5 +1,4 @@
 .. automodule:: pyteomics.mzid
-    :members:
 
     .. autofunction:: fdr
     .. autofunction:: chain
