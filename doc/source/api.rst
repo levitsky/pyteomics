@@ -21,3 +21,4 @@ Contents:
    api/mzid
    api/auxiliary
    api/pylab_aux
+   api/xml
