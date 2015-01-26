@@ -84,8 +84,10 @@ class XMLParserBase(object):
     def __init__(self, source, read_schema=True, **kwargs):
         self.source = _file_obj(source, 'rb')
 
-        self.id_dict = {}
-        self.tree = None
+        if kwargs.pop('build_tree', False):
+            self.build_tree()
+        else:
+            self.tree = None
 
         # For handling
         self.version_info = self.get_version_info(self.version_info_element)
@@ -305,14 +307,16 @@ class XMLParserBase(object):
         return info
 
     @_keepstate
-    def _parse_tree(self):
+    def build_tree(self):
         '''Build and store the ElementTree instance for `self.source`'''
-        if self.tree is None:
-            p = etree.XMLParser(remove_comments=True)
-            self.tree = etree.parse(self.source, parser=p)
+        p = etree.XMLParser(remove_comments=True)
+        self.tree = etree.parse(self.source, parser=p)
+
+    def clear_tree(self):
+        self.tree = None
 
     @_keepstate
-    def iterfind(self, path, iterative=True, **kwargs):
+    def iterfind(self, path, **kwargs):
         """Parse `source` and yield info on elements with specified local name
         or by specified "XPath". Only local names separated with slashes are
         accepted. An asterisk (`*`) means any element.
@@ -335,7 +339,7 @@ class XMLParserBase(object):
             absolute = True
             path = path[1:]
         nodes = path.rstrip('/').split('/')
-        if iterative:
+        if not self.tree:
             localname = nodes[0].lower()
             found = False
             for ev, elem in etree.iterparse(self, events=('start', 'end'),
@@ -356,8 +360,6 @@ class XMLParserBase(object):
                     if not found:
                         elem.clear()
         else:
-            if self.tree is None:
-                self._parse_tree()
             xpath = ('/' if absolute else '//') + '/'.join(
                     '*[local-name()="{}"]'.format(node) for node in nodes)
             for elem in self.tree.xpath(xpath):
