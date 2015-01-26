@@ -208,6 +208,9 @@ def read(source, **kwargs):
     """
     return MzIdentMLParser(source, **kwargs)
 
+def iterfind(source, path, **kwargs):
+    return MzIdentMLParser(source, **kwargs).iterfind(path, **kwargs)
+
 chain = aux._make_chain(read, 'read')
 
 def is_decoy(psm):

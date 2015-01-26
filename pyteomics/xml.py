@@ -1,3 +1,7 @@
+"""
+xml - utilities for XML parsing
+===============================
+"""
 import re
 import warnings
 warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
@@ -23,8 +27,9 @@ def _local_name(element):
 
 
 def _keepstate(func):
-    """Decorator to help keep the position in open files passed as
-    positional arguments to functions"""
+    """Decorator for :py:class:`XMLParserBase` methods to help keep the position
+    in the underlying file.
+    """
     @wraps(func)
     def wrapped(self, *args, **kwargs):
         position = self.tell()
@@ -65,6 +70,7 @@ class XMLValueConverter(object):
 
 
 class XMLParserBase(object):
+    """Base class for all format-specific XML parsers"""
     # Configurable data
     file_format = "XML"
     root_element = None
@@ -82,12 +88,13 @@ class XMLParserBase(object):
         raise NotImplementedError
 
     def __init__(self, source, read_schema=True, **kwargs):
+        """Create an XML parser object"""
         self.source = _file_obj(source, 'rb')
 
-        if kwargs.pop('build_tree', False):
-            self.build_tree()
-        else:
+        if kwargs.pop('iterative', True):
             self.tree = None
+        else:
+            self.build_tree()
 
         # For handling
         self.version_info = self.get_version_info(self.version_info_element)
@@ -121,15 +128,15 @@ class XMLParserBase(object):
     @_keepstate
     def get_version_info(self, element):
         """
-        Provide version information about the {0} file.
+        Provide version information about the XML file.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         source : str or file
             file object or path to file
 
-        Returns:
-        --------
+        Returns
+        -------
         out : tuple
             A (version, schema URL) tuple, both elements are strings or None.
         """
@@ -232,7 +239,7 @@ class XMLParserBase(object):
         return ret
 
     def handle_param(self, element, **kwargs):
-        '''Unpacks cvParam and userParam tags into key-value pairs'''
+        """Unpacks cvParam and userParam tags into key-value pairs"""
         if 'value' in element.attrib:
             try:
                 value = float(element.attrib['value'])
@@ -308,7 +315,7 @@ class XMLParserBase(object):
 
     @_keepstate
     def build_tree(self):
-        '''Build and store the ElementTree instance for `self.source`'''
+        """Build and store the ElementTree instance for `self.source`"""
         p = etree.XMLParser(remove_comments=True)
         self.tree = etree.parse(self.source, parser=p)
 
@@ -317,14 +324,24 @@ class XMLParserBase(object):
 
     @_keepstate
     def iterfind(self, path, **kwargs):
-        """Parse `source` and yield info on elements with specified local name
-        or by specified "XPath". Only local names separated with slashes are
-        accepted. An asterisk (`*`) means any element.
-        You can specify a single condition in the end, such as:
-        "/path/to/element[some_value>1.5]"
-        Note: you can do much more powerful filtering using plain Python.
-        The path can be absolute or "free". Please don't specify
-        namespaces."""
+        """Parse `self.source` and yield info on elements with specified local
+        name or by specified "XPath".
+
+        Parameters
+        ----------
+        path : str
+            Element name or XPath-like expression. Only local names separated
+            with slashes are accepted. An asterisk (`*`) means any element.
+            You can specify a single condition in the end, such as:
+            ``"/path/to/element[some_value>1.5]"``
+            Note: you can do much more powerful filtering using plain Python.
+            The path can be absolute or "free". Please don't specify
+            namespaces.
+
+        Returns
+        -------
+        out : iterator
+        """
         try:
             path, _, cond = re.match(pattern_path, path).groups()
         except AttributeError:
