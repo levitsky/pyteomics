@@ -1,5 +1,4 @@
 .. automodule:: pyteomics.pepxml
-   :members:
 
    .. autofunction:: chain
    .. py:function :: chain.from_iterable(files, **kwargs)

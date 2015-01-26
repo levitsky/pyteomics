@@ -1,5 +1,4 @@
 .. automodule:: pyteomics.tandem
-   :members:
 
    .. autofunction:: chain
    .. py:function :: chain.from_iterable(files, **kwargs)

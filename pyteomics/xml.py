@@ -349,6 +349,7 @@ class XMLParserBase(object):
             Note: you can do much more powerful filtering using plain Python.
             The path can be absolute or "free". Please don't specify
             namespaces.
+        **kwargs : passed to :py:meth:`self._get_info_smart`.
 
         Returns
         -------

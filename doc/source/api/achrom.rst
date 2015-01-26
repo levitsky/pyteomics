@@ -1,2 +1,1 @@
 .. automodule:: pyteomics.achrom
-   :members:
