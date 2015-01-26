@@ -76,20 +76,41 @@ from . import xml
 class MzIdentMLParser(xml.XMLParserBase):
     """Parser class for MzIdentML files."""
     file_format = "mzIdentML"
-    root_element = "MzIdentML"
-    default_schema = xml._mzid_schema_defaults
-    default_version = "1.1.0"
-    default_iter_tag = "SpectrumIdentificationResult"
-    structures_to_flatten = {'Fragmentation'}
+    _root_element = "MzIdentML"
+    _default_schema = xml._mzid_schema_defaults
+    _default_version = "1.1.0"
+    _default_iter_tag = "SpectrumIdentificationResult"
+    _structures_to_flatten = {'Fragmentation'}
 
     def __init__(self, source, **kwargs):
+        """Create an XML parser object.
+
+        Parameters
+        ----------
+        source : str or file
+            File name or file-like object corresponding to an XML file.
+        read_schema : bool, optional
+            Defines whether schema file referenced in the file header
+            should be used to extract information about value conversion.
+            Default is :py:const:`True`.
+        iterative : bool, optional
+            Defines whether an :py:class:`ElementTree` object should be
+            constructed and stored on the instance or if iterative parsing
+            should be used instead. Iterative parsing keeps the memory usage
+            low for large XML files. Default is :py:const:`True`.
+        build_id_cache : bool, optional
+            Defines whether a dictionary mapping IDs to XML tree elements
+            should be built and stored on the instance. It is used in
+            :py:meth:`get_by_id`, e.g. when calling :py:meth:`iterfind` with
+            ``retrieve_refs=True``.
+        """
         super(MzIdentMLParser, self).__init__(source, **kwargs)
         if kwargs.pop('build_id_cache', False):
             self.build_id_cache()
         else:
-            self.id_dict = {}
+            self._id_dict = {}
 
-    def get_info_smart(self, element, **kwargs):
+    def _get_info_smart(self, element, **kwargs):
         """Extract the info in a smart way depending on the element type"""
         name = xml._local_name(element)
         kwargs = dict(kwargs)
@@ -97,12 +118,12 @@ class MzIdentMLParser(xml.XMLParserBase):
 
         # Try not to recursively unpack the root element
         # unless the user really wants to.
-        if name == self.root_element:
-            return self.get_info(element,
+        if name == self._root_element:
+            return self._get_info(element,
                     recursive=(rec if rec is not None else False),
                     **kwargs)
         else:
-            return self.get_info(element,
+            return self._get_info(element,
                     recursive=(rec if rec is not None else True),
                     **kwargs)
 
@@ -117,7 +138,7 @@ class MzIdentMLParser(xml.XMLParserBase):
 
     @xml._keepstate
     def build_id_cache(self):
-        """Constructs a cache for each element in the document, indexed by id
+        """Construct a cache for each element in the document, indexed by id
         attribute"""
         stack = 0
         id_dict = {}
@@ -132,10 +153,11 @@ class MzIdentMLParser(xml.XMLParserBase):
                     id_dict[elem.attrib['id']] = elem
                 elif stack == 0:
                     elem.clear()
-        self.id_dict = id_dict
+        self._id_dict = id_dict
 
     def clear_id_cache(self):
-        self.id_dict = {}
+        """Clear the element ID cache"""
+        self._id_dict = {}
 
     @xml._keepstate
     def get_by_id(self, elem_id, **kwargs):
@@ -151,7 +173,7 @@ class MzIdentMLParser(xml.XMLParserBase):
         -------
         out : :py:class:`dict` or :py:const:`None`
         """
-        if not self.id_dict:
+        if not self._id_dict:
             found = False
             for event, elem in etree.iterparse(self.source,
                     events=('start', 'end'), remove_comments=True):
@@ -160,13 +182,13 @@ class MzIdentMLParser(xml.XMLParserBase):
                         found = True
                 else:
                     if elem.attrib.get('id') == elem_id:
-                        return self.get_info_smart(elem, retrieve_refs=True)
+                        return self._get_info_smart(elem, retrieve_refs=True)
                     if not found:
                         elem.clear()
             return None
         else:
             try:
-                return self.get_info_smart(self.id_dict[elem_id], **kwargs)
+                return self._get_info_smart(self._id_dict[elem_id], **kwargs)
             except KeyError:
                 raise PyteomicsError(
                         'Key {} not found in cache.'.format(elem_id))
