@@ -10,9 +10,9 @@ developed by the Proteomics Informatics working group of the HUPO Proteomics
 Standard Initiative.
 
 This module provides a minimalistic way to extract information from mzIdentML
-files. The main idea is the same as in :py:mod:`pyteomics.pepxml`: the top-level
-function :py:func:`read` allows iterating over entries in
-`<SpectrumIdentificationResult>` elements, i.e. groups of identifications
+files. You can use the old functional interface (:py:func:`read`) or the new
+object-oriented interface (:py:class:`MzIdentML`) to iterate over entries in
+``<SpectrumIdentificationResult>`` elements, i.e. groups of identifications
 for a certain spectrum. Note that each entry can contain more than one PSM
 (peptide-spectrum match). They are accessible with "SpectrumIdentificationItem"
 key.
@@ -20,8 +20,12 @@ key.
 Data access
 -----------
 
+  :py:class:`MzIdentML` - a class representing a single MzIdentML file.
+  Other data access functions use this class internally.
+
   :py:func:`read` - iterate through peptide-spectrum matches in an mzIdentML
   file. Data from a single PSM group are converted to a human-readable dict.
+  Basically creates an :py:class:`MzIdentML` object and reads it.
 
   :py:func:`chain` - read multiple files at once.
 
@@ -37,20 +41,29 @@ Data access
   :py:func:`filter.chain.from_iterable` - chain a series of filters applied
   independently to an iterable of files.
 
-  :py:func:`get_by_id` - get an element by its ID and extract the data from it.
-
-  :py:func:`iterfind` - iterate over elements in an mzIdentML file.
-
 Miscellaneous
 -------------
-
-  :py:func:`version_info` - get information about mzIdentML version and schema.
 
   :py:func:`is_decoy` - determine if a "SpectrumIdentificationResult" should be
   consiudered decoy.
 
   :py:func:`fdr` - estimate the false discovery rate of a set of identifications
   using the target-decoy approach.
+
+Deprecated functions
+--------------------
+
+  :py:func:`version_info` - get information about mzIdentML version and schema.
+  You can just read the corresponding attribute of the :py:class:`MzIdentML`
+  object.
+
+  :py:func:`get_by_id` - get an element by its ID and extract the data from it.
+  You can just call the corresponding method of the :py:class:`MzIdentML`
+  object.
+
+  :py:func:`iterfind` - iterate over elements in an mzIdentML file.
+  You can just call the corresponding method of the :py:class:`MzIdentML`
+  object.
 
 -------------------------------------------------------------------------------
 """
@@ -73,7 +86,7 @@ from lxml import etree
 from . import auxiliary as aux
 from . import xml
 
-class MzIdentMLParser(xml.XMLParserBase):
+class MzIdentML(xml.XML):
     """Parser class for MzIdentML files."""
     file_format = "mzIdentML"
     _root_element = "MzIdentML"
@@ -104,7 +117,7 @@ class MzIdentMLParser(xml.XMLParserBase):
             :py:meth:`get_by_id`, e.g. when calling :py:meth:`iterfind` with
             ``retrieve_refs=True``.
         """
-        super(MzIdentMLParser, self).__init__(source, **kwargs)
+        super(MzIdentML, self).__init__(source, **kwargs)
         if kwargs.pop('build_id_cache', False):
             self.build_id_cache()
         else:
@@ -198,7 +211,7 @@ def read(source, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
 
     .. note:: This function is provided for backward compatibility only.
-        It simply creates an :py:class:`MzIdentMLParser` instance using
+        It simply creates an :py:class:`MzIdentML` instance using
         provided arguments and returns it.
 
     Parameters
@@ -230,13 +243,13 @@ def read(source, **kwargs):
 
     Returns
     -------
-    out : MzIdentMLParser
+    out : MzIdentML
        An iterator over the dicts with PSM properties.
     """
     kwargs = kwargs.copy()
     kwargs['build_id_cache'] = kwargs.get('build_id_cache',
             kwargs.get('retrieve_refs'))
-    return MzIdentMLParser(source, **kwargs)
+    return MzIdentML(source, **kwargs)
 
 def iterfind(source, path, **kwargs):
     """Parse `source` and yield info on elements with specified local
@@ -244,7 +257,7 @@ def iterfind(source, path, **kwargs):
 
     .. note:: This function is provided for backward compatibility only.
         If you do multiple :py:func:`iterfind` calls on one file, you should
-        create an :py:class:`MzIdentMLParser` object and use its
+        create an :py:class:`MzIdentML` object and use its
         :py:meth:`!iterfind` method.
 
     Parameters
@@ -264,14 +277,14 @@ def iterfind(source, path, **kwargs):
     -------
     out : iterator
     """
-    return MzIdentMLParser(source, **kwargs).iterfind(path, **kwargs)
+    return MzIdentML(source, **kwargs).iterfind(path, **kwargs)
 
 def version_info(source):
     """
     Provide version information about the XML file.
 
     .. note:: This function is provided for backward compatibility only.
-        It simply creates an :py:class:`MzIdentMLParser` instance using
+        It simply creates an :py:class:`MzIdentML` instance using
         provided arguments and returns its :py:data:`!version_info` attribute.
 
     Parameters
@@ -284,7 +297,7 @@ def version_info(source):
     out : tuple
         A (version, schema URL) tuple, both elements are strings or None.
     """
-    return MzIdentMLParser(source).version_info
+    return MzIdentML(source).version_info
 
 def get_by_id(source, elem_id, **kwargs):
     """Parse `source` and return the element with `id` attribute equal
@@ -292,7 +305,7 @@ def get_by_id(source, elem_id, **kwargs):
 
     .. note:: This function is provided for backward compatibility only.
         If you do multiple :py:func:`get_by_id` calls on one file, you should
-        create an :py:class:`MzIdentMLParser` object and use its
+        create an :py:class:`MzIdentML` object and use its
         :py:meth:`!get_by_id` method.
 
     Parameters

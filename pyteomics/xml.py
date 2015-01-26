@@ -27,7 +27,7 @@ def _local_name(element):
 
 
 def _keepstate(func):
-    """Decorator for :py:class:`XMLParserBase` methods to help keep the position
+    """Decorator for :py:class:`XML` methods to help keep the position
     in the underlying file.
     """
     @wraps(func)
@@ -69,7 +69,7 @@ class XMLValueConverter(object):
         }
 
 
-class XMLParserBase(object):
+class XML(object):
     """Base class for all format-specific XML parsers. The instances can be used
     as context managers and as iterators.
     """
