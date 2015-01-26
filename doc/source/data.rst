@@ -3,8 +3,45 @@ Data Access
 
 The following section is dedicated to data manipulation. **Pyteomics** aims to
 support the most common formats of (LC-)MS/MS data, peptide identification
-files and protein databases. Be sure to check out the general notes at the
-bottom.
+files and protein databases.
+
+General Notes
+-------------
+
+ - Each module mentioned below corresponds to a file format. In each module, the
+   top-level function :py:func:`read` allows iteration over entries in a file.
+   It works like the built-in :py:func:`open`, allowing direct iteration and
+   supporting the ``with`` syntax, which we recommend using. So you can do:
+
+   .. code-block :: python
+
+        >>> from pyteomics import mgf
+        >>> reader = mgf.read('tests/test.mgf')
+        >>> for spectrum in reader:
+        >>>    ...
+        >>> reader.close()
+
+   ... but it is recommended to do:
+
+   .. code-block :: python
+
+        >>> from pyteomics import mgf
+        >>> with mgf.read('tests/test.mgf') as reader:
+        >>>     for spectrum in reader:
+        >>>        ...
+
+ - Apart from :py:func:`read`, which reads just one file, all modules described
+   here have functions for reading multiple files: :py:func:`chain` and
+   :py:func:`chain.from_iterable`.
+   ``chain('f1', 'f2')`` is equivalent to ``chain.from_iterable(['f1', 'f2'])``.
+   :py:func:`chain` and :py:func:`chain.from_iterable` only support the
+   ``with`` syntax. If you don't want to use the ``with`` syntax, you can just
+   use the :py:mod:`itertools` functions :py:func:`chain` and
+   :py:func:`chain.from_iterable`.
+
+ - Throughout this section we use
+   :py:func:`pyteomics.auxiliary.print_tree` to display the structure of the
+   data returned by various parsers.
 
 .. contents:: Document contents
     :backlinks: top
@@ -417,48 +454,11 @@ method. It currently supports two modes: *‘reverse’* and *‘random’*.
     >>> fasta.decoy_sequence('PEPTIDE', 'reverse')
     'EDITPEP'
     >>> fasta.decoy_sequence('PEPTIDE', 'random')
-    ‘TPPIDEE'
+    'TPPIDEE'
     >>> fasta.decoy_sequence('PEPTIDE', 'random')
     'PTIDEPE'
 
 
-General Notes
--------------
-
- - Throughout this section we use
-   :py:func:`pyteomics.auxiliary.print_tree` to display the structure of the
-   data returned by various parsers.
-
- - All file parsers support the ``with`` syntax, but do not require it. So you
-   can do:
-
-   .. code-block :: python
-
-        >>> from pyteomics import mgf
-        >>> reader = mgf.read('tests/test.mgf')
-        >>> for spectrum in reader:
-        >>>    ...
-        >>> reader.close()
-
-   ... but it is recommended to do:
-
-   .. code-block :: python
-
-        >>> from pyteomics import mgf
-        >>> with mgf.read('tests/test.mgf') as reader:
-        >>>     for spectrum in reader:
-        >>>        ...
-
- - All modules described here have three functions for reading data:
-   :py:func:`read`, :py:func:`chain` and :py:func:`chain.from_iterable`.
-   The latter two (`added in version 2.3 <changelog.html>`_) are convenient for
-   reading multiple files of the same type.
-
-   ``chain('f1', 'f2')`` is equivalent to ``chain.from_iterable(['f1', 'f2'])``.
-   :py:func:`chain` and :py:func:`chain.from_iterable` only support the
-   ``with`` syntax. If you don't want to use the ``with`` syntax, you can just
-   use the :py:mod:`itertools` functions :py:func:`chain` and
-   :py:func:`chain.from_iterable`.
 
  - Three modules for reading proteomics search engine output (:py:mod:`tandem`,
    :py:mod:`pepxml` and :py:mod:`mzid`) expose similar functions
