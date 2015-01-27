@@ -251,6 +251,45 @@ class _file_obj(object):
     def __iter__(self):
         return iter(self.file)
 
+class FileReader(object):
+    """Abstract class implementing context manager protocol
+    for file readers.
+    """
+    def __init__(self, source, mode, func, pass_file, *args, **kwargs):
+        self.source = _file_obj(source, mode)
+        try:
+            if pass_file:
+                self.reader = func(self.source, *args, **kwargs)
+            else:
+                self.reader = func(*args, **kwargs)
+        except:  # clean up on any error
+            self.__exit__(*sys.exc_info())
+            raise
+
+    # context manager support
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.source.__exit__(*args, **kwargs)
+
+    # iterator support
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            return next(self.reader)
+        except StopIteration:
+            self.__exit__(None, None, None)
+            raise
+
+    next = __next__  # Python 2 support
+
+    # delegate everything else to file object
+    def __getattr__(self, attr):
+        return getattr(self.source, attr)
+
 def _file_reader(mode='r'):
     # a lot of the code below is borrowed from
     # http://stackoverflow.com/a/14095585/1258041
@@ -258,43 +297,11 @@ def _file_reader(mode='r'):
         """A decorator implementing the context manager protocol for functions
         that read files.
 
-        Note: 'close' must be in kwargs! Otherwise it won't be respected."""
-        class CManager(object):
-            def __init__(self, source, *args, **kwargs):
-                self.file = _file_obj(source, mode)
-                try:
-                    self.reader = func(self.file, *args, **kwargs)
-                except:  # clean up on any error
-                    self.__exit__(*sys.exc_info())
-                    raise
-
-            # context manager support
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *args, **kwargs):
-                self.file.__exit__(*args, **kwargs)
-
-            # iterator support
-            def __iter__(self):
-                return self
-
-            def __next__(self):
-                try:
-                    return next(self.reader)
-                except StopIteration:
-                    self.__exit__(None, None, None)
-                    raise
-
-            next = __next__  # Python 2 support
-
-            # delegate everything else to file object
-            def __getattr__(self, attr):
-                return getattr(self.file, attr)
-
+        Note: 'close' must be in kwargs! Otherwise it won't be respected.
+        """
         @wraps(func)
         def helper(*args, **kwargs):
-            return CManager(*args, **kwargs)
+            return FileReader(args[0], mode, func, True, *args[1:], **kwargs)
         return helper
     return decorator
 
