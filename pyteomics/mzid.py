@@ -88,11 +88,11 @@ from . import xml
 
 class MzIdentML(xml.XML):
     """Parser class for MzIdentML files."""
-    file_format = "mzIdentML"
-    _root_element = "MzIdentML"
+    file_format = 'mzIdentML'
+    _root_element = 'MzIdentML'
     _default_schema = xml._mzid_schema_defaults
-    _default_version = "1.1.0"
-    _default_iter_tag = "SpectrumIdentificationResult"
+    _default_version = '1.1.0'
+    _default_iter_tag = 'SpectrumIdentificationResult'
     _structures_to_flatten = {'Fragmentation'}
 
     def __init__(self, source, **kwargs):
