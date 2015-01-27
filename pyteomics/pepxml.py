@@ -71,94 +71,104 @@ Miscellaneous
 #   limitations under the License.
 
 from lxml import etree
-from . import auxiliary as aux
+from . import xml, auxiliary as aux
 
-def _get_info_smart(source, element, **kw):
-    """Extract the info in a smart way depending on the element type"""
-    name = aux._local_name(element)
-    kwargs = dict(kw)
-    rec = kwargs.pop('recursive', None)
-    if name == 'msms_pipeline_analysis':
-        info = _get_info(source, element, rec if rec is not None else False,
-                **kwargs)
-    else:
-        info = _get_info(source, element, rec if rec is not None else True,
-                **kwargs)
+class PepXML(xml.XML):
+    """Parser class for pepXML files."""
+    file_format = 'pepXML'
+    _root_element = 'msms_pipeline_analysis'
+    _default_schema = xml._pepxml_schema_defaults
+    _default_version = '1.15'
+    _default_iter_tag = 'spectrum_query'
+    _structures_to_flatten = {'search_score_summary', 'modification_info'}
 
-    # attributes which contain unconverted values
-    convert = {'float':  {'calc_neutral_pep_mass', 'massdiff'},
-        'int': {'start_scan', 'end_scan', 'index'},
-        'bool': {'is_rejected'},
-        'floatarray': {'all_ntt_prob'}}
-    def safe_float(s):
-        try:
-            return float(s)
-        except ValueError:
-            if s.startswith('+-0'): return 0
-            return None
-
-    converters = {'float': safe_float, 'int': int,
-            'bool': lambda x: x.lower() in {'1', 'true'},
-            'floatarray': lambda x: list(map(float, x[1:-1].split(',')))}
-    for k, v in dict(info).items():
-        for t, s in convert.items():
-            if k in s:
-                del info[k]
-                info[k] = converters[t](v)
-    for k in {'search_score', 'parameter'}:
-        if k in info and isinstance(info[k], list) and all(
-                isinstance(x, dict) and len(x) == 1 for x in info[k]):
-            scores = {}
-            for score in info[k]:
-                name, value = score.popitem()
-                try:
-                    scores[name] = float(value)
-                except ValueError:
-                    scores[name] = value
-            info[k] = scores
-    if 'search_result' in info and len(info['search_result']) == 1:
-        info.update(info['search_result'][0])
-        del info['search_result']
-    if 'protein' in info and 'peptide' in info:
-        info['proteins'] = [{'protein': info.pop('protein'),
-            'protein_descr': info.pop('protein_descr', None)}]
-        for add_key in {'peptide_prev_aa', 'peptide_next_aa', 'protein_mw'}:
-            if add_key in info:
-                info['proteins'][0][add_key] = info.pop(add_key)
-        info['proteins'][0]['num_tol_term'] = info.pop('num_tol_term', 0)
-        if 'alternative_protein' in info:
-            info['proteins'].extend(info['alternative_protein'])
-            del info['alternative_protein']
-    if 'peptide' in info and not 'modified_peptide' in info:
-        info['modified_peptide'] = info['peptide']
-    if 'peptide' in info:
-        info['modifications'] = info.pop('mod_aminoacid_mass', [])
-        if 'mod_nterm_mass' in info:
-            info['modifications'].insert(0, {'position': 0,
-                'mass': float(info.pop('mod_nterm_mass'))})
-        if 'mod_cterm_mass' in info:
-            info['modifications'].append({'position': 1 + len(info['peptide']),
-                'mass': float(info.pop('mod_cterm_mass'))})
-    if 'modified_peptide' in info and info['modified_peptide'] == info.get(
-            'peptide'):
-        if not info.get('modifications'):
-            info['modifications'] = []
+    def _get_info_smart(self, element, **kw):
+        """Extract the info in a smart way depending on the element type"""
+        name = xml._local_name(element)
+        kwargs = dict(kw)
+        rec = kwargs.pop('recursive', None)
+        if name == 'msms_pipeline_analysis':
+            info = self._get_info(element,
+                    recursive=(rec if rec is not None else False),
+                    **kwargs)
         else:
-            mp = info['modified_peptide']
-            for mod in sorted(info['modifications'],
-                    key=lambda m: m['position'],
-                    reverse=True):
-                if mod['position'] not in {0, 1+len(info['peptide'])}:
-                    p = mod['position']
-                    mp = mp[:p] + '[{}]'.format(int(mod['mass'])) + mp[p:]
-            info['modified_peptide'] = mp
-    if 'search_hit' in info:
-        info['search_hit'].sort(key=lambda x: x['hit_rank'])
-    return info
+            info = self._get_info(element,
+                    recursive=(rec if rec is not None else True),
+                    **kwargs)
 
-@aux._file_reader('rb')
+        # attributes which contain unconverted values
+        convert = {'float':  {'calc_neutral_pep_mass', 'massdiff'},
+            'int': {'start_scan', 'end_scan', 'index'},
+            'bool': {'is_rejected'},
+            'floatarray': {'all_ntt_prob'}}
+        def safe_float(s):
+            try:
+                return float(s)
+            except ValueError:
+                if s.startswith('+-0'): return 0
+                return None
+
+        converters = {'float': safe_float, 'int': int,
+                'bool': lambda x: x.lower() in {'1', 'true'},
+                'floatarray': lambda x: list(map(float, x[1:-1].split(',')))}
+        for k, v in dict(info).items():
+            for t, s in convert.items():
+                if k in s:
+                    del info[k]
+                    info[k] = converters[t](v)
+        for k in {'search_score', 'parameter'}:
+            if k in info and isinstance(info[k], list) and all(
+                    isinstance(x, dict) and len(x) == 1 for x in info[k]):
+                scores = {}
+                for score in info[k]:
+                    name, value = score.popitem()
+                    try:
+                        scores[name] = float(value)
+                    except ValueError:
+                        scores[name] = value
+                info[k] = scores
+        if 'search_result' in info and len(info['search_result']) == 1:
+            info.update(info['search_result'][0])
+            del info['search_result']
+        if 'protein' in info and 'peptide' in info:
+            info['proteins'] = [{'protein': info.pop('protein'),
+                'protein_descr': info.pop('protein_descr', None)}]
+            for add_key in {'peptide_prev_aa', 'peptide_next_aa', 'protein_mw'}:
+                if add_key in info:
+                    info['proteins'][0][add_key] = info.pop(add_key)
+            info['proteins'][0]['num_tol_term'] = info.pop('num_tol_term', 0)
+            if 'alternative_protein' in info:
+                info['proteins'].extend(info['alternative_protein'])
+                del info['alternative_protein']
+        if 'peptide' in info and not 'modified_peptide' in info:
+            info['modified_peptide'] = info['peptide']
+        if 'peptide' in info:
+            info['modifications'] = info.pop('mod_aminoacid_mass', [])
+            if 'mod_nterm_mass' in info:
+                info['modifications'].insert(0, {'position': 0,
+                    'mass': float(info.pop('mod_nterm_mass'))})
+            if 'mod_cterm_mass' in info:
+                info['modifications'].append({'position': 1 + len(info['peptide']),
+                    'mass': float(info.pop('mod_cterm_mass'))})
+        if 'modified_peptide' in info and info['modified_peptide'] == info.get(
+                'peptide'):
+            if not info.get('modifications'):
+                info['modifications'] = []
+            else:
+                mp = info['modified_peptide']
+                for mod in sorted(info['modifications'],
+                        key=lambda m: m['position'],
+                        reverse=True):
+                    if mod['position'] not in {0, 1+len(info['peptide'])}:
+                        p = mod['position']
+                        mp = mp[:p] + '[{}]'.format(int(mod['mass'])) + mp[p:]
+                info['modified_peptide'] = mp
+        if 'search_hit' in info:
+            info['search_hit'].sort(key=lambda x: x['hit_rank'])
+        return info
+
 def read(source, read_schema=True, iterative=True):
-    """Parse ``source`` and iterate through peptide-spectrum matches.
+    """Parse `source` and iterate through peptide-spectrum matches.
 
     Parameters
     ----------
@@ -178,12 +188,11 @@ def read(source, read_schema=True, iterative=True):
 
     Returns
     -------
-    out : iterator
+    out : PepXML
        An iterator over dicts with PSM properties.
     """
 
-    return iterfind(source, 'spectrum_query',
-            read_schema=read_schema, iterative=iterative)
+    return PepXML(source, read_schema=read_schema, iterative=iterative)
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.
