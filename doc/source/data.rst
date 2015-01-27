@@ -244,8 +244,9 @@ that by means of the :py:func:`pyteomics.fasta.decoy_db` and
 The only required argument is the first one, indicating the source database. The
 second argument is the target file and defaults to system standard output.
 
-If you need to modify a single sequence, use the :py:func:`pyteomics.fasta.decoy_sequence`
-method. It currently supports two modes: ``'reverse'`` and ``'random'``.
+If you need to modify a single sequence, use the
+:py:func:`pyteomics.fasta.decoy_sequence` function. It supports two modes:
+``'reverse'`` and ``'random'``.
 
 .. code-block:: python
 
@@ -260,6 +261,14 @@ method. It currently supports two modes: ``'reverse'`` and ``'random'``.
 XML formats
 ===========
 
+XML parsers in **Pyteomics 3.0** are implemented as classes and provide an
+object-oriented interface. The functional interface is preserved and wraps
+the actual class-based machinery. That means that reader objects returned
+by :py:func:`read` functions have additional methods.
+
+One of the most important methods is :py:meth:`iterfind`. It allows reading
+additional information from XML files.
+
 mzML
 ----
 
@@ -267,11 +276,11 @@ mzML
 setups. **Pyteomics** offers you the functionality of :py:mod:`pyteomics.mzml`
 module to gain access to the information contained in mzML files from Python.
 
-The main function in this module is :py:func:`pyteomics.mzml.read`. It allows
-the user to iterate through MS/MS spectra
-contained in an mzML file. Here is an example of its output:
+The user can iterate through MS/MS spectra contained in an mzML file via the
+:py:func:`pyteomics.mzml.read` function or :py:class:`pyteomics.mzml.MzML` class.
+Here is an example of the output:
 
-.. code-block :: python
+.. code-block:: python
 
     >>> from pyteomics import mzml, auxiliary
     >>> with mzml.read('tests/test.mzML') as reader:
@@ -319,7 +328,8 @@ used and the assigned sequences. To access these data, use
 
 :py:mod:`pyteomics.pepxml` has the same structure as :py:mod:`pyteomics.mzml`.
 The function :py:func:`pyteomics.pepxml.read` iterates through Peptide-Spectrum
-matches in a pepXML file and returns them as a custom dict.
+matches in a pepXML file and returns them as a custom dict. Alternatively, you
+can use the :py:class:`pyteomics.pepxml.PepXML` interface.
 
 .. code-block:: python
 
@@ -465,6 +475,9 @@ in the :py:mod:`pyteomics.tandem` module.
      ->  -> type
      -> id
 
+:py:func:`pyteomics.tandem.read` relies on the
+:py:class:`pyteomics.tandem.TandemXML` class, which can also be used directly.
+
 mzIdentML
 ---------
 
@@ -504,55 +517,60 @@ above.
 Additional function :py:func:`get_by_id` allows to extract info from any element
 using its unique ID.
 
+.. note:: If you do multiple :py:func:`get_by_id` calls, it is strongly
+          recommended to use the :py:class:`pyteomics.mzid.MzIdentML` instance
+          method instead of this free function. That allows caching the element
+          IDs, which makes the search much faster.
+
 FDR estimation and filtering
 ============================
 
-- Three modules for reading proteomics search engine output (:py:mod:`tandem`,
-  :py:mod:`pepxml` and :py:mod:`mzid`) expose similar functions
-  :py:func:`is_decoy`, :py:func:`fdr` and :py:func:`!filter`. These functions
-  (`added in version 2.4 <changelog.html>`_) implement the widely used
-  Target-Decoy Approach (TDA) to estimation of False Discovery Rate (FDR).
+Three modules for reading proteomics search engine output (:py:mod:`tandem`,
+:py:mod:`pepxml` and :py:mod:`mzid`) expose similar functions
+:py:func:`is_decoy`, :py:func:`fdr` and :py:func:`!filter`. These functions
+(`added in version 2.4 <changelog.html>`_) implement the widely used
+Target-Decoy Approach (TDA) to estimation of False Discovery Rate (FDR).
 
-  The :py:func:`is_decoy` function is supposed to determine if a particular
-  spectrum identification is coming from the decoy database. In :py:mod:`tandem`
-  and :py:mod:`pepxml` this is done by checking if the protein description/name
-  starts with a certain prefix. In :py:mod:`mzid`, a boolean value that stores
-  this information in the PSM dict is used.
+The :py:func:`is_decoy` function is supposed to determine if a particular
+spectrum identification is coming from the decoy database. In :py:mod:`tandem`
+and :py:mod:`pepxml` this is done by checking if the protein description/name
+starts with a certain prefix. In :py:mod:`mzid`, a boolean value that stores
+this information in the PSM dict is used.
 
-  .. warning ::
-       Because of the variety of the software producing files in pepXML and
-       mzIdentML formats, the :py:func:`is_decoy` function provided in the
-       corresponding modules may not work for your specific files. In this case
-       you will have to refer to the source of
-       :py:func:`pyteomics.pepxml.is_decoy` and
-       :py:func:`pyteomics.mzid.is_decoy` and create your own function in a
-       similar manner.
+.. warning ::
+     Because of the variety of the software producing files in pepXML and
+     mzIdentML formats, the :py:func:`is_decoy` function provided in the
+     corresponding modules may not work for your specific files. In this case
+     you will have to refer to the source of
+     :py:func:`pyteomics.pepxml.is_decoy` and
+     :py:func:`pyteomics.mzid.is_decoy` and create your own function in a
+     similar manner.
 
-  The :py:func:`fdr` function estimates the FDR in a set of PSMs by counting
-  the decoy matches. Since it is using the :py:func:`is_decoy` function, the
-  warning above applies. You can supply a custom function so that :py:func:`fdr`
-  works for your data. :py:func:`fdr` can also be imported from
-  :py:mod:`auxiliary`, where it has no default for :py:func:`is_decoy`.
+The :py:func:`fdr` function estimates the FDR in a set of PSMs by counting
+the decoy matches. Since it is using the :py:func:`is_decoy` function, the
+warning above applies. You can supply a custom function so that :py:func:`fdr`
+works for your data. :py:func:`fdr` can also be imported from
+:py:mod:`auxiliary`, where it has no default for :py:func:`is_decoy`.
 
-  The :py:func:`!filter` function works like :py:func:`chain`, but instead of
-  yielding all PSMs, it filters them to a certain level of FDR. PSM filtering
-  requires counting decoy matches, too (see above), but it also implies sorting
-  the PSMs by some kind of a score. This score cannot be universal due to the
-  above-mentioned reasons, and it can be specified as a user-defined function.
-  For instance, the default sorting key in :py:func:`pyteomics.mzid.filter` is
-  only expected to work with mzIdentML files created with Mascot.
-  So once again,
+The :py:func:`!filter` function works like :py:func:`chain`, but instead of
+yielding all PSMs, it filters them to a certain level of FDR. PSM filtering
+requires counting decoy matches, too (see above), but it also implies sorting
+the PSMs by some kind of a score. This score cannot be universal due to the
+above-mentioned reasons, and it can be specified as a user-defined function.
+For instance, the default sorting key in :py:func:`pyteomics.mzid.filter` is
+only expected to work with mzIdentML files created with Mascot.
+So once again,
 
-  .. warning ::
-       The default parameters of :py:func:`!filter` may not work for your files.
+.. warning ::
+     The default parameters of :py:func:`!filter` may not work for your files.
 
-  There are also :py:func:`filter.chain` and
-  :py:func:`filter.chain.from_iterable`. These are different from
-  :py:func:`!filter` in that they apply FDR filtering to all files separately
-  and then provide a reader over top PSMs of all files, whereas
-  :py:func:`!filter` pools all PSMs together and applies a single threshold.
+There are also :py:func:`filter.chain` and
+:py:func:`filter.chain.from_iterable`. These are different from
+:py:func:`!filter` in that they apply FDR filtering to all files separately
+and then provide a reader over top PSMs of all files, whereas
+:py:func:`!filter` pools all PSMs together and applies a single threshold.
 
-  If you want to filter a list representing PSMs in arbitrary format, you can
-  use :py:func:`pyteomics.auxiliary.filter`. Instead of files it takes lists
-  (or other containers) of PSMs. The rest is the same as for other
-  :py:func:`!filter` functions.
+If you want to filter a list representing PSMs in arbitrary format, you can
+use :py:func:`pyteomics.auxiliary.filter`. Instead of files it takes lists
+(or other containers) of PSMs. The rest is the same as for other
+:py:func:`!filter` functions.
