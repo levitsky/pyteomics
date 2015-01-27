@@ -233,13 +233,18 @@ def read(source, **kwargs):
         parsing significantly reduces memory usage and may be just a little
         slower. When `retrieve_refs` is :py:const:`True`, however, it is
         highly recommended to disable iterative parsing if possible.
-        Default value is the opposite of `retrieve_refs`.
+        Default value is :py:const:`True`.
 
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
         mentioned in the mzIdentML header (default). Otherwise, use default
         parameters. Disable this to avoid waiting on long network connections or
         if you don't like to get the related warnings.
+
+    build_id_cache : bool, optional
+        Defines whether a cache of element IDs should be built and stored on the
+        created :py:class:`MzIdentML` instance. Default value is the value of
+        `retrieve_refs`.
 
     Returns
     -------
@@ -264,6 +269,7 @@ def iterfind(source, path, **kwargs):
     ----------
     source : str or file
         File name or file-like object.
+
     path : str
         Element name or XPath-like expression. Only local names separated
         with slashes are accepted. An asterisk (`*`) means any element.
@@ -272,6 +278,33 @@ def iterfind(source, path, **kwargs):
         Note: you can do much more powerful filtering using plain Python.
         The path can be absolute or "free". Please don't specify
         namespaces.
+
+    recursive : bool, optional
+        If :py:const:`False`, subelements will not be processed when
+        extracting info from elements. Default is :py:const:`True`.
+
+    retrieve_refs : bool, optional
+        If :py:const:`True`, additional information from references will be
+        automatically added to the results. The file processing time will
+        increase. Default is :py:const:`False`.
+
+    iterative : bool, optional
+        Specifies whether iterative XML parsing should be used. Iterative
+        parsing significantly reduces memory usage and may be just a little
+        slower. When `retrieve_refs` is :py:const:`True`, however, it is
+        highly recommended to disable iterative parsing if possible.
+        Default value is :py:const:`True`.
+
+    read_schema : bool, optional
+        If :py:const:`True`, attempt to extract information from the XML schema
+        mentioned in the mzIdentML header (default). Otherwise, use default
+        parameters. Disable this to avoid waiting on long network connections or
+        if you don't like to get the related warnings.
+
+    build_id_cache : bool, optional
+        Defines whether a cache of element IDs should be built and stored on the
+        created :py:class:`MzIdentML` instance. Default value is the value of
+        `retrieve_refs`.
 
     Returns
     -------
@@ -284,8 +317,8 @@ def version_info(source):
     Provide version information about the XML file.
 
     .. note:: This function is provided for backward compatibility only.
-        It simply creates an :py:class:`MzIdentML` instance using
-        provided arguments and returns its :py:data:`!version_info` attribute.
+        It simply creates an :py:class:`MzIdentML` instance
+        and returns its :py:data:`!version_info` attribute.
 
     Parameters
     ----------
@@ -320,6 +353,7 @@ def get_by_id(source, elem_id, **kwargs):
     -------
     out : :py:class:`dict` or :py:const:`None`
     """
+    return MzIdentML(source, **kwargs).get_by_id(elem_id, **kwargs)
 
 chain = aux._make_chain(read, 'read')
 
