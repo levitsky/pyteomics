@@ -12,7 +12,7 @@ import operator as op
 import ast
 import numpy as np
 from lxml import etree
-from .auxiliary import _file_obj, PyteomicsError
+from .auxiliary import FileReader, PyteomicsError
 try: # Python 2.7
     from urllib2 import urlopen, URLError
 except ImportError: # Python 3.x
@@ -70,7 +70,7 @@ class XMLValueConverter(object):
         }
 
 
-class XML(object):
+class XML(FileReader):
     """Base class for all format-specific XML parsers. The instances can be used
     as context managers and as iterators.
     """
@@ -106,7 +106,9 @@ class XML(object):
             should be used instead. Iterative parsing keeps the memory usage
             low for large XML files. Default is :py:const:`True`.
         """
-        self.source = _file_obj(source, 'rb')
+
+        super(XML, self).__init__(source, 'rb', self.iterfind, False,
+                self._default_iter_tag, **kwargs)
 
         if kwargs.pop('iterative', True):
             self._tree = None
@@ -116,31 +118,6 @@ class XML(object):
         # For handling
         self.version_info = self._get_version_info()
         self.schema_info = self._get_schema_info(read_schema)
-        self.source.file.seek(0)
-
-        self._iter = self.iterfind(self._default_iter_tag, **kwargs)
-
-    def __iter__(self):
-        return self._iter
-
-    def __next__(self):
-        try:
-            return next(self._iter)
-        except StopIteration:
-            self.__exit__(None, None, None)
-            raise
-
-    next = __next__  # Python 2 support
-
-    # context manager support
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args, **kwargs):
-        self.source.__exit__(*args, **kwargs)
-
-    def __getattr__(self, attr):
-        return getattr(self.source, attr)
 
     @_keepstate
     def _get_version_info(self):
