@@ -303,8 +303,8 @@ class XML(FileReader):
 
     @_keepstate
     def build_tree(self):
-        """Build and store the :py:class:`ElementTree` instance for
-        :py:data:`self.source`"""
+        """Build and store the :py:class:`ElementTree` instance
+        for :py:data:`self.source`"""
         p = etree.XMLParser(remove_comments=True)
         self._tree = etree.parse(self.source, parser=p)
 
@@ -476,4 +476,22 @@ _mzid_schema_defaults = {'ints': {('DBSequence', 'length'),
             'charlists': {('Modification', 'residues'),
                     ('SearchModification', 'residues')}}
 
+_tandem_schema_defaults = {'ints': {
+        ('group', 'z'), ('aa', 'at')} | {('domain', k) for k in [
+            'missed_cleavages', 'start', 'end', 'y_ions', 'b_ions',
+            'a_ions', 'x_ions', 'c_ions', 'z_ions']},
+
+            'floats': {('group', k) for k in [
+                'fI', 'sumI', 'maxI', 'mh', 'expect', 'rt']} | {
+                   ('domain', k) for k in [
+                       'expect', 'hyperscore', 'b_score', 'y_score',
+                       'a_score', 'x_score', 'c_score', 'z_score',
+                       'nextscore', 'delta', 'mh']} | {
+                   ('protein', 'expect'), ('protein', 'sumI'),
+                   ('aa', 'modified')},
+
+            'bools': set(),
+            'lists': {'group', 'trace', 'attribute', 'protein', 'aa', 'note'},
+            'floatlists': {('values', 'values')},
+            'intlists': set(), 'charlists': set()}
 

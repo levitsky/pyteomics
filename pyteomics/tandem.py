@@ -68,49 +68,66 @@ Auxiliary
 import itertools as it
 import operator
 import numpy as np
-from . import auxiliary as aux
+from . import xml, auxiliary as aux
 
-def _get_info_smart(source, element, **kw):
-    info = _get_info(source, element, **kw)
-    # handy simplifications below
-    if isinstance(info.get('note'), list
-            ) and len(info['note']) == 1 and set(
-                    info['note'][0]) == {'label', 'note'}:
-        info['note'] = info['note'][0]['note']
-    if 'protein' in info and 'label' in info:
-        del info['label']
-    if 'group' in info:
-        for g in info['group']:
-            label = g.pop('label')
-            type_ = g.pop('type')
-            info.setdefault(type_, {})[label] = g
-        del info['group']
-    if 'trace' in info:
-        for t in info['trace']:
-            info[t.pop('type')] = t
-        del info['trace']
-    if isinstance(info.get('values'), dict):
-        info['values'] = info['values']['values']
-    if isinstance(info.get('attribute'), list):
-        for a in info.pop('attribute'):
-            info[a['type']] = float(a['attribute'])
-    if 'support' in info:
-        for d in info['support']['supporting data'].values():
-            for l in ['Xdata', 'Ydata']:
-                d[l]['values'] = d[l]['values'].astype(int)
-        fims = info['support']['fragment ion mass spectrum']
-        fims.update(fims.pop('tandem mass spectrum'))
-        for d in it.chain(info['support']['supporting data'].values(),
-                (info['support']['fragment ion mass spectrum'],)):
-            for l in ['Xdata', 'Ydata']:
-                del d[l]['label']
-    if 'charge' in info:
-        info['charge'] = int(info['charge'])
-    return info
+class TandemXML(xml.XML):
+    """Parser class for TandemXML files."""
+    file_format = "TandemXML"
+    _root_element = "bioml"
+    _default_schema = xml._tandem_schema_defaults
+    _default_iter_tag = 'group[type="model"]'
+    _structures_to_flatten = {'domain'}
 
-@aux._file_reader('rb')
+    def _get_info_smart(self, element, **kw):
+        info = self._get_info(element, **kw)
+        # handy simplifications below
+        if isinstance(info.get('note'), list
+                ) and len(info['note']) == 1 and set(
+                        info['note'][0]) == {'label', 'note'}:
+            info['note'] = info['note'][0]['note']
+        if 'protein' in info and 'label' in info:
+            del info['label']
+        if 'group' in info:
+            for g in info['group']:
+                label = g.pop('label')
+                type_ = g.pop('type')
+                info.setdefault(type_, {})[label] = g
+            del info['group']
+        if 'trace' in info:
+            for t in info['trace']:
+                info[t.pop('type')] = t
+            del info['trace']
+        if isinstance(info.get('values'), dict):
+            info['values'] = info['values']['values']
+        if isinstance(info.get('attribute'), list):
+            for a in info.pop('attribute'):
+                info[a['type']] = float(a['attribute'])
+        if 'support' in info:
+            for d in info['support']['supporting data'].values():
+                for l in ['Xdata', 'Ydata']:
+                    d[l]['values'] = d[l]['values'].astype(int)
+            fims = info['support']['fragment ion mass spectrum']
+            fims.update(fims.pop('tandem mass spectrum'))
+            for d in it.chain(info['support']['supporting data'].values(),
+                    (info['support']['fragment ion mass spectrum'],)):
+                for l in ['Xdata', 'Ydata']:
+                    del d[l]['label']
+        if 'charge' in info:
+            info['charge'] = int(info['charge'])
+        return info
+
+    def _get__schema_info(self, read_schema):
+        return self._default_schema
+
+    def __next__(self):
+        n = super(TandemXML, self).__next__()
+        del n['type']
+        return n
+
+    next = __next__
+    
 def read(source, iterative=True):
-    """Parse ``source`` and iterate through peptide-spectrum matches.
+    """Parse `source` and iterate through peptide-spectrum matches.
 
     Parameters
     ----------
@@ -127,34 +144,8 @@ def read(source, iterative=True):
     out : iterator
        An iterator over dicts with PSM properties.
     """
-
-    for g in iterfind(source, 'group[type="model"]',
-            recursive=True, read_schema=False, iterative=iterative):
-        del g['type']
-        yield g
-
-def _schema_info(_, **kw):
-    """Stores defaults for X!Tandem output. Keys are: 'floats', 'ints',
-    'bools', 'lists', 'intlists', 'floatlists', 'charlists'."""
-
-    return {'ints': {
-        ('group', 'z'), ('aa', 'at')} | {('domain', k) for k in [
-            'missed_cleavages', 'start', 'end', 'y_ions', 'b_ions',
-            'a_ions', 'x_ions', 'c_ions', 'z_ions']},
-
-            'floats': {('group', k) for k in [
-                'fI', 'sumI', 'maxI', 'mh', 'expect', 'rt']} | {
-                   ('domain', k) for k in [
-                       'expect', 'hyperscore', 'b_score', 'y_score',
-                       'a_score', 'x_score', 'c_score', 'z_score',
-                       'nextscore', 'delta', 'mh']} | {
-                   ('protein', 'expect'), ('protein', 'sumI'),
-                   ('aa', 'modified')},
-
-            'bools': set(),
-            'lists': {'group', 'trace', 'attribute', 'protein', 'aa', 'note'},
-            'floatlists': {('values', 'values')},
-            'intlists': set(), 'charlists': set()}
+    return TandemXML(source, read_schema=False,
+            recursive=True, iterative=iterative)
 
 chain = aux._make_chain(read, 'read')
 

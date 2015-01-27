@@ -96,12 +96,12 @@ class MzIdentML(xml.XML):
     _structures_to_flatten = {'Fragmentation'}
 
     def __init__(self, source, **kwargs):
-        """Create an XML parser object.
+        """Create an mzIdentML parser object.
 
         Parameters
         ----------
         source : str or file
-            File name or file-like object corresponding to an XML file.
+            File name or file-like object corresponding to an mzIdentML file.
         read_schema : bool, optional
             Defines whether schema file referenced in the file header
             should be used to extract information about value conversion.
