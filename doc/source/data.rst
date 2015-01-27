@@ -326,7 +326,6 @@ It contains information about the MS data, the parameters of the search engine
 used and the assigned sequences. To access these data, use
 :py:mod:`pyteomics.pepxml` module.
 
-:py:mod:`pyteomics.pepxml` has the same structure as :py:mod:`pyteomics.mzml`.
 The function :py:func:`pyteomics.pepxml.read` iterates through Peptide-Spectrum
 matches in a pepXML file and returns them as a custom dict. Alternatively, you
 can use the :py:class:`pyteomics.pepxml.PepXML` interface.
@@ -475,8 +474,9 @@ in the :py:mod:`pyteomics.tandem` module.
      ->  -> type
      -> id
 
-:py:func:`pyteomics.tandem.read` relies on the
-:py:class:`pyteomics.tandem.TandemXML` class, which can also be used directly.
+:py:func:`pyteomics.tandem.read` returns a
+:py:class:`pyteomics.tandem.TandemXML` instance, which can also be
+created directly.
 
 mzIdentML
 ---------
@@ -486,6 +486,8 @@ developed by the Proteomics Informatics working group of the HUPO Proteomics
 Standard Initiative.
 
 The module interface is similar to that of the other reader modules.
+The :py:func:`pyteomics.mzid.read` function returns a
+:py:class:`pyteomics.mzid.MzIdentML` instance.
 
 .. code-block:: python
 
@@ -508,19 +510,27 @@ The module interface is similar to that of the other reader modules.
     id
     spectraData_ref
 
-You can tune the amount of information you get from the file. The available
-options to the :py:func:`read` function are `recursive` (:py:const:`True` by
-default) and `retrieve_refs` (:py:const:`False` by default). The latter pulls
-additional info from the file that is present only as references in the example
-above.
 
-Additional function :py:func:`get_by_id` allows to extract info from any element
-using its unique ID.
+Element IDs and references
+..........................
 
-.. note:: If you do multiple :py:func:`get_by_id` calls, it is strongly
-          recommended to use the :py:class:`pyteomics.mzid.MzIdentML` instance
-          method instead of this free function. That allows caching the element
-          IDs, which makes the search much faster.
+In *mzIdentML*, some elements contain references to other elements in the same
+file. The references are simply XML attributes whose name ends with ``_ref`` and
+the value is an ID, identical to value of the ``id`` attribute of a certain
+element.
+
+The parser can retrieve information from these references on the fly, which can
+be enabled by passing ``retrieve_refs=True`` to the
+:py:meth:`pyteomics.mzid.MzIdentML.iterfind` method or to
+:py:func:`pyteomics.mzid.read`. Retrieval of data by reference is implemented in
+the :py:meth:`pyteomics.mzid.MzIdentML.get_by_id` method.
+
+.. note:: Retrieving a lot of references by doing individual queries is very
+          slow. To speed it up, you can enable caching of element IDs. To build
+          a cache for a file, you can pass ``build_id_cache=True`` to the
+          :py:class:`MzIdentML` constructor, or to :py:func:`pyteomics.mzid.read`,
+          or call the :py:meth:`pyteomics.mzid.MzIdentML.build_id_cache` method
+          prior to reading the data.
 
 FDR estimation and filtering
 ============================
@@ -528,7 +538,7 @@ FDR estimation and filtering
 Three modules for reading proteomics search engine output (:py:mod:`tandem`,
 :py:mod:`pepxml` and :py:mod:`mzid`) expose similar functions
 :py:func:`is_decoy`, :py:func:`fdr` and :py:func:`!filter`. These functions
-(`added in version 2.4 <changelog.html>`_) implement the widely used
+implement the widely used
 Target-Decoy Approach (TDA) to estimation of False Discovery Rate (FDR).
 
 The :py:func:`is_decoy` function is supposed to determine if a particular
