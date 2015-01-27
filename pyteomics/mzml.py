@@ -84,7 +84,7 @@ class MzML(xml.XML):
     """Parser class for mzML files."""
     file_format = 'mzML'
     _root_element = 'mzML'
-    _default_schema = xml._mzid_schema_defaults
+    _default_schema = xml._mzml_schema_defaults
     _default_version = '1.1.0'
     _default_iter_tag = 'spectrum'
     _structures_to_flatten = {'binaryDataArrayList'}
