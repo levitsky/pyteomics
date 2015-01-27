@@ -200,12 +200,11 @@ class XML(FileReader):
                 elem.attrib.get('maxOccurs', '1') != '1')
         except Exception as e:
             if isinstance(e, (URLError, socket.error, socket.timeout)):
-                warnings.warn("Can't get the {0} schema for version "
+                warnings.warn("Can't get the {0.file_format} schema for version "
                 "`{1}` from <{2}> at the moment.\n"
-                "Using defaults for {3}.\n"
+                "Using defaults for {0._default_version}.\n"
                 "You can disable reading the schema by specifying "
-                "`read_schema=False`.".format(self.file_format, version,
-                    schema_url, self._default_version))
+                "`read_schema=False`.".format(self, version, schema_url))
             else:
                 warnings.warn("Unknown {0._file_format} version `{1}`. "
                     "Attempt to use schema\n"
