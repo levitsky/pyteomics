@@ -55,7 +55,7 @@ Miscellaneous
 import numpy as np
 import zlib
 import base64
-from . import auxiliary as aux
+from . import xml, auxiliary as aux
 
 def _decode_base64_data_array(source, dtype, is_compressed):
     """Read a base64-encoded binary array.
@@ -80,9 +80,78 @@ def _decode_base64_data_array(source, dtype, is_compressed):
     output = np.frombuffer(decoded_source, dtype=dtype)
     return output
 
-@aux._file_reader('rb')
+class MzML(xml.XML):
+    """Parser class for mzML files."""
+    file_format = 'mzML'
+    _root_element = 'mzML'
+    _default_schema = xml._mzid_schema_defaults
+    _default_version = '1.1.0'
+    _default_iter_tag = 'spectrum'
+    _structures_to_flatten = {'binaryDataArrayList'}
+
+    def _get_info_smart(self, element, **kw):
+        name = xml._local_name(element)
+        kwargs = dict(kw)
+        rec = kwargs.pop('recursive', None)
+        if name in {'indexedmzML', 'mzML'}:
+            info =  self._get_info(element,
+                    recursive=(rec if rec is not None else False),
+                    **kwargs)
+        else:
+            info = self._get_info(element,
+                    recursive=(rec if rec is not None else True),
+                    **kwargs)
+        if 'binary' in info:
+            types = {'32-bit float': 'f', '64-bit float': 'd'}
+            for t, code in types.items():
+                if t in info:
+                    dtype = code
+                    del info[t]
+                    break
+            # sometimes it's under 'name'
+            else:
+                if 'name' in info:
+                    for t, code in types.items():
+                        if t in info['name']:
+                            dtype = code
+                            info['name'].remove(t)
+                            break
+            compressed = True
+            if 'zlib compression' in info:
+                del info['zlib compression']
+            elif 'name' in info and 'zlib compression' in info['name']:
+                info['name'].remove('zlib compression')
+            else:
+                compressed = False
+                info.pop('no compression', None)
+                try:
+                    info['name'].remove('no compression')
+                    if not info['name']: del info['name']
+                except (KeyError, TypeError):
+                    pass
+            b = info.pop('binary')
+            if b:
+                array = _decode_base64_data_array(
+                                b, dtype, compressed)
+            else:
+                array = np.array([], dtype=dtype)
+            for k in info:
+                if k.endswith(' array') and not info[k]:
+                    info = {k: array}
+                    break
+            else:
+                info['binary'] == array
+        if 'binaryDataArray' in info:
+            for array in info.pop('binaryDataArray'):
+                info.update(array)
+        intkeys = {'ms level'}
+        for k in intkeys:
+            if k in info:
+                info[k] = int(info[k])
+        return info
+
 def read(source, read_schema=True, iterative=True):
-    """Parse ``source`` and iterate through spectra.
+    """Parse `source` and iterate through spectra.
 
     Parameters
     ----------
@@ -106,67 +175,7 @@ def read(source, read_schema=True, iterative=True):
        An iterator over the dicts with spectra properties.
     """
 
-    return iterfind(source, 'spectrum',
-            read_schema=read_schema, iterative=iterative)
+    return MzML(source, read_schema=read_schema, iterative=iterative)
 
-def _get_info_smart(source, element, **kw):
-    name = aux._local_name(element)
-    kwargs = dict(kw)
-    rec = kwargs.pop('recursive', None)
-    if name in {'indexedmzML', 'mzML'}:
-        info =  _get_info(source, element, rec if rec is not None else False,
-                **kwargs)
-    else:
-        info = _get_info(source, element, rec if rec is not None else True,
-                **kwargs)
-    if 'binary' in info:
-        types = {'32-bit float': 'f', '64-bit float': 'd'}
-        for t, code in types.items():
-            if t in info:
-                dtype = code
-                del info[t]
-                break
-        # sometimes it's under 'name'
-        else:
-            if 'name' in info:
-                for t, code in types.items():
-                    if t in info['name']:
-                        dtype = code
-                        info['name'].remove(t)
-                        break
-        compressed = True
-        if 'zlib compression' in info:
-            del info['zlib compression']
-        elif 'name' in info and 'zlib compression' in info['name']:
-            info['name'].remove('zlib compression')
-        else:
-            compressed = False
-            info.pop('no compression', None)
-            try:
-                info['name'].remove('no compression')
-                if not info['name']: del info['name']
-            except (KeyError, TypeError):
-                pass
-        b = info.pop('binary')
-        if b:
-            array = _decode_base64_data_array(
-                            b, dtype, compressed)
-        else:
-            array = np.array([], dtype=dtype)
-        for k in info:
-            if k.endswith(' array') and not info[k]:
-                info = {k: array}
-                break
-        else:
-            info['binary'] == array
-    if 'binaryDataArray' in info:
-        for array in info.pop('binaryDataArray'):
-            info.update(array)
-    intkeys = {'ms level'}
-    for k in intkeys:
-        if k in info:
-            info[k] = int(info[k])
-
-    return info
 
 chain = aux._make_chain(read, 'read')
