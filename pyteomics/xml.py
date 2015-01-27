@@ -34,9 +34,10 @@ def _keepstate(func):
     def wrapped(self, *args, **kwargs):
         position = self.tell()
         self.seek(0)
-        res = func(self, *args, **kwargs)
-        self.seek(position)
-        return res
+        try:
+            return func(self, *args, **kwargs)
+        finally:
+            self.seek(position)
     return wrapped
 
 
