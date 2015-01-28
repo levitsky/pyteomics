@@ -310,11 +310,14 @@ def iterfind(source, path, **kwargs):
     -------
     out : iterator
     """
+    kwargs = kwargs.copy()
+    kwargs['build_id_cache'] = kwargs.get('build_id_cache',
+            kwargs.get('retrieve_refs'))
     return MzIdentML(source, **kwargs).iterfind(path, **kwargs)
 
 def version_info(source):
     """
-    Provide version information about the XML file.
+    Provide version information about the mzIdentML file.
 
     .. note:: This function is provided for backward compatibility only.
         It simply creates an :py:class:`MzIdentML` instance
