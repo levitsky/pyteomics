@@ -391,6 +391,11 @@ def _make_local_fdr(read, is_decoy, key):
         Returns
         -------
         out : numpy.ndarray
+            A sorted array of records with the following fields:
+
+            - 'score': :py:class:`float64`
+            - 'is decoy': :py:class:`int8`
+            - 'local FDR': :py:class:`float64`
         """
         @_keepstate
         def get_scores(*args, **kwargs):

@@ -9,14 +9,16 @@ mzML is a standard rich XML-format for raw mass spectrometry data storage.
 Please refer to http://www.psidev.info/index.php?q=node/257 for the detailed
 specification of the format and the structure of mzML files.
 
-This module provides minimalistic infrastructure for access to data stored in
-mzML files. The most important function is :py:func:`read`, which
-reads spectra and related information as saves them into human-readable dicts.
-These functions rely on the terminology of
-the underlying `lxml library <http://lxml.de/>`_.
+This module provides a minimalistic way to extract information from mzIdentML
+files. You can use the old functional interface (:py:func:`read`) or the new
+object-oriented interface (:py:class:`MzML`) to iterate over entries in
+``<spectrum>`` elements.
 
 Data access
 -----------
+
+  :py:class:`MzML` - a class representing a single mzML file.
+  Other data access functions use this class internally.
 
   :py:func:`read` - iterate through spectra in mzML file. Data from a
   single spectrum are converted to a human-readable dict. Spectra themselves are
@@ -27,12 +29,14 @@ Data access
   :py:func:`chain.from_iterable` - read multiple files at once, using an
   iterable of files.
 
-  :py:func:`iterfind` - iterate over elements in the mzML file.
-
-Miscellaneous
--------------
+Deprecated functions
+--------------------
 
   :py:func:`version_info` - get version information about the mzML file.
+  You can just read the corresponding attribute of the :py:class:`MzML` object.
+
+  :py:func:`iterfind` - iterate over elements in an mzML file.
+  You can just call the corresponding method of the :py:class:`MzML` object.
 
 -------------------------------------------------------------------------------
 
