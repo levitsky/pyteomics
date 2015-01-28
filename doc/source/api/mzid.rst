@@ -1,5 +1,6 @@
 .. automodule:: pyteomics.mzid
 
+    .. autofunction:: version_info
     .. autofunction:: fdr
     .. autofunction:: local_fdr
     .. autofunction:: chain
