@@ -105,7 +105,12 @@ class XML(FileReader):
             constructed and stored on the instance or if iterative parsing
             should be used instead. Iterative parsing keeps the memory usage
             low for large XML files. Default is :py:const:`True`.
-        """
+        build_id_cache : bool, optional
+            Defines whether a dictionary mapping IDs to XML tree elements
+            should be built and stored on the instance. It is used in
+            :py:meth:`XML.get_by_id`, e.g. when using
+            :py:class:`pyteomics.mzid.MzIdentML` with ``retrieve_refs=True``.
+         """
 
         super(XML, self).__init__(source, 'rb', self.iterfind, False,
                 self._default_iter_tag, **kwargs)
@@ -114,8 +119,11 @@ class XML(FileReader):
             self._tree = None
         else:
             self.build_tree()
+        if kwargs.pop('build_id_cache', False):
+            self.build_id_cache()
+        else:
+            self._id_dict = None
 
-        # For handling
         self.version_info = self._get_version_info()
         self.schema_info = self._get_schema_info(read_schema)
 
@@ -206,7 +214,7 @@ class XML(FileReader):
                 "You can disable reading the schema by specifying "
                 "`read_schema=False`.".format(self, version, schema_url))
             else:
-                warnings.warn("Unknown {0._file_format} version `{1}`. "
+                warnings.warn("Unknown {0.file_format} version `{1}`. "
                     "Attempt to use schema\n"
                     "information from <{2}> failed.\n"
                     "Exception information:\n{3}\n"
@@ -373,6 +381,62 @@ class XML(FileReader):
                 info = self._get_info_smart(elem, **kwargs)
                 if cond is None or satisfied(info, cond):
                     yield info
+
+    @_keepstate
+    def build_id_cache(self):
+        """Construct a cache for each element in the document, indexed by id
+        attribute"""
+        stack = 0
+        id_dict = {}
+        for event, elem in etree.iterparse(self.source, events=('start', 'end'),
+                remove_comments=True):
+            if event == 'start':
+                if 'id' in elem.attrib:
+                    stack += 1
+            else:
+                if 'id' in elem.attrib:
+                    stack -= 1
+                    id_dict[elem.attrib['id']] = elem
+                elif stack == 0:
+                    elem.clear()
+        self._id_dict = id_dict
+
+    def clear_id_cache(self):
+        """Clear the element ID cache"""
+        self._id_dict = {}
+
+    @_keepstate
+    def get_by_id(self, elem_id, **kwargs):
+        """Parse `self.source` and return the element with `id` attribute equal
+        to `elem_id`. Returns :py:const:`None` if no such element is found.
+
+        Parameters
+        ----------
+        elem_id : str
+            The value of the `id` attribute to match.
+
+        Returns
+        -------
+        out : :py:class:`dict` or :py:const:`None`
+        """
+        if not self._id_dict:
+            found = False
+            for event, elem in etree.iterparse(self.source,
+                    events=('start', 'end'), remove_comments=True):
+                if event == 'start':
+                    if elem.attrib.get('id') == elem_id:
+                        found = True
+                else:
+                    if elem.attrib.get('id') == elem_id:
+                        return self._get_info_smart(elem, **kwargs)
+                    if not found:
+                        elem.clear()
+            return None
+        else:
+            try:
+                return self._get_info_smart(self._id_dict[elem_id], **kwargs)
+            except KeyError:
+                return None
 
 # XPath emulator tools
 pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
