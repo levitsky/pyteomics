@@ -116,7 +116,7 @@ class TandemXML(xml.XML):
             info['charge'] = int(info['charge'])
         return info
 
-    def _get__schema_info(self, read_schema):
+    def _get_schema_info(self, read_schema):
         return self._default_schema
 
     def __next__(self):

@@ -95,34 +95,6 @@ class MzIdentML(xml.XML):
     _default_iter_tag = 'SpectrumIdentificationResult'
     _structures_to_flatten = {'Fragmentation'}
 
-    def __init__(self, source, **kwargs):
-        """Create an mzIdentML parser object.
-
-        Parameters
-        ----------
-        source : str or file
-            File name or file-like object corresponding to an mzIdentML file.
-        read_schema : bool, optional
-            Defines whether schema file referenced in the file header
-            should be used to extract information about value conversion.
-            Default is :py:const:`True`.
-        iterative : bool, optional
-            Defines whether an :py:class:`ElementTree` object should be
-            constructed and stored on the instance or if iterative parsing
-            should be used instead. Iterative parsing keeps the memory usage
-            low for large XML files. Default is :py:const:`True`.
-        build_id_cache : bool, optional
-            Defines whether a dictionary mapping IDs to XML tree elements
-            should be built and stored on the instance. It is used in
-            :py:meth:`get_by_id`, e.g. when calling :py:meth:`iterfind` with
-            ``retrieve_refs=True``.
-        """
-        super(MzIdentML, self).__init__(source, **kwargs)
-        if kwargs.pop('build_id_cache', False):
-            self.build_id_cache()
-        else:
-            self._id_dict = {}
-
     def _get_info_smart(self, element, **kwargs):
         """Extract the info in a smart way depending on the element type"""
         name = xml._local_name(element)
@@ -148,64 +120,6 @@ class MzIdentML(xml.XML):
                 info.update(self.get_by_id(v, retrieve_refs=True))
                 del info[k]
                 info.pop('id', None)
-
-    @xml._keepstate
-    def build_id_cache(self):
-        """Construct a cache for each element in the document, indexed by id
-        attribute"""
-        stack = 0
-        id_dict = {}
-        for event, elem in etree.iterparse(self.source, events=('start', 'end'),
-                remove_comments=True):
-            if event == 'start':
-                if 'id' in elem.attrib:
-                    stack += 1
-            else:
-                if 'id' in elem.attrib:
-                    stack -= 1
-                    id_dict[elem.attrib['id']] = elem
-                elif stack == 0:
-                    elem.clear()
-        self._id_dict = id_dict
-
-    def clear_id_cache(self):
-        """Clear the element ID cache"""
-        self._id_dict = {}
-
-    @xml._keepstate
-    def get_by_id(self, elem_id, **kwargs):
-        """Parse `self.source` and return the element with `id` attribute equal
-        to `elem_id`. Returns :py:const:`None` if no such element is found.
-
-        Parameters
-        ----------
-        elem_id : str
-            The value of the `id` attribute to match.
-
-        Returns
-        -------
-        out : :py:class:`dict` or :py:const:`None`
-        """
-        if not self._id_dict:
-            found = False
-            for event, elem in etree.iterparse(self.source,
-                    events=('start', 'end'), remove_comments=True):
-                if event == 'start':
-                    if elem.attrib.get('id') == elem_id:
-                        found = True
-                else:
-                    if elem.attrib.get('id') == elem_id:
-                        return self._get_info_smart(elem, retrieve_refs=True)
-                    if not found:
-                        elem.clear()
-            return None
-        else:
-            try:
-                return self._get_info_smart(self._id_dict[elem_id], **kwargs)
-            except KeyError:
-                raise PyteomicsError(
-                        'Key {} not found in cache.'.format(elem_id))
-
 
 def read(source, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
