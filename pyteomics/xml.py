@@ -501,7 +501,7 @@ def _make_version_info(cls):
     Provide version information about the {0.file_format} file.
 
     .. note:: This function is provided for backward compatibility only.
-        It simply creates an :py:class:`{0}` instance
+        It simply creates an :py:class:`{0.__name__}` instance
         and returns its :py:data:`!version_info` attribute.
 
     Parameters
@@ -514,6 +514,7 @@ def _make_version_info(cls):
     out : tuple
         A (version, schema URL) tuple, both elements are strings or None.
     """.format(cls)
+    return version_info
 
 
 
