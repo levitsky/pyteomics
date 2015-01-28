@@ -125,7 +125,7 @@ class TandemXML(xml.XML):
         return n
 
     next = __next__
-    
+
 def read(source, iterative=True):
     """Parse `source` and iterate through peptide-spectrum matches.
 
@@ -146,6 +146,52 @@ def read(source, iterative=True):
     """
     return TandemXML(source, read_schema=False,
             recursive=True, iterative=iterative)
+
+def iterfind(source, path, **kwargs):
+    """Parse `source` and yield info on elements with specified local
+    name or by specified "XPath".
+
+    .. note:: This function is provided for backward compatibility only.
+        If you do multiple :py:func:`iterfind` calls on one file, you should
+        create a :py:class:`TandemXML` object and use its
+        :py:meth:`!iterfind` method.
+
+    Parameters
+    ----------
+    source : str or file
+        File name or file-like object.
+
+    path : str
+        Element name or XPath-like expression. Only local names separated
+        with slashes are accepted. An asterisk (`*`) means any element.
+        You can specify a single condition in the end, such as:
+        ``"/path/to/element[some_value>1.5]"``
+        Note: you can do much more powerful filtering using plain Python.
+        The path can be absolute or "free". Please don't specify
+        namespaces.
+
+    recursive : bool, optional
+        If :py:const:`False`, subelements will not be processed when
+        extracting info from elements. Default is :py:const:`True`.
+
+    iterative : bool, optional
+        Specifies whether iterative XML parsing should be used. Iterative
+        parsing significantly reduces memory usage and may be just a little
+        slower. When `retrieve_refs` is :py:const:`True`, however, it is
+        highly recommended to disable iterative parsing if possible.
+        Default value is :py:const:`True`.
+
+    read_schema : bool, optional
+        If :py:const:`True`, attempt to extract information from the XML schema
+        mentioned in the mzIdentML header (default). Otherwise, use default
+        parameters. Disable this to avoid waiting on long network connections or
+        if you don't like to get the related warnings.
+
+    Returns
+    -------
+    out : iterator
+    """
+    return TandemXML(source, **kwargs).iterfind(path, **kwargs)
 
 chain = aux._make_chain(read, 'read')
 
