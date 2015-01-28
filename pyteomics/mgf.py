@@ -12,7 +12,7 @@ exprimental parameters.
 This module provides minimalistic infrastructure for access to data stored in
 MGF files. The most important function is :py:func:`read`, which
 reads spectra and related information as saves them into human-readable
-:py:class:`dict`'s.
+:py:class:`dicts`.
 Also, common parameters can be read from MGF file header with
 :py:func:`read_header` function. :py:func:`write` allows creation of MGF
 files.
@@ -84,7 +84,7 @@ def read(source=None, use_header=True):
     Returns
     -------
 
-    out : iterator over dicts
+    out : FileReader
     """
     header = read_header(source)
     reading_spectrum = False
@@ -257,10 +257,11 @@ def write(spectra, output=None, header=''):
                 l = line.split('=')
                 if len(l) == 2:
                     head_dict[l[0].lower()] = l[1].strip()
-        output.write(head_str)
+        if head_str:
+            output.write(head_str + '\n\n')
 
         for spectrum in spectra:
-            output.write('\n\nBEGIN IONS\n')
+            output.write('BEGIN IONS\n')
             found = set()
             for key in it.chain(_key_order, spectrum['params']):
                 if key not in found and key in spectrum['params']:
@@ -273,13 +274,13 @@ def write(spectra, output=None, header=''):
                 for m, i, c in zip(spectrum['m/z array'],
                         spectrum['intensity array'],
                         spectrum.get('charge array', it.cycle((None,)))):
-                    output.write('\n{} {} {}'.format(
-                        m, i, (c if c not in (None, np.nan, np.ma.masked) else '')))
+                    output.write('{} {} {}\n'.format(
+                        m, i,
+                        (c if c not in (None, np.nan, np.ma.masked) else '')))
             except KeyError:
-                raise aux.PyteomicsError("'m/z array' and 'intensity array' must be"
-                        " present in all spectra.")
-            output.write('\nEND IONS')
-        output.write('\n')
+                raise aux.PyteomicsError("'m/z array' and 'intensity array'"
+                        " must be present in all spectra.")
+            output.write('END IONS\n\n')
         return output
 
 chain = aux._make_chain(read, 'read')
