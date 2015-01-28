@@ -227,24 +227,6 @@ def iterfind(source, path, **kwargs):
     """
     return MzML(source, **kwargs).iterfind(path, **kwargs)
 
-def version_info(source):
-    """
-    Provide version information about the mzML file.
-
-    .. note:: This function is provided for backward compatibility only.
-        It simply creates an :py:class:`MzML` instance
-        and returns its :py:data:`!version_info` attribute.
-
-    Parameters
-    ----------
-    source : str or file
-        File name or file-like object.
-
-    Returns
-    -------
-    out : tuple
-        A (version, schema URL) tuple, both elements are strings or None.
-    """
-    return MzML(source).version_info
+version_info = xml._make_version_info(MzML)
 
 chain = aux._make_chain(read, 'read')

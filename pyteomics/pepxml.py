@@ -250,6 +250,7 @@ def iterfind(source, path, **kwargs):
     """
     return PepXML(source, **kwargs).iterfind(path, **kwargs)
 
+version_info = xml._make_version_info(PepXML)
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.

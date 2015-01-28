@@ -494,6 +494,29 @@ def xpath(tree, path, ns=None):
     n_s = ({'d': ns} if ns else None)
     return tree.xpath(new_path, namespaces=n_s)
 
+def _make_version_info(cls):
+    def version_info(source):
+        return cls(source).version_info
+    version_info.__doc__ =  """
+    Provide version information about the {0.file_format} file.
+
+    .. note:: This function is provided for backward compatibility only.
+        It simply creates an :py:class:`{0}` instance
+        and returns its :py:data:`!version_info` attribute.
+
+    Parameters
+    ----------
+    source : str or file
+        File name or file-like object.
+
+    Returns
+    -------
+    out : tuple
+        A (version, schema URL) tuple, both elements are strings or None.
+    """.format(cls)
+
+
+
 _mzid_schema_defaults = {'ints': {('DBSequence', 'length'),
                      ('IonType', 'charge'),
                      ('BibliographicReference', 'year'),

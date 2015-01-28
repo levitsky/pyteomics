@@ -232,25 +232,7 @@ def iterfind(source, path, **kwargs):
             kwargs.get('retrieve_refs'))
     return MzIdentML(source, **kwargs).iterfind(path, **kwargs)
 
-def version_info(source):
-    """
-    Provide version information about the mzIdentML file.
-
-    .. note:: This function is provided for backward compatibility only.
-        It simply creates an :py:class:`MzIdentML` instance
-        and returns its :py:data:`!version_info` attribute.
-
-    Parameters
-    ----------
-    source : str or file
-        File name or file-like object.
-
-    Returns
-    -------
-    out : tuple
-        A (version, schema URL) tuple, both elements are strings or None.
-    """
-    return MzIdentML(source).version_info
+version_info = xml._make_version_info(MzIdentML)
 
 def get_by_id(source, elem_id, **kwargs):
     """Parse `source` and return the element with `id` attribute equal
