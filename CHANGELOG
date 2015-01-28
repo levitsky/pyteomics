@@ -1,8 +1,18 @@
-2.5.6
+3.0.0
 -----
+ - XML parsers are now implemented as objects, each format has its own class.
+   Those classes can be instantiated using the same arguments as :py:func:`read`
+   functions accepted, and support direct iteration and the ``with`` syntax.
+   The :py:func:`read` functions are now simple aliases to the corresponding
+   constructors.
 
-In :py:func:`pyteomics.mgf.write`, the order of keys and the format of values
-are now controlled via module-level variables.
+ - As a result, functions :py:func:`iterfind`, :py:func:`version_info` and
+   :py:func:`get_by_id` functions are now deprecated in favor of methods
+   :py:meth:`iterfind` and :py:meth:`get_by_id` and attribute
+   :py:attr:`version_info` of corresponding instances.
+
+ - In :py:func:`pyteomics.mgf.write`, the order of keys and the format of values
+   are now controlled via module-level variables.
 
 2.5.5
 -----
