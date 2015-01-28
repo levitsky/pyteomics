@@ -37,20 +37,30 @@ Data access
   :py:func:`filter.chain.from_iterable` - chain a series of filters applied
   independently to an iterable of files.
 
-  :py:func:`iterfind` - iterate over elements in a pepXML file.
-
 Miscellaneous
 -------------
 
   :py:func:`fdr` - estimate the false discovery rate of a PSM set using the
   target-decoy approach.
 
+  :py:func:`local_fdr` - get an array of scores and local FDR values for a PSM
+  set using the target-decoy approach.
+
   :py:func:`is_decoy` - determine whether a PSM is decoy or not.
 
   :py:func:`roc_curve` - get a receiver-operator curve (min peptideprophet
   probability is a sample vs. false discovery rate) of peptideprophet analysis.
 
-  :py:func:`version_info` - get version information about the pepXML file.
+Deprecated functions
+--------------------
+
+  :py:func:`iterfind` - iterate over elements in a pepXML file.
+  You can just call the corresponding method of the :py:class:`PepXML`
+  object.
+
+  :py:func:`version_info` - get information about pepXML version and schema.
+  You can just read the corresponding attribute of the :py:class:`PepXML`
+  object.
 
 
 -------------------------------------------------------------------------------

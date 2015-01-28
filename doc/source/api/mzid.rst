@@ -1,6 +1,7 @@
 .. automodule:: pyteomics.mzid
 
     .. autofunction:: fdr
+    .. autofunction:: local_fdr
     .. autofunction:: chain
     .. py:function :: chain.from_iterable(files, **kwargs)
 

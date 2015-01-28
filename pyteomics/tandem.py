@@ -13,12 +13,15 @@ XML file. The output format is described
 `here (PDF) <http://www.thegpm.org/docs/X_series_output_form.pdf>`_.
 
 This module provides a minimalistic way to extract information from X!Tandem
-output files. The main idea is the same as in :py:mod:`pyteomics.pepxml`:
-the top-level function :py:func:`read` allows iterating over entries in
+output files. You can use the old functional interface (:py:func:`read`) or the
+new object-oriented interface (:py:class:`TandemXML`) to iterate over entries in
 `<group>` elements, i.e. identifications for a certain spectrum.
 
 Data access
 -----------
+
+  :py:class:`TandemXML` - a class representing a single MzIdentML file.
+  Other data access functions use this class internally.
 
   :py:func:`read` - iterate through peptide-spectrum matches in an X!Tandem
   output file. Data from a single PSM are converted to a human-readable dict.
@@ -39,14 +42,23 @@ Data access
   :py:func:`filter.chain.from_iterable` - chain a series of filters applied
   independently to an iterable of files.
 
-  :py:func:`iterfind` - iterate over elements in an X!Tandem file.
-
-Auxiliary
----------
+Miscellaneous
+-------------
 
   :py:func:`is_decoy` - determine if a PSM is from the decoy database.
 
   :py:func:`fdr` - estimate the FDR in a data set using TDA.
+
+  :py:func:`local_fdr` - get an array of scores and local FDR values for a PSM
+  set using the target-decoy approach.
+
+Deprecated functions
+--------------------
+
+  :py:func:`iterfind` - iterate over elements in an X!Tandem file.
+  You can just call the corresponding method of the :py:class:`TandemXML`
+  object.
+
 
 -------------------------------------------------------------------------------
 """
