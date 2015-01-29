@@ -38,8 +38,12 @@ Deprecated functions
   :py:func:`iterfind` - iterate over elements in an mzML file.
   You can just call the corresponding method of the :py:class:`MzML` object.
 
--------------------------------------------------------------------------------
+Dependencies
+------------
 
+This module requires :py:mod:`lxml` and :py:mod:`numpy`.
+
+-------------------------------------------------------------------------------
 """
 
 #   Copyright 2012 Anton Goloborodko, Lev Levitsky

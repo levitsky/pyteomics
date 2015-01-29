@@ -78,14 +78,12 @@ from __future__ import division
 import math
 from . import parser
 from .auxiliary import PyteomicsError, _nist_mass
-from .xml import xpath, _local_name
 from itertools import chain
 from collections import defaultdict
 try:
     from urllib import urlopen
 except ImportError:
     from urllib.request import urlopen
-from lxml import etree
 from datetime import datetime
 import re
 import operator
@@ -824,6 +822,8 @@ class Unimod():
             A file-like object or a URL to read from. Don't forget the 'file://'
             prefix when pointing to local files.
         """
+        from lxml import etree
+        from .xml import _local_name
         def process_mod(mod):
             d = mod.attrib
             new_d = {}
@@ -892,6 +892,7 @@ class Unimod():
             self._mods.append(process_mod(mod))
 
     def _xpath(self, path, element=None):
+        from .xml import xpath
         if element is None:
             return xpath(self._tree, path, 'umod')
         return xpath(element, path, 'umod')

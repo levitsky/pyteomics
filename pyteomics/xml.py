@@ -1,6 +1,16 @@
 """
 xml - utilities for XML parsing
 ===============================
+
+This module is not intended for end users. It implements the abstract class
+for all XML parsers, :py:class:`XML`, and some utility functions.
+
+Dependencies
+------------
+
+This module requres :py:mod:`lxml` and :py:mod:`numpy`.
+
+--------------------------------------------------------------------------------
 """
 import re
 import warnings

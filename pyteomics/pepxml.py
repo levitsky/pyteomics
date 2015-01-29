@@ -62,6 +62,10 @@ Deprecated functions
   You can just read the corresponding attribute of the :py:class:`PepXML`
   object.
 
+Dependencies
+------------
+
+This module requires :py:mod:`lxml`.
 
 -------------------------------------------------------------------------------
 """

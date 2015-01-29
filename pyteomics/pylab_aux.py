@@ -21,8 +21,13 @@ See also
 --------
 
   - `Matplotlib cookbook <http://www.scipy.org/Cookbook/Matplotlib/>`_
-  - `Matplotlib tutorial 
+  - `Matplotlib tutorial
     <http://matplotlib.sourceforge.net/mpl_toolkits/mplot3d/tutorial.html>`_
+
+Dependencies
+------------
+
+This module requires :py:mod:`matplotlib`.
 
 -------------------------------------------------------------------------------
 

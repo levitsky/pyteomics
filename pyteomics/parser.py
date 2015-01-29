@@ -99,7 +99,6 @@ Data
 import re
 from collections import deque
 import itertools as it
-import numpy as np
 from .auxiliary import PyteomicsError, memoize
 
 std_amino_acids = ['Q','W','E','R','T','Y','I','P','A','S',
@@ -528,8 +527,8 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None, **kwargs):
     return peptides
 
 def num_sites(sequence, rule, **kwargs):
-    """Count the number of sites where ``sequence`` can be cleaved using
-    the given ``rule`` (e.g. number of miscleavages for a peptide).
+    """Count the number of sites where `sequence` can be cleaved using
+    the given `rule` (e.g. number of miscleavages for a peptide).
 
     Parameters
     ----------
@@ -782,6 +781,8 @@ def coverage(protein, peptides):
     Peptides can overlap. If a peptide is found multiple times in ``protein``,
     it contributes more to the overall coverage.
 
+    Requires :py:mod:`numpy`.
+
     .. note::
         Modifications and terminal groups are discarded.
 
@@ -802,6 +803,7 @@ def coverage(protein, peptides):
     >>> coverage('PEPTIDES'*100, ['PEP', 'EPT'])
     0.5
     """
+    import numpy as np
     protein = re.sub(r'[^A-Z]', '', protein)
     mask = np.zeros(len(protein), dtype=np.int8)
     for peptide in peptides:

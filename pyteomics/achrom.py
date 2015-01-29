@@ -323,6 +323,13 @@ References
     in both dimensions for high-throughput bottom-up proteomics
     <http://pubs.acs.org/doi/abs/10.1021/ac800984n>`_.
     Analytical Chemistry, 80(18), 7036-42.
+
+Dependencies
+------------
+
+This module requires :py:mod:`numpy`.
+
+--------------------------------------------------------------------------------
 """
 
 #   Copyright 2012 Anton Goloborodko, Lev Levitsky
