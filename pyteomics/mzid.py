@@ -68,6 +68,11 @@ Deprecated functions
   You can just call the corresponding method of the :py:class:`MzIdentML`
   object.
 
+Dependencies
+------------
+
+This module requires :py:mod:`lxml`.
+
 -------------------------------------------------------------------------------
 """
 
@@ -85,7 +90,6 @@ Deprecated functions
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from lxml import etree
 from . import auxiliary as aux
 from . import xml
 

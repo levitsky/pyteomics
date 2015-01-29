@@ -59,6 +59,10 @@ Deprecated functions
   You can just call the corresponding method of the :py:class:`TandemXML`
   object.
 
+Dependencies
+------------
+
+This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 
 -------------------------------------------------------------------------------
 """
@@ -79,7 +83,6 @@ Deprecated functions
 
 import itertools as it
 import operator
-import numpy as np
 from . import xml, auxiliary as aux
 
 class TandemXML(xml.XML):

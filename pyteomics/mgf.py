@@ -1,6 +1,6 @@
 """
-mgf - read and write MS/MS data in Mascot Generic Format.
-=========================================================
+mgf - read and write MS/MS data in Mascot Generic Format
+========================================================
 
 Summary
 -------
@@ -33,8 +33,13 @@ Functions
 
   :py:func:`write` - write an MGF file.
 
--------------------------------------------------------------------------------
 
+Dependencies
+------------
+
+This module requires :py:mod:`numpy`.
+
+-------------------------------------------------------------------------------
 """
 
 #   Copyright 2012 Anton Goloborodko, Lev Levitsky

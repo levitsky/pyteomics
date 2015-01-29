@@ -5,7 +5,7 @@ auxiliary - common functions and objects
 Math
 ----
 
-  :py:func:`linear_regression` - a wrapper for numpy linear regression
+  :py:func:`linear_regression` - a wrapper for NumPy linear regression
 
 Data access
 -----------
@@ -54,7 +54,6 @@ Helpers
 #   limitations under the License.
 
 from __future__ import print_function
-import numpy as np
 from functools import wraps
 from traceback import format_exc
 import re
@@ -81,6 +80,8 @@ class PyteomicsError(Exception):
 def linear_regression(x, y, a=None, b=None):
     """Calculate coefficients of a linear regression y = a * x + b.
 
+    Requires :py:mod:`numpy`.
+
     Parameters
     ----------
     x, y : array_like of float
@@ -99,6 +100,7 @@ def linear_regression(x, y, a=None, b=None):
         stderr -- standard deviation.
     """
 
+    import numpy as np
     if not isinstance(x, np.ndarray):
         x = np.array(x)
     if not isinstance(y, np.ndarray):
@@ -346,9 +348,12 @@ def _make_chain(reader, readername):
 def _make_local_fdr(read, is_decoy, key):
     """Create a function that reads PSMs from a file and calculates local FDR
     for each value of `key`."""
+    import numpy as np
     def local_fdr(*args, **kwargs):
         """Read `args` and return a NumPy array with scores and values of local
         FDR.
+
+        Requires :py:mod:`numpy`.
 
         Parameters
         ----------
@@ -516,8 +521,8 @@ _iter = _make_chain(contextmanager(lambda x: (yield x)), 'iter')
 local_fdr = _make_local_fdr(_iter, None, None)
 filter = _make_filter(_iter, None, None, local_fdr)
 filter.chain = _make_chain(filter, 'filter')
-filter.__doc__ = """Iterate ``args`` and yield only the PSMs that form a set with
-        estimated false discovery rate (FDR) not exceeding ``fdr``.
+filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
+        estimated false discovery rate (FDR) not exceeding `fdr`.
 
         Parameters
         ----------
@@ -540,7 +545,7 @@ filter.__doc__ = """Iterate ``args`` and yield only the PSMs that form a set wit
             .. note:: If set to :py:const:`False`, then the decoy PSMs will
                be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
-               ``remove_decoy`` is :py:const:`True`, then formula 1 is used
+               `remove_decoy` is :py:const:`True`, then formula 1 is used
                to control output FDR, otherwise it's formula 2.
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
