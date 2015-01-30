@@ -258,22 +258,32 @@ class FileReader(object):
     for file readers.
     """
     def __init__(self, source, mode, func, pass_file, *args, **kwargs):
-        self.source = _file_obj(source, mode)
+        self._func = func
+        self._pass_file = pass_file
+        self._args = args
+        self._kwargs = kwargs
+        self._source_init = source
+        self._mode = mode
         try:
-            if pass_file:
-                self.reader = func(self.source, *args, **kwargs)
-            else:
-                self.reader = func(*args, **kwargs)
+            self.reset()
         except:  # clean up on any error
             self.__exit__(*sys.exc_info())
             raise
+
+    def reset(self):
+        """Resets the iterator to its initial state."""
+        self._source = _file_obj(self._source_init, self._mode)
+        if self._pass_file:
+            self._reader = self._func(self._source, *self._args, **self._kwargs)
+        else:
+            self._reader = self._func(*self._args, **self._kwargs)
 
     # context manager support
     def __enter__(self):
         return self
 
     def __exit__(self, *args, **kwargs):
-        self.source.__exit__(*args, **kwargs)
+        self._source.__exit__(*args, **kwargs)
 
     # iterator support
     def __iter__(self):
@@ -281,7 +291,7 @@ class FileReader(object):
 
     def __next__(self):
         try:
-            return next(self.reader)
+            return next(self._reader)
         except StopIteration:
             self.__exit__(None, None, None)
             raise
@@ -290,7 +300,7 @@ class FileReader(object):
 
     # delegate everything else to file object
     def __getattr__(self, attr):
-        return getattr(self.source, attr)
+        return getattr(self._source, attr)
 
 def _file_reader(mode='r'):
     # a lot of the code below is borrowed from

@@ -150,7 +150,7 @@ class XML(FileReader):
         """
         vinfo = None
         for _, elem in etree.iterparse(
-                self.source, events=('start',), remove_comments=True):
+                self._source, events=('start',), remove_comments=True):
             if _local_name(elem) == self._root_element:
                 return (elem.attrib.get('version'),
                         elem.attrib.get(('{{{}}}'.format(elem.nsmap['xsi'])
@@ -173,8 +173,7 @@ class XML(FileReader):
             if not schema:
                 schema_url = ''
                 raise PyteomicsError(
-                        'Schema information not found in {}.'.format(
-                            self.source.name))
+                        'Schema information not found in {}.'.format(self.name))
             schema_url = schema.split()[-1]
             if not (schema_url.startswith('http://') or
                     schema_url.startswith('file://')):
@@ -322,9 +321,9 @@ class XML(FileReader):
     @_keepstate
     def build_tree(self):
         """Build and store the :py:class:`ElementTree` instance
-        for :py:data:`self.source`"""
+        for the underlying file"""
         p = etree.XMLParser(remove_comments=True)
-        self._tree = etree.parse(self.source, parser=p)
+        self._tree = etree.parse(self._source, parser=p)
 
     def clear_tree(self):
         """Remove the saved :py:class:`ElementTree`."""
@@ -332,7 +331,7 @@ class XML(FileReader):
 
     @_keepstate
     def iterfind(self, path, **kwargs):
-        """Parse `self.source` and yield info on elements with specified local
+        """Parse the XML and yield info on elements with specified local
         name or by specified "XPath".
 
         Parameters
@@ -399,7 +398,7 @@ class XML(FileReader):
         attribute"""
         stack = 0
         id_dict = {}
-        for event, elem in etree.iterparse(self.source, events=('start', 'end'),
+        for event, elem in etree.iterparse(self._source, events=('start', 'end'),
                 remove_comments=True):
             if event == 'start':
                 if 'id' in elem.attrib:
@@ -418,7 +417,7 @@ class XML(FileReader):
 
     @_keepstate
     def get_by_id(self, elem_id, **kwargs):
-        """Parse `self.source` and return the element with `id` attribute equal
+        """Parse the file and return the element with `id` attribute equal
         to `elem_id`. Returns :py:const:`None` if no such element is found.
 
         Parameters
@@ -432,7 +431,7 @@ class XML(FileReader):
         """
         if not self._id_dict:
             found = False
-            for event, elem in etree.iterparse(self.source,
+            for event, elem in etree.iterparse(self._source,
                     events=('start', 'end'), remove_comments=True):
                 if event == 'start':
                     if elem.attrib.get('id') == elem_id:
