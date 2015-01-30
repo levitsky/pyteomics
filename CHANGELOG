@@ -17,6 +17,8 @@
  - Imports of external dependencies are delayed where possible, so that
    unnecessary :py:exc:`ImportErrors` do not occur.
 
+ - Minor fixes.
+
 2.5.5
 -----
 
