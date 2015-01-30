@@ -99,7 +99,8 @@ class XML(FileReader):
     def _get_info_smart(self, element, **kwargs):
         raise NotImplementedError
 
-    def __init__(self, source, read_schema=True, **kwargs):
+    def __init__(self, source, read_schema=True,
+            iterative=True, build_id_cache=False, **kwargs):
         """Create an XML parser object.
 
         Parameters
@@ -125,11 +126,11 @@ class XML(FileReader):
         super(XML, self).__init__(source, 'rb', self.iterfind, False,
                 self._default_iter_tag, **kwargs)
 
-        if kwargs.pop('iterative', True):
+        if iterative:
             self._tree = None
         else:
             self.build_tree()
-        if kwargs.pop('build_id_cache', False):
+        if build_id_cache:
             self.build_id_cache()
         else:
             self._id_dict = None
