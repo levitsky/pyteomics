@@ -453,6 +453,7 @@ def _make_filter(read, is_decoy, key, local_fdr):
     sorted by `key`.
     """
     def filter(*args, **kwargs):
+        import numpy as np
         try:
             fdr = kwargs.pop('fdr')
         except KeyError:
@@ -479,6 +480,8 @@ def _make_filter(read, is_decoy, key, local_fdr):
     def _filter(*args, **kwargs):
         """Read `args` and yield only the PSMs that form a set with
         estimated false discovery rate (FDR) not exceeding `fdr`.
+
+        Requires :py:mod:`numpy`.
 
         Parameters
         ----------
