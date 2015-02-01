@@ -531,7 +531,7 @@ def _make_filter(read, is_decoy, key, local_fdr):
 
     return _filter
 
-_iter = _make_chain(contextmanager(lambda x: (yield x)), 'iter')
+_iter = _make_chain(contextmanager(lambda x, **kw: (yield x)), 'iter')
 local_fdr = _make_local_fdr(_iter, None, None)
 filter = _make_filter(_iter, None, None, local_fdr)
 filter.chain = _make_chain(filter, 'filter')
