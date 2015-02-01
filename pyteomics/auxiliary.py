@@ -430,7 +430,7 @@ def _make_local_fdr(read, is_decoy, key):
             ('local FDR', np.float64)])
         scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
         if not scores.size:
-            raise StopIteration
+            return scores
         if not reverse:
             keys = scores['is decoy'], scores['score']
         else:
@@ -442,6 +442,7 @@ def _make_local_fdr(read, is_decoy, key):
             scores['local FDR'] = cumsum / (ind - cumsum) / ratio
         else:
             scores['local FDR'] = 2. * cumsum / ind / ratio
+            scores = scores[scores['is decoy'] == 0]
         return scores
     return local_fdr
 
