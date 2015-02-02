@@ -534,6 +534,54 @@ def _make_filter(read, is_decoy, key, local_fdr):
 
 _iter = _make_chain(contextmanager(lambda x, **kw: (yield x)), 'iter')
 local_fdr = _make_local_fdr(_iter, None, None)
+local_fdr.__doc__ =  """
+Read `args` and return a NumPy array with scores and values of local FDR.
+
+Requires :py:mod:`numpy`.
+
+Parameters
+----------
+positional args : iterables
+    Iterables to read PSMs from. All positional arguments are chained.
+    The rest of the arguments must be named.
+key : callable
+    A function used for sorting of PSMs. Should accept exactly one
+    argument (PSM) and return a number (the smaller the better).
+reverse : bool, optional
+    If :py:const:`True`, then PSMs are sorted in descending order,
+    i.e. the value of the key function is higher for better PSMs.
+    Default is :py:const:`False`.
+is_decoy : callable
+    A function used to determine if the PSM is decoy or not. Should
+    accept exactly one argument (PSM) and return a truthy value if the
+    PSM should be considered decoy.
+remove_decoy : bool, optional
+    Defines whether decoy matches should be removed from the output.
+    Default is :py:const:`True`.
+
+    .. note:: If set to :py:const:`False`, then the decoy PSMs will
+       be taken into account when estimating FDR. Refer to the
+       documentation of :py:func:`fdr` for math; basically, if
+       `remove_decoy` is :py:const:`True`, then formula 1 is used
+       to control output FDR, otherwise it's formula 2.
+ratio : float, optional
+    The size ratio between the decoy and target databases. Default is
+    ``1``. In theory, the "size" of the database is the number of
+    theoretical peptides eligible for assignment to spectra that are
+    produced by *in silico* cleavage of that database.
+
+**kwargs : passed to the :py:func:`chain` function.
+
+Returns
+-------
+out : numpy.ndarray
+    A sorted array of records with the following fields:
+
+    - 'score': :py:class:`float64`
+    - 'is decoy': :py:class:`int8`
+    - 'local FDR': :py:class:`float64`
+"""
+
 filter = _make_filter(_iter, None, None, local_fdr)
 filter.chain = _make_chain(filter, 'filter')
 filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
