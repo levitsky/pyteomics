@@ -264,19 +264,20 @@ class FileReader(object):
         self._kwargs = kwargs
         self._source_init = source
         self._mode = mode
-        try:
-            self.reset()
-        except:  # clean up on any error
-            self.__exit__(*sys.exc_info())
-            raise
+        self.reset()
 
     def reset(self):
         """Resets the iterator to its initial state."""
         self._source = _file_obj(self._source_init, self._mode)
-        if self._pass_file:
-            self._reader = self._func(self._source, *self._args, **self._kwargs)
-        else:
-            self._reader = self._func(*self._args, **self._kwargs)
+        try:
+            if self._pass_file:
+                self._reader = self._func(
+                        self._source, *self._args, **self._kwargs)
+            else:
+                self._reader = self._func(*self._args, **self._kwargs)
+        except:  # clean up on any error
+            self.__exit__(*sys.exc_info())
+            raise
 
     # context manager support
     def __enter__(self):
