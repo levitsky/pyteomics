@@ -935,8 +935,8 @@ class Unimod():
         """Search modifications by title. If a single modification is found,
         it is returned. Otherwise, a list will be returned.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         title : str
             The modification title.
         strict : bool, optional
@@ -944,8 +944,8 @@ class Unimod():
             whose title **contains** `title`, otherwise equality is required.
             :py:const:`True` by default.
 
-        Returns:
-        --------
+        Returns
+        -------
         out : dict or list
             A single modification or a list of modifications.
         """
@@ -960,8 +960,8 @@ class Unimod():
         """Search modifications by name. If a single modification is found,
         it is returned. Otherwise, a list will be returned.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         name : str
             The full name of the modification(s).
         strict : bool, optional
@@ -969,8 +969,8 @@ class Unimod():
             whose full name **contains** `title`, otherwise equality is
             required. :py:const:`True` by default.
 
-        Returns:
-        --------
+        Returns
+        -------
         out : dict or list
             A single modification or a list of modifications.
         """

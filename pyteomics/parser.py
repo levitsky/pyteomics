@@ -349,16 +349,16 @@ def fast_valid(sequence, labels=std_labels):
     With strings, this only works as expected on sequences without
     modifications or terminal groups.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     sequence : iterable (expectedly, str)
         The sequence to check. A valid sequence would be a string of
         labels, all present in `labels`.
     labels : iterable, optional
         An iterable of known labels.
 
-    Returns:
-    --------
+    Returns
+    -------
     out : bool
     """
     labels = set(labels)
