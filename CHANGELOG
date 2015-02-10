@@ -19,6 +19,15 @@
 
  - Minor fixes.
 
+API changes
+...........
+
+ - In :py:func:`pyteomics.pylab_aux.scatter_trend`, keyword arguments for
+   :py:func:`pylab.scatter` and :py:func:`pylab.plot` are now accepted as dicts
+   `scatter_kwargs` and `plot_kwargs`. Keyword argument `alpha` is now not
+   accepted.
+
+
 2.5.5
 -----
 

@@ -72,26 +72,28 @@ def scatter_trend(x, y, **kwargs):
     ----------
     x, y : array_like of float
     plot_trend : bool, optional
-        If True then plot a trendline. True by default.
+        If :py:const:`True` then plot a trendline (default).
     plot_sigmas : bool, optional
-        If True then plot confidence intervals of the linear fit.
-        False by default.
+        If :py:const:`True` then plot confidence intervals of the linear fit.
+        :py:const:`False` by default.
     title : str, optional
         The title. Empty by default.
     xlabel, ylabel : str, optional
         The axes labels. Empty by default.
-    alpha : float, optional
-        Transparency of points. 1.0 by default
     alpha_legend : float, optional
         Legend box transparency. 1.0 by default
+    scatter_kwargs : dict, optional
+        Keyword arguments for :py:func:`pylab.scatter`.
+        Empty by default.
+    plot_kwargs : dict, optional
+        Keyword arguments for :py:func:`pylab.plot`.
+        Empty by default.
     """
     a, b, r, stderr = linear_regression(x, y)
     pylab.title(kwargs.get('title', ''))
     pylab.xlabel(kwargs.get('xlabel', ''))
     pylab.ylabel(kwargs.get('ylabel', ''))
-    scat_plot = pylab.scatter(x, y,
-                              c=kwargs.get('c', 'b'),
-                              alpha=kwargs.get('alpha', 1.0))
+    scat_plot = pylab.scatter(x, y, **kwargs.get('scatter_kwargs', {}))
     scat_plot.set_label(
         '$y\,=\,{:.3f}x\,{}\,{:.3f}$, '
         '$R^2=\,{:.3f}$ \n$\sigma\,=\,{:.3f}$'.format(
@@ -101,7 +103,8 @@ def scatter_trend(x, y, **kwargs):
     legend_frame.set_alpha(kwargs.get('alpha_legend', 1.0))
     if kwargs.get('plot_trend', True):
         pylab.plot([min(x), max(x)],
-                   [a*min(x)+b, a*max(x)+b])
+                   [a*min(x)+b, a*max(x)+b],
+                   **kwargs.get('plot_kwargs', {}))
     if kwargs.get('plot_sigmas', False):
         for i in [-3.0,-2.0,-1.0,1.0,2.0,3.0]:
             pylab.plot([min(x), max(x)],
