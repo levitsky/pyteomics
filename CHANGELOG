@@ -26,6 +26,8 @@ API changes
    :py:func:`pylab.scatter` and :py:func:`pylab.plot` are now accepted as dicts
    `scatter_kwargs` and `plot_kwargs`. Keyword argument `alpha` is now not
    accepted.
+ - In :py:func:`pyteomics.pylab_aux.plot_function_3d`, arbitrary kwargs can now
+   also be passed to the plotting function.
 
 
 2.5.5
