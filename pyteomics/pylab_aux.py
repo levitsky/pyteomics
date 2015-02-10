@@ -58,6 +58,8 @@ def plot_line(a, b, **kwargs):
     ----------
     a, b : float
         The slope and intercept of the line.
+
+    **kwargs : passed to :py:func:`pylab.plot`.
     """
     xlim = pylab.xlim()
     ylim = pylab.ylim()
@@ -134,10 +136,14 @@ def plot_function_3d(x, y, function, **kwargs):
         The axes labels. Empty by default.
     title : str, optional
         The title. Empty by default.
-
+    **kwargs : passed to the respective plotting function.
     """
     import mpl_toolkits.mplot3d.axes3d as pylab3d
     ax = pylab3d.Axes3D(pylab.gcf())
+    ax.set_xlabel(kwargs.pop('xlabel', ''))
+    ax.set_ylabel(kwargs.pop('ylabel', ''))
+    ax.set_zlabel(kwargs.pop('zlabel', ''))
+    ax.set_title(kwargs.pop('title', ''))
     X, Y = np.meshgrid(x, y)
     Z = []
     for y_value in y:
@@ -145,25 +151,28 @@ def plot_function_3d(x, y, function, **kwargs):
         for x_value in x:
             Z[-1].append(function(x_value, y_value))
     Z = np.array(Z)
-    plot_type = kwargs.get('plot_type', 'surface')
+    plot_type = kwargs.pop('plot_type', 'surface')
     if plot_type == 'surface':
-        ax.plot_surface(X, Y, Z, rstride=1, cstride=1, cmap=pylab.cm.jet)
+        ax.plot_surface(X, Y, Z,
+                rstride=kwargs.pop('rstride', 1),
+                cstride=kwargs.pop('cstride', 1),
+                cmap=kwargs.pop('cmap', pylab.cm.jet),
+                **kwargs)
     elif plot_type == 'wireframe':
-        ax.plot_wireframe(X, Y, Z, cmap=pylab.cm.jet)
+        ax.plot_wireframe(X, Y, Z,
+                cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
     elif plot_type == 'scatter':
-        ax.scatter3D(np.ravel(X), np.ravel(Y), np.ravel(Z))
+        ax.scatter3D(np.ravel(X), np.ravel(Y), np.ravel(Z), **kwargs)
     elif plot_type == 'contour':
-        num_contours = kwargs.get('num_contours', 50)
-        ax.contour3D(X, Y, Z, num_contours, cmap=pylab.cm.jet)
+        num_contours = kwargs.pop('num_contours', 50)
+        ax.contour3D(X, Y, Z, num_contours,
+                cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
     elif plot_type == 'contourf':
-        num_contours = kwargs.get('num_contours', 50)
-        ax.contourf3D(X, Y, Z, num_contours, cmap=pylab.cm.jet)
+        num_contours = kwargs.pop('num_contours', 50)
+        ax.contourf3D(X, Y, Z, num_contours,
+                cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
     else:
-        raise PyteomicsError('Unknown plot type: %s' % (plot_type,))
-    ax.set_xlabel(kwargs.get('xlabel', ''))
-    ax.set_ylabel(kwargs.get('ylabel', ''))
-    ax.set_zlabel(kwargs.get('zlabel', ''))
-    ax.set_title(kwargs.get('title', ''))
+        raise PyteomicsError('Unknown plot type: {}'.format(plot_type))
 
 def plot_function_contour(x, y, function, **kwargs):
     """Make a contour plot of a function of two variables.
