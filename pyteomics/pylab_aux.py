@@ -191,8 +191,11 @@ def plot_function_contour(x, y, function, **kwargs):
         The axes labels. Empty by default.
     title : str, optional
         The title. Empty by default.
-
+    **kwargs : passed to :py:func:`pylab.contour` or :py:func:`pylab.contourf`.
     """
+    pylab.xlabel(kwargs.pop('xlabel', ''))
+    pylab.ylabel(kwargs.pop('ylabel', ''))
+    pylab.title(kwargs.pop('title', ''))
     X, Y = np.meshgrid(x, y)
     Z = []
     for y_value in y:
@@ -200,12 +203,11 @@ def plot_function_contour(x, y, function, **kwargs):
         for x_value in x:
             Z[-1].append(function(x_value, y_value))
     Z = np.array(Z)
-    num_contours = kwargs.get('num_contours', 50)
-    if kwargs.get('filling', True):
-        pylab.contourf(X, Y, Z, num_contours, cmap=pylab.cm.jet)
+    num_contours = kwargs.pop('num_contours', 50)
+    if kwargs.pop('filling', True):
+        pylab.contourf(X, Y, Z, num_contours,
+                cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
     else:
-        pylab.contour(X, Y, Z, num_contours, cmap=pylab.cm.jet)
-    pylab.xlabel(kwargs.get('xlabel', ''))
-    pylab.ylabel(kwargs.get('ylabel', ''))
-    pylab.title(kwargs.get('title', ''))
+        pylab.contour(X, Y, Z, num_contours,
+                cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
 
