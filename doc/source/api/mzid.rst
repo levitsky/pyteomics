@@ -2,7 +2,7 @@
 
     .. autofunction:: version_info
     .. autofunction:: fdr
-    .. autofunction:: local_fdr
+    .. autofunction:: qvalues
     .. autofunction:: chain
     .. py:function :: chain.from_iterable(files, **kwargs)
 

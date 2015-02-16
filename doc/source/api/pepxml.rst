@@ -31,4 +31,4 @@
    .. autofunction:: version_info
    .. autofunction:: iterfind
    .. autofunction:: fdr
-   .. autofunction:: local_fdr
+   .. autofunction:: qvalues
