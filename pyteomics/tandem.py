@@ -147,8 +147,6 @@ class TandemXML(xml.XML):
 
     next = __next__
 
-TandemXML.__init__.__doc__ = xml.XML.__init__.__doc__
-
 def read(source, iterative=True):
     """Parse `source` and iterate through peptide-spectrum matches.
 
