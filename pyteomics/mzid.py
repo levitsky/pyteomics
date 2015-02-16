@@ -50,7 +50,7 @@ Miscellaneous
   :py:func:`fdr` - estimate the false discovery rate of a set of identifications
   using the target-decoy approach.
 
-  :py:func:`local_fdr` - get an array of scores and local FDR values for a PSM
+  :py:func:`qvalues` - get an array of scores and local FDR values for a PSM
   set using the target-decoy approach.
 
 Deprecated functions
@@ -282,6 +282,6 @@ def is_decoy(psm):
 fdr = aux._make_fdr(is_decoy)
 _key = lambda x: min(
     sii['mascot:expectation value'] for sii in x['SpectrumIdentificationItem'])
-local_fdr = aux._make_local_fdr(chain, is_decoy, _key)
-filter = aux._make_filter(chain, is_decoy, _key, local_fdr)
+qvalues = aux._make_qvalues(chain, is_decoy, _key)
+filter = aux._make_filter(chain, is_decoy, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter')
