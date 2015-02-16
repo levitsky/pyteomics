@@ -29,6 +29,9 @@ API changes
  - In :py:func:`pyteomics.pylab_aux.plot_function_3d` and
    :py:func:`pyteomics.pylab_aux.plot_function_contour`, arbitrary kwargs can
    now also be passed to the plotting function.
+ - :py:func:`local_fdr` renamed to :py:func:`qvalues` in :py:mod:`pepxml`,
+   :py:mod:`mzid`, :py:mod:`tandem` and :py:mod:`auxiliary`.
+   :py:func:`local_fdr` did not reflect the semantics of the function.
 
 
 2.5.5

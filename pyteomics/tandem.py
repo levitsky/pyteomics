@@ -49,7 +49,7 @@ Miscellaneous
 
   :py:func:`fdr` - estimate the FDR in a data set using TDA.
 
-  :py:func:`local_fdr` - get an array of scores and local FDR values for a PSM
+  :py:func:`qvalues` - get an array of scores and local FDR values for a PSM
   set using the target-decoy approach.
 
 Deprecated functions
@@ -227,8 +227,8 @@ def is_decoy(psm, prefix='DECOY_'):
     """
     return all(prot['label'].startswith(prefix) for prot in psm['protein'])
 
-local_fdr = aux._make_local_fdr(chain, is_decoy, operator.itemgetter('expect'))
+qvalues = aux._make_qvalues(chain, is_decoy, operator.itemgetter('expect'))
 filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'),
-        local_fdr)
+        qvalues)
 fdr = aux._make_fdr(is_decoy)
 filter.chain = aux._make_chain(filter, 'filter')

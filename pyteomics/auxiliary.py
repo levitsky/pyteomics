@@ -356,13 +356,12 @@ def _make_chain(reader, readername):
 
 ### End of file helpers section ###
 
-def _make_local_fdr(read, is_decoy, key):
-    """Create a function that reads PSMs from a file and calculates local FDR
+def _make_qvalues(read, is_decoy, key):
+    """Create a function that reads PSMs from a file and calculates q-values
     for each value of `key`."""
     import numpy as np
-    def local_fdr(*args, **kwargs):
-        """Read `args` and return a NumPy array with scores and values of local
-        FDR.
+    def qvalues(*args, **kwargs):
+        """Read `args` and return a NumPy array with scores and q-values.
 
         Requires :py:mod:`numpy`.
 
@@ -411,7 +410,7 @@ def _make_local_fdr(read, is_decoy, key):
 
             - 'score': :py:class:`float64`
             - 'is decoy': :py:class:`int8`
-            - 'local FDR': :py:class:`float64`
+            - 'q': :py:class:`float64`
         """
         @_keepstate
         def get_scores(*args, **kwargs):
@@ -428,7 +427,7 @@ def _make_local_fdr(read, is_decoy, key):
         remove_decoy = kwargs.pop('remove_decoy', True)
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         dtype = np.dtype([('score', np.float64), ('is decoy', np.uint8),
-            ('local FDR', np.float64)])
+            ('q', np.float64)])
         scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
         if not scores.size:
             return scores
@@ -440,15 +439,15 @@ def _make_local_fdr(read, is_decoy, key):
         cumsum = scores['is decoy'].cumsum(dtype=np.float32)
         ind = np.arange(1, scores.size+1)
         if remove_decoy:
-            scores['local FDR'] = cumsum / (ind - cumsum) / ratio
+            scores['q'] = cumsum / (ind - cumsum) / ratio
         else:
-            scores['local FDR'] = 2. * cumsum / ind / ratio
+            scores['q'] = 2. * cumsum / ind / ratio
             scores = scores[scores['is decoy'] == 0]
         return scores
-    return local_fdr
+    return qvalues
 
 
-def _make_filter(read, is_decoy, key, local_fdr):
+def _make_filter(read, is_decoy, key, qvalues):
     """Create a function that reads PSMs from a file and filters them to
     the desired FDR level (estimated by TDA), returning the top PSMs
     sorted by `key`.
@@ -465,9 +464,9 @@ def _make_filter(read, is_decoy, key, local_fdr):
         better = [op.le, op.ge][bool(reverse)]
         remove_decoy = kwargs.get('remove_decoy', True)
         isdecoy = kwargs.get('is_decoy', is_decoy)
-        scores = local_fdr(*args, **kwargs)
+        scores = qvalues(*args, **kwargs)
         try:
-            cutoff = scores[np.nonzero(scores['local FDR'] <= fdr)[0][-1]][0]
+            cutoff = scores[np.nonzero(scores['q'] <= fdr)[0][-1]][0]
         except IndexError:
             cutoff = (scores['score'].min() - 1. if not reverse
                     else scores['score'].max() + 1.)
@@ -533,9 +532,9 @@ def _make_filter(read, is_decoy, key, local_fdr):
     return _filter
 
 _iter = _make_chain(contextmanager(lambda x, **kw: (yield x)), 'iter')
-local_fdr = _make_local_fdr(_iter, None, None)
-local_fdr.__doc__ =  """
-Read `args` and return a NumPy array with scores and values of local FDR.
+qvalues = _make_qvalues(_iter, None, None)
+qvalues.__doc__ =  """
+Read `args` and return a NumPy array with scores and q-values.
 
 Requires :py:mod:`numpy`.
 
@@ -579,10 +578,10 @@ out : numpy.ndarray
 
     - 'score': :py:class:`float64`
     - 'is decoy': :py:class:`int8`
-    - 'local FDR': :py:class:`float64`
+    - 'q': :py:class:`float64`
 """
 
-filter = _make_filter(_iter, None, None, local_fdr)
+filter = _make_filter(_iter, None, None, qvalues)
 filter.chain = _make_chain(filter, 'filter')
 filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         estimated false discovery rate (FDR) not exceeding `fdr`.
