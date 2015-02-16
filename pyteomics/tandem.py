@@ -93,6 +93,12 @@ class TandemXML(xml.XML):
     _default_iter_tag = 'group[type="model"]'
     _structures_to_flatten = {'domain'}
 
+    def __init__(self, *args, **kwargs):
+        if 'recursive' not in kwargs:
+            super(TandemXML, self).__init__(*args, recursive=True, **kwargs)
+        else:
+            super(TandemXML, self).__init__(*args, **kwargs)
+
     def _get_info_smart(self, element, **kw):
         info = self._get_info(element, **kw)
         # handy simplifications below
@@ -140,6 +146,8 @@ class TandemXML(xml.XML):
         return n
 
     next = __next__
+
+TandemXML.__init__.__doc__ = xml.XML.__init__.__doc__
 
 def read(source, iterative=True):
     """Parse `source` and iterate through peptide-spectrum matches.
