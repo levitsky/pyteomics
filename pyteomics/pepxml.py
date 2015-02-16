@@ -20,6 +20,9 @@ human-readable dicts. This function relies on the terminology of the underlying
 Data access
 -----------
 
+  :py:class:`PepXML` - a class representing a single pepXML file.
+  Other data access functions use this class internally.
+
   :py:func:`read` - iterate through peptide-spectrum matches in a pepXML
   file. Data for a single spectrum are converted to an easy-to-use dict.
 
