@@ -99,6 +99,8 @@ class TandemXML(xml.XML):
         else:
             super(TandemXML, self).__init__(*args, **kwargs)
 
+    __init__.__doc__ = xml.XML.__init__.__doc__
+
     def _get_info_smart(self, element, **kw):
         info = self._get_info(element, **kw)
         # handy simplifications below
