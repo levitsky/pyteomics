@@ -443,6 +443,7 @@ def _make_qvalues(read, is_decoy, key):
         else:
             scores['q'] = 2. * cumsum / ind / ratio
             scores = scores[scores['is decoy'] == 0]
+        scores['q'] = np.minimum.accumulate(scores['q'][::-1])[::-1]
         return scores
     return qvalues
 
