@@ -211,3 +211,25 @@ def plot_function_contour(x, y, function, **kwargs):
         pylab.contour(X, Y, Z, num_contours,
                 cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
 
+def plot_qvalue_curve(func, *args, **kwargs):
+    """
+    Plot a curve with q-values on the X axis and corresponding PSM number
+    (starting with ``1``) on the Y axis.
+
+    Parameters
+    ----------
+    func : callable
+        The function that should return an array of q-values and scores.
+        Pass :py:func:`pyteomics.tandem.qvalues`,
+        :py:func:`pyteomics.pepxml.qvalues`,
+        :py:func:`pyteomics.mzid.qvalues`,
+        :py:func:`pyteomics.auxiliary.qvalues` or your own function.
+
+    *args, **kwargs : will be given to `func`, except for one keyword argument:
+
+    plot_kwargs : dict, optional
+        A dict of keyword arguments for :py:func:`pylab.plot`.
+    """
+    plot_kwargs = kwargs.pop('plot_kwargs', {})
+    q = func(*args, **kwargs)
+    pylab.plot(q['q'], 1+np.arange(q.size), **plot_kwargs)
