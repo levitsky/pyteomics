@@ -23,6 +23,9 @@
    The algorithm has been also corrected so that the array of q-values
    is always sorted (as it should be by definition).
 
+ - :py:func:`qvalues` now also accepts a parameter `full_output` which keeps the
+   PSMs alongside their scores and associated q-values.
+
  - Minor fixes.
 
 API changes
@@ -31,7 +34,7 @@ API changes
  - In :py:func:`pyteomics.pylab_aux.scatter_trend`, keyword arguments for
    :py:func:`pylab.scatter` and :py:func:`pylab.plot` are now accepted as dicts
    `scatter_kwargs` and `plot_kwargs`. Keyword argument `alpha` is now not
-   accepted.
+   accepted and should be put in the appropriate dict.
  - In :py:func:`pyteomics.pylab_aux.plot_function_3d` and
    :py:func:`pyteomics.pylab_aux.plot_function_contour`, arbitrary kwargs can
    now also be passed to the plotting function.

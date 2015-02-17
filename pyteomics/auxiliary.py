@@ -367,17 +367,21 @@ def _make_qvalues(read, is_decoy, key):
 
         Parameters
         ----------
+
         positional args : file or str
             Files to read PSMs from. All positional arguments are treated as
             files. The rest of the arguments must be named.
+
         key : callable, optional
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better). The
             default is a function that tries to extract e-value from the PSM.
+
         reverse : bool, optional
             If :py:const:`True`, then PSMs are sorted in descending order,
             i.e. the value of the key function is higher for better PSMs.
             Default is :py:const:`False`.
+
         is_decoy : callable, optional
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
@@ -386,6 +390,7 @@ def _make_qvalues(read, is_decoy, key):
             .. warning::
                 The default function may not work
                 with your files, because format flavours are diverse.
+
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
@@ -395,11 +400,14 @@ def _make_qvalues(read, is_decoy, key):
                documentation of :py:func:`fdr` for math; basically, if
                `remove_decoy` is :py:const:`True`, then formula 1 is used
                to control output FDR, otherwise it's formula 2.
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
             ``1``. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
+
+        full_output : bool, optional
 
         **kwargs : passed to the :py:func:`chain` function.
 
@@ -408,16 +416,20 @@ def _make_qvalues(read, is_decoy, key):
         out : numpy.ndarray
             A sorted array of records with the following fields:
 
-            - 'score': :py:class:`float64`
-            - 'is decoy': :py:class:`int8`
-            - 'q': :py:class:`float64`
+            - 'score': :py:class:`np.float64`
+            - 'is decoy': :py:class:`np.int8`
+            - 'q': :py:class:`np.float64`
+            - 'psm': :py:class:`object_` (if `full_output` is :py:const:`True`)
         """
         @_keepstate
         def get_scores(*args, **kwargs):
             scores = []
             with read(*args, **kwargs) as f:
                 for psm in f:
-                    scores.append((keyf(psm), isdecoy(psm), None))
+                    if full:
+                        scores.append((keyf(psm), isdecoy(psm), None, psm))
+                    else:
+                        scores.append((keyf(psm), isdecoy(psm), None))
             return scores
         args = [arg if not isinstance(arg, types.GeneratorType)
                 else list(arg) for arg in args]
@@ -426,8 +438,11 @@ def _make_qvalues(read, is_decoy, key):
         reverse = kwargs.pop('reverse', False)
         remove_decoy = kwargs.pop('remove_decoy', True)
         isdecoy = kwargs.pop('is_decoy', is_decoy)
-        dtype = np.dtype([('score', np.float64), ('is decoy', np.uint8),
-            ('q', np.float64)])
+        full = kwargs.pop('full_output', False)
+        fields = [('score', np.float64), ('is decoy', np.uint8),
+            ('q', np.float64)]
+        dtype = np.dtype(fields) if not full else np.dtype(
+                fields + [('psm', np.object_)])
         scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
         if not scores.size:
             return scores
