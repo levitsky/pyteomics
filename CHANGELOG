@@ -26,6 +26,8 @@
  - :py:func:`qvalues` now also accepts a parameter `full_output` which keeps the
    PSMs alongside their scores and associated q-values.
 
+ - New function :py:func:`pyteomics.pylab_aux.plot_qvalue_curve`.
+
  - Minor fixes.
 
 API changes
