@@ -323,6 +323,13 @@ References
     in both dimensions for high-throughput bottom-up proteomics
     <http://pubs.acs.org/doi/abs/10.1021/ac800984n>`_.
     Analytical Chemistry, 80(18), 7036-42.
+
+Dependencies
+------------
+
+This module requires :py:mod:`numpy`.
+
+--------------------------------------------------------------------------------
 """
 
 #   Copyright 2012 Anton Goloborodko, Lev Levitsky
@@ -389,7 +396,7 @@ def get_RCs(sequences, RTs, lcp = -0.21,
     True
     """
 
-    labels = kwargs.get('labels', parser.std_labels)
+    labels = kwargs.get('labels')
 
     # Make a list of all amino acids present in the sample.
     peptide_dicts = [
@@ -452,14 +459,14 @@ def get_RCs(sequences, RTs, lcp = -0.21,
         for term_label in ['nterm', 'cterm']:
             # Check if there are terminal RCs remaining undefined.
             undefined_term_RCs = [aa for aa in RC_dict['aa']
-                                if not aa[1:].startswith('term')
+                                if aa[1:5] != 'term'
                                 and term_label + aa not in RC_dict['aa']]
             if not undefined_term_RCs:
                 continue
 
             # Find a linear relationship between internal and terminal RCs.
             defined_term_RCs = [aa for aa in RC_dict['aa']
-                              if not aa[1:].startswith('term')
+                              if aa[1:5] != 'term'
                               and term_label + aa in RC_dict['aa']]
 
             a, b, r, stderr = linear_regression(
@@ -516,7 +523,7 @@ def get_RCs_vary_lcp(sequences, RTs,
     >>> abs(RCs['aa']['A'] - 1) + abs(RCs['lcp']) + abs(RCs['const']) < 1e-6
     True
     """
-    labels = kwargs.get('labels', parser.std_labels)
+    labels = kwargs.get('labels')
 
     best_r = -1.1
     best_RC_dict = {}
@@ -868,7 +875,7 @@ RCs_yoshida = {'aa':{'K':  2.77,
                      'L': -2.31,
                      'A':  0.28,
                      'C':  0.80,
-                  'comC':  0.80,
+                  'camC':  0.80,
                      'E':  1.58,
                      'D':  2.45,
                      'F': -2.94,
@@ -902,7 +909,7 @@ Conditions: TSK gel Amide-80 column (250 x 4.6 mm I.D.), gradient (A =
 
 RCs_yoshida_lc = {'aa': {'A': 1.29,
                          'C': 0.94,
-                      'comC': 0.94,
+                      'camC': 0.94,
                          'D': 3.89,
                          'E': 4.40,
                          'F': -4.18,

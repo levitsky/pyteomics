@@ -6,25 +6,10 @@ import string
 
 class FastaTest(unittest.TestCase):
     def setUp(self):
-        self.fasta_file = tempfile.TemporaryFile(mode='r+')
-        self.fasta_file.write('''
-            ;test sequence
-            ;test sequence 2
-            TEST
-
-            >test sequence 3
-            TE
-            ST*
-            >test sequence 4
-            TEST
-            ''')
-        self.fasta_file.seek(0)
-        self.fasta_entries_short = list(read(self.fasta_file, ignore_comments=True))
-        self.fasta_file.seek(0)
+        self.fasta_file = 'test.fasta'
+        self.fasta_entries_short = list(read(self.fasta_file,
+            ignore_comments=True))
         self.fasta_entries_long = list(read(self.fasta_file))
-
-    def tearDown(self):
-        self.fasta_file.close()
 
     def test_simple_read_long_comments(self):
         self.assertEqual(self.fasta_entries_long,
@@ -57,36 +42,28 @@ class FastaTest(unittest.TestCase):
         self.assertFalse(test)
 
     def test_read_and_write_fasta_short(self):
-        self.fasta_file.seek(0)
-        new_fasta_file = tempfile.TemporaryFile(mode='r+')
-        write(read(self.fasta_file, ignore_comments=True),
+        with tempfile.TemporaryFile(mode='r+') as new_fasta_file:
+            write(read(self.fasta_file, ignore_comments=True),
                 new_fasta_file)
-        new_fasta_file.seek(0)
-        new_entries = list(read(new_fasta_file, ignore_comments=True))
-        self.fasta_file.seek(0)
-        self.assertEqual(new_entries, self.fasta_entries_short)
-        new_fasta_file.close()
+            new_fasta_file.seek(0)
+            new_entries = list(read(new_fasta_file, ignore_comments=True))
+            self.assertEqual(new_entries, self.fasta_entries_short)
 
     def test_read_and_write_long(self):
-        self.fasta_file.seek(0)
-        new_fasta_file = tempfile.TemporaryFile(mode='r+')
-        write(read(self.fasta_file), new_fasta_file)
-        new_fasta_file.seek(0)
-        new_entries = list(read(new_fasta_file))
-        self.fasta_file.seek(0)
-        self.assertEqual(new_entries, self.fasta_entries_long)
-        new_fasta_file.close()
+        with tempfile.TemporaryFile(mode='r+') as new_fasta_file:
+            write(read(self.fasta_file), new_fasta_file)
+            new_fasta_file.seek(0)
+            new_entries = list(read(new_fasta_file))
+            self.assertEqual(new_entries, self.fasta_entries_long)
 
     def test_write_decoy_db(self):
-        self.fasta_file.seek(0)
-        decdb = tempfile.TemporaryFile(mode='r+')
-        write_decoy_db(self.fasta_file, decdb, decoy_only=False, prefix='PREFIX_')
-        decdb.seek(0)
-        all_entries = list(read(decdb, False))
-        decdb.close()
+        with tempfile.TemporaryFile(mode='r+') as decdb:
+            write_decoy_db(self.fasta_file, decdb,
+                    decoy_only=False, prefix='PREFIX_')
+            decdb.seek(0)
+            all_entries = list(read(decdb, False))
         self.assertEqual(all_entries, self.fasta_entries_long +
                 [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long])
-        self.fasta_file.seek(0)
 
     def test_parser_uniprotkb(self):
         header = ('sp|P27748|ACOX_RALEH Acetoin catabolism protein X OS=Ralstonia'

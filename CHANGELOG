@@ -1,175 +1,316 @@
+3.0.0
+-----
+ - XML parsers are now implemented as objects, each format has its own class.
+   Those classes can be instantiated using the same arguments as :py:func:`read`
+   functions accepted, and support direct iteration and the ``with`` syntax.
+   The :py:func:`read` functions are now simple aliases to the corresponding
+   constructors.
+
+ - As a result, functions :py:func:`iterfind`, :py:func:`version_info` and
+   :py:func:`get_by_id` functions are now deprecated in favor of methods
+   :py:meth:`iterfind` and :py:meth:`get_by_id` and attribute
+   :py:attr:`version_info` of corresponding instances.
+
+ - In :py:func:`pyteomics.mgf.write`, the order of keys and the format of values
+   are now controlled via module-level variables.
+
+ - Imports of external dependencies are delayed where possible, so that
+   unnecessary :py:exc:`ImportErrors` do not occur.
+
+ - :py:func:`local_fdr` renamed to :py:func:`qvalues` in :py:mod:`pepxml`,
+   :py:mod:`mzid`, :py:mod:`tandem` and :py:mod:`auxiliary`.
+   :py:func:`local_fdr` did not reflect the semantics of the function.
+   The algorithm has been also corrected so that the array of q-values
+   is always sorted (as it should be by definition).
+
+ - :py:func:`qvalues` now also accepts a parameter `full_output` which keeps the
+   PSMs alongside their scores and associated q-values.
+
+ - New function :py:func:`pyteomics.pylab_aux.plot_qvalue_curve`.
+
+ - Minor fixes.
+
+API changes
+...........
+
+ - In :py:func:`pyteomics.pylab_aux.scatter_trend`, keyword arguments for
+   :py:func:`pylab.scatter` and :py:func:`pylab.plot` are now accepted as dicts
+   `scatter_kwargs` and `plot_kwargs`. Keyword argument `alpha` is now not
+   accepted and should be put in the appropriate dict.
+ - In :py:func:`pyteomics.pylab_aux.plot_function_3d` and
+   :py:func:`pyteomics.pylab_aux.plot_function_contour`, arbitrary kwargs can
+   now also be passed to the plotting function.
+
+2.5.5
+-----
+
+Fix for a memory leak in :py:func:`pyteomics.mzid.get_by_id`, which affects
+:py:func:`pyteomics.mzid.read` with ``retrieve_refs=True``.
+
+2.5.4
+-----
+
+ - New functions :py:func:`local_fdr` in :py:mod:`pepxml`, :py:mod:`mzid`, and
+   :py:mod:`tandem`. The function returns a NumPy array with PSM scores and
+   corresponding values of local FDR.
+
+ - New parameter `iterative` in :py:func:`read` functions of XML parsing
+   modules. Parsing of mzIdentML files with ``retrieve_refs=True`` got
+   significantly faster.
+
+2.5.3
+-----
+
+ - Universally applicable modifications are now allowed in
+   :py:func:`pyteomics.parser.isoforms`.
+ - It is now also possible to specify non-terminal modifications which are
+   only applicable to terminal residues.
+ - Fix in :py:func:`pyteomics.parser.parse`: if the `labels` argument is
+   provided, it needs to contain standard terminal groups if they are present
+   in the sequence or if `show_unmodified_termini` is set to :py:const:`True`.
+ - :py:class:`pyteomics.mass.Composition` instances are now pickleable.
+ - Performance improvements.
+
+2.5.2
+-----
+
+ - New parameter `reverse` in all :py:func:`!filter` functions.
+ - New function :py:func:`pyteomics.mass.fast_mass2`, which is analogous to
+   :py:func:`pyteomicsmass.fast_mass`, but supports full *modX* notation and
+   is several times slower.
+ - Fix in :py:func:`pyteomics.pepxml.read` for compatibility with files
+   produced with Mascot2XML utility.
+ - Unknown labels now allowed in :py:mod:`pyteomics.electrochem` and
+   :py:mod:`pyteomics.achrom` functions in accordance with new general policy.
+
+2.5.1
+-----
+
+ - Bugfixes in :py:func:`pyteomics.parser.isoforms`:
+  - handling of the `labels` argument is now in accordance with new policy
+  - solved memory problems when using `max_mods`
+ - :py:func:`pyteomics.parser.cleave` does not require a valid *modX* sequence
+   by default.
+
+2.5.0
+-----
+
+ - :py:func:`pyteomics.parser.amino_acid_composition` now accepts "split"
+   parsed sequences.
+
+ - Cleavage rules in :py:data:`pyteomics.parser.expasy_rules` updated.
+
+ - Helper function :py:func:`pyteomics.parser.num_sites` counts the number
+   of cleavage sites in a sequence.
+
+ - Helper function :py:func:`pyteomics.parser.match_modX` does essentially
+   the same as :py:func:`pyteomics.parser.is_modX`, but returns a
+   :py:class:`re.match` object or :py:const:`None` instead of a :py:class:`bool`.
+
+ - Bugfix in :py:func:`pyteomics.auxiliary.filter`, which didn't work correctly
+   with iterators.
+
+ - Added a new parameter ``max_mods`` in :py:func:`pyteomics.parser.isoforms`.
+
+API changes
+...........
+
+ - The boolean ``overlap`` parameter in :py:func:`pyteomics.parser.cleave` is
+   replaced with an integer ``min_length``. Since ``min_length`` uses
+   :py:func:`pyteomics.parser.length`, the ``labels`` keyword argument is now
+   accepted by :py:func:`cleave` and :py:func:`num_sites`, if needed. With
+   carefully designed cleavage rules, all cleavage functions work
+   with *modX* sequences.
+
+ - The ``labels`` argument in :py:func:`pyteomics.parser.parse` and related
+   functions has changed its meaning. :py:func:`parse` won't raise an exception
+   for non-standard labels in sequences if the ``labels`` keyword argument is
+   not given.
+
+ - The *modX* notation specification is now more strict to avoid ambiguity:
+   only zero or two terminal groups can be present in a *modX* sequence.
+   Sequences with one terminal group specified will be supported where possible,
+   but be advised that sequences such as "H-OH" are intrinsically ambiguous.
+
 2.4.3
 -----
 
-Added the ``ratio`` keyword argument for FDR calculation.
-Minor changes in :py:func:`iterfind` functions of file parsers.
-Bugfix in :py:func:`pyteomics.mgf.write` (duplication of pepmass key).
-Remove non-functional parameter ``read_schema`` for
-:py:func:`pyteomics.tandem.read`.
+ - Added the ``ratio`` keyword argument for FDR calculation.
+
+ - Minor changes in :py:func:`iterfind` functions of file parsers.
+
+ - Bugfix in :py:func:`pyteomics.mgf.write` (duplication of pepmass key).
+
+ - Removed non-functional parameter ``read_schema`` for
+   :py:func:`pyteomics.tandem.read`.
 
 2.4.2
 -----
 
-Bugfix in :py:func:`pyteomics.mass.most_probable_isotopic_composition`.
-The bug manifested itself after version **2.4.0**, when
-:py:data:`pyteomics.mass.nist_mass` was expanded. Also, the format of the
-returned value is now in accordance with the documentation.
+ - Bugfix in :py:func:`pyteomics.mass.most_probable_isotopic_composition`.
+   The bug manifested itself after version **2.4.0**, when
+   :py:data:`pyteomics.mass.nist_mass` was expanded. Also, the format of the
+   returned value is now in accordance with the documentation.
 
 2.4.1
 -----
 
-New function :py:func:`pyteomics.auxiliary.filter` for filtering lists
-of PSMs not coming directly from files in supported formats. Also, a
-format-agnostic helper function :py:func:`pyteomics.auxiliary.fdr`.
+ - New function :py:func:`pyteomics.auxiliary.filter` for filtering lists
+   of PSMs not coming directly from files in supported formats.
+
+ - Also, a format-agnostic helper function :py:func:`pyteomics.auxiliary.fdr`.
 
 2.4.0
 -----
 
-New functions for filtering to a certain FDR level based on target-decoy
-strategy, as well as for FDR estimation, in :py:mod:`pyteomics.tandem`,
-:py:mod:`pyteomics.pepxml` and :py:mod:`pyteomics.mzid`. The functions are
-called :py:func:`!filter` (beware of shadowing the built-in function) and
-:py:func:`fdr` (in each of the modules). Chained versions
-:py:func:`filter.chain` and :py:func:`filter.chain.from_iterable` are
-also available. See `Data Access <data.html#general-notes>`_ for more info.
+ - New functions for filtering to a certain FDR level based on target-decoy
+   strategy, as well as for FDR estimation, in :py:mod:`pyteomics.tandem`,
+   :py:mod:`pyteomics.pepxml` and :py:mod:`pyteomics.mzid`. The functions are
+   called :py:func:`!filter` (beware of shadowing the built-in function) and
+   :py:func:`fdr` (in each of the modules). Chained versions
+   :py:func:`filter.chain` and :py:func:`filter.chain.from_iterable` are
+   also available. See `Data Access <data.html#general-notes>`_ for more info.
 
-New function :py:func:`pyteomics.parser.coverage` for sequence coverage
-calculation.
+ - New function :py:func:`pyteomics.parser.coverage` for sequence coverage
+   calculation.
 
-New function :py:func:`pyteomics.fasta.decoy_chain`, a chained version of
-:py:func:`pyteomics.fasta.decoy_db`.
+ - New function :py:func:`pyteomics.fasta.decoy_chain`, a chained version of
+   :py:func:`pyteomics.fasta.decoy_db`.
 
-New elements in :py:data:`pyteomics.mass.nist_mass`. Pretty much all elements
-are there now.
+ - New elements in :py:data:`pyteomics.mass.nist_mass`. Pretty much all elements
+   are there now.
 
-Fix in :py:func:`pyteomics.parser.parse` to cover some fancy corner cases.
+ - Fix in :py:func:`pyteomics.parser.parse` to cover some fancy corner cases.
 
-Bugfix in :py:mod:`tandem`: modification info is now fully extracted.
+ - Bugfix in :py:mod:`pyteomics.tandem`: modification info is now fully extracted.
 
-In :py:mod:`mass`, :py:func:`isotopic_composition_abundance` is now able to
-calculate abundances for larger molecules.
+ - :py:func:`pyteomics.mass.isotopic_composition_abundance` is now able to
+   calculate abundances for larger molecules.
 
-.. note::
-    Rounding errors may be significant in this case.
+   .. note::
+       Rounding errors may be significant in this case.
 
 2.3.0
 -----
 
-New parameter "read_schema" in :py:func:`read` functions of XML parsing modules.
-When set to :py:const:`False`, disables the attempts to fetch an auxiliary file
-and obtain structure information about the file being parsed.
+ - New parameter "read_schema" in :py:func:`read` functions of XML parsing modules.
+   When set to :py:const:`False`, disables the attempts to fetch an auxiliary file
+   and obtain structure information about the file being parsed.
 
-New function :py:func:`chain` in all modules that have a :py:func:`read`
-function, for convenient chaining of multiple files. :py:func:`chain` only
-works as a context manager. Use :py:func:`itertools.chain` in other cases.
-The ``chain.from_iterable`` form is also available as a context manager.
+ - New function :py:func:`chain` in all modules that have a :py:func:`read`
+   function, for convenient chaining of multiple files. :py:func:`chain` only
+   works as a context manager. Use :py:func:`itertools.chain` in other cases.
+   The ``chain.from_iterable`` form is also available as a context manager.
 
-New function :py:func:`pyteomics.auxiliary.print_tree` for exploration of
-complex nested dicts produced by XML parsers.
+ - New function :py:func:`pyteomics.auxiliary.print_tree` for exploration of
+   complex nested dicts produced by XML parsers.
 
-New sets of retention coefficients in :py:mod:`pyteomics.achrom`.
+ - New sets of retention coefficients in :py:mod:`pyteomics.achrom`.
 
-Bugfix in :py:mod:`pyteomics.pepxml`. The bug caused an exception when parsing
-some pepXML files.
+ - Bugfix in :py:mod:`pyteomics.pepxml`. The bug caused an exception when parsing
+   some pepXML files.
 
-The output of :py:func:`pyteomics.mgf.read` now always contains a masked
-array of charges.
+ - The output of :py:func:`pyteomics.mgf.read` now always contains a masked
+   array of charges.
 
-Other minor fixes.
+ - Other minor fixes.
 
 API change
 ..........
 
-In :py:func:`pyteomics.mgf.read` the precursor charge is now always represented
-by a list of ints (a :py:class:`ChargeList` object).
+ - In :py:func:`pyteomics.mgf.read` the precursor charge is now always represented
+   by a list of ints (a :py:class:`ChargeList` object).
 
 2.2.2
 -----
 
-Bugfix in :py:mod:`pyteomics.tandem`. The info about all proteins is now
-extracted.
+ - Bugfix in :py:mod:`pyteomics.tandem`. The info about all proteins is now
+   extracted.
 
 2.2.1
 -----
 
-Update parsers for FASTA headers.
+ - Update parsers for FASTA headers.
 
-NamedTuple for FASTA entries is now defined globally, which should solve
-pickling problems.
+ - NamedTuple for FASTA entries is now defined globally, which should solve
+   pickling problems.
 
 2.2.0
 -----
 
-New module :py:mod:`pyteomics.tandem` for reading output files of X!Tandem
-search engine.
+ - New module :py:mod:`pyteomics.tandem` for reading output files of X!Tandem
+   search engine.
 
 2.1.6
 -----
 
-Fix in :py:mod:`pepxml`. pepXML files generated by TPP are now processed
-without errors.
+ - Fix in :py:mod:`pyteomics.pepxml`. pepXML files generated by TPP are now
+   processed without errors.
 
 
 2.1.5
 -----
 
-Fix in :py:mod:`pepxml`. 'modified_peptide' is now always available.
+ - Fix in :py:mod:`pyteomics.pepxml`. 'modified_peptide' is now always available.
 
-Fix in :py:mod:`mass` (issue #2 in the bug tracker). Improved arithmetics
-for :py:class:`Composition` objects.
+ - Fix in :py:mod:`pyteomics.mass` (issue #2 in the bug tracker).
+
+ - Improved arithmetics for :py:class:`Composition` objects.
 
 2.1.4
 -----
 
-In :py:mod:`fasta`, :py:func:`decoy_db` now doesn't write to file, but returns
-an iterator over FASTA records. The old :py:func:`decoy_db` is now called
-:py:func:`write_decoy_db`, which is equivalent to :py:func:`decoy_db` combined
-with :py:func:`write`.
+ - In :py:mod:`fasta`, :py:func:`decoy_db` now doesn't write to file, but returns
+   an iterator over FASTA records. The old :py:func:`decoy_db` is now called
+   :py:func:`write_decoy_db`, which is equivalent to :py:func:`decoy_db` combined
+   with :py:func:`write`.
 
 Bugfixes:
 
- - in :py:func:`mgf.read`: the charges, if present, are returned as a
+ - In :py:func:`pyteomics.mgf.read`, the charges, if present, are returned as a
    masked array now. Previously, an exception occurred if charges were missing
-   for some of the fragments;
- - values in :py:data:`mass.nist_mass` corrected;
- - other minor corrections.
+   for some of the fragments.
+
+ - Values in :py:data:`mass.nist_mass` corrected.
+
+ - Other minor corrections.
 
 2.1.3
 -----
 
-Adjust the behavior affected by the bug fixed in 2.1.2. `name` attributes
-of `<cvParam>` elements in the absence of `value` attributes are now collected
-in a list under the `'name'` key.
+ - Adjust the behavior affected by the bug fixed in 2.1.2. `name` attributes
+   of `<cvParam>` elements in the absence of `value` attributes are now collected
+   in a list under the `'name'` key.
 
-Add support for overlapping matches in :py:func:`parser.cleave`.
+ - Add support for overlapping matches in :py:func:`parser.cleave`.
 
 2.1.2
 -----
 
-Bugfix in XML parsers. The bug caused the mzML parser break on some files.
-The fix can slightly change the format of the output.
+ - Bugfix in XML parsers. The bug caused the mzML parser break on some files.
+   The fix can slightly change the format of the output.
 
 2.1.1
 -----
 
-Rename keys in the dicts returned by :py:func:`mgf.read` to facilitate
-writing code working with both MGF and mzML.
+ - Rename keys in the dicts returned by :py:func:`mgf.read` to facilitate
+   writing code working with both MGF and mzML.
 
-The items yielded by :py:func:`fasta.read` now have attributes `description`
-and `sequence`.
+ - The items yielded by :py:func:`fasta.read` now have attributes `description`
+   and `sequence`.
 
 2.1.0
 -----
 
-New sets of retention coefficients in :py:mod:`achrom`.
+ - New sets of retention coefficients in :py:mod:`achrom`.
 
-:py:class:`mass.Composition` now only stores non-zero ints.
+ - :py:class:`mass.Composition` now only stores non-zero ints.
 
-:py:mod:`fasta` now has tools for parsing of FASTA headers.
+ - :py:mod:`fasta` now has tools for parsing of FASTA headers.
 
-File parsers now implement the `context manager protocol
-<http://docs.python.org/reference/datamodel.html#with-statement-context-managers>`_.
-We recommend using `with` statements to avoid resource leaks.
+ - File parsers now implement the `context manager protocol
+   <http://docs.python.org/reference/datamodel.html#with-statement-context-managers>`_.
+   We recommend using `with` statements to avoid resource leaks.
 
 API changes
 ...........
@@ -192,20 +333,21 @@ API changes
 2.0.3
 -----
 
-Added new class :py:class:`Unimod` in :py:mod:`mass`. The interface is
-experimental and may change.
+ - Added new class :py:class:`pyteomics.mass.Unimod`. The interface is
+   experimental and may change.
 
-Improved :py:func:`iterfind` function in XML-reading modules.
+ - Improved :py:func:`iterfind` function in XML-reading modules.
 
-:py:class:`mass.Composition` objects now support multiplication by int.
+ - :py:class:`pyteomics.mass.Composition` objects now support multiplication by
+   :py:class:`int`.
 
-Bugfix in :py:func:`auxiliary.linear_regression`.
+ - Bugfix in :py:func:`auxiliary.linear_regression`.
 
 2.0.2
 -----
 
-Added new function :py:func:`iterfind` in :py:mod:`mzid`, :py:mod:`pepxml` and
-:py:mod:`mzml`.
+ - Added new function :py:func:`iterfind` in :py:mod:`pyteomics.mzid`,
+   :py:mod:`pyteomics.pepxml` and :py:mod:`pyteomics.mzml`.
 
 2.0.1
 -----
@@ -213,14 +355,15 @@ Added new function :py:func:`iterfind` in :py:mod:`mzid`, :py:mod:`pepxml` and
 API changes
 ...........
 
- - :py:func:`parser.peptide_length` is renamed to :py:func:`length`.
+ - :py:func:`pyteomics.parser.peptide_length` is renamed to
+   :py:func:`pyteomics.parser.length`.
 
 2.0.0
 -----
 
-Added :py:mod:`mzid` module for parsing of mzIdentML files.
+ - Added :py:mod:`mzid` module for parsing of mzIdentML files.
 
-Fixed bugs, improved tests.
+ - Fixed bugs, improved tests.
 
 API changes
 ...........
@@ -239,15 +382,15 @@ API changes
 1.2.5
 -----
 
-Include Apache license version 2.0:
-http://www.opensource.org/licenses/Apache-2.0
+ - Include Apache license version 2.0:
+   http://www.opensource.org/licenses/Apache-2.0
 
-Minor bugfix in :py:mod:`fasta`.
+ - Minor bugfix in :py:mod:`pyteomics.fasta`.
 
 1.2.4
 -----
 
-Changes in :py:mod:`mass`.
+ - Changes in :py:mod:`pyteomics.mass`.
 
 API changes
 ...........
@@ -277,82 +420,88 @@ API changes
 1.2.3
 -----
 
-:py:func:`parser.isoforms` now allows terminal modifications.
+ - :py:func:`pyteomics.parser.isoforms` now allows terminal modifications.
 
-Bugfixes in :py:func:`parser.parse_sequence`.
+ - Bugfixes in :py:func:`pyteomics.parser.parse_sequence`.
 
-New function :py:func:`parser.tostring` converts parsed sequences to strings.
-Helper function :py:func:`parser.is_modX` added to check *modX* labels.
+ - New function :py:func:`pyteomics.parser.tostring` converts parsed sequences
+   to strings.
+
+ - Helper function :py:func:`pyteomics.parser.is_modX` added to check *modX* labels.
 
 API changes
 ...........
 
- - :py:func:`parser.isoforms` now returns a generator object
+ - :py:func:`pyteomics.parser.isoforms` now returns a generator object
 
 1.2.2
 -----
 
-Bugfix in :py:mod:`pepxml`: modification info is now extracted.
-New optional bool argument 'split' in :py:func:`parser.parse_sequence()` allows
-to generate a list of tuples where modifications are separated from the residues
-instead of a regular list of labels. In *labels* not only *modX* labels are
-now allowed, but also separate *mod* prefixes. Such modificatiuons are assumed
-to be applicable to any residue.
+ - Bugfix in :py:mod:`pyteomics.pepxml`: modification info is now extracted.
+ - New optional bool argument 'split' in :py:func:`pyteomics.parser.parse_sequence()`
+   allows to generate a list of tuples where modifications are separated from the
+   residues instead of a regular list of labels. In *labels* not only *modX* labels
+   are now allowed, but also separate *mod* prefixes. Such modifications are
+   assumed to be applicable to any residue.
 
 
 1.2.1
 -----
 
-Memory usage **significantly** decreased when parsing large mzML and pepXML
-files.
+ - Memory usage **significantly** decreased when parsing large mzML and pepXML
+   files.
 
 1.2.0
 -----
 
-Added support for Python 3. Python 2.7 is still supported, Python 2.6 is not.
+ - Added support for Python 3. Python 2.7 is still supported, Python 2.6 is not.
 
 1.1.1
 -----
 
-New function called :py:func:`add_modifications()` added in
-:py:mod:`pyteomics.mass`. It updates *aa_comp*. Also,
-:py:func:`isoforms()` is a new function in :py:mod:`parser` to get all possible
-modified sequences of a peptide.
+ - New function called :py:func:`add_modifications()` added in
+   :py:mod:`pyteomics.mass`. It updates *aa_comp*.
+ - Also, :py:func:`pyteomics.parser.isoforms` is a new function to get
+   all possible modified sequences of a peptide.
 
 1.1.0
 -----
 
-New module added - :py:mod:`pyteomics.mgf`. It is intended for reading and
-writing files in Mascot Generic Format.
+ - New module added - :py:mod:`pyteomics.mgf`. It is intended for reading and
+   writing files in Mascot Generic Format.
 
 1.0.2
 -----
 
-In :py:mod:`pepxml` module, now all search hits are read from file (not only the
-top hit).
+ - In :py:mod:`pyteomics.pepxml` module, now all search hits are read from file
+   (not only the top hit).
 
 API changes:
 ............
 
- - :py:func:`pepxml.read`: information specific to search hits is now stored in
-   a list under the 'search_hits' key. The list is sorted by hit rank.
+ - :py:func:`pyteomics.pepxml.read`: information specific to search hits is now
+   stored in a list under the ``'search_hits'`` key. The list is sorted by hit
+   rank.
 
 
 1.0.1
 -----
 
-Fix compatibility issues in :py:mod:`pepxml` module.
+ - Fix compatibility issues in :py:mod:`pyteomics.pepxml` module.
 
 1.0.0
 -----
 
-The first public release of Pyteomics.
+ - The first public release of Pyteomics.
 
 API changes:
 ............
 
- - :py:mod:`achrom`: rename 'length correction factor' to 'length correction
-   parameter'. :py:func:`pyteomics.achrom.get_RCs_vary_lcf` was renamed to
-   :py:func:`pyteomics.achrom.get_RCs_vary_lcp`, `length_correction_factor`
-   keyword argument of achrom.get_RCs() was renamed to `lcp`.
+ - :py:mod:`pyteomics.achrom`: rename ``'length correction factor'`` to
+   ``'length correction parameter'``.
+
+   - :py:func:`pyteomics.achrom.get_RCs_vary_lcf` was renamed to
+     :py:func:`pyteomics.achrom.get_RCs_vary_lcp`.
+   - `length_correction_factor` keyword argument of
+     :py:func:`pyteomics.achrom.get_RCs` was renamed to `lcp`.
 

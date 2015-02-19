@@ -26,7 +26,7 @@ Main functions
 --------------
 
   :py:func:`charge` - calculate the charge of a polypeptide
-  
+
   :py:func:`pI` - calculate the isoelectric point of a polypeptide
 
 Data
@@ -112,12 +112,12 @@ def charge(sequence, pH, **kwargs):
 
     Parameters
     ----------
-    sequence : str or list or dict    
+    sequence : str or list or dict
         A string with a polypeptide sequence, a list with a parsed
         sequence or a dict of amino acid composition.
     pH : float or list of floats
         pH or list of pHs for which the charge is calculated.
-    pK : dict {str: [(float, int),]}, optional
+    pK : dict {str: [(float, int), ...]}, optional
         A set of pK of amino acids' ionizable groups. It is a dict, where keys
         are amino acid labels and the values are lists of tuples (pK,
         charge_in_ionized_state), a tuple per ionizable group. The default
@@ -128,14 +128,13 @@ def charge(sequence, pH, **kwargs):
         Sets of pK of N-terminal and C-terminal (respectively) amino acids'
         ionizable groups. Dicts with the same structure as ``pK``. These
         values (if present) are used for N-terminal and C-terminal residues,
-        respectively. If given, ``sequence`` must be a :py:class:`str` or a
+        respectively. If given, `sequence` must be a :py:class:`str` or a
         :py:class:`list`. The default value is an empty dict.
 
     Returns
     -------
-    out : float or list of floats or None    
-        A single value of charge or a list of charges. Returns None if
-        `sequence` is not of supported type.
+    out : float or list of floats
+        A single value of charge or a list of charges.
     """
 
     # Get the list of valid modX labels.
@@ -154,8 +153,7 @@ def charge(sequence, pH, **kwargs):
 
     # Parse the sequence.
     if isinstance(sequence, str) or isinstance(sequence, list):
-        peptide_dict = parser.amino_acid_composition(sequence, True, False,
-                                                     labels=labels)
+        peptide_dict = parser.amino_acid_composition(sequence, True, False)
     elif isinstance(sequence, dict):
         peptide_dict = sequence
     else:
@@ -203,19 +201,19 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.0001, **kwargs):
 
     Parameters
     ----------
-    sequence : str or list or dict    
+    sequence : str or list or dict
         A string with a polypeptide sequence, a list with a parsed
         sequence or a dict of amino acid composition.
     pI_range : tuple (float, float)
         The range of allowable pI values. Default is (0.0, 14.0).
     precision_pI : float
         The precision of the calculated pI. Default is 0.01.
-    pK : dict {str: [(float, int),]}, optional
+    pK : dict {str: [(float, int), ...]}, optional
         A set of pK of amino acids' ionizable groups. It is a dict, where keys
         are amino acid labels and the values are lists of tuples (pK,
         charge_in_ionized_state), a tuple per ionizable group. The default
         value is `pK_lehninger`.
-        
+
     Returns
     -------
     out : float
