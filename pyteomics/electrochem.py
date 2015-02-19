@@ -159,52 +159,37 @@ def charge(sequence, pH, **kwargs):
 
     else:
         raise PyteomicsError('Unsupported type of sequence: %s' % type(sequence))
-   # print peptide_dict
+
+    if isinstance(sequence,list):
+        if sequence[0][-1] != '-' or sequence[-1][0] != '-':
+            raise PyteomicsError('Parsed sequences must contain terminal groups'
+                                 ' at 0-th and last positions.')
+
     if isinstance(sequence, str):
-        if '-' in sequence:
-            n_aa = sequence[sequence.find('-') + 1]
-            nterm = sequence[ : sequence.find('-') + 1]
-            sequence.replace('-', '_', 1)
-            cterm = sequence[sequence.find('-') : ]
-            c_aa = sequence[sequence.find('-') - 1]
-        else:
-            n_aa = sequence[0]
-            c_aa = sequence[-1]
+        sequence = parser.parse(sequence,True)
+        n_aa = sequence[1]
+        c_aa = sequence[-2]
+        nterm = sequence[0]
+        cterm = sequence[-1]
 
     elif isinstance(sequence,list):
-        if '-' in sequence[0]:
-            n_aa = sequence[1]
-            nterm = sequence[0]
-            cterm = sequence[-1]
-            c_aa = sequence[-2]
-        else:
-            peptide_dict[nterm] = 1
-            peptide_dict[cterm] = 1
-            n_aa = sequence[0]
-            c_aa = sequence[-1]
-    #print n_aa, c_aa
-    #print nterm, cterm
-    #print pK[nterm], pK[cterm]
-    #print '-------------'
+        n_aa = sequence[1]
+        c_aa = sequence[-2]
+        nterm = sequence[0]
+        cterm = sequence[-1]
+
     if nterm in pK_nterm:
         if n_aa in pK_nterm[nterm]:
             pK[nterm] = pK_nterm[nterm][n_aa]
     if cterm in pK_cterm:
         if c_aa in pK_cterm[cterm]:
             pK[cterm] = pK_cterm[cterm][c_aa]
-    #print n_aa, c_aa
-    #print nterm, cterm
-    #print pK[nterm], pK[cterm]
+
     # Process the case when pH is a single float.
     pH_list = pH if isinstance(pH, list) else [pH,]
 
     # Check if a sequence was parsed with `show_unmodified_termini` enabled.
-    num_term_mod = 0
-    for aa in peptide_dict:
-        if parser.is_term_mod(aa):
-            num_term_mod += 1
-    if num_term_mod != 2:
-        raise PyteomicsError('Parsed sequences must contain two terminal groups.')
+
     # Calculate the charge for each value of pH.
     charge_list = []
     for pH_value in pH_list:
