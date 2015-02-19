@@ -6,17 +6,35 @@ class ElectrochemTest(unittest.TestCase):
     def setUp(self):
         pass
 
-    def test_charge_calculations(self):
+    def test_charge_calculations_str(self):
         self.assertTrue(
-            abs(charge("AAA", 5.0, pK= {'H-': [(9., 1),], '-OH':[(8.,-1),]}, pK_nterm= {'A': [(3., 1)]} )) < 0.01)
+            abs(charge('AAA', 5.0,
+                       pK={'H-': [(9., 1)], '-OH': [(8., -1)]},
+                       pK_nterm={'H-': {'A': [(3., 1)]}})) < 0.01)
         self.assertTrue(
             abs(charge('H-AAA-OH', 0.0) - 1.0) < 0.01)
         self.assertTrue(
             abs(charge('H-AAA-OH', 14.0) + 1.0) < 0.01)
         self.assertTrue(
             abs(charge('H-AAA-OH', (2.34 + 9.69) / 2.0)) < 0.01)
-        self.assertRaises(PyteomicsError, charge, 'O', 7)
-        self.assertRaises(PyteomicsError, charge, {'H-': 1, "-OH": 1,"E": 1}, 7, pK_nterm = {'A': [9., 1]})
+
+
+    def test_charge_calculations_list(self):
+        self.assertTrue(
+            abs(charge(['A','A','A'], 5.0,
+                       pK={'H-': [(9., 1)], '-OH': [(8., -1)]},
+                       pK_nterm={'H-': {'A': [(3., 1)]}})) < 0.01)
+        self.assertTrue(
+            abs(charge(['H-','A','A','A','-OH'], 0.0) - 1.0) < 0.01)
+        self.assertTrue(
+            abs(charge(['H-','A','A','A','-OH'], 14.0) + 1.0) < 0.01)
+        self.assertTrue(
+            abs(charge(['H-','A','A','A','-OH'], (2.34 + 9.69) / 2.0)) < 0.01)
+        
+    def test_charge_calculations_dict(self):
+        self.assertRaises(PyteomicsError, charge, {'H-': 1, '-OH': 1, 'E': 1},
+                          7, pK_nterm={'H-': {'A': [(9., 1)]}})
+
     def test_pI_calculations(self):
         self.assertTrue(
             abs(pI('H-AAA-OH') - (2.34 + 9.69) / 2.0) < 0.01)
