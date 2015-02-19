@@ -77,15 +77,13 @@ Data
 from __future__ import division
 import math
 from . import parser
-from .auxiliary import PyteomicsError, _xpath, _local_name
-from .auxiliary import _nist_mass
+from .auxiliary import PyteomicsError, _nist_mass
 from itertools import chain
 from collections import defaultdict
 try:
     from urllib import urlopen
 except ImportError:
     from urllib.request import urlopen
-from lxml import etree
 from datetime import datetime
 import re
 import operator
@@ -104,7 +102,7 @@ def _make_isotope_string(element_name, isotope_num):
     if isotope_num == 0:
         return element_name
     else:
-        return '%s[%d]' % (element_name, isotope_num)
+        return '{}[{}]'.format(element_name, isotope_num)
 
 def _parse_isotope_string(label):
     """Parse an string with an isotope label and return the element name and
@@ -115,13 +113,9 @@ def _parse_isotope_string(label):
     >>> _parse_isotope_string('C[12]')
     ('C', 12)
     """
-    if label.endswith(']'):
-        isotope_num = int(label[label.find('[')+1:-1])
-        element_name = label[:label.find('[')]
-    else:
-        isotope_num = 0
-        element_name = label
-    return (element_name, isotope_num)
+    element_name, num = re.match(_isotope_string, label).groups()
+    isotope_num = int(num) if num else 0
+    return element_name, isotope_num
 
 # Initialize std_aa_comp before the Composition class
 # description, fill it later.
@@ -129,6 +123,10 @@ std_aa_comp = {}
 """A dictionary with elemental compositions of the twenty standard
 amino acid residues and standard H- and -OH terminal groups.
 """
+
+_isotope_string = r'^([A-Z][a-z+]*)(?:\[(\d+)\])?$'
+_atom = r'([A-Z][a-z+]*)(?:\[(\d+)\])?([+-]?\d+)?'
+_formula = r'^({})*$'.format(_atom)
 
 class Composition(defaultdict):
     """
@@ -247,59 +245,13 @@ class Composition(defaultdict):
         self._from_parsed_sequence(parsed_sequence, aa_comp)
 
     def _from_formula(self, formula, mass_data):
-        # Parsing a formula backwards.
-        prev_chem_symbol_start = len(formula)
-        i = len(formula) - 1
-
-        while i >= 0:
-            # Read backwards until a non-number character is met.
-            if (formula[i].isdigit() or formula[i] == '-'):
-                i -= 1
-                continue
-
-            else:
-                # If the number of atoms is omitted then it is 1.
-                if i+1 == prev_chem_symbol_start:
-                    num_atoms = 1
-                else:
-                    try:
-                        num_atoms = int(formula[i+1:prev_chem_symbol_start])
-                    except ValueError:
-                        raise PyteomicsError(
-                            'Badly-formed number of atoms: %s' % formula)
-
-                # Read isotope number if specified, else it is undefined (=0).
-                if formula[i] == ']':
-                    bra_pos = formula.rfind('[', 0, i)
-                    if bra_pos == -1:
-                        raise PyteomicsError(
-                            'Badly-formed isotope number: %s' % formula)
-                    try:
-                        isotope_num = int(formula[bra_pos+1:i])
-                    except ValueError:
-                        raise PyteomicsError(
-                            'Badly-formed isotope number: %s' % formula)
-                    i = bra_pos - 1
-                else:
-                    isotope_num = 0
-
-                # Match the element name to the mass_data.
-                element_found = False
-                # Sort the keys from longest to shortest to workaround
-                # the overlapping keys issue
-                for element_name in sorted(mass_data, key=len, reverse=True):
-                    if formula.endswith(element_name, 0, i+1):
-                        isotope_string = _make_isotope_string(
-                            element_name, isotope_num)
-                        self[isotope_string] += num_atoms
-                        i -= len(element_name)
-                        prev_chem_symbol_start = i + 1
-                        element_found = True
-                        break
-
-                if not element_found:
-                    raise PyteomicsError(
-                        'Unknown chemical element in the formula: %s' % formula)
+        if not re.match(_formula, formula):
+            raise PyteomicsError('Invalid formula: ' + formula)
+        for elem, isotope, number in re.findall(_atom, formula):
+            if not elem in mass_data:
+                raise PyteomicsError('Unknown chemical element: ' + elem)
+            self[_make_isotope_string(elem, int(isotope) if isotope else 0)
+                    ] += int(number) if number else 1
 
     def _from_dict(self, comp):
         for isotope_string, num_atoms in comp.items():
@@ -405,6 +357,14 @@ class Composition(defaultdict):
                             ' formula or dict.'.format(args[0]))
         else:
             self._from_dict(kwargs)
+
+    def __reduce__(self):
+        class_, args, state, list_iterator, dict_iterator = super(Composition, self).__reduce__()
+        # Override the reduce of defaultdict so we do not provide the `int` type as the first argument
+        # which prevents from correctly unpickling the object
+        args = ()
+        return class_, args, state, list_iterator, dict_iterator
+
 
 std_aa_comp.update({
     'A':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1}),
@@ -513,7 +473,6 @@ def calculate_mass(*args, **kwargs):
     -------
         mass : float
     """
-
     mass_data = kwargs.get('mass_data', nist_mass)
     ion_comp = kwargs.get('ion_comp', std_ion_comp)
     # Make a deep copy of `composition` keyword argument.
@@ -746,7 +705,7 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         (default is std_aa_mass);
     ion_comp : dict, optional
         A dict with the relative elemental compositions of peptide ion
-        fragments (default is std_ion_comp).
+        fragments (default is :py:data:`std_ion_comp`).
 
     Returns
     -------
@@ -776,6 +735,76 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
 
     return mass
 
+def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
+    """Calculate monoisotopic mass of an ion using the fast
+    algorithm. *modX* notation is fully supported.
+
+    Parameters
+    ----------
+    sequence : str
+        A polypeptide sequence string.
+    ion_type : str, optional
+        If specified, then the polypeptide is considered to be
+        in a form of corresponding ion. Do not forget to
+        specify the charge state!
+    charge : int, optional
+        If not 0 then m/z is calculated: the mass is increased
+        by the corresponding number of proton masses and divided
+        by z.
+    mass_data : dict, optional
+        A dict with the masses of chemical elements (the default
+        value is :py:data:`nist_mass`).
+    aa_mass : dict, optional
+        A dict with the monoisotopic mass of amino acid residues
+        (default is std_aa_mass);
+    ion_comp : dict, optional
+        A dict with the relative elemental compositions of peptide ion
+        fragments (default is :py:data:`std_ion_comp`).
+
+    Returns
+    -------
+    mass : float
+        Monoisotopic mass or m/z of a peptide molecule/ion.
+    """
+    aa_mass = kwargs.get('aa_mass', std_aa_mass)
+    mass_data = kwargs.get('mass_data', nist_mass)
+    aa_mass.setdefault('H-', mass_data['H'][0][0])
+    aa_mass.setdefault('-OH', mass_data['H'][0][0] + mass_data['O'][0][0])
+    try:
+        comp = parser.amino_acid_composition(sequence,
+                show_unmodified_termini=True,
+                allow_unknown_modifications=True,
+                labels=aa_mass)
+    except PyteomicsError:
+        raise PyteomicsError('Mass not specified for label(s): {}'.format(
+            ', '.join(set(parser.parse(sequence)).difference(aa_mass))))
+
+    try:
+        mass = 0
+        for aa, num in comp.items():
+            if aa in aa_mass:
+                mass += aa_mass[aa] * num
+            else:
+                mod, X = parser._split_label(aa)
+                mass += (aa_mass[mod] + aa_mass[X]) * num
+    except KeyError as e:
+        raise PyteomicsError(
+                'Unspecified mass for modification: "{}"'.format(e.args[0]))
+
+    if ion_type:
+        try:
+            icomp = kwargs.get('ion_comp', std_ion_comp)[ion_type]
+        except KeyError:
+            raise PyteomicsError('Unknown ion type: {}'.format(ion_type))
+
+        mass += sum(mass_data[element][0][0] * num
+             for element, num in icomp.items())
+
+    if charge:
+        mass = (mass + mass_data['H+'][0][0] * charge) / charge
+
+    return mass
+
 class Unimod():
     """A class for Unimod database of modifications.
     The list of all modifications can be retrieved via `mods` attribute.
@@ -786,13 +815,15 @@ class Unimod():
     def __init__(self, source='http://www.unimod.org/xml/unimod.xml'):
         """Create a database and fill it from XML file retrieved from `source`.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
 
         source : str or file, optional
             A file-like object or a URL to read from. Don't forget the 'file://'
             prefix when pointing to local files.
         """
+        from lxml import etree
+        from .xml import _local_name
         def process_mod(mod):
             d = mod.attrib
             new_d = {}
@@ -861,9 +892,10 @@ class Unimod():
             self._mods.append(process_mod(mod))
 
     def _xpath(self, path, element=None):
+        from .xml import xpath
         if element is None:
-            return _xpath(self._tree, path, 'umod')
-        return _xpath(element, path, 'umod')
+            return xpath(self._tree, path, 'umod')
+        return xpath(element, path, 'umod')
 
     def _mass_data(self):
         massdata = defaultdict(dict)
@@ -903,8 +935,8 @@ class Unimod():
         """Search modifications by title. If a single modification is found,
         it is returned. Otherwise, a list will be returned.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         title : str
             The modification title.
         strict : bool, optional
@@ -912,8 +944,8 @@ class Unimod():
             whose title **contains** `title`, otherwise equality is required.
             :py:const:`True` by default.
 
-        Returns:
-        --------
+        Returns
+        -------
         out : dict or list
             A single modification or a list of modifications.
         """
@@ -928,8 +960,8 @@ class Unimod():
         """Search modifications by name. If a single modification is found,
         it is returned. Otherwise, a list will be returned.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         name : str
             The full name of the modification(s).
         strict : bool, optional
@@ -937,8 +969,8 @@ class Unimod():
             whose full name **contains** `title`, otherwise equality is
             required. :py:const:`True` by default.
 
-        Returns:
-        --------
+        Returns
+        -------
         out : dict or list
             A single modification or a list of modifications.
         """

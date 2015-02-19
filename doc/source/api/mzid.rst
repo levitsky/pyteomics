@@ -1,9 +1,8 @@
 .. automodule:: pyteomics.mzid
-    :members:
 
     .. autofunction:: version_info
-    .. autofunction:: iterfind
     .. autofunction:: fdr
+    .. autofunction:: qvalues
     .. autofunction:: chain
     .. py:function :: chain.from_iterable(files, **kwargs)
 

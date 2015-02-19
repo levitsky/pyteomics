@@ -1,5 +1,4 @@
 .. automodule:: pyteomics.tandem
-   :members:
 
    .. autofunction:: chain
    .. py:function :: chain.from_iterable(files, **kwargs)
@@ -30,4 +29,5 @@
             Iterable of file names or file objects.
 
    .. autofunction:: fdr
+   .. autofunction:: qvalues
    .. autofunction:: iterfind

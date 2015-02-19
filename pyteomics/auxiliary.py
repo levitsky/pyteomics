@@ -5,7 +5,7 @@ auxiliary - common functions and objects
 Math
 ----
 
-  :py:func:`linear_regression` - a wrapper for numpy linear regression
+  :py:func:`linear_regression` - a wrapper for NumPy linear regression
 
 Data access
 -----------
@@ -54,21 +54,13 @@ Helpers
 #   limitations under the License.
 
 from __future__ import print_function
-import numpy as np
 from functools import wraps
 from traceback import format_exc
 import re
-import operator
-try: # Python 2.7
-    from urllib2 import urlopen, URLError
-except ImportError: # Python 3.x
-    from urllib.request import urlopen, URLError
+import operator as op
 import sys
 from contextlib import contextmanager
-import socket
-import warnings
-import ast
-warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
+import types
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
@@ -88,6 +80,8 @@ class PyteomicsError(Exception):
 def linear_regression(x, y, a=None, b=None):
     """Calculate coefficients of a linear regression y = a * x + b.
 
+    Requires :py:mod:`numpy`.
+
     Parameters
     ----------
     x, y : array_like of float
@@ -106,6 +100,7 @@ def linear_regression(x, y, a=None, b=None):
         stderr -- standard deviation.
     """
 
+    import numpy as np
     if not isinstance(x, np.ndarray):
         x = np.array(x)
     if not isinstance(y, np.ndarray):
@@ -258,6 +253,56 @@ class _file_obj(object):
     def __iter__(self):
         return iter(self.file)
 
+class FileReader(object):
+    """Abstract class implementing context manager protocol
+    for file readers.
+    """
+    def __init__(self, source, mode, func, pass_file, *args, **kwargs):
+        self._func = func
+        self._pass_file = pass_file
+        self._args = args
+        self._kwargs = kwargs
+        self._source_init = source
+        self._mode = mode
+        self.reset()
+
+    def reset(self):
+        """Resets the iterator to its initial state."""
+        self._source = _file_obj(self._source_init, self._mode)
+        try:
+            if self._pass_file:
+                self._reader = self._func(
+                        self._source, *self._args, **self._kwargs)
+            else:
+                self._reader = self._func(*self._args, **self._kwargs)
+        except:  # clean up on any error
+            self.__exit__(*sys.exc_info())
+            raise
+
+    # context manager support
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self._source.__exit__(*args, **kwargs)
+
+    # iterator support
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            return next(self._reader)
+        except StopIteration:
+            self.__exit__(None, None, None)
+            raise
+
+    next = __next__  # Python 2 support
+
+    # delegate everything else to file object
+    def __getattr__(self, attr):
+        return getattr(self._source, attr)
+
 def _file_reader(mode='r'):
     # a lot of the code below is borrowed from
     # http://stackoverflow.com/a/14095585/1258041
@@ -265,43 +310,11 @@ def _file_reader(mode='r'):
         """A decorator implementing the context manager protocol for functions
         that read files.
 
-        Note: 'close' must be in kwargs! Otherwise it won't be respected."""
-        class CManager(object):
-            def __init__(self, source, *args, **kwargs):
-                self.file = _file_obj(source, mode)
-                try:
-                    self.reader = func(self.file, *args, **kwargs)
-                except:  # clean up on any error
-                    self.__exit__(*sys.exc_info())
-                    raise
-
-            # context manager support
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *args, **kwargs):
-                self.file.__exit__(*args, **kwargs)
-
-            # iterator support
-            def __iter__(self):
-                return self
-
-            def __next__(self):
-                try:
-                    return next(self.reader)
-                except StopIteration:
-                    self.__exit__(None, None, None)
-                    raise
-
-            next = __next__  # Python 2 support
-
-            # delegate everything else to file object
-            def __getattr__(self, attr):
-                return getattr(self.file, attr)
-
+        Note: 'close' must be in kwargs! Otherwise it won't be respected.
+        """
         @wraps(func)
         def helper(*args, **kwargs):
-            return CManager(*args, **kwargs)
+            return FileReader(args[0], mode, func, True, *args[1:], **kwargs)
         return helper
     return decorator
 
@@ -343,52 +356,148 @@ def _make_chain(reader, readername):
 
 ### End of file helpers section ###
 
-def _make_filter(read, is_decoy, key):
-    """Create a function that reads PSMs from a file and filters them to
-    the desired FDR level (estimated by TDA), returning the top PSMs
-    sorted by ``key``.
-    """
-    def filter(*args, **kwargs):
+def _make_qvalues(read, is_decoy, key):
+    """Create a function that reads PSMs from a file and calculates q-values
+    for each value of `key`."""
+    import numpy as np
+    def qvalues(*args, **kwargs):
+        """Read `args` and return a NumPy array with scores and q-values.
+
+        Requires :py:mod:`numpy`.
+
+        Parameters
+        ----------
+
+        positional args : file or str
+            Files to read PSMs from. All positional arguments are treated as
+            files. The rest of the arguments must be named.
+
+        key : callable, optional
+            A function used for sorting of PSMs. Should accept exactly one
+            argument (PSM) and return a number (the smaller the better). The
+            default is a function that tries to extract e-value from the PSM.
+
+        reverse : bool, optional
+            If :py:const:`True`, then PSMs are sorted in descending order,
+            i.e. the value of the key function is higher for better PSMs.
+            Default is :py:const:`False`.
+
+        is_decoy : callable, optional
+            A function used to determine if the PSM is decoy or not. Should
+            accept exactly one argument (PSM) and return a truthy value if the
+            PSM should be considered decoy.
+
+            .. warning::
+                The default function may not work
+                with your files, because format flavours are diverse.
+
+        remove_decoy : bool, optional
+            Defines whether decoy matches should be removed from the output.
+            Default is :py:const:`True`.
+
+            .. note:: If set to :py:const:`False`, then the decoy PSMs will
+               be taken into account when estimating FDR. Refer to the
+               documentation of :py:func:`fdr` for math; basically, if
+               `remove_decoy` is :py:const:`True`, then formula 1 is used
+               to control output FDR, otherwise it's formula 2.
+
+        ratio : float, optional
+            The size ratio between the decoy and target databases. Default is
+            ``1``. In theory, the "size" of the database is the number of
+            theoretical peptides eligible for assignment to spectra that are
+            produced by *in silico* cleavage of that database.
+
+        full_output : bool, optional
+
+        **kwargs : passed to the :py:func:`chain` function.
+
+        Returns
+        -------
+        out : numpy.ndarray
+            A sorted array of records with the following fields:
+
+            - 'score': :py:class:`np.float64`
+            - 'is decoy': :py:class:`np.int8`
+            - 'q': :py:class:`np.float64`
+            - 'psm': :py:class:`object_` (if `full_output` is :py:const:`True`)
+        """
         @_keepstate
         def get_scores(*args, **kwargs):
             scores = []
             with read(*args, **kwargs) as f:
                 for psm in f:
-                    scores.append((keyf(psm), isdecoy(psm)))
+                    if full:
+                        scores.append((keyf(psm), isdecoy(psm), None, psm))
+                    else:
+                        scores.append((keyf(psm), isdecoy(psm), None))
             return scores
+        args = [arg if not isinstance(arg, types.GeneratorType)
+                else list(arg) for arg in args]
+        keyf = kwargs.pop('key', key)
+        ratio = kwargs.pop('ratio', 1)
+        reverse = kwargs.pop('reverse', False)
+        remove_decoy = kwargs.pop('remove_decoy', True)
+        isdecoy = kwargs.pop('is_decoy', is_decoy)
+        full = kwargs.pop('full_output', False)
+        fields = [('score', np.float64), ('is decoy', np.uint8),
+            ('q', np.float64)]
+        dtype = np.dtype(fields) if not full else np.dtype(
+                fields + [('psm', np.object_)])
+        scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
+        if not scores.size:
+            return scores
+        if not reverse:
+            keys = scores['is decoy'], scores['score']
+        else:
+            keys = scores['is decoy'], -scores['score']
+        scores = scores[np.lexsort(keys)]
+        cumsum = scores['is decoy'].cumsum(dtype=np.float32)
+        ind = np.arange(1, scores.size+1)
+        if remove_decoy:
+            scores['q'] = cumsum / (ind - cumsum) / ratio
+        else:
+            scores['q'] = 2. * cumsum / ind / ratio
+            scores = scores[scores['is decoy'] == 0]
+        scores['q'] = np.minimum.accumulate(scores['q'][::-1])[::-1]
+        return scores
+    return qvalues
+
+
+def _make_filter(read, is_decoy, key, qvalues):
+    """Create a function that reads PSMs from a file and filters them to
+    the desired FDR level (estimated by TDA), returning the top PSMs
+    sorted by `key`.
+    """
+    def filter(*args, **kwargs):
+        import numpy as np
         try:
             fdr = kwargs.pop('fdr')
         except KeyError:
             raise PyteomicsError('Keyword argument required: fdr')
-        isdecoy = kwargs.pop('is_decoy', is_decoy)
-        remove_decoy = kwargs.pop('remove_decoy', True)
-        keyf = kwargs.pop('key', key)
-        ratio = kwargs.pop('ratio', 1)
-        dtype = np.dtype([('score', np.float64), ('is_decoy', np.uint8)])
-        scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
-        if not scores.size:
-            raise StopIteration
-        scores.sort()
-        cumsum = scores['is_decoy'].cumsum(dtype=np.float32)
-        ind = np.arange(1, scores.size+1)
-        if remove_decoy:
-            local_fdr =  cumsum / (ind - cumsum) / ratio
-        else:
-            local_fdr = 2. * cumsum / ind / ratio
+
+        keyf = kwargs.get('key', key)
+        reverse = kwargs.get('reverse', False)
+        better = [op.le, op.ge][bool(reverse)]
+        remove_decoy = kwargs.get('remove_decoy', True)
+        isdecoy = kwargs.get('is_decoy', is_decoy)
+        scores = qvalues(*args, **kwargs)
         try:
-            cutoff = scores[np.nonzero(local_fdr <= fdr)[0][-1]][0]
+            cutoff = scores[np.nonzero(scores['q'] <= fdr)[0][-1]][0]
         except IndexError:
-            cutoff = scores['score'].min() - 1.
+            cutoff = (scores['score'].min() - 1. if not reverse
+                    else scores['score'].max() + 1.)
         with read(*args, **kwargs) as f:
             for p in f:
                 if not remove_decoy or not isdecoy(p):
-                    if keyf(p) <= cutoff:
+                    if better(keyf(p), cutoff):
                         yield p
 
     @contextmanager
     def _filter(*args, **kwargs):
-        """Read ``args`` and yield only the PSMs that form a set with
-        estimated false discovery rate (FDR) not exceeding ``fdr``.
+        """Read `args` and yield only the PSMs that form a set with
+        estimated false discovery rate (FDR) not exceeding `fdr`.
+
+        Requires :py:mod:`numpy`.
 
         Parameters
         ----------
@@ -401,6 +510,10 @@ def _make_filter(read, is_decoy, key):
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better). The
             default is a function that tries to extract e-value from the PSM.
+        reverse : bool, optional
+            If :py:const:`True`, then PSMs are sorted in descending order,
+            i.e. the value of the key function is higher for better PSMs.
+            Default is :py:const:`False`.
         is_decoy : callable, optional
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
@@ -416,7 +529,7 @@ def _make_filter(read, is_decoy, key):
             .. note:: If set to :py:const:`False`, then the decoy PSMs will
                be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
-               ``remove_decoy`` is :py:const:`True`, then formula 1 is used
+               `remove_decoy` is :py:const:`True`, then formula 1 is used
                to control output FDR, otherwise it's formula 2.
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
@@ -434,12 +547,60 @@ def _make_filter(read, is_decoy, key):
 
     return _filter
 
-_iter = _make_chain(contextmanager(lambda x: (yield x)), 'iter')
+_iter = _make_chain(contextmanager(lambda x, **kw: (yield x)), 'iter')
+qvalues = _make_qvalues(_iter, None, None)
+qvalues.__doc__ =  """
+Read `args` and return a NumPy array with scores and q-values.
 
-filter = _make_filter(_iter, None, None)
+Requires :py:mod:`numpy`.
+
+Parameters
+----------
+positional args : iterables
+    Iterables to read PSMs from. All positional arguments are chained.
+    The rest of the arguments must be named.
+key : callable
+    A function used for sorting of PSMs. Should accept exactly one
+    argument (PSM) and return a number (the smaller the better).
+reverse : bool, optional
+    If :py:const:`True`, then PSMs are sorted in descending order,
+    i.e. the value of the key function is higher for better PSMs.
+    Default is :py:const:`False`.
+is_decoy : callable
+    A function used to determine if the PSM is decoy or not. Should
+    accept exactly one argument (PSM) and return a truthy value if the
+    PSM should be considered decoy.
+remove_decoy : bool, optional
+    Defines whether decoy matches should be removed from the output.
+    Default is :py:const:`True`.
+
+    .. note:: If set to :py:const:`False`, then the decoy PSMs will
+       be taken into account when estimating FDR. Refer to the
+       documentation of :py:func:`fdr` for math; basically, if
+       `remove_decoy` is :py:const:`True`, then formula 1 is used
+       to control output FDR, otherwise it's formula 2.
+ratio : float, optional
+    The size ratio between the decoy and target databases. Default is
+    ``1``. In theory, the "size" of the database is the number of
+    theoretical peptides eligible for assignment to spectra that are
+    produced by *in silico* cleavage of that database.
+
+**kwargs : passed to the :py:func:`chain` function.
+
+Returns
+-------
+out : numpy.ndarray
+    A sorted array of records with the following fields:
+
+    - 'score': :py:class:`float64`
+    - 'is decoy': :py:class:`int8`
+    - 'q': :py:class:`float64`
+"""
+
+filter = _make_filter(_iter, None, None, qvalues)
 filter.chain = _make_chain(filter, 'filter')
-filter.__doc__ = """Iterate ``args`` and yield only the PSMs that form a set with
-        estimated false discovery rate (FDR) not exceeding ``fdr``.
+filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
+        estimated false discovery rate (FDR) not exceeding `fdr`.
 
         Parameters
         ----------
@@ -462,7 +623,7 @@ filter.__doc__ = """Iterate ``args`` and yield only the PSMs that form a set wit
             .. note:: If set to :py:const:`False`, then the decoy PSMs will
                be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
-               ``remove_decoy`` is :py:const:`True`, then formula 1 is used
+               `remove_decoy` is :py:const:`True`, then formula 1 is used
                to control output FDR, otherwise it's formula 2.
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
@@ -571,325 +732,6 @@ def _parse_charge(s, list_only=False):
             pass
     return ChargeList(s)
 
-
-### XML-related stuff below ###
-
-def _local_name(element):
-    """Strip namespace from the XML element's name"""
-    if element.tag.startswith('{'):
-        return element.tag.rsplit('}', 1)[1]
-    return element.tag
-
-def _make_version_info(env):
-    from lxml import etree
-    @_keepstate
-    def version_info(source):
-        with _file_obj(source, 'rb') as s:
-            s.seek(0)
-            for _, elem in etree.iterparse(s, events=('start',),
-                    remove_comments=True):
-                if _local_name(elem) == env['element']:
-                    vinfo = elem.attrib.get('version'), elem.attrib.get((
-                        '{{{}}}'.format(elem.nsmap['xsi'])
-                        if 'xsi' in elem.nsmap else '') + 'schemaLocation')
-                    break
-            return vinfo
-    version_info.__doc__ = """
-        Provide version information about the {0} file.
-
-        Parameters:
-        -----------
-        source : str or file
-            {0} file object or path to file
-
-        Returns:
-        --------
-        out : tuple
-            A (version, schema URL) tuple, both elements are strings or None.
-        """.format(env['format'])
-    return version_info
-
-def _make_schema_info(env):
-    from lxml import etree
-    @memoize(100)
-    def _schema_info(source, **kwargs):
-        read_schema = kwargs.get('read_schema', True)
-        if not read_schema: return env['defaults']
-        version, schema = env['version_info'](source)
-        if version == env['default_version']:
-            return env['defaults']
-        ret = {}
-        try:
-            if not schema:
-                schema_url = ''
-                raise PyteomicsError(
-                        'Schema information not found in {}.'.format(
-                            getattr(source, 'name', source)))
-            schema_url = schema.split()[-1]
-            if not (schema_url.startswith('http://') or
-                    schema_url.startswith('file://')):
-                schema_url = 'file://' + schema_url
-            schema_file = urlopen(schema_url)
-            p = etree.XMLParser(remove_comments=True)
-            schema_tree = etree.parse(schema_file, parser=p)
-            types = {'ints': {'int', 'long', 'nonNegativeInteger',
-                        'positiveInt', 'integer', 'unsignedInt'},
-                    'floats': {'float', 'double'},
-                    'bools': {'boolean'},
-                    'intlists': {'listOfIntegers'},
-                    'floatlists': {'listOfFloats'},
-                    'charlists': {'listOfChars', 'listOfCharsOrAny'}}
-            for k, val in types.items():
-                tuples = set()
-                for elem in schema_tree.iter():
-                    if _local_name(elem) == 'attribute' and elem.attrib.get(
-                            'type', '').split(':')[-1] in val:
-                        anc = elem.getparent()
-                        while not (
-                                (_local_name(anc) == 'complexType'
-                                    and 'name' in anc.attrib)
-                                or _local_name(anc) == 'element'):
-                            anc = anc.getparent()
-                            if anc is None:
-                                break
-                        else:
-                            if _local_name(anc) == 'complexType':
-                                elnames = [x.attrib['name'] for x in
-                                    schema_tree.iter() if x.attrib.get(
-                                        'type', '').split(':')[-1] ==
-                                    anc.attrib['name']]
-                            else:
-                                elnames = (anc.attrib['name'],)
-                            for elname in elnames:
-                                tuples.add(
-                                    (elname, elem.attrib['name']))
-                ret[k] = tuples
-            ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
-                '//*[local-name()="element"]') if 'name' in elem.attrib and
-                elem.attrib.get('maxOccurs', '1') != '1')
-        except Exception as e:
-            if isinstance(e, (URLError, socket.error, socket.timeout)):
-                warnings.warn("Can't get the {0[format]} schema for version "
-                "`{1}` from <{2}> at the moment.\n"
-                "Using defaults for {0[default_version]}.\n"
-                "You can disable reading the schema by specifying "
-                "`read_schema=False`.".format(env, version,
-                    schema_url))
-            else:
-                warnings.warn("Unknown {0[format]} version `{1}`. "
-                    "Attempt to use schema\n"
-                    "information from <{2}> failed.\n"
-                    "Exception information:\n{3}\n"
-                    "Falling back to defaults for {0[default_version]}\n"
-                    "NOTE: This is just a warning, probably from a badly-"
-                    "generated XML file.\nYou will still most probably get "
-                    "decent results.\nLook here for suppressing warnings:\n"
-                    "http://docs.python.org/library/warnings.html#"
-                    "temporarily-suppressing-warnings\n"
-                    "You can also disable reading the schema by specifying "
-                    "`read_schema=False`.\n"
-                    "If you think this shouldn't have happened, please "
-                    "report this to\n"
-                    "http://hg.theorchromo.ru/pyteomics/issues\n"
-                    "".format(env, version, schema_url,
-                        format_exc()))
-            ret = env['defaults']
-        return ret
-    _schema_info.__doc__ = """
-        Stores defaults for version {}, tries to retrieve the schema for
-        other versions. Keys are: 'floats', 'ints', 'bools', 'lists',
-        'intlists', 'floatlists', 'charlists'.""".format(env['default_version'])
-    return _schema_info
-
-def _make_get_info(env):
-    def _get_info(source, element, recursive=False, retrieve_refs=False, **kw):
-        """Extract info from element's attributes, possibly recursive.
-        <cvParam> and <userParam> elements are treated in a special way."""
-        name = _local_name(element)
-        kwargs = dict(recursive=recursive, retrieve_refs=retrieve_refs)
-        kwargs.update(kw)
-        schema_info = env['schema_info'](source, **kwargs)
-        if name in {'cvParam', 'userParam'}:
-            if 'value' in element.attrib:
-                try:
-                    value = float(element.attrib['value'])
-                except ValueError:
-                    value = element.attrib['value']
-                return {element.attrib['name']: value}
-            else:
-                return {'name': element.attrib['name']}
-
-        info = dict(element.attrib)
-        # process subelements
-        if recursive:
-            for child in element.iterchildren():
-                cname = _local_name(child)
-                if cname in {'cvParam', 'userParam'}:
-                    newinfo = _get_info(source, child, **kw)
-                    if not ('name' in info and 'name' in newinfo):
-                        info.update(newinfo)
-                    else:
-                        if not isinstance(info['name'], list):
-                            info['name'] = [info['name']]
-                        info['name'].append(newinfo.pop('name'))
-                else:
-                    if cname not in schema_info['lists']:
-                        info[cname] = env['get_info_smart'](
-                                source, child, **kwargs)
-                    else:
-                        info.setdefault(cname, []).append(
-                                env['get_info_smart'](source, child, **kwargs))
-        # process element text
-        if element.text and element.text.strip():
-            stext = element.text.strip()
-            if stext:
-                if info:
-                    info[name] = stext
-                else:
-                    return stext
-        # convert types
-        def str_to_bool(s):
-            if s.lower() in {'true', '1'}: return True
-            if s.lower() in {'false', '0'}: return False
-            raise PyteomicsError('Cannot convert string to bool: ' + s)
-
-        def str_to_num(s, numtype):
-            return numtype(s) if s else None
-
-        to = lambda t: lambda s: str_to_num(s, t)
-
-        converters = {'ints': to(int), 'floats': to(float), 'bools': str_to_bool,
-                'intlists': lambda x: np.fromstring(x.replace('\n', ' '),
-                    dtype=int, sep=' '),
-                'floatlists': lambda x: np.fromstring(x.replace('\n', ' '),
-                    sep=' '),
-                'charlists': list}
-        for k, v in info.items():
-            for t, a in converters.items():
-                if (_local_name(element), k) in schema_info[t]:
-                    info[k] = a(v)
-        # resolve refs
-        # loop is needed to resolve refs pulled from other refs
-        if retrieve_refs:
-            while True:
-                refs = False
-                for k, v in dict(info).items():
-                    if k.endswith('_ref'):
-                        refs = True
-                        info.update(env['get_by_id'](source, v))
-                        del info[k]
-                        del info['id']
-                if not refs:
-                    break
-        # flatten the excessive nesting
-        for k, v in dict(info).items():
-            if k in env['keys']:
-                info.update(v)
-                del info[k]
-        # another simplification
-        for k, v in dict(info).items():
-            if isinstance(v, dict) and 'name' in v and len(v) == 1:
-                info[k] = v['name']
-        if len(info) == 2 and 'name' in info and (
-                'value' in info or 'values' in info):
-            name = info.pop('name')
-            info = {name: info.popitem()[1]}
-        return info
-    return _get_info
-
-def _make_iterfind(env):
-    from lxml import etree
-    pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
-    pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
-    def get_rel_path(element, names):
-        if not names:
-            yield element
-        else:
-            for child in element.iterchildren():
-                if _local_name(child).lower() == names[0].lower(
-                        ) or names[0] == '*':
-                    if len(names) == 1:
-                        yield child
-                    else:
-                        for gchild in get_rel_path(child, names[1:]):
-                            yield gchild
-    def satisfied(d, cond):
-        func = {'<': 'lt', '<=': 'le', '=': 'eq', '==': 'eq',
-                '!=': 'ne', '<>': 'ne', '>': 'gt', '>=': 'ge'}
-        try:
-            lhs, sign, rhs = re.match(pattern_cond, cond).groups()
-            if lhs in d:
-                return getattr(operator, func[sign])(
-                        d[lhs], ast.literal_eval(rhs))
-            return False
-        except (AttributeError, KeyError, ValueError):
-            raise PyteomicsError('Invalid condition: ' + cond)
-
-    @_keepstate
-    def iterfind(source, path, **kwargs):
-        """Parse ``source`` and yield info on elements with specified local name
-        or by specified "XPath". Only local names separated with slashes are
-        accepted. An asterisk (`*`) means any element.
-        You can specify a single condition in the end, such as:
-        "/path/to/element[some_value>1.5]"
-        Note: you can do much more powerful filtering using plain Python.
-        The path can be absolute or "free". Please don't specify
-        namespaces."""
-        try:
-            path, _, cond = re.match(pattern_path, path).groups()
-        except AttributeError:
-            raise PyteomicsError('Invalid path: ' + path)
-
-        if path.startswith('//') or not path.startswith('/'):
-            absolute = False
-            if path.startswith('//'):
-                path = path[2:]
-                if path.startswith('/') or '//' in path:
-                    raise PyteomicsError("Too many /'s in a row.")
-        else:
-            absolute = True
-            path = path[1:]
-        nodes = path.rstrip('/').lower().split('/')
-        localname = nodes[0]
-        found = False
-        for ev, elem in etree.iterparse(source, events=('start', 'end'),
-                remove_comments=True):
-            name_lc = _local_name(elem).lower()
-            if ev == 'start':
-                if name_lc == localname or localname == '*':
-                    found += True
-            else:
-                if name_lc == localname or localname == '*':
-                    if (absolute and elem.getparent() is None
-                            ) or not absolute:
-                        for child in get_rel_path(elem, nodes[1:]):
-                            info = env['get_info_smart'](source, child, **kwargs)
-                            if cond is None or satisfied(info, cond):
-                                yield info
-                    if not localname == '*':
-                        found -= 1
-                if not found:
-                    elem.clear()
-    return iterfind
-
-def _xpath(tree, path, ns=None):
-    """Return the results of XPath query with added namespaces.
-    Assumes the ns declaration is on the root element or absent."""
-    if hasattr(tree, 'getroot'):
-        root = tree.getroot()
-    else:
-        root = tree
-        while root.getparent() is not None:
-            root = root.getparent()
-    ns = root.nsmap.get(ns)
-    def repl(m):
-        s = m.group(1)
-        if not ns: return s
-        if not s: return 'd:'
-        return '/d:'
-    new_path = re.sub('(\/|^)(?![\*\/])', repl, path)
-    n_s = ({'d': ns} if ns else None)
-    return tree.xpath(new_path, namespaces=n_s)
 
 ### Bulky constants for other modules are defined below.
 
@@ -4188,240 +4030,3 @@ _nist_mass = {'Ac': {0: (227, 1.0),
   109: (108.94924, 0.0),
   110: (109.95287, 0.0)},
  'e*': {0: (0.00054857990943, 1.0)}}
-
-_mzml_schema_defaults = {'ints': {
-    ('spectrum', 'index'),
-     ('instrumentConfigurationList', 'count'),
-     ('binaryDataArray', 'encodedLength'),
-     ('cvList', 'count'),
-     ('binaryDataArray', 'arrayLength'),
-     ('scanWindowList', 'count'),
-     ('componentList', 'count'),
-     ('sourceFileList', 'count'),
-     ('productList', 'count'),
-     ('referenceableParamGroupList', 'count'),
-     ('scanList', 'count'),
-     ('spectrum', 'defaultArrayLength'),
-     ('dataProcessingList', 'count'),
-     ('sourceFileRefList', 'count'),
-     ('scanSettingsList', 'count'),
-     ('selectedIonList', 'count'),
-     ('chromatogram', 'defaultArrayLength'),
-     ('precursorList', 'count'),
-     ('chromatogram', 'index'),
-     ('processingMethod', 'order'),
-     ('targetList', 'count'),
-     ('sampleList', 'count'),
-     ('softwareList', 'count'),
-     ('binaryDataArrayList', 'count'),
-     ('spectrumList', 'count'),
-     ('chromatogramList', 'count')},
-        'floats': {},
-        'bools': {},
-        'lists': {'scan', 'spectrum', 'sample', 'cv', 'dataProcessing',
-            'cvParam', 'source', 'userParam', 'detector', 'product',
-            'referenceableParamGroupRef', 'selectedIon', 'sourceFileRef',
-            'binaryDataArray', 'analyzer', 'scanSettings',
-            'instrumentConfiguration', 'chromatogram', 'target',
-            'processingMethod', 'precursor', 'sourceFile',
-            'referenceableParamGroup', 'contact', 'scanWindow', 'software'},
-        'intlists': {},
-        'floatlists': {},
-        'charlists': {}}
-
-_pepxml_schema_defaults = {'ints':
-    {('xpressratio_summary', 'xpress_light'),
-     ('distribution_point', 'obs_5_distr'),
-     ('distribution_point', 'obs_2_distr'),
-     ('enzymatic_search_constraint', 'max_num_internal_cleavages'),
-     ('asapratio_lc_heavypeak', 'right_valley'),
-     ('libra_summary', 'output_type'),
-     ('distribution_point', 'obs_7_distr'),
-     ('spectrum_query', 'index'),
-     ('data_filter', 'number'),
-     ('roc_data_point', 'num_incorr'),
-     ('search_hit', 'num_tol_term'),
-     ('search_hit', 'num_missed_cleavages'),
-     ('asapratio_lc_lightpeak', 'right_valley'),
-     ('libra_summary', 'normalization'),
-     ('specificity', 'min_spacing'),
-     ('database_refresh_timestamp', 'min_num_enz_term'),
-     ('enzymatic_search_constraint', 'min_number_termini'),
-     ('xpressratio_result', 'light_lastscan'),
-     ('distribution_point', 'obs_3_distr'),
-     ('spectrum_query', 'end_scan'),
-     ('analysis_result', 'id'),
-     ('search_database', 'size_in_db_entries'),
-     ('search_hit', 'hit_rank'),
-     ('alternative_protein', 'num_tol_term'),
-     ('search_hit', 'num_tot_proteins'),
-     ('asapratio_summary', 'elution'),
-     ('search_hit', 'tot_num_ions'),
-     ('error_point', 'num_incorr'),
-     ('mixture_model', 'precursor_ion_charge'),
-     ('roc_data_point', 'num_corr'),
-     ('search_hit', 'num_matched_ions'),
-     ('dataset_derivation', 'generation_no'),
-     ('xpressratio_result', 'heavy_firstscan'),
-     ('xpressratio_result', 'heavy_lastscan'),
-     ('error_point', 'num_corr'),
-     ('spectrum_query', 'assumed_charge'),
-     ('analysis_timestamp', 'id'),
-     ('xpressratio_result', 'light_firstscan'),
-     ('distribution_point', 'obs_4_distr'),
-     ('asapratio_lc_heavypeak', 'left_valley'),
-     ('fragment_masses', 'channel'),
-     ('distribution_point', 'obs_6_distr'),
-     ('affected_channel', 'channel'),
-     ('search_result', 'search_id'),
-     ('contributing_channel', 'channel'),
-     ('asapratio_lc_lightpeak', 'left_valley'),
-     ('asapratio_peptide_data', 'area_flag'),
-     ('search_database', 'size_of_residues'),
-     ('asapratio_peptide_data', 'cidIndex'),
-     ('mixture_model', 'num_iterations'),
-     ('mod_aminoacid_mass', 'position'),
-     ('spectrum_query', 'start_scan'),
-     ('asapratio_summary', 'area_flag'),
-     ('mixture_model', 'tot_num_spectra'),
-     ('search_summary', 'search_id'),
-     ('xpressratio_timestamp', 'xpress_light'),
-     ('distribution_point', 'obs_1_distr'),
-     ('intensity', 'channel'),
-     ('asapratio_contribution', 'charge'),
-     ('libra_summary', 'centroiding_preference')},
-    'floats':
-    {('asapratio_contribution', 'error'),
-     ('asapratio_lc_heavypeak', 'area_error'),
-     ('modification_info', 'mod_nterm_mass'),
-     ('distribution_point', 'model_4_neg_distr'),
-     ('distribution_point', 'model_5_pos_distr'),
-     ('spectrum_query', 'precursor_neutral_mass'),
-     ('asapratio_lc_heavypeak', 'time_width'),
-     ('xpressratio_summary', 'masstol'),
-     ('affected_channel', 'correction'),
-     ('distribution_point', 'model_7_neg_distr'),
-     ('error_point', 'error'),
-     ('intensity', 'target_mass'),
-     ('roc_data_point', 'sensitivity'),
-     ('distribution_point', 'model_4_pos_distr'),
-     ('distribution_point', 'model_2_neg_distr'),
-     ('distribution_point', 'model_3_pos_distr'),
-     ('mixture_model', 'prior_probability'),
-     ('roc_data_point', 'error'),
-     ('intensity', 'normalized'),
-     ('modification_info', 'mod_cterm_mass'),
-     ('asapratio_lc_lightpeak', 'area_error'),
-     ('distribution_point', 'fvalue'),
-     ('distribution_point', 'model_1_neg_distr'),
-     ('peptideprophet_summary', 'min_prob'),
-     ('asapratio_result', 'mean'),
-     ('point', 'pos_dens'),
-     ('fragment_masses', 'mz'),
-     ('mod_aminoacid_mass', 'mass'),
-     ('distribution_point', 'model_6_neg_distr'),
-     ('asapratio_lc_lightpeak', 'time_width'),
-     ('asapratio_result', 'heavy2light_error'),
-     ('peptideprophet_result', 'probability'),
-     ('error_point', 'min_prob'),
-     ('peptideprophet_summary', 'est_tot_num_correct'),
-     ('roc_data_point', 'min_prob'),
-     ('asapratio_result', 'heavy2light_mean'),
-     ('distribution_point', 'model_5_neg_distr'),
-     ('mixturemodel', 'neg_bandwidth'),
-     ('asapratio_result', 'error'),
-     ('xpressratio_result', 'light_mass'),
-     ('point', 'neg_dens'),
-     ('asapratio_lc_lightpeak', 'area'),
-     ('distribution_point', 'model_1_pos_distr'),
-     ('xpressratio_result', 'mass_tol'),
-     ('mixturemodel', 'pos_bandwidth'),
-     ('xpressratio_result', 'light_area'),
-     ('asapratio_peptide_data', 'heavy_mass'),
-     ('distribution_point', 'model_2_pos_distr'),
-     ('search_hit', 'calc_neutral_pep_mass'),
-     ('intensity', 'absolute'),
-     ('asapratio_peptide_data', 'light_mass'),
-     ('distribution_point', 'model_3_neg_distr'),
-     ('aminoacid_modification', 'mass'),
-     ('asapratio_lc_heavypeak', 'time'),
-     ('asapratio_lc_lightpeak', 'time'),
-     ('asapratio_lc_lightpeak', 'background'),
-     ('mixture_model', 'est_tot_correct'),
-     ('point', 'value'),
-     ('asapratio_lc_heavypeak', 'background'),
-     ('terminal_modification', 'mass'),
-     ('fragment_masses', 'offset'),
-     ('xpressratio_result', 'heavy_mass'),
-     ('search_hit', 'protein_mw'),
-     ('libra_summary', 'mass_tolerance'),
-     ('spectrum_query', 'retention_time_sec'),
-     ('distribution_point', 'model_7_pos_distr'),
-     ('asapratio_lc_heavypeak', 'area'),
-     ('alternative_protein', 'protein_mw'),
-     ('asapratio_contribution', 'ratio'),
-     ('xpressratio_result', 'heavy_area'),
-     ('distribution_point', 'model_6_pos_distr')},
-    'bools':
-    {('sample_enzyme', 'independent'),
-     ('intensity', 'reject'),
-     ('libra_result', 'is_rejected')},
-    'intlists': set(),
-    'floatlists': set(),
-    'charlists': set(),
-    'lists': {'point', 'aminoacid_modification', 'msms_run_summary',
-            'mixturemodel', 'search_hit', 'mixturemodel_distribution',
-            'sequence_search_constraint', 'specificity', 'alternative_protein',
-            'analysis_result', 'data_filter', 'fragment_masses', 'error_point',
-            'parameter', 'spectrum_query', 'search_result', 'affected_channel',
-            'analysis_summary', 'roc_data_point', 'distribution_point',
-            'search_summary', 'mod_aminoacid_mass', 'search_score', 'intensity',
-            'analysis_timestamp', 'mixture_model', 'terminal_modification',
-            'contributing_channel', 'inputfile'}}
-
-_mzid_schema_defaults = {'ints': {('DBSequence', 'length'),
-                     ('IonType', 'charge'),
-                     ('BibliographicReference', 'year'),
-                     ('SubstitutionModification', 'location'),
-                     ('PeptideEvidence', 'end'),
-                     ('Enzyme', 'missedCleavages'),
-                     ('PeptideEvidence', 'start'),
-                     ('Modification', 'location'),
-                     ('SpectrumIdentificationItem', 'rank'),
-                     ('SpectrumIdentificationItem', 'chargeState')},
-            'floats': {('SubstitutionModification', 'monoisotopicMassDelta'),
-                     ('SpectrumIdentificationItem', 'experimentalMassToCharge'),
-                     ('Residue', 'mass'),
-                     ('SpectrumIdentificationItem', 'calculatedPI'),
-                     ('Modification', 'avgMassDelta'),
-                     ('SearchModification', 'massDelta'),
-                     ('Modification', 'monoisotopicMassDelta'),
-                     ('SubstitutionModification', 'avgMassDelta'),
-                     ('SpectrumIdentificationItem', 'calculatedMassToCharge')},
-            'bools': {('PeptideEvidence', 'isDecoy'),
-                     ('SearchModification', 'fixedMod'),
-                     ('Enzymes', 'independent'),
-                     ('Enzyme', 'semiSpecific'),
-                     ('SpectrumIdentificationItem', 'passThreshold'),
-                     ('ProteinDetectionHypothesis', 'passThreshold')},
-            'lists': {'SourceFile', 'SpectrumIdentificationProtocol',
-                    'ProteinDetectionHypothesis', 'SpectraData', 'Enzyme',
-                    'Modification', 'MassTable', 'DBSequence',
-                    'InputSpectra', 'cv', 'IonType', 'SearchDatabaseRef',
-                    'Peptide', 'SearchDatabase', 'ContactRole', 'cvParam',
-                    'ProteinAmbiguityGroup', 'SubSample',
-                    'SpectrumIdentificationItem', 'TranslationTable',
-                    'AmbiguousResidue', 'SearchModification',
-                    'SubstitutionModification', 'PeptideEvidenceRef',
-                    'PeptideEvidence', 'SpecificityRules',
-                    'SpectrumIdentificationResult', 'Filter', 'FragmentArray',
-                    'InputSpectrumIdentifications', 'BibliographicReference',
-                    'SpectrumIdentification', 'Sample', 'Affiliation',
-                    'PeptideHypothesis',
-                    'Measure', 'SpectrumIdentificationItemRef'},
-            'intlists': {('IonType', 'index'), ('MassTable', 'msLevel')},
-            'floatlists': {('FragmentArray', 'values')},
-            'charlists': {('Modification', 'residues'),
-                    ('SearchModification', 'residues')}}
-
-

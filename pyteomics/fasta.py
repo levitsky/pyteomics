@@ -106,8 +106,7 @@ def read(source=None, ignore_comments=False, parser=None):
         if not stripped_string:
             continue
 
-        is_comment = (stripped_string.startswith('>')
-                      or stripped_string.startswith(';'))
+        is_comment = (stripped_string[0] in '>;')
         if is_comment:
             # If it is a continuing comment
             if len(accumulated_strings) == 1:
@@ -134,7 +133,7 @@ def read(source=None, ignore_comments=False, parser=None):
 
 def write(entries, output=None):
     """
-    Create a FASTA file with ``entries``.
+    Create a FASTA file with `entries`.
 
     Parameters
     ----------
@@ -151,15 +150,13 @@ def write(entries, output=None):
         The file where the FASTA is written.
     """
 
-    with aux._file_obj(output, 'a') as foutput:
+    with aux._file_obj(output, 'a') as fout:
         for descr, seq in entries:
-            # write the description
-            foutput.write('>' + descr.replace('\n', '\n;') + '\n')
-            # write the sequence; it should be interrupted with \n every 70 characters
-            foutput.write(''.join([('%s\n' % seq[i:i+70])
+            fout.write('>' + descr.replace('\n', '\n;') + '\n')
+            fout.write(''.join([('%s\n' % seq[i:i+70])
                 for i in range(0, len(seq), 70)]) + '\n')
 
-        return foutput.file
+        return fout.file
 
 def decoy_sequence(sequence, mode):
     """
@@ -222,7 +219,7 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False):
     # return to the initial position in the source file to read again
     source.seek(pos)
 
-    decoy_entries = ((prefix + descr, decoy_sequence(seq, mode))
+    decoy_entries = (Protein(prefix + descr, decoy_sequence(seq, mode))
         for descr, seq in read(source))
 
     for x in decoy_entries:

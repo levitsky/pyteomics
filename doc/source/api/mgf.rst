@@ -1,5 +1,4 @@
 .. automodule:: pyteomics.mgf
-    :members:
 
     .. autofunction:: chain
     .. py:function :: chain.from_iterable(files, **kwargs)

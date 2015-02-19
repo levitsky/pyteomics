@@ -59,9 +59,18 @@ class MassTest(unittest.TestCase):
         for pep in self.random_peptides:
             self.assertAlmostEqual(
                 mass.fast_mass(pep, aa_mass=self.test_aa_mass),
-                sum([pep.count(aa) * self.test_aa_mass[aa]
-                     for aa in self.test_aa_mass])
-                + self.mass_H * 2.0 + self.mass_O )
+                sum(pep.count(aa) * m
+                     for aa, m in self.test_aa_mass.items())
+                + self.mass_H * 2.0 + self.mass_O)
+
+    def test_fast_mass2(self):
+        for pep in self.random_peptides:
+            self.assertAlmostEqual(
+                mass.fast_mass2(pep, aa_mass=self.test_aa_mass),
+                sum(pep.count(aa) * m
+                     for aa, m in self.test_aa_mass.items())
+                + self.mass_H * 2.0 + self.mass_O)
+
 
     def test_Composition_dict(self):
         # Test Composition from a dict.
@@ -248,6 +257,23 @@ class MassTest(unittest.TestCase):
         for g in mass.nist_mass.values():
             s = sum(p[1] for num, p in g.items() if num)
             self.assertTrue(abs(s-1) < 1e-6 or abs(s) < 1e-6)
+
+    def test_composition_objects_are_pickleable(self):
+        dict_ = mass.Composition(self.d, mass_data=self.mass_data)
+        formula = mass.Composition(formula='ABCDE',
+                         mass_data={atom: {0: (1.0, 1.0)} for atom in 'ABCDE'})
+        sequence = mass.Composition(sequence='XYZ', aa_comp=self.aa_comp)
+        parsed_sequence = mass.Composition(parsed_sequence=['X', 'Y', 'Z'],
+                             aa_comp=self.aa_comp)
+        split_sequence = mass.Composition(split_sequence=[('X',), ('Y',), ('Z',)],
+                             aa_comp=self.aa_comp)
+
+        import pickle
+        self.assertEqual(dict_, pickle.loads(pickle.dumps(dict_)))
+        self.assertEqual(formula, pickle.loads(pickle.dumps(formula)))
+        self.assertEqual(sequence, pickle.loads(pickle.dumps(sequence)))
+        self.assertEqual(parsed_sequence, pickle.loads(pickle.dumps(parsed_sequence)))
+        self.assertEqual(split_sequence, pickle.loads(pickle.dumps(split_sequence)))
 
 
 if __name__ == '__main__':
