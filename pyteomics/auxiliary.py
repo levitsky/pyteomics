@@ -481,12 +481,12 @@ def _make_filter(read, is_decoy, key, qvalues):
         except KeyError:
             raise PyteomicsError('Keyword argument required: fdr')
 
-        keyf = kwargs.get('key', key)
-        reverse = kwargs.get('reverse', False)
-        better = [op.le, op.ge][bool(reverse)]
-        remove_decoy = kwargs.get('remove_decoy', True)
-        isdecoy = kwargs.get('is_decoy', is_decoy)
         scores = qvalues(*args, **kwargs)
+        keyf = kwargs.pop('key', key)
+        reverse = kwargs.pop('reverse', False)
+        better = [op.le, op.ge][bool(reverse)]
+        remove_decoy = kwargs.pop('remove_decoy', True)
+        isdecoy = kwargs.pop('is_decoy', is_decoy)
         try:
             cutoff = scores[np.nonzero(scores['q'] <= fdr)[0][-1]][0]
         except IndexError:
