@@ -74,8 +74,8 @@ References
 
 .. [#Bjellqvist] Bjellqvist, B., Basse, B., Olsen, E. and Celis, J.E.
     Reference points for comparisons of two-dimensional maps of proteins from
-    different human cell types defined in a pH scale where isoelectric points correlate
-    with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
+    different human cell types defined in a pH scale where isoelectric points
+    correlate with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
     `Link. <http://dx.doi.org/10.1002/elps.1150150171>`_
 
 -------------------------------------------------------------------------------
@@ -110,6 +110,12 @@ def charge(sequence, pH, **kwargs):
         amino acid composition as `sequence`. Such values must be obtained
         with enabled `show_unmodified_termini` option.
 
+    .. warning::
+
+        If you provide `pK_nterm` or `pK_cterm` and provide `sequence` as a dict,
+        it is assumed that it was obtained with ``term_aa=True`` (see
+        :py:func:`pyteomics.parser.amino_acid_composition` for details).
+
     Parameters
     ----------
     sequence : str or list or dict
@@ -137,46 +143,68 @@ def charge(sequence, pH, **kwargs):
         A single value of charge or a list of charges.
     """
 
-    # Get the list of valid modX labels.
-    pK_nterm = {}
-    pK_cterm = {}
-    nterm = 'H-'
-    cterm = '-OH'
-    n_aa = ''
-    c_aa = ''
-    if isinstance(sequence, str) or isinstance(sequence, list):
-        pK_nterm = kwargs.get('pK_nterm', {})
-        pK_cterm = kwargs.get('pK_cterm', {})
-    elif isinstance(sequence,dict) and (("pK_nterm" in kwargs) or ("pK_cterm" in kwargs)):
-        raise PyteomicsError('Can not use terminal features for %s' % type(sequence))
+    nterm = cterm = n_aa = c_aa = None
     pK = kwargs.get('pK', pK_lehninger).copy()
+    pK_nterm = kwargs.get('pK_nterm', {})
+    pK_cterm = kwargs.get('pK_cterm', {})
 
-    # Parse the sequence.
-    if isinstance(sequence, str) or isinstance(sequence, list):
-        peptide_dict = parser.amino_acid_composition(sequence, True, False)
-    elif isinstance(sequence, dict):
-        peptide_dict = sequence
+    if isinstance(sequence, dict):
+        peptide_dict = sequence.copy()
+        for k, v in sequence.items():
+            if k[-1] == '-':
+                if v > 1 or nterm:
+                    raise PyteomicsError(
+                            'More that one N-terminal group in {}'.format(
+                                sequence))
+                nterm = k
+            if k[0] == '-':
+                if v > 1 or cterm:
+                    raise PyteomicsError(
+                            'More that one C-terminal group in {}'.format(
+                                sequence))
+                cterm = k
+            if k[:5] == 'nterm':
+                if v > 1 or n_aa:
+                    raise PyteomicsError(
+                            'More that one N-terminal residue in {}'.format(
+                                sequence))
+                n_aa = k[5:]
+                peptide_dict[n_aa] += 1
+            if k[:5] == 'cterm':
+                if v > 1 or c_aa:
+                    raise PyteomicsError(
+                            'More that one C-terminal residue in {}'.format(
+                                sequence))
+                c_aa = k[5:]
+                peptide_dict[c_aa] += 1
+
+        if nterm is None or cterm is None:
+            raise PyteomicsError('Peptide must have two explicit terminal groups')
+        if (n_aa is None or c_aa is None) and (pK_nterm or pK_cterm):
+            raise PyteomicsError('Two terminal residues must be present in '
+                    'peptide (designated as "ntermX" and "ctermX", where "X" is '
+                    'the one-letter residue label). Use '
+                    '``term_aa=True`` when calling '
+                    '`parser.amino_acid_composition`.')
+
+    elif isinstance(sequence, (str, list)):
+        if isinstance(sequence, str):
+            parsed_sequence = parser.parse(sequence,
+                    show_unmodified_termini=True)
+        elif isinstance(sequence, list):
+            if sequence[0][-1] != '-' or sequence[-1][0] != '-':
+                raise PyteomicsError('Parsed sequences must contain terminal '
+                                     'groups at 0-th and last positions.')
+            parsed_sequence = sequence
+
+        n_aa = parsed_sequence[1]
+        c_aa = parsed_sequence[-2]
+        nterm = parsed_sequence[0]
+        cterm = parsed_sequence[-1]
+        peptide_dict = parser.amino_acid_composition(parsed_sequence)
 
     else:
         raise PyteomicsError('Unsupported type of sequence: %s' % type(sequence))
-
-    if isinstance(sequence,list):
-        if sequence[0][-1] != '-' or sequence[-1][0] != '-':
-            raise PyteomicsError('Parsed sequences must contain terminal groups'
-                                 ' at 0-th and last positions.')
-
-    if isinstance(sequence, str):
-        sequence = parser.parse(sequence,True)
-        n_aa = sequence[1]
-        c_aa = sequence[-2]
-        nterm = sequence[0]
-        cterm = sequence[-1]
-
-    elif isinstance(sequence,list):
-        n_aa = sequence[1]
-        c_aa = sequence[-2]
-        nterm = sequence[0]
-        cterm = sequence[-1]
 
     if nterm in pK_nterm:
         if n_aa in pK_nterm[nterm]:

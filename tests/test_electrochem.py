@@ -20,10 +20,10 @@ class ElectrochemTest(unittest.TestCase):
 
 
     def test_charge_calculations_list(self):
-        self.assertTrue(
-            abs(charge(['A','A','A'], 5.0,
-                       pK={'H-': [(9., 1)], '-OH': [(8., -1)]},
-                       pK_nterm={'H-': {'A': [(3., 1)]}})) < 0.01)
+        self.assertRaises(PyteomicsError,
+            charge, ['A','A','A'], 5.0,
+            pK={'H-': [(9., 1)], '-OH': [(8., -1)]},
+            pK_nterm={'H-': {'A': [(3., 1)]}})
         self.assertTrue(
             abs(charge(['H-','A','A','A','-OH'], 0.0) - 1.0) < 0.01)
         self.assertTrue(
@@ -34,6 +34,28 @@ class ElectrochemTest(unittest.TestCase):
     def test_charge_calculations_dict(self):
         self.assertRaises(PyteomicsError, charge, {'H-': 1, '-OH': 1, 'E': 1},
                           7, pK_nterm={'H-': {'A': [(9., 1)]}})
+        self.assertTrue(
+                abs(charge({'A': 3, 'H-': 1, '-OH': 1}, 14.0) + 1.0) < 0.01)
+        self.assertTrue(
+                abs(charge({'A': 1, 'H-': 1, '-OH': 1, 'ntermA': 1, 'ctermA': 1},
+                    14.0, pK={'H-': [(9., 1)], '-OH': [(8., -1)]},
+                    pK_nterm={'H-': {'A': [(3., 1)]}}) + 1.0) < 0.01)
+        self.assertRaises(PyteomicsError, charge,
+                {'A': 1, 'H-': 1, '-OH': 1, 'ctermA': 1}, 14.0,
+                    pK={'H-': [(9., 1)], '-OH': [(8., -1)]},
+                    pK_nterm={'H-': {'A': [(3., 1)]}})
+        self.assertRaises(PyteomicsError, charge,
+                {'A': 1, 'H-': 1, '-OH': 1, 'ntermA': 1}, 14.0,
+                    pK={'H-': [(9., 1)], '-OH': [(8., -1)]},
+                    pK_nterm={'H-': {'A': [(3., 1)]}})
+        self.assertRaises(PyteomicsError, charge,
+                {'A': 1, 'H-': 1, '-OH': 1, 'ntermA': 2, 'ctermA': 1}, 14.0,
+                    pK={'H-': [(9., 1)], '-OH': [(8., -1)]},
+                    pK_nterm={'H-': {'A': [(3., 1)]}})
+        self.assertRaises(PyteomicsError, charge,
+                {'A': 1, 'H-': 1, 'ntermA': 1, 'ctermA': 1}, 14.0,
+                    pK={'H-': [(9., 1)], '-OH': [(8., -1)]},
+                    pK_nterm={'H-': {'A': [(3., 1)]}})
 
     def test_pI_calculations(self):
         self.assertTrue(
