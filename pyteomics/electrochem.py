@@ -140,40 +140,71 @@ def charge(sequence, pH, **kwargs):
     # Get the list of valid modX labels.
     pK_nterm = {}
     pK_cterm = {}
+    nterm = 'H-'
+    cterm = '-OH'
+    n_aa = ''
+    c_aa = ''
     if isinstance(sequence, str) or isinstance(sequence, list):
         pK_nterm = kwargs.get('pK_nterm', {})
         pK_cterm = kwargs.get('pK_cterm', {})
     elif isinstance(sequence,dict) and (("pK_nterm" in kwargs) or ("pK_cterm" in kwargs)):
         raise PyteomicsError('Can not use terminal features for %s' % type(sequence))
     pK = kwargs.get('pK', pK_lehninger).copy()
-    labels = list(parser.std_labels)
-    for label in pK:
-        if label not in labels:
-            labels.append(label)
 
     # Parse the sequence.
     if isinstance(sequence, str) or isinstance(sequence, list):
         peptide_dict = parser.amino_acid_composition(sequence, True, False)
     elif isinstance(sequence, dict):
         peptide_dict = sequence
+
     else:
         raise PyteomicsError('Unsupported type of sequence: %s' % type(sequence))
-    if isinstance(sequence, str) or isinstance(sequence, list):
-        if sequence[0] in pK_nterm:
-            pK['H-'] = pK_nterm[sequence[0]]
-        if sequence[-1] in pK_cterm:
-            pK['-OH'] = pK_cterm[sequence[-1]]
+   # print peptide_dict
+    if isinstance(sequence, str):
+        if '-' in sequence:
+            n_aa = sequence[sequence.find('-') + 1]
+            nterm = sequence[ : sequence.find('-') + 1]
+            sequence.replace('-', '_', 1)
+            cterm = sequence[sequence.find('-') : ]
+            c_aa = sequence[sequence.find('-') - 1]
+        else:
+            n_aa = sequence[0]
+            c_aa = sequence[-1]
+
+    elif isinstance(sequence,list):
+        if '-' in sequence[0]:
+            n_aa = sequence[1]
+            nterm = sequence[0]
+            cterm = sequence[-1]
+            c_aa = sequence[-2]
+        else:
+            peptide_dict[nterm] = 1
+            peptide_dict[cterm] = 1
+            n_aa = sequence[0]
+            c_aa = sequence[-1]
+    #print n_aa, c_aa
+    #print nterm, cterm
+    #print pK[nterm], pK[cterm]
+    #print '-------------'
+    if nterm in pK_nterm:
+        if n_aa in pK_nterm[nterm]:
+            pK[nterm] = pK_nterm[nterm][n_aa]
+    if cterm in pK_cterm:
+        if c_aa in pK_cterm[cterm]:
+            pK[cterm] = pK_cterm[cterm][c_aa]
+    #print n_aa, c_aa
+    #print nterm, cterm
+    #print pK[nterm], pK[cterm]
+    # Process the case when pH is a single float.
+    pH_list = pH if isinstance(pH, list) else [pH,]
+
     # Check if a sequence was parsed with `show_unmodified_termini` enabled.
     num_term_mod = 0
     for aa in peptide_dict:
         if parser.is_term_mod(aa):
             num_term_mod += 1
     if num_term_mod != 2:
-        raise PyteomicsError('Parsed sequences must contain unmodified termini.')
-
-    # Process the case when pH is a single float.
-    pH_list = pH if isinstance(pH, list) else [pH,]
-
+        raise PyteomicsError('Parsed sequences must contain two terminal groups.')
     # Calculate the charge for each value of pH.
     charge_list = []
     for pH_value in pH_list:
@@ -219,7 +250,7 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.0001, **kwargs):
     out : float
     """
 
-    pK = kwargs.get('pK', pK_lehninger)
+    pK = kwargs.get('pK', pK_lehninger.copy())
     pK_nterm = {}
     pK_cterm = {}
     if isinstance(sequence, str) or isinstance(sequence, list):
@@ -327,6 +358,7 @@ with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
 """
 
 pK_nterm_bjellqvist = {
+    'H-':{
     'A': [(7.59, 1)],
     'M': [(7.0, 1)],
     'S': [(6.93, 1)],
@@ -334,7 +366,7 @@ pK_nterm_bjellqvist = {
     'T': [(6.82, 1)],
     'V': [(7.44, 1)],
     'E': [(7.7, 1)]
-}
+}}
 """
 A set of N-terminal pK from Bjellqvist, B., Basse, B., Olsen, E. and Celis, J.E.
 Reference points for comparisons of two-dimensional maps of proteins from
@@ -343,9 +375,10 @@ with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
 """
 
 pK_cterm_bjellqvist = {
+    '-OH':{
     'D': [(4.55, -1)],
     'E': [(4.75, -1)]
-}
+}}
 """
 A set of C
 -terminal pK from Bjellqvist, B., Basse, B., Olsen, E. and Celis, J.E.
