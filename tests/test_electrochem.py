@@ -30,7 +30,7 @@ class ElectrochemTest(unittest.TestCase):
             abs(charge(['H-','A','A','A','-OH'], 14.0) + 1.0) < 0.01)
         self.assertTrue(
             abs(charge(['H-','A','A','A','-OH'], (2.34 + 9.69) / 2.0)) < 0.01)
-        
+
     def test_charge_calculations_dict(self):
         self.assertRaises(PyteomicsError, charge, {'H-': 1, '-OH': 1, 'E': 1},
                           7, pK_nterm={'H-': {'A': [(9., 1)]}})
