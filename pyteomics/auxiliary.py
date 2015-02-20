@@ -458,13 +458,13 @@ def _make_qvalues(read, is_decoy, key):
         else:
             scores['q'] = 2. * cumsum / ind / ratio
         # Make sure that q-values are equal for equal scores (conservatively)
+        # and that q-values are monotonic
         for i in range(scores.size-1, 0, -1):
-            if scores['score'][i] == scores['score'][i-1]:
+            if (scores['score'][i] == scores['score'][i-1] or
+                    scores['q'][i-1] > scores['q'][i]):
                 scores['q'][i-1] = scores['q'][i]
         if remove_decoy:
             scores = scores[scores['is decoy'] == 0]
-        # Make sure that q-values are monotonic
-        scores['q'] = np.minimum.accumulate(scores['q'][::-1])[::-1]
         return scores
     return qvalues
 
