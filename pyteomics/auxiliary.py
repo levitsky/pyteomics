@@ -395,11 +395,17 @@ def _make_qvalues(read, is_decoy, key):
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
 
-            .. note:: If set to :py:const:`False`, then the decoy PSMs will
-               be taken into account when estimating FDR. Refer to the
+            .. note:: If set to :py:const:`False`, then by default the decoy
+               PSMs will be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
                `remove_decoy` is :py:const:`True`, then formula 1 is used
-               to control output FDR, otherwise it's formula 2.
+               to control output FDR, otherwise it's formula 2. This can be
+               changed by overriding the `formula` argument.
+
+        formula : int, optional
+            Can be either 1 or 2, defines which formula should be used for FDR
+            estimation. Default is ``1`` if `remove_decoy` is :py:const:`True`,
+            else ``2`` (see :py:func:`fdr` for definitions).
 
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
@@ -439,6 +445,9 @@ def _make_qvalues(read, is_decoy, key):
         remove_decoy = kwargs.pop('remove_decoy', True)
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         full = kwargs.pop('full_output', False)
+        formula = kwargs.pop('formula', (2, 1)[bool(remove_decoy)])
+        if formula not in {1, 2}:
+            raise PyteomicsError('`formula` must be either 1 or 2')
         fields = [('score', np.float64), ('is decoy', np.uint8),
             ('q', np.float64)]
         dtype = np.dtype(fields) if not full else np.dtype(
@@ -453,7 +462,7 @@ def _make_qvalues(read, is_decoy, key):
         scores = scores[np.lexsort(keys)]
         cumsum = scores['is decoy'].cumsum(dtype=np.float32)
         ind = np.arange(1, scores.size+1)
-        if remove_decoy:
+        if formula == 1:
             scores['q'] = cumsum / (ind - cumsum) / ratio
         else:
             scores['q'] = 2. * cumsum / ind / ratio
@@ -487,6 +496,7 @@ def _make_filter(read, is_decoy, key, qvalues):
         better = [op.le, op.ge][bool(reverse)]
         remove_decoy = kwargs.pop('remove_decoy', True)
         isdecoy = kwargs.pop('is_decoy', is_decoy)
+        kwargs.pop('formula', None)
         try:
             cutoff = scores[np.nonzero(scores['q'] <= fdr)[0][-1]][0]
         except IndexError:
@@ -510,16 +520,20 @@ def _make_filter(read, is_decoy, key, qvalues):
         positional args : file or str
             Files to read PSMs from. All positional arguments are treated as
             files. The rest of the arguments must be named.
+
         fdr : float, 0 <= fdr <= 1
             Desired FDR level.
+
         key : callable, optional
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better). The
             default is a function that tries to extract e-value from the PSM.
+
         reverse : bool, optional
             If :py:const:`True`, then PSMs are sorted in descending order,
             i.e. the value of the key function is higher for better PSMs.
             Default is :py:const:`False`.
+
         is_decoy : callable, optional
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
@@ -528,15 +542,23 @@ def _make_filter(read, is_decoy, key, qvalues):
             .. warning::
                 The default function may not work
                 with your files, because format flavours are diverse.
+
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
 
-            .. note:: If set to :py:const:`False`, then the decoy PSMs will
-               be taken into account when estimating FDR. Refer to the
+            .. note:: If set to :py:const:`False`, then by default the decoy
+               PSMs will be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
                `remove_decoy` is :py:const:`True`, then formula 1 is used
-               to control output FDR, otherwise it's formula 2.
+               to control output FDR, otherwise it's formula 2. This can be
+               changed by overriding the `formula` argument.
+
+        formula : int, optional
+            Can be either 1 or 2, defines which formula should be used for FDR
+            estimation. Default is ``1`` if `remove_decoy` is :py:const:`True`,
+            else ``2`` (see :py:func:`fdr` for definitions).
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
             ``1``. In theory, the "size" of the database is the number of
@@ -565,26 +587,37 @@ Parameters
 positional args : iterables
     Iterables to read PSMs from. All positional arguments are chained.
     The rest of the arguments must be named.
+
 key : callable
     A function used for sorting of PSMs. Should accept exactly one
     argument (PSM) and return a number (the smaller the better).
+
 reverse : bool, optional
     If :py:const:`True`, then PSMs are sorted in descending order,
     i.e. the value of the key function is higher for better PSMs.
     Default is :py:const:`False`.
+
 is_decoy : callable
     A function used to determine if the PSM is decoy or not. Should
     accept exactly one argument (PSM) and return a truthy value if the
     PSM should be considered decoy.
+
 remove_decoy : bool, optional
     Defines whether decoy matches should be removed from the output.
     Default is :py:const:`True`.
 
-    .. note:: If set to :py:const:`False`, then the decoy PSMs will
-       be taken into account when estimating FDR. Refer to the
+    .. note:: If set to :py:const:`False`, then by default the decoy
+       PSMs will be taken into account when estimating FDR. Refer to the
        documentation of :py:func:`fdr` for math; basically, if
        `remove_decoy` is :py:const:`True`, then formula 1 is used
-       to control output FDR, otherwise it's formula 2.
+       to control output FDR, otherwise it's formula 2. This can be
+       changed by overriding the `formula` argument.
+
+formula : int, optional
+    Can be either 1 or 2, defines which formula should be used for FDR
+    estimation. Default is ``1`` if `remove_decoy` is :py:const:`True`,
+    else ``2`` (see :py:func:`fdr` for definitions).
+
 ratio : float, optional
     The size ratio between the decoy and target databases. Default is
     ``1``. In theory, the "size" of the database is the number of
@@ -613,24 +646,35 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         positional args : containers
             Containers to read PSMs from. All positional arguments are chained.
             Keyword arguments are not supported, except for those listed below.
+
         fdr : float, 0 <= fdr <= 1
             Desired FDR level.
+
         key : callable
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better).
+
         is_decoy : callable
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
             PSM should be considered decoy.
+
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
 
-            .. note:: If set to :py:const:`False`, then the decoy PSMs will
-               be taken into account when estimating FDR. Refer to the
+            .. note:: If set to :py:const:`False`, then by default the decoy
+               PSMs will be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
                `remove_decoy` is :py:const:`True`, then formula 1 is used
-               to control output FDR, otherwise it's formula 2.
+               to control output FDR, otherwise it's formula 2. This can be
+               changed by overriding the `formula` argument.
+
+        formula : int, optional
+            Can be either 1 or 2, defines which formula should be used for FDR
+            estimation. Default is ``1`` if `remove_decoy` is :py:const:`True`,
+            else ``2`` (see :py:func:`fdr` for definitions).
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
             ``1``. In theory, the "size" of the database is the number of
@@ -683,7 +727,7 @@ def _make_fdr(is_decoy):
             The estimation of FDR, between 0 and 1.
         """
         if formula not in {1, 2}:
-            raise PyteomicsError("`formula` must be either 1 or 2")
+            raise PyteomicsError('`formula` must be either 1 or 2')
         total, decoy = 0, 0
         for psm in psms:
             total += 1
