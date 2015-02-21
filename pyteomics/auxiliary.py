@@ -61,6 +61,7 @@ import operator as op
 import sys
 from contextlib import contextmanager
 import types
+from bisect import bisect_right
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
@@ -498,7 +499,7 @@ def _make_filter(read, is_decoy, key, qvalues):
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         kwargs.pop('formula', None)
         try:
-            cutoff = scores[np.nonzero(scores['q'] <= fdr)[0][-1]][0]
+            cutoff = scores[bisect_right(scores['q'], fdr)][0]
         except IndexError:
             cutoff = (scores['score'].min() - 1. if not reverse
                     else scores['score'].max() + 1.)
