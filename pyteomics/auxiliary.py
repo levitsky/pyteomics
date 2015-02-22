@@ -415,6 +415,8 @@ def _make_qvalues(read, is_decoy, key):
             produced by *in silico* cleavage of that database.
 
         full_output : bool, optional
+            If :py:const:`True`, then the returned array has PSM objects along
+            with scores and q-values.
 
         **kwargs : passed to the :py:func:`chain` function.
 
@@ -625,6 +627,10 @@ ratio : float, optional
     theoretical peptides eligible for assignment to spectra that are
     produced by *in silico* cleavage of that database.
 
+full_output : bool, optional
+    If :py:const:`True`, then the returned array has PSM objects along
+    with scores and q-values.
+
 **kwargs : passed to the :py:func:`chain` function.
 
 Returns
@@ -635,6 +641,7 @@ out : numpy.ndarray
     - 'score': :py:class:`float64`
     - 'is decoy': :py:class:`int8`
     - 'q': :py:class:`float64`
+    - 'psm': :py:class:`object_` (if `full_output` is :py:const:`True`)
 """
 
 filter = _make_filter(_iter, None, None, qvalues)
