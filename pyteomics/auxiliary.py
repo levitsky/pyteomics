@@ -405,12 +405,12 @@ def _make_qvalues(read, is_decoy, key):
 
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
-            estimation. Default is ``1`` if `remove_decoy` is :py:const:`True`,
-            else ``2`` (see :py:func:`fdr` for definitions).
+            estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+            else 2 (see :py:func:`fdr` for definitions).
 
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
@@ -557,12 +557,12 @@ def _make_filter(read, is_decoy, key, qvalues):
 
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
-            estimation. Default is ``1`` if `remove_decoy` is :py:const:`True`,
-            else ``2`` (see :py:func:`fdr` for definitions).
+            estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+            else 2 (see :py:func:`fdr` for definitions).
 
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
@@ -616,12 +616,12 @@ remove_decoy : bool, optional
 
 formula : int, optional
     Can be either 1 or 2, defines which formula should be used for FDR
-    estimation. Default is ``1`` if `remove_decoy` is :py:const:`True`,
-    else ``2`` (see :py:func:`fdr` for definitions).
+    estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+    else 2 (see :py:func:`fdr` for definitions).
 
 ratio : float, optional
     The size ratio between the decoy and target databases. Default is
-    ``1``. In theory, the "size" of the database is the number of
+    1. In theory, the "size" of the database is the number of
     theoretical peptides eligible for assignment to spectra that are
     produced by *in silico* cleavage of that database.
 
@@ -673,12 +673,12 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
 
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
-            estimation. Default is ``1`` if `remove_decoy` is :py:const:`True`,
-            else ``2`` (see :py:func:`fdr` for definitions).
+            estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+            else 2 (see :py:func:`fdr` for definitions).
 
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
@@ -734,7 +734,7 @@ def _make_fdr(is_decoy):
         Returns
         -------
         out : float
-            The estimation of FDR, between 0 and 1.
+            The estimation of FDR, (roughly) between 0 and 1.
         """
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2.')
@@ -772,22 +772,31 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA.
         ----------
         psms : iterable
             An iterable of PSMs.
+
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
-            estimation. Default is ``1``.
+            estimation. Default is 1.
+
         is_decoy : callable
             Shoould accept exactly one argument (PSM) and return a truthy value
             if the PSM is considered decoy.
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
+
+        correction : int, optional
+            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
+            accounts for the probability that a false positive scores better
+            than the first excluded decoy PSM; 2 also corrects that probability
+            for finite size of the sample.
 
         Returns
         -------
         out : float
-            The estimation of FDR, between 0 and 1.
+            The estimation of FDR, (roughly) between 0 and 1.
         """
 
 def _parse_charge(s, list_only=False):
