@@ -472,12 +472,13 @@ def _make_qvalues(read, is_decoy, key):
         else:
             keys = scores['is decoy'], -scores['score']
         scores = scores[np.lexsort(keys)]
-        cumsum = scores['is decoy'].cumsum(dtype=np.float32)
+        cumsum = scores['is decoy'].cumsum(dtype=np.float64)
+        ind = np.arange(1, scores.size+1)
         if correction == 1:
             cumsum += 1
         elif correction == 2:
-            corr = np.arange(cumsum.size, dtype=np.float32) + 1
-            corr = corr /  2 ** (corr + 1)
+            corr = ind.astype(np.float64)
+            corr = corr * 2 ** (-corr - 1)
             cumsum += corr.cumsum()
         if formula == 1:
             scores['q'] = cumsum / (ind - cumsum) / ratio
@@ -715,7 +716,7 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         """
 
 def _make_fdr(is_decoy):
-    def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1, size_correction=0):
+    def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1, correction=0):
         """Estimate FDR of a data set using TDA.
         Two formulas can be used. The first one (default) is:
 
@@ -772,9 +773,9 @@ def _make_fdr(is_decoy):
             total += 1
             if is_decoy(psm):
                 decoy += 1
-        if correction == 1:
+        if correction == 1 or (correction == 2 and total > 50):
             decoy += 1
-        else:
+        elif correction == 2:
             decoy += sum(float(k) / 2**(k+1) for k in range(total))
         if formula == 1:
             return float(decoy) / (total - decoy) / ratio
