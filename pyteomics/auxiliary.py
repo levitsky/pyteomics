@@ -414,6 +414,12 @@ def _make_qvalues(read, is_decoy, key):
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
+        correction : int, optional
+            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
+            accounts for the probability that a false positive scores better
+            than the first excluded decoy PSM; 2 also corrects that probability
+            for finite size of the sample.
+
         full_output : bool, optional
             If :py:const:`True`, then the returned array has PSM objects along
             with scores and q-values.
@@ -449,8 +455,11 @@ def _make_qvalues(read, is_decoy, key):
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         full = kwargs.pop('full_output', False)
         formula = kwargs.pop('formula', (2, 1)[bool(remove_decoy)])
+        correction = kwargs.pop('correction', 0)
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2')
+        if correction not in {0, 1, 2}:
+            raise PyteomicsError('`correction` must be either 0, 1 or 2.')
         fields = [('score', np.float64), ('is decoy', np.uint8),
             ('q', np.float64)]
         dtype = np.dtype(fields) if not full else np.dtype(
@@ -464,7 +473,12 @@ def _make_qvalues(read, is_decoy, key):
             keys = scores['is decoy'], -scores['score']
         scores = scores[np.lexsort(keys)]
         cumsum = scores['is decoy'].cumsum(dtype=np.float32)
-        ind = np.arange(1, scores.size+1)
+        if correction == 1:
+            cumsum += 1
+        elif correction == 2:
+            corr = np.arange(cumsum.size, dtype=np.float32) + 1
+            corr = corr /  2 ** (corr + 1)
+            cumsum += corr.cumsum()
         if formula == 1:
             scores['q'] = cumsum / (ind - cumsum) / ratio
         else:
@@ -626,6 +640,12 @@ ratio : float, optional
     1. In theory, the "size" of the database is the number of
     theoretical peptides eligible for assignment to spectra that are
     produced by *in silico* cleavage of that database.
+
+correction : int, optional
+    Possible values are 0, 1 and 2. Default is 0 (no correction); 1
+    accounts for the probability that a false positive scores better
+    than the first excluded decoy PSM; 2 also corrects that probability
+    for finite size of the sample.
 
 full_output : bool, optional
     If :py:const:`True`, then the returned array has PSM objects along
