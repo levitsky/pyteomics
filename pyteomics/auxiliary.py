@@ -688,7 +688,7 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         """
 
 def _make_fdr(is_decoy):
-    def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1):
+    def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1, size_correction=0):
         """Estimate FDR of a data set using TDA.
         Two formulas can be used. The first one (default) is:
 
@@ -706,9 +706,11 @@ def _make_fdr(is_decoy):
         ----------
         psms : iterable
             An iterable of PSMs, e.g. as returned by :py:func:`read`.
+
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
             estimation. Default is ``1``.
+
         is_decoy : callable, optional
             Shoould accept exactly one argument (PSM) and return a truthy value
             if the PSM is considered decoy. Default is :py:func:`is_decoy`.
@@ -716,11 +718,18 @@ def _make_fdr(is_decoy):
             .. warning::
                 The default function may not work
                 with your files, because format flavours are diverse.
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
             ``1``. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
+
+        correction : int, optional
+            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
+            accounts for the probability that a false positive scores better
+            than the first excluded decoy PSM; 2 also corrects that probability
+            for finite size of the sample.
 
         Returns
         -------
@@ -728,12 +737,18 @@ def _make_fdr(is_decoy):
             The estimation of FDR, between 0 and 1.
         """
         if formula not in {1, 2}:
-            raise PyteomicsError('`formula` must be either 1 or 2')
+            raise PyteomicsError('`formula` must be either 1 or 2.')
+        if correction not in {0, 1, 2}:
+            raise PyteomicsError('`correction` must be either 0, 1 or 2.')
         total, decoy = 0, 0
         for psm in psms:
             total += 1
             if is_decoy(psm):
                 decoy += 1
+        if correction == 1:
+            decoy += 1
+        else:
+            decoy += sum(float(k) / 2**(k+1) for k in range(total))
         if formula == 1:
             return float(decoy) / (total - decoy) / ratio
         return 2. * decoy / total / ratio
