@@ -37,9 +37,10 @@ class ElectrochemTest(unittest.TestCase):
         self.assertTrue(
                 abs(charge({'A': 3, 'H-': 1, '-OH': 1}, 14.0) + 1.0) < 0.01)
         self.assertTrue(
-                abs(charge({'A': 1, 'H-': 1, '-OH': 1, 'ntermA': 1, 'ctermA': 1},
+                abs(charge({'A': 1, 'H-': 1, '-OH': 1, 'ntermB': 1, 'ctermA': 1},
                     14.0, pK={'H-': [(9., 1)], '-OH': [(8., -1)]},
-                    pK_nterm={'H-': {'A': [(3., 1)]}}) + 1.0) < 0.01)
+                    pK_nterm={'H-': {'A': [(3., 1)], 'B': [(3., 1)]}}) + 1.0)
+                < 0.01)
         self.assertRaises(PyteomicsError, charge,
                 {'A': 1, 'H-': 1, '-OH': 1, 'ctermA': 1}, 14.0,
                     pK={'H-': [(9., 1)], '-OH': [(8., -1)]},
