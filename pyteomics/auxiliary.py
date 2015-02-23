@@ -62,6 +62,7 @@ import sys
 from contextlib import contextmanager
 import types
 from bisect import bisect_right
+from collections import Counter, defaultdict
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
@@ -201,6 +202,100 @@ def memoize(maxsize=1000):
             return memo[key]
         return func
     return deco
+
+class BasicComposition(defaultdict, Counter):
+
+    def __init__(self, *args, **kwargs):
+        defaultdict.__init__(self, int)
+        Counter.__init__(self, *args, **kwargs)
+        for k, v in list(self.items()):
+            if not v:
+                del self[k]
+
+    def __str__(self):
+        return 'Composition({})'.format(dict.__repr__(self))
+
+    def __repr__(self):
+        return str(self)
+
+    def __add__(self, other):
+        result = self.copy()
+        for elem, cnt in other.items():
+            result[elem] += cnt
+        return result
+
+    def __iadd__(self, other):
+        for elem, cnt in other.items():
+            self[elem] += cnt
+        return self
+
+    def __radd__(self, other):
+        return self + other
+
+    def __sub__(self, other):
+        result = self.copy()
+        for elem, cnt in other.items():
+            result[elem] -= cnt
+        return result
+
+    def __isub__(self, other):
+        for elem, cnt in other.items():
+            self[elem] -= cnt
+        return self
+
+    def __rsub__(self, other):
+        return (self - other) * (-1)
+
+    def __mul__(self, other):
+        if not isinstance(other, int):
+            raise PyteomicsError('Cannot multiply Composition by non-integer',
+                    other)
+        return type(self)({k: v*other for k, v in self.items()})
+
+    def __imul__(self, other):
+        if not isinstance(other, int):
+            raise PyteomicsError('Cannot multiply Composition by non-integer',
+                    other)
+        for elem in self:
+            self[elem] *= other
+        return self
+
+    def __rmul__(self, other):
+        return self * other
+
+    def __eq__(self, other):
+        if not isinstance(other, dict):
+            return False
+        self_items = {i for i in self.items() if i[1]}
+        other_items = {i for i in other.items() if i[1]}
+        return self_items == other_items
+
+    # override default behavior:
+    # we don't want to add 0's to the dictionary
+    def __missing__(self, key):
+        return 0
+
+    def __setitem__(self, key, value):
+        if isinstance(value, float): value = int(round(value))
+        elif not isinstance(value, int):
+            raise PyteomicsError('Only integers allowed as values in '
+                         'Composition, got {}.'.format(type(value).__name__))
+        if value: # reject 0's
+            super(BasicComposition, self).__setitem__(key, value)
+        elif key in self:
+            del self[key]
+
+    def copy(self):
+        return type(self)(self)
+
+    def __reduce__(self):
+        class_, args, state, list_iterator, dict_iterator = super(
+                BasicComposition, self).__reduce__()
+        # Override the reduce of defaultdict so we do not provide the
+        # `int` type as the first argument
+        # which prevents from correctly unpickling the object
+        args = ()
+        return class_, args, state, list_iterator, dict_iterator
 
 
 ### Public API ends here ###
