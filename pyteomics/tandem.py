@@ -126,12 +126,13 @@ class TandemXML(xml.XML):
             for a in info.pop('attribute'):
                 info[a['type']] = float(a['attribute'])
         if 'support' in info:
-            for d in info['support']['supporting data'].values():
+            for d in info['support'].get('supporting data', {}).values():
                 for l in ['Xdata', 'Ydata']:
                     d[l]['values'] = d[l]['values'].astype(int)
             fims = info['support']['fragment ion mass spectrum']
             fims.update(fims.pop('tandem mass spectrum'))
-            for d in it.chain(info['support']['supporting data'].values(),
+            for d in it.chain(
+                    info['support'].get('supporting data', {}).values(),
                     (info['support']['fragment ion mass spectrum'],)):
                 for l in ['Xdata', 'Ydata']:
                     del d[l]['label']
