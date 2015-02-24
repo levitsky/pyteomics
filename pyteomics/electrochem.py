@@ -169,14 +169,14 @@ def charge(sequence, pH, **kwargs):
                             'More that one N-terminal residue in {}'.format(
                                 sequence))
                 n_aa = k[5:]
-                peptide_dict[n_aa] += 1
+                peptide_dict[n_aa] = peptide_dict.get(n_aa, 0) + 1
             if k[:5] == 'cterm':
                 if v > 1 or c_aa:
                     raise PyteomicsError(
                             'More that one C-terminal residue in {}'.format(
                                 sequence))
                 c_aa = k[5:]
-                peptide_dict[c_aa] += 1
+                peptide_dict[c_aa] = peptide_dict.get(c_aa, 0) + 1
 
         if nterm is None or cterm is None:
             raise PyteomicsError('Peptide must have two explicit terminal groups')
