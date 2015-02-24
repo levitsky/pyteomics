@@ -606,15 +606,11 @@ def _make_filter(read, is_decoy, key, qvalues):
         scores = qvalues(*args, **kwargs)
         keyf = kwargs.pop('key', key)
         reverse = kwargs.pop('reverse', False)
-        better = [op.le, op.ge][bool(reverse)]
+        better = [op.lt, op.gt][bool(reverse)]
         remove_decoy = kwargs.pop('remove_decoy', True)
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         kwargs.pop('formula', None)
-        try:
-            cutoff = scores[bisect_right(scores['q'], fdr)][0]
-        except IndexError:
-            cutoff = (scores['score'].min() - 1. if not reverse
-                    else scores['score'].max() + 1.)
+        cutoff = scores['score'][bisect_right(scores['q'], fdr)]
         with read(*args, **kwargs) as f:
             for p in f:
                 if not remove_decoy or not isdecoy(p):
