@@ -213,7 +213,7 @@ class BasicComposition(defaultdict, Counter):
                 del self[k]
 
     def __str__(self):
-        return 'Composition({})'.format(dict.__repr__(self))
+        return '{}({})'.format(type(self).__name__, dict.__repr__(self))
 
     def __repr__(self):
         return str(self)

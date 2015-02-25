@@ -99,7 +99,7 @@ Data
 import re
 from collections import deque
 import itertools as it
-from .auxiliary import PyteomicsError, memoize
+from .auxiliary import PyteomicsError, memoize, BasicComposition
 
 std_amino_acids = ['Q','W','E','R','T','Y','I','P','A','S',
                    'D','F','G','H','K','L','C','V','N','M']
@@ -456,7 +456,7 @@ def amino_acid_composition(sequence,
         raise PyteomicsError('Unsupported type of a sequence.'
                 'Must be str or list, not %s' % type(sequence))
 
-    aa_dict = {}
+    aa_dict = BasicComposition()
 
     # Process terminal amino acids.
     if term_aa:
@@ -470,7 +470,7 @@ def amino_acid_composition(sequence,
 
     # Process core amino acids.
     for aa in parsed_sequence:
-        aa_dict[aa] = aa_dict.get(aa, 0) + 1
+        aa_dict[aa] += 1
 
     return aa_dict
 
@@ -777,8 +777,8 @@ def isoforms(sequence, **kwargs):
         raise PyteomicsError('Unsupported value of "format": {}'.format(format_))
 
 def coverage(protein, peptides):
-    """Calculate how much of ``protein`` is covered by ``peptides``.
-    Peptides can overlap. If a peptide is found multiple times in ``protein``,
+    """Calculate how much of `protein` is covered by `peptides`.
+    Peptides can overlap. If a peptide is found multiple times in `protein`,
     it contributes more to the overall coverage.
 
     Requires :py:mod:`numpy`.
