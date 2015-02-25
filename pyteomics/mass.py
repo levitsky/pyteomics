@@ -300,6 +300,70 @@ class Composition(BasicComposition):
         else:
             self._from_dict(kwargs)
 
+    def mass(self, **kwargs):
+        """Calculate the mass or *m/z* of a :py:class:`Composition`.
+
+        Parameters
+        ----------
+        average : bool, optional
+            If :py:const:`True` then the average mass is calculated. Note that mass
+            is not averaged for elements with specified isotopes. Default is
+            :py:const:`False`.
+        charge : int, optional
+            If not 0 then m/z is calculated: the mass is increased
+            by the corresponding number of proton masses and divided
+            by `charge`.
+        mass_data : dict, optional
+            A dict with the masses of the chemical elements (the default
+            value is :py:data:`nist_mass`).
+        ion_comp : dict, optional
+            A dict with the relative elemental compositions of peptide ion
+            fragments (default is :py:data:`std_ion_comp`).
+        ion_type : str, optional
+            If specified, then the polypeptide is considered to be in the form
+            of the corresponding ion. Do not forget to specify the charge state!
+
+        Returns
+        -------
+        mass : float
+        """
+        composition = self.copy()
+        mass_data = kwargs.get('mass_data', nist_mass)
+        ion_comp = kwargs.get('ion_comp', std_ion_comp)
+        if 'ion_type' in kwargs:
+            composition += ion_comp[kwargs['ion_type']]
+
+        # Get charge.
+        charge = composition['H+']
+        if 'charge' in kwargs:
+            if charge:
+                raise PyteomicsError(
+                    'Charge is specified both by the number of protons and '
+                    '`charge` in kwargs')
+            charge = kwargs['charge']
+            composition['H+'] = charge
+
+        # Calculate mass.
+        mass = 0.0
+        average = kwargs.get('average', False)
+        for isotope_string in composition:
+            element_name, isotope_num = _parse_isotope_string(isotope_string)
+            # Calculate average mass if required and the isotope number is
+            # not specified.
+            if (not isotope_num) and average:
+                for isotope in mass_data[element_name]:
+                    if isotope != 0:
+                        mass += (composition[element_name]
+                                 * mass_data[element_name][isotope][0]
+                                 * mass_data[element_name][isotope][1])
+            else:
+                mass += (composition[isotope_string]
+                         * mass_data[element_name][isotope_num][0])
+
+        # Calculate m/z if required.
+        if charge:
+            mass /= charge
+        return mass
 
 std_aa_comp.update({
     'A':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1}),
@@ -361,12 +425,12 @@ def calculate_mass(*args, **kwargs):
     One or none of the following keyword arguments is required:
     **formula**, **sequence**, **parsed_sequence**, **split_sequence**
     or **composition**.
-    All arguments given are used to create a Composition object, unless
-    an existing one is passed as a keyword argument.
+    All arguments given are used to create a :py:class:`Composition` object,
+    unless an existing one is passed as a keyword argument.
 
-    Note that if a sequence string is supplied then the mass is
-    calculated for a polypeptide with standard terminal groups (NH2-
-    and -OH).
+    Note that if a sequence string is supplied and terminal groups are not
+    explicitly shown, then the mass is calculated for a polypeptide with
+    standard terminal groups (NH2- and -OH).
 
     .. warning::
 
@@ -383,72 +447,36 @@ def calculate_mass(*args, **kwargs):
         A polypeptide sequence parsed into a list of amino acids.
     composition : Composition, optional
         A Composition object with the elemental composition of a substance.
+    aa_comp : dict, optional
+        A dict with the elemental composition of the amino acids (the
+        default value is std_aa_comp).
     average : bool, optional
         If :py:const:`True` then the average mass is calculated. Note that mass
         is not averaged for elements with specified isotopes. Default is
         :py:const:`False`.
-    ion_type : str, optional
-        If specified, then the polypeptide is considered to be in the form
-        of the corresponding ion. Do not forget to specify the charge state!
     charge : int, optional
         If not 0 then m/z is calculated: the mass is increased
         by the corresponding number of proton masses and divided
-        by z.
-    aa_comp : dict, optional
-        A dict with the elemental composition of the amino acids (the
-        default value is std_aa_comp).
+        by `charge`.
     mass_data : dict, optional
         A dict with the masses of the chemical elements (the default
         value is :py:data:`nist_mass`).
     ion_comp : dict, optional
         A dict with the relative elemental compositions of peptide ion
         fragments (default is :py:data:`std_ion_comp`).
+    ion_type : str, optional
+        If specified, then the polypeptide is considered to be in the form
+        of the corresponding ion. Do not forget to specify the charge state!
 
     Returns
     -------
-        mass : float
+    mass : float
     """
-    mass_data = kwargs.get('mass_data', nist_mass)
-    ion_comp = kwargs.get('ion_comp', std_ion_comp)
-    # Make a deep copy of `composition` keyword argument.
+    # Make a copy of `composition` keyword argument.
     composition = (Composition(kwargs['composition'])
                    if 'composition' in kwargs
                    else Composition(*args, **kwargs))
-
-    if 'ion_type' in kwargs:
-        composition += ion_comp[kwargs['ion_type']]
-
-    # Get charge.
-    charge = composition['H+']
-    if 'charge' in kwargs:
-        if charge:
-            raise PyteomicsError(
-                'Charge is specified both by the number of protons and '
-                '`charge` in kwargs')
-        charge = kwargs['charge']
-        composition['H+'] = charge
-
-    # Calculate mass.
-    mass = 0.0
-    average = kwargs.get('average', False)
-    for isotope_string in composition:
-        element_name, isotope_num = _parse_isotope_string(isotope_string)
-        # Calculate average mass if required and the isotope number is
-        # not specified.
-        if (not isotope_num) and average:
-            for isotope in mass_data[element_name]:
-                if isotope != 0:
-                    mass += (composition[element_name]
-                             * mass_data[element_name][isotope][0]
-                             * mass_data[element_name][isotope][1])
-        else:
-            mass += (composition[isotope_string]
-                     * mass_data[element_name][isotope_num][0])
-
-    # Calculate m/z if required.
-    if charge:
-        mass /= charge
-    return mass
+    return composition.mass(**kwargs)
 
 def most_probable_isotopic_composition(*args, **kwargs):
     """Calculate the most probable isotopic composition of a peptide

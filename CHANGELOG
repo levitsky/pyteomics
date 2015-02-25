@@ -32,6 +32,13 @@
 
  - New function :py:func:`pyteomics.pylab_aux.plot_qvalue_curve`.
 
+ - :py:class:`pyteomics.mass.Composition` objects now have a :py:meth:`mass`
+   method (equivalent to :py:func:`pyteomics.mass.calculate_mass`.
+
+ - Also, :py:class:`Composition` and objects returned by
+   :py:func:`pyteomics.parser.amino_acid_composition` now inherit from
+   :py:class:`collections.defaultdict` **and** :py:class:`collections.Counter`.
+
  - Minor fixes.
 
 API changes
