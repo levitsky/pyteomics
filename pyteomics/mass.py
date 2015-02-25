@@ -77,7 +77,7 @@ Data
 from __future__ import division
 import math
 from . import parser
-from .auxiliary import PyteomicsError, _nist_mass
+from .auxiliary import PyteomicsError, _nist_mass, BasicComposition
 from itertools import chain
 from collections import defaultdict
 try:
@@ -128,7 +128,7 @@ _isotope_string = r'^([A-Z][a-z+]*)(?:\[(\d+)\])?$'
 _atom = r'([A-Z][a-z+]*)(?:\[(\d+)\])?([+-]?\d+)?'
 _formula = r'^({})*$'.format(_atom)
 
-class Composition(defaultdict):
+class Composition(BasicComposition):
     """
     A Composition object stores a chemical composition of a
     substance. Basically, it is a dict object, with the names
@@ -138,64 +138,6 @@ class Composition(defaultdict):
     The main improvement over dict is that Composition objects allow
     adding and subtraction.
     """
-
-    def __str__(self):
-        return 'Composition({})'.format(dict.__repr__(self))
-
-    def __repr__(self):
-        return str(self)
-
-    def __add__(self, other):
-        result = self.copy()
-        for elem, cnt in other.items():
-            result[elem] += cnt
-        return result
-
-    def __radd__(self, other):
-        return self + other
-
-    def __sub__(self, other):
-        result = self.copy()
-        for elem, cnt in other.items():
-            result[elem] -= cnt
-        return result
-
-    def __rsub__(self, other):
-        return (self - other) * (-1)
-
-    def __mul__(self, other):
-        if not isinstance(other, int):
-            raise PyteomicsError('Cannot multiply Composition by non-integer',
-                    other)
-        return Composition({k: v*other for k, v in self.items()})
-
-    def __rmul__(self, other):
-        return self * other
-
-    def __eq__(self, other):
-        if not isinstance(other, dict):
-            return False
-        self_items = {i for i in self.items() if i[1]}
-        other_items = {i for i in other.items() if i[1]}
-        return self_items == other_items
-
-    # override default behavior:
-    # we don't want to add 0's to the dictionary
-    def __missing__(self, key):
-        return 0
-
-    def __setitem__(self, key, value):
-        if isinstance(value, float): value = int(round(value))
-        elif not isinstance(value, int):
-            raise PyteomicsError('Only integers allowed as values in '
-                    'Composition, got {}.'.format(type(value).__name__))
-        if value: # reject 0's
-            super(Composition, self).__setitem__(key, value)
-        elif key in self:
-            del self[key]
-
-    def copy(self):
-        return Composition(self)
 
     def _from_parsed_sequence(self, parsed_sequence, aa_comp):
         self.clear()
@@ -306,13 +248,13 @@ class Composition(defaultdict):
         split_sequence : list of tuples of str, optional
             A polypeptyde sequence parsed into a list of tuples
             (as returned be :py:func:`pyteomics.parser.parse` with
-            'split=True').
+            ``split=True``).
         aa_comp : dict, optional
             A dict with the elemental composition of the amino acids (the
             default value is std_aa_comp).
         mass_data : dict, optional
             A dict with the masses of chemical elements (the default
-            value is :py:data:`nist_mass`). It is used for formulae parsing only. 
+            value is :py:data:`nist_mass`). It is used for formulae parsing only.
         """
         defaultdict.__init__(self, int)
 
@@ -357,13 +299,6 @@ class Composition(defaultdict):
                             ' formula or dict.'.format(args[0]))
         else:
             self._from_dict(kwargs)
-
-    def __reduce__(self):
-        class_, args, state, list_iterator, dict_iterator = super(Composition, self).__reduce__()
-        # Override the reduce of defaultdict so we do not provide the `int` type as the first argument
-        # which prevents from correctly unpickling the object
-        args = ()
-        return class_, args, state, list_iterator, dict_iterator
 
 
 std_aa_comp.update({

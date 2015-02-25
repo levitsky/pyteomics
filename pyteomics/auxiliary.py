@@ -61,6 +61,8 @@ import operator as op
 import sys
 from contextlib import contextmanager
 import types
+from bisect import bisect_right
+from collections import Counter, defaultdict
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
@@ -200,6 +202,100 @@ def memoize(maxsize=1000):
             return memo[key]
         return func
     return deco
+
+class BasicComposition(defaultdict, Counter):
+
+    def __init__(self, *args, **kwargs):
+        defaultdict.__init__(self, int)
+        Counter.__init__(self, *args, **kwargs)
+        for k, v in list(self.items()):
+            if not v:
+                del self[k]
+
+    def __str__(self):
+        return 'Composition({})'.format(dict.__repr__(self))
+
+    def __repr__(self):
+        return str(self)
+
+    def __add__(self, other):
+        result = self.copy()
+        for elem, cnt in other.items():
+            result[elem] += cnt
+        return result
+
+    def __iadd__(self, other):
+        for elem, cnt in other.items():
+            self[elem] += cnt
+        return self
+
+    def __radd__(self, other):
+        return self + other
+
+    def __sub__(self, other):
+        result = self.copy()
+        for elem, cnt in other.items():
+            result[elem] -= cnt
+        return result
+
+    def __isub__(self, other):
+        for elem, cnt in other.items():
+            self[elem] -= cnt
+        return self
+
+    def __rsub__(self, other):
+        return (self - other) * (-1)
+
+    def __mul__(self, other):
+        if not isinstance(other, int):
+            raise PyteomicsError('Cannot multiply Composition by non-integer',
+                    other)
+        return type(self)({k: v*other for k, v in self.items()})
+
+    def __imul__(self, other):
+        if not isinstance(other, int):
+            raise PyteomicsError('Cannot multiply Composition by non-integer',
+                    other)
+        for elem in self:
+            self[elem] *= other
+        return self
+
+    def __rmul__(self, other):
+        return self * other
+
+    def __eq__(self, other):
+        if not isinstance(other, dict):
+            return False
+        self_items = {i for i in self.items() if i[1]}
+        other_items = {i for i in other.items() if i[1]}
+        return self_items == other_items
+
+    # override default behavior:
+    # we don't want to add 0's to the dictionary
+    def __missing__(self, key):
+        return 0
+
+    def __setitem__(self, key, value):
+        if isinstance(value, float): value = int(round(value))
+        elif not isinstance(value, int):
+            raise PyteomicsError('Only integers allowed as values in '
+                         'Composition, got {}.'.format(type(value).__name__))
+        if value: # reject 0's
+            super(BasicComposition, self).__setitem__(key, value)
+        elif key in self:
+            del self[key]
+
+    def copy(self):
+        return type(self)(self)
+
+    def __reduce__(self):
+        class_, args, state, list_iterator, dict_iterator = super(
+                BasicComposition, self).__reduce__()
+        # Override the reduce of defaultdict so we do not provide the
+        # `int` type as the first argument
+        # which prevents from correctly unpickling the object
+        args = ()
+        return class_, args, state, list_iterator, dict_iterator
 
 
 ### Public API ends here ###
@@ -395,19 +491,33 @@ def _make_qvalues(read, is_decoy, key):
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
 
-            .. note:: If set to :py:const:`False`, then the decoy PSMs will
-               be taken into account when estimating FDR. Refer to the
+            .. note:: If set to :py:const:`False`, then by default the decoy
+               PSMs will be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
                `remove_decoy` is :py:const:`True`, then formula 1 is used
-               to control output FDR, otherwise it's formula 2.
+               to control output FDR, otherwise it's formula 2. This can be
+               changed by overriding the `formula` argument.
+
+        formula : int, optional
+            Can be either 1 or 2, defines which formula should be used for FDR
+            estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+            else 2 (see :py:func:`fdr` for definitions).
 
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
+        correction : int, optional
+            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
+            accounts for the probability that a false positive scores better
+            than the first excluded decoy PSM; 2 also corrects that probability
+            for finite size of the sample.
+
         full_output : bool, optional
+            If :py:const:`True`, then the returned array has PSM objects along
+            with scores and q-values.
 
         **kwargs : passed to the :py:func:`chain` function.
 
@@ -439,6 +549,12 @@ def _make_qvalues(read, is_decoy, key):
         remove_decoy = kwargs.pop('remove_decoy', True)
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         full = kwargs.pop('full_output', False)
+        formula = kwargs.pop('formula', (2, 1)[bool(remove_decoy)])
+        correction = kwargs.pop('correction', 0)
+        if formula not in {1, 2}:
+            raise PyteomicsError('`formula` must be either 1 or 2')
+        if correction not in {0, 1, 2}:
+            raise PyteomicsError('`correction` must be either 0, 1 or 2.')
         fields = [('score', np.float64), ('is decoy', np.uint8),
             ('q', np.float64)]
         dtype = np.dtype(fields) if not full else np.dtype(
@@ -451,14 +567,26 @@ def _make_qvalues(read, is_decoy, key):
         else:
             keys = scores['is decoy'], -scores['score']
         scores = scores[np.lexsort(keys)]
-        cumsum = scores['is decoy'].cumsum(dtype=np.float32)
+        cumsum = scores['is decoy'].cumsum(dtype=np.float64)
         ind = np.arange(1, scores.size+1)
-        if remove_decoy:
+        if correction == 1:
+            cumsum += 1
+        elif correction == 2:
+            corr = ind.astype(np.float64)
+            corr = corr * 2 ** (-corr - 1)
+            cumsum += corr.cumsum()
+        if formula == 1:
             scores['q'] = cumsum / (ind - cumsum) / ratio
         else:
             scores['q'] = 2. * cumsum / ind / ratio
+        # Make sure that q-values are equal for equal scores (conservatively)
+        # and that q-values are monotonic
+        for i in range(scores.size-1, 0, -1):
+            if (scores['score'][i] == scores['score'][i-1] or
+                    scores['q'][i-1] > scores['q'][i]):
+                scores['q'][i-1] = scores['q'][i]
+        if remove_decoy:
             scores = scores[scores['is decoy'] == 0]
-        scores['q'] = np.minimum.accumulate(scores['q'][::-1])[::-1]
         return scores
     return qvalues
 
@@ -475,17 +603,14 @@ def _make_filter(read, is_decoy, key, qvalues):
         except KeyError:
             raise PyteomicsError('Keyword argument required: fdr')
 
-        keyf = kwargs.get('key', key)
-        reverse = kwargs.get('reverse', False)
-        better = [op.le, op.ge][bool(reverse)]
-        remove_decoy = kwargs.get('remove_decoy', True)
-        isdecoy = kwargs.get('is_decoy', is_decoy)
         scores = qvalues(*args, **kwargs)
-        try:
-            cutoff = scores[np.nonzero(scores['q'] <= fdr)[0][-1]][0]
-        except IndexError:
-            cutoff = (scores['score'].min() - 1. if not reverse
-                    else scores['score'].max() + 1.)
+        keyf = kwargs.pop('key', key)
+        reverse = kwargs.pop('reverse', False)
+        better = [op.lt, op.gt][bool(reverse)]
+        remove_decoy = kwargs.pop('remove_decoy', True)
+        isdecoy = kwargs.pop('is_decoy', is_decoy)
+        kwargs.pop('formula', None)
+        cutoff = scores['score'][bisect_right(scores['q'], fdr)]
         with read(*args, **kwargs) as f:
             for p in f:
                 if not remove_decoy or not isdecoy(p):
@@ -504,16 +629,20 @@ def _make_filter(read, is_decoy, key, qvalues):
         positional args : file or str
             Files to read PSMs from. All positional arguments are treated as
             files. The rest of the arguments must be named.
+
         fdr : float, 0 <= fdr <= 1
             Desired FDR level.
+
         key : callable, optional
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better). The
             default is a function that tries to extract e-value from the PSM.
+
         reverse : bool, optional
             If :py:const:`True`, then PSMs are sorted in descending order,
             i.e. the value of the key function is higher for better PSMs.
             Default is :py:const:`False`.
+
         is_decoy : callable, optional
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
@@ -522,18 +651,26 @@ def _make_filter(read, is_decoy, key, qvalues):
             .. warning::
                 The default function may not work
                 with your files, because format flavours are diverse.
+
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
 
-            .. note:: If set to :py:const:`False`, then the decoy PSMs will
-               be taken into account when estimating FDR. Refer to the
+            .. note:: If set to :py:const:`False`, then by default the decoy
+               PSMs will be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
                `remove_decoy` is :py:const:`True`, then formula 1 is used
-               to control output FDR, otherwise it's formula 2.
+               to control output FDR, otherwise it's formula 2. This can be
+               changed by overriding the `formula` argument.
+
+        formula : int, optional
+            Can be either 1 or 2, defines which formula should be used for FDR
+            estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+            else 2 (see :py:func:`fdr` for definitions).
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
@@ -559,31 +696,52 @@ Parameters
 positional args : iterables
     Iterables to read PSMs from. All positional arguments are chained.
     The rest of the arguments must be named.
+
 key : callable
     A function used for sorting of PSMs. Should accept exactly one
     argument (PSM) and return a number (the smaller the better).
+
 reverse : bool, optional
     If :py:const:`True`, then PSMs are sorted in descending order,
     i.e. the value of the key function is higher for better PSMs.
     Default is :py:const:`False`.
+
 is_decoy : callable
     A function used to determine if the PSM is decoy or not. Should
     accept exactly one argument (PSM) and return a truthy value if the
     PSM should be considered decoy.
+
 remove_decoy : bool, optional
     Defines whether decoy matches should be removed from the output.
     Default is :py:const:`True`.
 
-    .. note:: If set to :py:const:`False`, then the decoy PSMs will
-       be taken into account when estimating FDR. Refer to the
+    .. note:: If set to :py:const:`False`, then by default the decoy
+       PSMs will be taken into account when estimating FDR. Refer to the
        documentation of :py:func:`fdr` for math; basically, if
        `remove_decoy` is :py:const:`True`, then formula 1 is used
-       to control output FDR, otherwise it's formula 2.
+       to control output FDR, otherwise it's formula 2. This can be
+       changed by overriding the `formula` argument.
+
+formula : int, optional
+    Can be either 1 or 2, defines which formula should be used for FDR
+    estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+    else 2 (see :py:func:`fdr` for definitions).
+
 ratio : float, optional
     The size ratio between the decoy and target databases. Default is
-    ``1``. In theory, the "size" of the database is the number of
+    1. In theory, the "size" of the database is the number of
     theoretical peptides eligible for assignment to spectra that are
     produced by *in silico* cleavage of that database.
+
+correction : int, optional
+    Possible values are 0, 1 and 2. Default is 0 (no correction); 1
+    accounts for the probability that a false positive scores better
+    than the first excluded decoy PSM; 2 also corrects that probability
+    for finite size of the sample.
+
+full_output : bool, optional
+    If :py:const:`True`, then the returned array has PSM objects along
+    with scores and q-values.
 
 **kwargs : passed to the :py:func:`chain` function.
 
@@ -595,6 +753,7 @@ out : numpy.ndarray
     - 'score': :py:class:`float64`
     - 'is decoy': :py:class:`int8`
     - 'q': :py:class:`float64`
+    - 'psm': :py:class:`object_` (if `full_output` is :py:const:`True`)
 """
 
 filter = _make_filter(_iter, None, None, qvalues)
@@ -607,27 +766,38 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         positional args : containers
             Containers to read PSMs from. All positional arguments are chained.
             Keyword arguments are not supported, except for those listed below.
+
         fdr : float, 0 <= fdr <= 1
             Desired FDR level.
+
         key : callable
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better).
+
         is_decoy : callable
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
             PSM should be considered decoy.
+
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
 
-            .. note:: If set to :py:const:`False`, then the decoy PSMs will
-               be taken into account when estimating FDR. Refer to the
+            .. note:: If set to :py:const:`False`, then by default the decoy
+               PSMs will be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
                `remove_decoy` is :py:const:`True`, then formula 1 is used
-               to control output FDR, otherwise it's formula 2.
+               to control output FDR, otherwise it's formula 2. This can be
+               changed by overriding the `formula` argument.
+
+        formula : int, optional
+            Can be either 1 or 2, defines which formula should be used for FDR
+            estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+            else 2 (see :py:func:`fdr` for definitions).
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
@@ -637,7 +807,7 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         """
 
 def _make_fdr(is_decoy):
-    def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1):
+    def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1, correction=0):
         """Estimate FDR of a data set using TDA.
         Two formulas can be used. The first one (default) is:
 
@@ -655,9 +825,11 @@ def _make_fdr(is_decoy):
         ----------
         psms : iterable
             An iterable of PSMs, e.g. as returned by :py:func:`read`.
+
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
             estimation. Default is ``1``.
+
         is_decoy : callable, optional
             Shoould accept exactly one argument (PSM) and return a truthy value
             if the PSM is considered decoy. Default is :py:func:`is_decoy`.
@@ -665,24 +837,37 @@ def _make_fdr(is_decoy):
             .. warning::
                 The default function may not work
                 with your files, because format flavours are diverse.
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
             ``1``. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
+        correction : int, optional
+            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
+            accounts for the probability that a false positive scores better
+            than the first excluded decoy PSM; 2 also corrects that probability
+            for finite size of the sample.
+
         Returns
         -------
         out : float
-            The estimation of FDR, between 0 and 1.
+            The estimation of FDR, (roughly) between 0 and 1.
         """
         if formula not in {1, 2}:
-            raise PyteomicsError("`formula` must be either 1 or 2")
+            raise PyteomicsError('`formula` must be either 1 or 2.')
+        if correction not in {0, 1, 2}:
+            raise PyteomicsError('`correction` must be either 0, 1 or 2.')
         total, decoy = 0, 0
         for psm in psms:
             total += 1
             if is_decoy(psm):
                 decoy += 1
+        if correction == 1 or (correction == 2 and total > 50):
+            decoy += 1
+        elif correction == 2:
+            decoy += sum(float(k) / 2**(k+1) for k in range(total))
         if formula == 1:
             return float(decoy) / (total - decoy) / ratio
         return 2. * decoy / total / ratio
@@ -706,22 +891,31 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA.
         ----------
         psms : iterable
             An iterable of PSMs.
+
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
-            estimation. Default is ``1``.
+            estimation. Default is 1.
+
         is_decoy : callable
             Shoould accept exactly one argument (PSM) and return a truthy value
             if the PSM is considered decoy.
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
+
+        correction : int, optional
+            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
+            accounts for the probability that a false positive scores better
+            than the first excluded decoy PSM; 2 also corrects that probability
+            for finite size of the sample.
 
         Returns
         -------
         out : float
-            The estimation of FDR, between 0 and 1.
+            The estimation of FDR, (roughly) between 0 and 1.
         """
 
 def _parse_charge(s, list_only=False):

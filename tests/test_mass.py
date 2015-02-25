@@ -248,9 +248,10 @@ class MassTest(unittest.TestCase):
 
     def test_Unimod(self):
         db = mass.Unimod(gzip.open('unimod.xml.gz'))
-        self.assertGreater(0.00001,
-                max(abs(x['mono_mass'] - mass.calculate_mass(x['composition'],
-                    mass_data=db.mass_data)) for x in db.mods))
+        for x in db.mods:
+            self.assertGreater(0.00001,
+                abs(x['mono_mass'] - mass.calculate_mass(x['composition'],
+                    mass_data=db.mass_data)))
 
     def test_nist_mass(self):
         self.assertTrue(all(abs(g[0][1]-1) < 1e-6 for g in mass.nist_mass.values()))
