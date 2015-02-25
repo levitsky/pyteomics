@@ -82,7 +82,7 @@ References
 
 """
 
-# Copyright 2012 Anton Goloborodko, Lev Levitsky
+#   Copyright 2012 Anton Goloborodko, Lev Levitsky
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -290,30 +290,30 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.0001, **kwargs):
 
 
 pK_lehninger = {
-    'E': [(4.25, -1),],
-    'R': [(12.48, +1),],
-    'Y': [(10.07, -1),],
-    'D': [(3.65, -1),],
-    'H': [(6.00, +1),],
-    'K': [(10.53, +1),],
-    'C': [(8.18, -1),],
-    'H-': [(9.69, +1),],
-    '-OH':  [(2.34, -1),],
+    'E':   [(4.25,  -1)],
+    'R':   [(12.48,  1)],
+    'Y':   [(10.07, -1)],
+    'D':   [(3.65,  -1)],
+    'H':   [(6.00,  +1)],
+    'K':   [(10.53, +1)],
+    'C':   [(8.18,  -1)],
+    'H-':  [(9.69,  +1)],
+    '-OH': [(2.34,  -1)],
     }
 """A set of pK from Nelson, D. L.; Cox, M. M. Lehninger Principles of
 Biochemistry, Fourth Edition; W. H. Freeman, 2004; p. 1100.
 """
 
 pK_sillero = {
-    'E': [(4.5, -1),],
-    'R': [(12.0, +1),],
-    'Y': [(10.0, -1),],
-    'D': [(4.0, -1),],
-    'H': [(6.4, +1),],
-    'K': [(10.4, +1),],
-    'C': [(9.0, -1),],
-    'H-': [(8.2, +1),],
-    '-OH':  [(3.2, -1),],
+    'E':   [(4.5,  -1)],
+    'R':   [(12.0, +1)],
+    'Y':   [(10.0, -1)],
+    'D':   [(4.0,  -1)],
+    'H':   [(6.4,  +1)],
+    'K':   [(10.4, +1)],
+    'C':   [(9.0,  -1)],
+    'H-':  [(8.2,  +1)],
+    '-OH': [(3.2,  -1)],
     }
 """A set of pK from Sillero, A.; Ribeiro, J. Isoelectric points of proteins:
 Theoretical determination. Analytical Biochemistry, vol. 179 (2), pp. 319-325,
@@ -321,15 +321,15 @@ Theoretical determination. Analytical Biochemistry, vol. 179 (2), pp. 319-325,
 """
 
 pK_dawson = {
-    'E': [(4.3, -1),],
-    'R': [(12.0, +1),],
-    'Y': [(10.1, -1),],
-    'D': [(3.9, -1),],
-    'H': [(6.0, +1),],
-    'K': [(10.5, +1),],
-    'C': [(8.3, -1),],
-    'H-': [(8.2, +1),],
-    '-OH':  [(3.2, -1),],
+    'E':   [(4.3,  -1)],
+    'R':   [(12.0, +1)],
+    'Y':   [(10.1, -1)],
+    'D':   [(3.9,  -1)],
+    'H':   [(6.0,  +1)],
+    'K':   [(10.5, +1)],
+    'C':   [(8.3,  -1)],
+    'H-':  [(8.2,  +1)],
+    '-OH': [(3.2,  -1)],
     }
 """A set of pK from Dawson, R. M. C.; Elliot, D. C.; Elliot, W. H.; Jones,
 K. M.  Data for biochemical research. Oxford University Press, 1989; p. 592.
@@ -337,15 +337,15 @@ pKs for NH2- and -OH are taken from `pK_sillero`.
 """
 
 pK_rodwell = {
-    'E': [(4.25, -1), ],
-    'R': [(11.5, +1), ],
-    'Y': [(10.7, -1), ],
-    'D': [(3.86, -1), ],
-    'H': [(6.0, +1), ],
-    'K': [(11.5, +1), ],
-    'C': [(8.33, -1), ],
-    'H-': [(8.0, +1), ],
-    '-OH': [(3.1, -1), ],
+    'E':   [(4.25, -1)],
+    'R':   [(11.5, +1)],
+    'Y':   [(10.7, -1)],
+    'D':   [(3.86, -1)],
+    'H':   [(6.0,  +1)],
+    'K':   [(11.5, +1)],
+    'C':   [(8.33, -1)],
+    'H-':  [(8.0,  +1)],
+    '-OH': [(3.1,  -1)],
 }
 """A set of pK from Rodwell, J. Heterogeneity of component bands in
 isoelectric focusing patterns. Analytical Biochemistry, vol. 119 (2),
@@ -353,51 +353,53 @@ pp. 440-449, 1982.
 """
 
 pK_bjellqvist = {
-    'E': [(4.45, -1), ],
-    'R': [(12.0, +1), ],
-    'Y': [(10.0, -1), ],
-    'D': [(4.05, -1), ],
-    'H': [(5.98, +1), ],
-    'K': [(10.00, +1), ],
-    'C': [(9.0, -1), ],
-    'H-': [(7.5, +1), ],
-    '-OH': [(3.55, -1), ],
+    'E':   [(4.45, -1)],
+    'R':   [(12.0, +1)],
+    'Y':   [(10.0, -1)],
+    'D':   [(4.05, -1)],
+    'H':   [(5.98, +1)],
+    'K':   [(10.0, +1)],
+    'C':   [(9.0,  -1)],
+    'H-':  [(7.5,  +1)],
+    '-OH': [(3.55, -1)],
 }
 """
 A set of pK from Bjellqvist, B., Basse, B., Olsen, E. and Celis, J.E.
 Reference points for comparisons of two-dimensional maps of proteins from
-different human cell types defined in a pH scale where isoelectric points correlate
-with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
+different human cell types defined in a pH scale where isoelectric points
+correlate with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
 """
 
 pK_nterm_bjellqvist = {
-    'H-':{
-    'A': [(7.59, 1)],
-    'M': [(7.0, 1)],
-    'S': [(6.93, 1)],
-    'P': [(8.36, 1)],
-    'T': [(6.82, 1)],
-    'V': [(7.44, 1)],
-    'E': [(7.7, 1)]
-}}
+    'H-': {
+        'A': [(7.59, +1)],
+        'M': [(7.0,  +1)],
+        'S': [(6.93, +1)],
+        'P': [(8.36, +1)],
+        'T': [(6.82, +1)],
+        'V': [(7.44, +1)],
+        'E': [(7.7,  +1)]
+        }
+    }
 """
 A set of N-terminal pK from Bjellqvist, B., Basse, B., Olsen, E. and Celis, J.E.
 Reference points for comparisons of two-dimensional maps of proteins from
-different human cell types defined in a pH scale where isoelectric points correlate
-with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
+different human cell types defined in a pH scale where isoelectric points
+correlate with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
 """
 
 pK_cterm_bjellqvist = {
-    '-OH':{
-    'D': [(4.55, -1)],
-    'E': [(4.75, -1)]
-}}
+    '-OH': {
+        'D': [(4.55, -1)],
+        'E': [(4.75, -1)]
+        }
+    }
 """
 A set of C
 -terminal pK from Bjellqvist, B., Basse, B., Olsen, E. and Celis, J.E.
 Reference points for comparisons of two-dimensional maps of proteins from
-different human cell types defined in a pH scale where isoelectric points correlate
-with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
+different human cell types defined in a pH scale where isoelectric points
+correlate with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
 """
 
 if __name__ == "__main__":
