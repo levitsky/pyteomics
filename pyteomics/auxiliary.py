@@ -349,21 +349,53 @@ class _file_obj(object):
     def __iter__(self):
         return iter(self.file)
 
-class FileReader(object):
+class IteratorContextManager(object):
+    def __init__(self, func, *args, **kwargs):
+        self._func = func
+        self._args = args
+        self._kwargs = kwargs
+        if type(self) == IteratorContextManager:
+            self.reset()
+
+    def reset(self):
+        """Resets the iterator to its initial state."""
+        try:
+            self._reader = self._func(*self._args, **self._kwargs)
+        except:
+            self.__exit__(*sys.exc_info())
+            raise
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        pass
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            return next(self._reader)
+        except StopIteration:
+            self.__exit__(None, None, None)
+            raise
+
+    next = __next__
+
+
+class FileReader(IteratorContextManager):
     """Abstract class implementing context manager protocol
     for file readers.
     """
     def __init__(self, source, mode, func, pass_file, *args, **kwargs):
-        self._func = func
+        super(FileReader, self).__init__(func, *args, **kwargs)
         self._pass_file = pass_file
-        self._args = args
-        self._kwargs = kwargs
         self._source_init = source
         self._mode = mode
         self.reset()
 
     def reset(self):
-        """Resets the iterator to its initial state."""
         if hasattr(self, '_source'):
             self._source.__exit__(None, None, None)
         self._source = _file_obj(self._source_init, self._mode)
@@ -377,25 +409,8 @@ class FileReader(object):
             self.__exit__(*sys.exc_info())
             raise
 
-    # context manager support
-    def __enter__(self):
-        return self
-
     def __exit__(self, *args, **kwargs):
         self._source.__exit__(*args, **kwargs)
-
-    # iterator support
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        try:
-            return next(self._reader)
-        except StopIteration:
-            self.__exit__(None, None, None)
-            raise
-
-    next = __next__  # Python 2 support
 
     # delegate everything else to file object
     def __getattr__(self, attr):
@@ -621,7 +636,6 @@ def _make_filter(read, is_decoy, key, qvalues):
                     if better(keyf(p), cutoff):
                         yield p
 
-    @contextmanager
     def _filter(*args, **kwargs):
         """Read `args` and yield only the PSMs that form a set with
         estimated false discovery rate (FDR) not exceeding `fdr`.
@@ -684,7 +698,7 @@ def _make_filter(read, is_decoy, key, qvalues):
         -------
         out : iterator
         """
-        yield filter(*args, **kwargs)
+        return IteratorContextManager(filter, *args, **kwargs)
 
     return _filter
 
