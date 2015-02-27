@@ -30,6 +30,9 @@
  - :py:func:`qvalues` now also accepts a parameter `full_output` which keeps the
    PSMs alongside their scores and associated q-values.
 
+ - :py:func:`!filter` functions now support both iterator protocol and context
+   manager protocol.
+
  - New function :py:func:`pyteomics.pylab_aux.plot_qvalue_curve`.
 
  - :py:class:`pyteomics.mass.Composition` objects now have a :py:meth:`mass`
