@@ -692,6 +692,12 @@ def _make_filter(read, is_decoy, key, qvalues):
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
+        correction : int, optional
+            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
+            accounts for the probability that a false positive scores better
+            than the first excluded decoy PSM; 2 also corrects that probability
+            for finite size of the sample.
+
         **kwargs : passed to the :py:func:`chain` function.
 
         Returns
