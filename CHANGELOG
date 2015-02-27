@@ -31,7 +31,10 @@
    PSMs alongside their scores and associated q-values.
 
  - :py:func:`!filter` functions now support both iterator protocol and context
-   manager protocol.
+   manager protocol. They now also accept the `full_output` parameter, which has
+   the following meaning: if :py:const:`True` (default), then an array of PSMs
+   is directly returned by the function. Otherwise, an iterator is returned, as
+   before. The array takes some memory, but this way is usually around 2x faster.
 
  - New function :py:func:`pyteomics.pylab_aux.plot_qvalue_curve`.
 
@@ -54,6 +57,9 @@ API changes
  - In :py:func:`pyteomics.pylab_aux.plot_function_3d` and
    :py:func:`pyteomics.pylab_aux.plot_function_contour`, arbitrary kwargs can
    now also be passed to the plotting function.
+ - :py:func:`!filter` functions do not support context manager protocol by
+   default. To keep using them as iterators / context managers, specify
+   ``full_output=False`` (see above for details).
 
 2.5.5
 -----
