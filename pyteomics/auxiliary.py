@@ -364,6 +364,8 @@ class FileReader(object):
 
     def reset(self):
         """Resets the iterator to its initial state."""
+        if hasattr(self, '_source'):
+            self._source.__exit__(None, None, None)
         self._source = _file_obj(self._source_init, self._mode)
         try:
             if self._pass_file:
@@ -397,6 +399,8 @@ class FileReader(object):
 
     # delegate everything else to file object
     def __getattr__(self, attr):
+        if attr == '_source':
+            raise AttributeError
         return getattr(self._source, attr)
 
 def _file_reader(mode='r'):
