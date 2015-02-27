@@ -629,12 +629,17 @@ def _make_filter(read, is_decoy, key, qvalues):
         remove_decoy = kwargs.pop('remove_decoy', True)
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         kwargs.pop('formula', None)
-        cutoff = scores['score'][bisect_right(scores['q'], fdr)]
-        with read(*args, **kwargs) as f:
-            for p in f:
-                if not remove_decoy or not isdecoy(p):
-                    if better(keyf(p), cutoff):
-                        yield p
+        i = bisect_right(scores['q'], fdr)
+        if kwargs.pop('full_output', False):
+            return scores['psm'][:i]
+        cutoff = scores['score'][i]
+        def out():
+            with read(*args, **kwargs) as f:
+                for p in f:
+                    if not remove_decoy or not isdecoy(p):
+                        if better(keyf(p), cutoff):
+                            yield p
+        return out()
 
     def _filter(*args, **kwargs):
         """Read `args` and yield only the PSMs that form a set with
@@ -698,12 +703,23 @@ def _make_filter(read, is_decoy, key, qvalues):
             than the first excluded decoy PSM; 2 also corrects that probability
             for finite size of the sample.
 
+        full_output : bool, optional
+            If :py:const:`True`, then an array of PSM objects is returned.
+            Otherwise, an iterator / context manager object is returned, and the
+            files are parsed twice. This saves some RAM, but is ~2x slower.
+            Default is :py:const:`True`.
+
+            .. note:: The name for the parameter comes from the fact that it is
+                      internally passed to :py:func:`qvalues`.
+
         **kwargs : passed to the :py:func:`chain` function.
 
         Returns
         -------
         out : iterator
         """
+        if kwargs.pop('full_output', True):
+            return filter(*args, full_output=True, **kwargs)
         return IteratorContextManager(filter, *args, **kwargs)
 
     return _filter
@@ -824,6 +840,21 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
             1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
+
+        correction : int, optional
+            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
+            accounts for the probability that a false positive scores better
+            than the first excluded decoy PSM; 2 also corrects that probability
+            for finite size of the sample.
+
+        full_output : bool, optional
+            If :py:const:`True`, then an array of PSM objects is returned.
+            Otherwise, an iterator / context manager object is returned, and the
+            files are parsed twice. This saves some RAM, but may be slower.
+            Default is :py:const:`True`.
+
+            .. note:: The name for the parameter comes from the fact that it is
+                      internally passed to :py:func:`qvalues`.
 
         Returns
         -------
