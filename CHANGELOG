@@ -45,6 +45,10 @@
    :py:func:`pyteomics.parser.amino_acid_composition` now inherit from
    :py:class:`collections.defaultdict` **and** :py:class:`collections.Counter`.
 
+ - Decoy-related functions in :py:mod:`pyteomics.fasta` now accept a new parameter
+   `keep_nterm` that preserves the N-terminal residue in the generated decoy
+   sequences.
+
  - Minor fixes.
 
 API changes

@@ -41,6 +41,15 @@ class FastaTest(unittest.TestCase):
                 test = False
         self.assertFalse(test)
 
+    def test_decoy_keep_nterm(self):
+        sequences = (''.join(random.choice(string.ascii_uppercase)
+                             for i in range(random.randint(1,100)))
+                                for j in range(10))
+        for mode in ('shuffle', 'reverse'):
+            for seq in sequences:
+                self.assertEqual(seq[0], decoy_sequence(seq, mode, keep_nterm=True)[0])
+
+
     def test_read_and_write_fasta_short(self):
         with tempfile.TemporaryFile(mode='r+') as new_fasta_file:
             write(read(self.fasta_file, ignore_comments=True),
