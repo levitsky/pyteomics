@@ -595,7 +595,7 @@ def _make_qvalues(read, is_decoy, key):
             corr = ind.astype(np.float64)
             corr = corr * 2 ** (-corr - 1)
             cumsum += corr.cumsum()
-        cumsum = np.amin(ind, cumsum)
+        cumsum = np.fmin(ind, cumsum)
         if formula == 1:
             scores['q'] = cumsum / (ind - cumsum) / ratio
         else:
