@@ -63,6 +63,7 @@ from contextlib import contextmanager
 import types
 from bisect import bisect_right
 from collections import Counter, defaultdict
+import math
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
@@ -594,6 +595,7 @@ def _make_qvalues(read, is_decoy, key):
             corr = ind.astype(np.float64)
             corr = corr * 2 ** (-corr - 1)
             cumsum += corr.cumsum()
+        cumsum = np.amin(ind, cumsum)
         if formula == 1:
             scores['q'] = cumsum / (ind - cumsum) / ratio
         else:
@@ -895,8 +897,8 @@ def _make_fdr(is_decoy):
                 with your files, because format flavours are diverse.
 
         ratio : float, optional
-            The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            The size ratio between the decoy and target databases. Default is 1.
+            In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
@@ -920,7 +922,7 @@ def _make_fdr(is_decoy):
             total += 1
             if is_decoy(psm):
                 decoy += 1
-        if correction == 1 or (correction == 2 and total > 50):
+        if correction == 1 or (correction == 2 and total-decoy > 50):
             decoy += 1
         elif correction == 2:
             decoy += sum(float(k) / 2**(k+1) for k in range(total))
