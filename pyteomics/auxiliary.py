@@ -864,6 +864,16 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         out : iterator
         """
 
+def _log_fact(n):
+    if n > 10:
+        return n * math.log(n) - n + 0.5 * math.log(2*math.pi*n)
+    else:
+        return math.log(math.factorial(n))
+
+def _log_pi(n, k, p=0.5):
+    return (k * math.log(p) + (n + 1) * math.log(1 - p) +
+                    _log_fact(k + n) - _log_fact(k) - _log_fact(n))
+
 def _make_fdr(is_decoy):
     def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1, correction=0):
         """Estimate FDR of a data set using TDA.
@@ -886,7 +896,7 @@ def _make_fdr(is_decoy):
 
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
-            estimation. Default is ``1``.
+            estimation. Default is 1.
 
         is_decoy : callable, optional
             Shoould accept exactly one argument (PSM) and return a truthy value
@@ -922,13 +932,16 @@ def _make_fdr(is_decoy):
             total += 1
             if is_decoy(psm):
                 decoy += 1
-        if correction == 1 or (correction == 2 and total-decoy > 50):
-            decoy += 1
+        tfalse = decoy
+        if correction == 1 or (correction == 2 and total-decoy > max(50, 2*decoy)):
+            tfalse += 1
         elif correction == 2:
-            decoy += sum(float(k) / 2**(k+1) for k in range(total))
+            p = 1. / (1. + ratio)
+            norm = sum(math.exp(_log_pi(decoy, k, p)) for k in range(1, total-decoy))
+            tfalse = sum(k * math.exp(_log_pi(decoy, k, p)) for k in range(1, total-decoy)) / norm
         if formula == 1:
-            return float(decoy) / (total - decoy) / ratio
-        return 2. * decoy / total / ratio
+            return float(tfalse) / (total - decoy) / ratio
+        return (decoy + tfalse * ratio) / total
     return fdr
 
 fdr = _make_fdr(None)
