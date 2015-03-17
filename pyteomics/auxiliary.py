@@ -885,7 +885,7 @@ except ImportError:
             return math.log(math.factorial(n))
 
 def _log_pi_r(n, k, p=0.5):
-    return (k * math.log(p) + log_factorial(k + n) - log_factorial(k) - log_factorial(n))
+    return k * math.log(p) + log_factorial(k + n) - log_factorial(k) - log_factorial(n)
 
 def _log_pi(n, k, p=0.5):
     return _log_pi_r(n, k, p) + (n + 1) * math.log(1 - p)
@@ -953,7 +953,7 @@ def _make_fdr(is_decoy):
             tfalse += 1
         elif correction == 2:
             p = 1. / (1. + ratio)
-            norm = sum(math.exp(_log_pi_r(decoy, k, p)) for k in range(1, total-decoy))
+            norm = sum(math.exp(_log_pi_r(decoy, k, p)) for k in range(total-decoy))
             tfalse = sum(k * math.exp(_log_pi_r(decoy, k, p)) for k in range(1, total-decoy)) / norm
         if formula == 1:
             return float(tfalse) / (total - decoy) / ratio
