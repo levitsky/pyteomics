@@ -864,14 +864,28 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         out : iterator
         """
 
-def _log_fact(n):
-    if n > 10:
-        return n * math.log(n) - n + 0.5 * math.log(2*math.pi*n)
-    else:
-        return math.log(math.factorial(n))
+try:
+    import numpy as np
+    _precalc_fact = np.log([math.factorial(n) for n in range(20)])
+    def log_factorial(x):
+        x = np.array(x)
+        pf = _precalc_fact
+        m = (x >= pf.size)
+        out = np.empty(x.shape)
+        out[~m] = pf[x[~m].astype(int)]
+        x = x[m]
+        out[m] = x * np.log(x) - x + 0.5 * np.log(2 * np.pi * x)
+        return out
+
+except ImportError:
+    def log_factorial(n):
+        if n > 10:
+            return n * math.log(n) - n + 0.5 * math.log(2*math.pi*n)
+        else:
+            return math.log(math.factorial(n))
 
 def _log_pi_r(n, k, p=0.5):
-    return (k * math.log(p) + _log_fact(k + n) - _log_fact(k) - _log_fact(n))
+    return (k * math.log(p) + log_factorial(k + n) - log_factorial(k) - log_factorial(n))
 
 def _log_pi(n, k, p=0.5):
     return _log_pi_r(n, k, p) + (n + 1) * math.log(1 - p)
