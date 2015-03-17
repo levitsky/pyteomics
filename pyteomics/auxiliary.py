@@ -870,9 +870,11 @@ def _log_fact(n):
     else:
         return math.log(math.factorial(n))
 
+def _log_pi_r(n, k, p=0.5):
+    return (k * math.log(p) + _log_fact(k + n) - _log_fact(k) - _log_fact(n))
+
 def _log_pi(n, k, p=0.5):
-    return (k * math.log(p) + (n + 1) * math.log(1 - p) +
-                    _log_fact(k + n) - _log_fact(k) - _log_fact(n))
+    return _log_pi_r(n, k, p) + (n + 1) * math.log(1 - p)
 
 def _make_fdr(is_decoy):
     def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1, correction=0):
@@ -937,8 +939,8 @@ def _make_fdr(is_decoy):
             tfalse += 1
         elif correction == 2:
             p = 1. / (1. + ratio)
-            norm = sum(math.exp(_log_pi(decoy, k, p)) for k in range(1, total-decoy))
-            tfalse = sum(k * math.exp(_log_pi(decoy, k, p)) for k in range(1, total-decoy)) / norm
+            norm = sum(math.exp(_log_pi_r(decoy, k, p)) for k in range(1, total-decoy))
+            tfalse = sum(k * math.exp(_log_pi_r(decoy, k, p)) for k in range(1, total-decoy)) / norm
         if formula == 1:
             return float(tfalse) / (total - decoy) / ratio
         return (decoy + tfalse * ratio) / total
