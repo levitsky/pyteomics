@@ -599,7 +599,7 @@ def _make_qvalues(read, is_decoy, key):
         if formula == 1:
             scores['q'] = cumsum / (ind - cumsum) / ratio
         else:
-            scores['q'] = 2. * cumsum / ind / ratio
+            scores['q'] = (1. + 1. / ratio) * cumsum / ind
         # Make sure that q-values are equal for equal scores (conservatively)
         # and that q-values are monotonic
         for i in range(scores.size-1, 0, -1):
