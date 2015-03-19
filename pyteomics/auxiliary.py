@@ -595,7 +595,7 @@ def _make_qvalues(read, is_decoy, key):
             corr = ind.astype(np.float64)
             corr = corr * 2 ** (-corr - 1)
             cumsum += corr.cumsum()
-        cumsum = np.fmin(ind, cumsum)
+        cumsum = np.fmin(ind, cumsum) # # of decoys can't be > than total #
         if formula == 1:
             scores['q'] = cumsum / (ind - cumsum) / ratio
         else:
@@ -903,7 +903,7 @@ def _make_fdr(is_decoy):
 
         .. math::
 
-                FDR = \\frac{2 * N_{decoy}}{N_{total} * ratio}
+                FDR = \\frac{N_{decoy} * (1 + \\frac{1}{ratio})}{N_{total}}
 
         Parameters
         ----------
@@ -957,7 +957,7 @@ def _make_fdr(is_decoy):
             tfalse = sum(k * math.exp(_log_pi_r(decoy, k, p)) for k in range(1, total-decoy)) / norm
         if formula == 1:
             return float(tfalse) / (total - decoy) / ratio
-        return (decoy + tfalse * ratio) / total
+        return (decoy + tfalse / ratio) / total
     return fdr
 
 fdr = _make_fdr(None)
@@ -972,7 +972,7 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA.
 
         .. math::
 
-                FDR = \\frac{2 * N_{decoy}}{N_{total} * ratio}
+                FDR = \\frac{N_{decoy} * (1 + \\frac{1}{ratio})}{N_{total}}
 
         Parameters
         ----------
