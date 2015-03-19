@@ -915,7 +915,7 @@ def _make_fdr(is_decoy):
             estimation. Default is 1.
 
         is_decoy : callable, optional
-            Shoould accept exactly one argument (PSM) and return a truthy value
+            Should accept exactly one argument (PSM) and return a truthy value
             if the PSM is considered decoy. Default is :py:func:`is_decoy`.
 
             .. warning::
@@ -984,7 +984,7 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA.
             estimation. Default is 1.
 
         is_decoy : callable
-            Shoould accept exactly one argument (PSM) and return a truthy value
+            Should accept exactly one argument (PSM) and return a truthy value
             if the PSM is considered decoy.
 
         ratio : float, optional
