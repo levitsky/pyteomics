@@ -949,7 +949,7 @@ def _make_fdr(is_decoy):
             if is_decoy(psm):
                 decoy += 1
         tfalse = decoy
-        if correction == 1 or (correction == 2 and total-decoy > max(50, 2*decoy)):
+        if correction == 1 or (correction == 2 and total/decoy > 10):
             tfalse += 1
         elif correction == 2:
             p = 1. / (1. + ratio)
