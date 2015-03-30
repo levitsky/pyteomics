@@ -595,9 +595,6 @@ def _make_qvalues(read, is_decoy, key):
         elif correction == 2:
             p = 1. / (1. + ratio)
             targ = ind - cumsum
-            
-            # norm = np.exp(_log_pi_r(cumsum, targ, p)).cumsum()
-            # tfalse = (targ * np.exp(_log_pi_r(cumsum, targ, p))).cumsum() / norm
             for i in range(tfalse.size):
                 tfalse[i] = _expectation(cumsum[i], targ[i], p)
         if formula == 1:
@@ -890,8 +887,9 @@ try:
     def _confidence_value(conf, n, T, p=0.5):
         T = np.array(T, dtype=int)
         m = np.arange(T.max()+1, dtype=int)
-        pi = np.exp(_log_pi(n, m, p))
-        return np.searchsorted(pi.cumsum(), conf*pi.cumsum()[T])
+        pi = np.exp(_log_pi_r(n, m, p))
+        pics = pi.cumsum()
+        return np.searchsorted(pics, conf*pics[T])
 
 except ImportError:
     def log_factorial(n):
