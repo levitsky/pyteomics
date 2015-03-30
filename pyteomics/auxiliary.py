@@ -588,18 +588,22 @@ def _make_qvalues(read, is_decoy, key):
             keys = scores['is decoy'], -scores['score']
         scores = scores[np.lexsort(keys)]
         cumsum = scores['is decoy'].cumsum(dtype=np.float64)
-        ind = np.arange(1, scores.size+1)
+        tfalse = cumsum.copy()
+        ind = 1 + np.arange(scores.size)
         if correction == 1:
-            cumsum += 1
+            tfalse += 1
         elif correction == 2:
-            corr = ind.astype(np.float64)
-            corr = corr * 2 ** (-corr - 1)
-            cumsum += corr.cumsum()
-        cumsum = np.fmin(ind, cumsum) # # of decoys can't be > than total #
+            p = 1. / (1. + ratio)
+            targ = ind - cumsum
+            
+            # norm = np.exp(_log_pi_r(cumsum, targ, p)).cumsum()
+            # tfalse = (targ * np.exp(_log_pi_r(cumsum, targ, p))).cumsum() / norm
+            for i in range(tfalse.size):
+                tfalse[i] = _expectation(cumsum[i], targ[i], p)
         if formula == 1:
-            scores['q'] = cumsum / (ind - cumsum) / ratio
+            scores['q'] = tfalse / (ind - cumsum) / ratio
         else:
-            scores['q'] = (1. + 1. / ratio) * cumsum / ind
+            scores['q'] = (cumsum + tfalse / ratio) / ind
         # Make sure that q-values are equal for equal scores (conservatively)
         # and that q-values are monotonic
         for i in range(scores.size-1, 0, -1):
@@ -876,6 +880,18 @@ try:
         x = x[m]
         out[m] = x * np.log(x) - x + 0.5 * np.log(2 * np.pi * x)
         return out
+
+    def _expectation(n, T, p=0.5):
+        T = np.array(T, dtype=int)
+        m = np.arange(T.max()+1, dtype=int)        
+        pi_r = np.exp(_log_pi_r(n, m, p))
+        return ((m * pi_r).cumsum() / pi_r.cumsum())[T]
+
+    def _confidence_value(conf, n, T, p=0.5):
+        T = np.array(T, dtype=int)
+        m = np.arange(T.max()+1, dtype=int)
+        pi = np.exp(_log_pi(n, m, p))
+        return np.searchsorted(pi.cumsum(), conf*pi.cumsum()[T])
 
 except ImportError:
     def log_factorial(n):
