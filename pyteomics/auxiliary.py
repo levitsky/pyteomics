@@ -529,11 +529,15 @@ def _make_qvalues(read, is_decoy, key):
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
-        correction : int, optional
-            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
-            accounts for the probability that a false positive scores better
-            than the first excluded decoy PSM; 2 also corrects that probability
-            for finite size of the sample.
+        correction : int or float, optional
+            Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+            Default is 0 (no correction); 1 accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM; 2 also corrects
+            that probability for finite size of the sample. If a floating point number
+            is given, then instead of the expectation value for the number of false PSMs,
+            the confidence value is used. The value of `correction` is then interpreted as
+            desired confidence level. E.g., if correction=0.95, then the calculated q-values
+            do not exceed the "real" q-values with 95% probability.
 
         full_output : bool, optional
             If :py:const:`True`, then the returned array has PSM objects along
@@ -573,8 +577,6 @@ def _make_qvalues(read, is_decoy, key):
         correction = kwargs.pop('correction', 0)
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2')
-        if correction not in {0, 1, 2}:
-            raise PyteomicsError('`correction` must be either 0, 1 or 2.')
         fields = [('score', np.float64), ('is decoy', np.uint8),
             ('q', np.float64)]
         dtype = np.dtype(fields) if not full else np.dtype(
@@ -597,6 +599,13 @@ def _make_qvalues(read, is_decoy, key):
             targ = ind - cumsum
             for i in range(tfalse.size):
                 tfalse[i] = _expectation(cumsum[i], targ[i], p)
+        elif 0 < correction < 1:
+            p = 1. / (1. + ratio)
+            targ = ind - cumsum
+            for i in range(tfalse.size):
+                tfalse[i] = _confidence_value(correction, cumsum[i], targ[i], p)
+        elif correction:
+            raise PyteomicsError('Invalid value for `correction`.')
         if formula == 1:
             scores['q'] = tfalse / (ind - cumsum) / ratio
         else:
@@ -701,11 +710,15 @@ def _make_filter(read, is_decoy, key, qvalues):
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
-        correction : int, optional
-            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
-            accounts for the probability that a false positive scores better
-            than the first excluded decoy PSM; 2 also corrects that probability
-            for finite size of the sample.
+        correction : int or float, optional
+            Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+            Default is 0 (no correction); 1 accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM; 2 also corrects
+            that probability for finite size of the sample. If a floating point number
+            is given, then instead of the expectation value for the number of false PSMs,
+            the confidence value is used. The value of `correction` is then interpreted as
+            desired confidence level. E.g., if correction=0.95, then the calculated q-values
+            do not exceed the "real" q-values with 95% probability.
 
         full_output : bool, optional
             If :py:const:`True`, then an array of PSM objects is returned.
@@ -777,11 +790,15 @@ ratio : float, optional
     theoretical peptides eligible for assignment to spectra that are
     produced by *in silico* cleavage of that database.
 
-correction : int, optional
-    Possible values are 0, 1 and 2. Default is 0 (no correction); 1
-    accounts for the probability that a false positive scores better
-    than the first excluded decoy PSM; 2 also corrects that probability
-    for finite size of the sample.
+correction : int or float, optional
+    Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+    Default is 0 (no correction); 1 accounts for the probability that a false
+    positive scores better than the first excluded decoy PSM; 2 also corrects
+    that probability for finite size of the sample. If a floating point number
+    is given, then instead of the expectation value for the number of false PSMs,
+    the confidence value is used. The value of `correction` is then interpreted as
+    desired confidence level. E.g., if correction=0.95, then the calculated q-values
+    do not exceed the "real" q-values with 95% probability.
 
 full_output : bool, optional
     If :py:const:`True`, then the returned array has PSM objects along
@@ -804,6 +821,8 @@ filter = _make_filter(_iter, None, None, qvalues)
 filter.chain = _make_chain(filter, 'filter')
 filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         estimated false discovery rate (FDR) not exceeding `fdr`.
+
+        Requires :py:mod:`numpy`.
 
         Parameters
         ----------
@@ -845,11 +864,15 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
-        correction : int, optional
-            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
-            accounts for the probability that a false positive scores better
-            than the first excluded decoy PSM; 2 also corrects that probability
-            for finite size of the sample.
+        correction : int or float, optional
+            Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+            Default is 0 (no correction); 1 accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM; 2 also corrects
+            that probability for finite size of the sample. If a floating point number
+            is given, then instead of the expectation value for the number of false PSMs,
+            the confidence value is used. The value of `correction` is then interpreted as
+            desired confidence level. E.g., if correction=0.95, then the calculated q-values
+            do not exceed the "real" q-values with 95% probability.
 
         full_output : bool, optional
             If :py:const:`True`, then an array of PSM objects is returned.
@@ -880,16 +903,16 @@ try:
 
     def _expectation(n, T, p=0.5):
         T = np.array(T, dtype=int)
-        m = np.arange(T.max()+1, dtype=int)        
-        pi_r = np.exp(_log_pi_r(n, m, p))
-        return ((m * pi_r).cumsum() / pi_r.cumsum())[T]
+        m = np.arange(T.max()+1, dtype=int)
+        pi = np.exp(_log_pi(n, m, p))
+        return ((m * pi).cumsum() / pi.cumsum())[T]
 
     def _confidence_value(conf, n, T, p=0.5):
         T = np.array(T, dtype=int)
         m = np.arange(T.max()+1, dtype=int)
-        pi = np.exp(_log_pi_r(n, m, p))
-        pics = pi.cumsum()
-        return np.searchsorted(pics, conf*pics[T])
+        log_pi = _log_pi(n, m, p)
+        pics = np.exp(log_pi).cumsum()
+        return np.searchsorted(pics, conf * pics[T])
 
 except ImportError:
     def log_factorial(n):
@@ -942,11 +965,17 @@ def _make_fdr(is_decoy):
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
-        correction : int, optional
-            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
-            accounts for the probability that a false positive scores better
-            than the first excluded decoy PSM; 2 also corrects that probability
-            for finite size of the sample.
+        correction : int or float, optional
+            Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+            Default is 0 (no correction); 1 accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM; 2 also corrects
+            that probability for finite size of the sample. If a floating point number
+            is given, then instead of the expectation value for the number of false PSMs,
+            the confidence value is used. The value of `correction` is then interpreted as
+            desired confidence level. E.g., if correction=0.95, then the calculated q-values
+            do not exceed the "real" q-values with 95% probability.
+
+            Requires :py:mod:`numpy`, if `correction` is a float or 2.
 
         Returns
         -------
@@ -955,8 +984,6 @@ def _make_fdr(is_decoy):
         """
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2.')
-        if correction not in {0, 1, 2}:
-            raise PyteomicsError('`correction` must be either 0, 1 or 2.')
         total, decoy = 0, 0
         for psm in psms:
             total += 1
@@ -967,8 +994,10 @@ def _make_fdr(is_decoy):
             tfalse += 1
         elif correction == 2:
             p = 1. / (1. + ratio)
-            norm = sum(math.exp(_log_pi_r(decoy, k, p)) for k in range(total-decoy))
-            tfalse = sum(k * math.exp(_log_pi_r(decoy, k, p)) for k in range(1, total-decoy)) / norm
+            tfalse = _expectation(decoy, total-decoy, p)
+        elif 0 < correction < 1:
+            p = 1. / (1. + ratio)
+            tfalse = _confidence_value(correction, decoy, total-decoy, p)
         if formula == 1:
             return float(tfalse) / (total - decoy) / ratio
         return (decoy + tfalse / ratio) / total
@@ -1007,11 +1036,17 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA.
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
-        correction : int, optional
-            Possible values are 0, 1 and 2. Default is 0 (no correction); 1
-            accounts for the probability that a false positive scores better
-            than the first excluded decoy PSM; 2 also corrects that probability
-            for finite size of the sample.
+        correction : int or float, optional
+            Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+            Default is 0 (no correction); 1 accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM; 2 also corrects
+            that probability for finite size of the sample. If a floating point number
+            is given, then instead of the expectation value for the number of false PSMs,
+            the confidence value is used. The value of `correction` is then interpreted as
+            desired confidence level. E.g., if correction=0.95, then the calculated q-values
+            do not exceed the "real" q-values with 95% probability.
+
+            Requires :py:mod:`numpy`, if `correction` is a float or 2.
 
         Returns
         -------
