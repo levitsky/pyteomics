@@ -10,9 +10,9 @@ developed by the Proteomics Informatics working group of the HUPO Proteomics
 Standard Initiative.
 
 This module provides a minimalistic way to extract information from mzIdentML
-files. The main idea is the same as in :py:mod:`pyteomics.pepxml`: the top-level
-function :py:func:`read` allows iterating over entries in
-`<SpectrumIdentificationResult>` elements, i.e. groups of identifications
+files. You can use the old functional interface (:py:func:`read`) or the new
+object-oriented interface (:py:class:`MzIdentML`) to iterate over entries in
+``<SpectrumIdentificationResult>`` elements, i.e. groups of identifications
 for a certain spectrum. Note that each entry can contain more than one PSM
 (peptide-spectrum match). They are accessible with "SpectrumIdentificationItem"
 key.
@@ -20,8 +20,12 @@ key.
 Data access
 -----------
 
+  :py:class:`MzIdentML` - a class representing a single MzIdentML file.
+  Other data access functions use this class internally.
+
   :py:func:`read` - iterate through peptide-spectrum matches in an mzIdentML
   file. Data from a single PSM group are converted to a human-readable dict.
+  Basically creates an :py:class:`MzIdentML` object and reads it.
 
   :py:func:`chain` - read multiple files at once.
 
@@ -37,20 +41,37 @@ Data access
   :py:func:`filter.chain.from_iterable` - chain a series of filters applied
   independently to an iterable of files.
 
-  :py:func:`get_by_id` - get an element by its ID and extract the data from it.
-
-  :py:func:`iterfind` - iterate over elements in an mzIdentML file.
-
 Miscellaneous
 -------------
-
-  :py:func:`version_info` - get information about mzIdentML version and schema.
 
   :py:func:`is_decoy` - determine if a "SpectrumIdentificationResult" should be
   consiudered decoy.
 
   :py:func:`fdr` - estimate the false discovery rate of a set of identifications
   using the target-decoy approach.
+
+  :py:func:`qvalues` - get an array of scores and local FDR values for a PSM
+  set using the target-decoy approach.
+
+Deprecated functions
+--------------------
+
+  :py:func:`version_info` - get information about mzIdentML version and schema.
+  You can just read the corresponding attribute of the :py:class:`MzIdentML`
+  object.
+
+  :py:func:`get_by_id` - get an element by its ID and extract the data from it.
+  You can just call the corresponding method of the :py:class:`MzIdentML`
+  object.
+
+  :py:func:`iterfind` - iterate over elements in an mzIdentML file.
+  You can just call the corresponding method of the :py:class:`MzIdentML`
+  object.
+
+Dependencies
+------------
+
+This module requires :py:mod:`lxml`.
 
 -------------------------------------------------------------------------------
 """
@@ -69,87 +90,50 @@ Miscellaneous
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from lxml import etree
 from . import auxiliary as aux
+from . import xml
 
-def _get_info_smart(source, element, **kw):
-    """Extract the info in a smart way depending on the element type"""
-    name = aux._local_name(element)
-    kwargs = dict(kw)
-    rec = kwargs.pop('recursive', None)
-    if name == 'MzIdentML':
-        return _get_info(source, element, rec if rec is not None else False,
-                **kwargs)
-    else:
-        return _get_info(source, element, rec if rec is not None else True,
-                **kwargs)
+class MzIdentML(xml.XML):
+    """Parser class for MzIdentML files."""
+    file_format = 'mzIdentML'
+    _root_element = 'MzIdentML'
+    _default_schema = xml._mzid_schema_defaults
+    _default_version = '1.1.0'
+    _default_iter_tag = 'SpectrumIdentificationResult'
+    _structures_to_flatten = {'Fragmentation'}
 
-@aux._keepstate
-def get_by_id(source, elem_id, **kwargs):
-    """Parse ``source`` and return the element with `id` attribute equal to
-    ``elem_id``. Returns :py:const:`None` if no such element is found.
+    def _get_info_smart(self, element, **kwargs):
+        """Extract the info in a smart way depending on the element type"""
+        name = xml._local_name(element)
+        kwargs = dict(kwargs)
+        rec = kwargs.pop("recursive", None)
 
-    Parameters
-    ----------
-    source : str or file
-        A path to a target mzIdentML file of the file object itself.
+        # Try not to recursively unpack the root element
+        # unless the user really wants to.
+        if name == self._root_element:
+            return self._get_info(element,
+                    recursive=(rec if rec is not None else False),
+                    **kwargs)
+        else:
+            return self._get_info(element,
+                    recursive=(rec if rec is not None else True),
+                    **kwargs)
 
-    elem_id : str
-        The value of the `id` attribute to match.
+    def _retrieve_refs(self, info, **kwargs):
+        """Retrieves and embeds the data for each attribute in `info` that
+        ends in _ref. Removes the id attribute from `info`"""
+        for k, v in dict(info).items():
+            if k.endswith('_ref'):
+                info.update(self.get_by_id(v, retrieve_refs=True))
+                del info[k]
+                info.pop('id', None)
 
-    Returns
-    -------
-    out : :py:class:`dict` or :py:const:`None`
-    """
-    tree = kwargs.get('tree')
-    if tree is None:
-        found = False
-        for event, elem in etree.iterparse(source, events=('start', 'end'),
-                remove_comments=True):
-            if event == 'start':
-                if elem.attrib.get('id') == elem_id:
-                    found = True
-            else:
-                if elem.attrib.get('id') == elem_id:
-                    return _get_info_smart(source, elem, **kwargs)
-                if not found:
-                    elem.clear()
-        return None
-    if not hasattr(get_by_id, 'id_dict') or tree not in get_by_id.id_dict:
-        stack = 0
-        id_dict = {}
-        for event, elem in etree.iterparse(source, events=('start', 'end'),
-                remove_comments=True):
-            if event == 'start':
-                if 'id' in elem.attrib:
-                    stack += 1
-            else:
-                if 'id' in elem.attrib:
-                    stack -= 1
-                    id_dict[elem.attrib['id']] = elem
-                elif stack == 0:
-                    elem.clear()
-        get_by_id.id_dict = {tree: id_dict}
-    return _get_info_smart(source, get_by_id.id_dict[tree][elem_id], **kwargs)
-
-_version_info_env = {'format': 'mzIdentML', 'element': 'MzIdentML'}
-version_info = aux._make_version_info(_version_info_env)
-
-_schema_env = {'format': 'MzIdentML', 'version_info': version_info,
-        'default_version': '1.1.0', 'defaults': aux._mzid_schema_defaults}
-_schema_info = aux._make_schema_info(_schema_env)
-
-# 'keys' should contain keys whose value is a dict
-_get_info_env = {'keys':  {'Fragmentation',}, 'schema_info': _schema_info,
-        'get_info_smart': _get_info_smart, 'get_by_id': get_by_id}
-_get_info = aux._make_get_info(_get_info_env)
-
-_iterfind_env = {'get_info_smart': _get_info_smart}
-iterfind = aux._make_iterfind(_iterfind_env)
-
-@aux._file_reader('rb')
 def read(source, **kwargs):
-    """Parse ``source`` and iterate through peptide-spectrum matches.
+    """Parse `source` and iterate through peptide-spectrum matches.
+
+    .. note:: This function is provided for backward compatibility only.
+        It simply creates an :py:class:`MzIdentML` instance using
+        provided arguments and returns it.
 
     Parameters
     ----------
@@ -170,7 +154,7 @@ def read(source, **kwargs):
         parsing significantly reduces memory usage and may be just a little
         slower. When `retrieve_refs` is :py:const:`True`, however, it is
         highly recommended to disable iterative parsing if possible.
-        Default value is the opposite of `retrieve_refs`.
+        Default value is :py:const:`True`.
 
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
@@ -178,12 +162,104 @@ def read(source, **kwargs):
         parameters. Disable this to avoid waiting on long network connections or
         if you don't like to get the related warnings.
 
+    build_id_cache : bool, optional
+        Defines whether a cache of element IDs should be built and stored on the
+        created :py:class:`MzIdentML` instance. Default value is the value of
+        `retrieve_refs`.
+
+    Returns
+    -------
+    out : MzIdentML
+       An iterator over the dicts with PSM properties.
+    """
+    kwargs = kwargs.copy()
+    kwargs['build_id_cache'] = kwargs.get('build_id_cache',
+            kwargs.get('retrieve_refs'))
+    return MzIdentML(source, **kwargs)
+
+def iterfind(source, path, **kwargs):
+    """Parse `source` and yield info on elements with specified local
+    name or by specified "XPath".
+
+    .. note:: This function is provided for backward compatibility only.
+        If you do multiple :py:func:`iterfind` calls on one file, you should
+        create an :py:class:`MzIdentML` object and use its
+        :py:meth:`!iterfind` method.
+
+    Parameters
+    ----------
+    source : str or file
+        File name or file-like object.
+
+    path : str
+        Element name or XPath-like expression. Only local names separated
+        with slashes are accepted. An asterisk (`*`) means any element.
+        You can specify a single condition in the end, such as:
+        ``"/path/to/element[some_value>1.5]"``
+        Note: you can do much more powerful filtering using plain Python.
+        The path can be absolute or "free". Please don't specify
+        namespaces.
+
+    recursive : bool, optional
+        If :py:const:`False`, subelements will not be processed when
+        extracting info from elements. Default is :py:const:`True`.
+
+    retrieve_refs : bool, optional
+        If :py:const:`True`, additional information from references will be
+        automatically added to the results. The file processing time will
+        increase. Default is :py:const:`False`.
+
+    iterative : bool, optional
+        Specifies whether iterative XML parsing should be used. Iterative
+        parsing significantly reduces memory usage and may be just a little
+        slower. When `retrieve_refs` is :py:const:`True`, however, it is
+        highly recommended to disable iterative parsing if possible.
+        Default value is :py:const:`True`.
+
+    read_schema : bool, optional
+        If :py:const:`True`, attempt to extract information from the XML schema
+        mentioned in the mzIdentML header (default). Otherwise, use default
+        parameters. Disable this to avoid waiting on long network connections or
+        if you don't like to get the related warnings.
+
+    build_id_cache : bool, optional
+        Defines whether a cache of element IDs should be built and stored on the
+        created :py:class:`MzIdentML` instance. Default value is the value of
+        `retrieve_refs`.
+
     Returns
     -------
     out : iterator
-       An iterator over the dicts with PSM properties.
     """
-    return iterfind(source, 'SpectrumIdentificationResult', **kwargs)
+    kwargs = kwargs.copy()
+    kwargs['build_id_cache'] = kwargs.get('build_id_cache',
+            kwargs.get('retrieve_refs'))
+    return MzIdentML(source, **kwargs).iterfind(path, **kwargs)
+
+version_info = xml._make_version_info(MzIdentML)
+
+def get_by_id(source, elem_id, **kwargs):
+    """Parse `source` and return the element with `id` attribute equal
+    to `elem_id`. Returns :py:const:`None` if no such element is found.
+
+    .. note:: This function is provided for backward compatibility only.
+        If you do multiple :py:func:`get_by_id` calls on one file, you should
+        create an :py:class:`MzIdentML` object and use its
+        :py:meth:`!get_by_id` method.
+
+    Parameters
+    ----------
+    source : str or file
+        A path to a target mzIdentML file of the file object itself.
+
+    elem_id : str
+        The value of the `id` attribute to match.
+
+    Returns
+    -------
+    out : :py:class:`dict` or :py:const:`None`
+    """
+    return MzIdentML(source, **kwargs).get_by_id(elem_id, **kwargs)
 
 chain = aux._make_chain(read, 'read')
 
@@ -206,6 +282,6 @@ def is_decoy(psm):
 fdr = aux._make_fdr(is_decoy)
 _key = lambda x: min(
     sii['mascot:expectation value'] for sii in x['SpectrumIdentificationItem'])
-local_fdr = aux._make_local_fdr(chain, is_decoy, _key)
-filter = aux._make_filter(chain, is_decoy, _key, local_fdr)
+qvalues = aux._make_qvalues(chain, is_decoy, _key)
+filter = aux._make_filter(chain, is_decoy, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter')

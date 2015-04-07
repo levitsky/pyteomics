@@ -5,7 +5,7 @@ auxiliary - common functions and objects
 Math
 ----
 
-  :py:func:`linear_regression` - a wrapper for numpy linear regression
+  :py:func:`linear_regression` - a wrapper for NumPy linear regression
 
 Data access
 -----------
@@ -54,22 +54,16 @@ Helpers
 #   limitations under the License.
 
 from __future__ import print_function
-import numpy as np
 from functools import wraps
 from traceback import format_exc
 import re
 import operator as op
-try: # Python 2.7
-    from urllib2 import urlopen, URLError
-except ImportError: # Python 3.x
-    from urllib.request import urlopen, URLError
 import sys
 from contextlib import contextmanager
-import socket
-import warnings
-import ast
 import types
-warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
+from bisect import bisect_right
+from collections import Counter, defaultdict
+import math
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
@@ -89,6 +83,8 @@ class PyteomicsError(Exception):
 def linear_regression(x, y, a=None, b=None):
     """Calculate coefficients of a linear regression y = a * x + b.
 
+    Requires :py:mod:`numpy`.
+
     Parameters
     ----------
     x, y : array_like of float
@@ -107,6 +103,7 @@ def linear_regression(x, y, a=None, b=None):
         stderr -- standard deviation.
     """
 
+    import numpy as np
     if not isinstance(x, np.ndarray):
         x = np.array(x)
     if not isinstance(y, np.ndarray):
@@ -207,6 +204,100 @@ def memoize(maxsize=1000):
         return func
     return deco
 
+class BasicComposition(defaultdict, Counter):
+
+    def __init__(self, *args, **kwargs):
+        defaultdict.__init__(self, int)
+        Counter.__init__(self, *args, **kwargs)
+        for k, v in list(self.items()):
+            if not v:
+                del self[k]
+
+    def __str__(self):
+        return '{}({})'.format(type(self).__name__, dict.__repr__(self))
+
+    def __repr__(self):
+        return str(self)
+
+    def __add__(self, other):
+        result = self.copy()
+        for elem, cnt in other.items():
+            result[elem] += cnt
+        return result
+
+    def __iadd__(self, other):
+        for elem, cnt in other.items():
+            self[elem] += cnt
+        return self
+
+    def __radd__(self, other):
+        return self + other
+
+    def __sub__(self, other):
+        result = self.copy()
+        for elem, cnt in other.items():
+            result[elem] -= cnt
+        return result
+
+    def __isub__(self, other):
+        for elem, cnt in other.items():
+            self[elem] -= cnt
+        return self
+
+    def __rsub__(self, other):
+        return (self - other) * (-1)
+
+    def __mul__(self, other):
+        if not isinstance(other, int):
+            raise PyteomicsError('Cannot multiply Composition by non-integer',
+                    other)
+        return type(self)({k: v*other for k, v in self.items()})
+
+    def __imul__(self, other):
+        if not isinstance(other, int):
+            raise PyteomicsError('Cannot multiply Composition by non-integer',
+                    other)
+        for elem in self:
+            self[elem] *= other
+        return self
+
+    def __rmul__(self, other):
+        return self * other
+
+    def __eq__(self, other):
+        if not isinstance(other, dict):
+            return False
+        self_items = {i for i in self.items() if i[1]}
+        other_items = {i for i in other.items() if i[1]}
+        return self_items == other_items
+
+    # override default behavior:
+    # we don't want to add 0's to the dictionary
+    def __missing__(self, key):
+        return 0
+
+    def __setitem__(self, key, value):
+        if isinstance(value, float): value = int(round(value))
+        elif not isinstance(value, int):
+            raise PyteomicsError('Only integers allowed as values in '
+                         'Composition, got {}.'.format(type(value).__name__))
+        if value: # reject 0's
+            super(BasicComposition, self).__setitem__(key, value)
+        elif key in self:
+            del self[key]
+
+    def copy(self):
+        return type(self)(self)
+
+    def __reduce__(self):
+        class_, args, state, list_iterator, dict_iterator = super(
+                BasicComposition, self).__reduce__()
+        # Override the reduce of defaultdict so we do not provide the
+        # `int` type as the first argument
+        # which prevents from correctly unpickling the object
+        args = ()
+        return class_, args, state, list_iterator, dict_iterator
+
 
 ### Public API ends here ###
 
@@ -259,6 +350,75 @@ class _file_obj(object):
     def __iter__(self):
         return iter(self.file)
 
+class IteratorContextManager(object):
+    def __init__(self, func, *args, **kwargs):
+        self._func = func
+        self._args = args
+        self._kwargs = kwargs
+        if type(self) == IteratorContextManager:
+            self.reset()
+
+    def reset(self):
+        """Resets the iterator to its initial state."""
+        try:
+            self._reader = self._func(*self._args, **self._kwargs)
+        except:
+            self.__exit__(*sys.exc_info())
+            raise
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        pass
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        try:
+            return next(self._reader)
+        except StopIteration:
+            self.__exit__(None, None, None)
+            raise
+
+    next = __next__
+
+
+class FileReader(IteratorContextManager):
+    """Abstract class implementing context manager protocol
+    for file readers.
+    """
+    def __init__(self, source, mode, func, pass_file, *args, **kwargs):
+        super(FileReader, self).__init__(func, *args, **kwargs)
+        self._pass_file = pass_file
+        self._source_init = source
+        self._mode = mode
+        self.reset()
+
+    def reset(self):
+        if hasattr(self, '_source'):
+            self._source.__exit__(None, None, None)
+        self._source = _file_obj(self._source_init, self._mode)
+        try:
+            if self._pass_file:
+                self._reader = self._func(
+                        self._source, *self._args, **self._kwargs)
+            else:
+                self._reader = self._func(*self._args, **self._kwargs)
+        except:  # clean up on any error
+            self.__exit__(*sys.exc_info())
+            raise
+
+    def __exit__(self, *args, **kwargs):
+        self._source.__exit__(*args, **kwargs)
+
+    # delegate everything else to file object
+    def __getattr__(self, attr):
+        if attr == '_source':
+            raise AttributeError
+        return getattr(self._source, attr)
+
 def _file_reader(mode='r'):
     # a lot of the code below is borrowed from
     # http://stackoverflow.com/a/14095585/1258041
@@ -266,43 +426,11 @@ def _file_reader(mode='r'):
         """A decorator implementing the context manager protocol for functions
         that read files.
 
-        Note: 'close' must be in kwargs! Otherwise it won't be respected."""
-        class CManager(object):
-            def __init__(self, source, *args, **kwargs):
-                self.file = _file_obj(source, mode)
-                try:
-                    self.reader = func(self.file, *args, **kwargs)
-                except:  # clean up on any error
-                    self.__exit__(*sys.exc_info())
-                    raise
-
-            # context manager support
-            def __enter__(self):
-                return self
-
-            def __exit__(self, *args, **kwargs):
-                self.file.__exit__(*args, **kwargs)
-
-            # iterator support
-            def __iter__(self):
-                return self
-
-            def __next__(self):
-                try:
-                    return next(self.reader)
-                except StopIteration:
-                    self.__exit__(None, None, None)
-                    raise
-
-            next = __next__  # Python 2 support
-
-            # delegate everything else to file object
-            def __getattr__(self, attr):
-                return getattr(self.file, attr)
-
+        Note: 'close' must be in kwargs! Otherwise it won't be respected.
+        """
         @wraps(func)
         def helper(*args, **kwargs):
-            return CManager(*args, **kwargs)
+            return FileReader(args[0], mode, func, True, *args[1:], **kwargs)
         return helper
     return decorator
 
@@ -344,26 +472,32 @@ def _make_chain(reader, readername):
 
 ### End of file helpers section ###
 
-def _make_local_fdr(read, is_decoy, key):
-    """Create a function that reads PSMs from a file and calculates local FDR
+def _make_qvalues(read, is_decoy, key):
+    """Create a function that reads PSMs from a file and calculates q-values
     for each value of `key`."""
-    def local_fdr(*args, **kwargs):
-        """Read `args` and return a NumPy array with scores and values of local
-        FDR.
+    import numpy as np
+    def qvalues(*args, **kwargs):
+        """Read `args` and return a NumPy array with scores and q-values.
+
+        Requires :py:mod:`numpy`.
 
         Parameters
         ----------
+
         positional args : file or str
             Files to read PSMs from. All positional arguments are treated as
             files. The rest of the arguments must be named.
+
         key : callable, optional
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better). The
             default is a function that tries to extract e-value from the PSM.
+
         reverse : bool, optional
             If :py:const:`True`, then PSMs are sorted in descending order,
             i.e. the value of the key function is higher for better PSMs.
             Default is :py:const:`False`.
+
         is_decoy : callable, optional
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
@@ -372,33 +506,64 @@ def _make_local_fdr(read, is_decoy, key):
             .. warning::
                 The default function may not work
                 with your files, because format flavours are diverse.
+
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
 
-            .. note:: If set to :py:const:`False`, then the decoy PSMs will
-               be taken into account when estimating FDR. Refer to the
+            .. note:: If set to :py:const:`False`, then by default the decoy
+               PSMs will be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
                `remove_decoy` is :py:const:`True`, then formula 1 is used
-               to control output FDR, otherwise it's formula 2.
+               to control output FDR, otherwise it's formula 2. This can be
+               changed by overriding the `formula` argument.
+
+        formula : int, optional
+            Can be either 1 or 2, defines which formula should be used for FDR
+            estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+            else 2 (see :py:func:`fdr` for definitions).
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
+
+        correction : int or float, optional
+            Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+            Default is 0 (no correction); 1 accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM; 2 also corrects
+            that probability for finite size of the sample. If a floating point number
+            is given, then instead of the expectation value for the number of false PSMs,
+            the confidence value is used. The value of `correction` is then interpreted as
+            desired confidence level. E.g., if correction=0.95, then the calculated q-values
+            do not exceed the "real" q-values with 95% probability.
+
+        full_output : bool, optional
+            If :py:const:`True`, then the returned array has PSM objects along
+            with scores and q-values.
 
         **kwargs : passed to the :py:func:`chain` function.
 
         Returns
         -------
         out : numpy.ndarray
+            A sorted array of records with the following fields:
+
+            - 'score': :py:class:`np.float64`
+            - 'is decoy': :py:class:`np.int8`
+            - 'q': :py:class:`np.float64`
+            - 'psm': :py:class:`object_` (if `full_output` is :py:const:`True`)
         """
         @_keepstate
         def get_scores(*args, **kwargs):
             scores = []
             with read(*args, **kwargs) as f:
                 for psm in f:
-                    scores.append((keyf(psm), isdecoy(psm), None))
+                    if full:
+                        scores.append((keyf(psm), isdecoy(psm), None, psm))
+                    else:
+                        scores.append((keyf(psm), isdecoy(psm), None))
             return scores
         args = [arg if not isinstance(arg, types.GeneratorType)
                 else list(arg) for arg in args]
@@ -407,74 +572,113 @@ def _make_local_fdr(read, is_decoy, key):
         reverse = kwargs.pop('reverse', False)
         remove_decoy = kwargs.pop('remove_decoy', True)
         isdecoy = kwargs.pop('is_decoy', is_decoy)
-        dtype = np.dtype([('score', np.float64), ('is decoy', np.uint8),
-            ('local FDR', np.float64)])
+        full = kwargs.pop('full_output', False)
+        formula = kwargs.pop('formula', (2, 1)[bool(remove_decoy)])
+        correction = kwargs.pop('correction', 0)
+        if formula not in {1, 2}:
+            raise PyteomicsError('`formula` must be either 1 or 2')
+        fields = [('score', np.float64), ('is decoy', np.uint8),
+            ('q', np.float64)]
+        dtype = np.dtype(fields) if not full else np.dtype(
+                fields + [('psm', np.object_)])
         scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
         if not scores.size:
-            raise StopIteration
+            return scores
         if not reverse:
             keys = scores['is decoy'], scores['score']
         else:
             keys = scores['is decoy'], -scores['score']
         scores = scores[np.lexsort(keys)]
-        cumsum = scores['is decoy'].cumsum(dtype=np.float32)
-        ind = np.arange(1, scores.size+1)
-        if remove_decoy:
-            scores['local FDR'] = cumsum / (ind - cumsum) / ratio
+        cumsum = scores['is decoy'].cumsum(dtype=np.float64)
+        tfalse = cumsum.copy()
+        ind = 1 + np.arange(scores.size)
+        if correction == 1:
+            tfalse += 1
+        elif correction == 2:
+            p = 1. / (1. + ratio)
+            targ = ind - cumsum
+            for i in range(tfalse.size):
+                tfalse[i] = _expectation(cumsum[i], targ[i], p)
+        elif 0 < correction < 1:
+            p = 1. / (1. + ratio)
+            targ = ind - cumsum
+            for i in range(tfalse.size):
+                tfalse[i] = _confidence_value(correction, cumsum[i], targ[i], p)
+        elif correction:
+            raise PyteomicsError('Invalid value for `correction`.')
+        if formula == 1:
+            scores['q'] = tfalse / (ind - cumsum) / ratio
         else:
-            scores['local FDR'] = 2. * cumsum / ind / ratio
+            scores['q'] = (cumsum + tfalse / ratio) / ind
+        # Make sure that q-values are equal for equal scores (conservatively)
+        # and that q-values are monotonic
+        for i in range(scores.size-1, 0, -1):
+            if (scores['score'][i] == scores['score'][i-1] or
+                    scores['q'][i-1] > scores['q'][i]):
+                scores['q'][i-1] = scores['q'][i]
+        if remove_decoy:
+            scores = scores[scores['is decoy'] == 0]
         return scores
-    return local_fdr
+    return qvalues
 
 
-def _make_filter(read, is_decoy, key, local_fdr):
+def _make_filter(read, is_decoy, key, qvalues):
     """Create a function that reads PSMs from a file and filters them to
     the desired FDR level (estimated by TDA), returning the top PSMs
     sorted by `key`.
     """
     def filter(*args, **kwargs):
+        import numpy as np
         try:
             fdr = kwargs.pop('fdr')
         except KeyError:
             raise PyteomicsError('Keyword argument required: fdr')
 
-        keyf = kwargs.get('key', key)
-        reverse = kwargs.get('reverse', False)
-        better = [op.le, op.ge][bool(reverse)]
-        remove_decoy = kwargs.get('remove_decoy', True)
-        isdecoy = kwargs.get('is_decoy', is_decoy)
-        scores = local_fdr(*args, **kwargs)
-        try:
-            cutoff = scores[np.nonzero(scores['local FDR'] <= fdr)[0][-1]][0]
-        except IndexError:
-            cutoff = (scores['score'].min() - 1. if not reverse
-                    else scores['score'].max() + 1.)
-        with read(*args, **kwargs) as f:
-            for p in f:
-                if not remove_decoy or not isdecoy(p):
-                    if better(keyf(p), cutoff):
-                        yield p
+        scores = qvalues(*args, **kwargs)
+        keyf = kwargs.pop('key', key)
+        reverse = kwargs.pop('reverse', False)
+        better = [op.lt, op.gt][bool(reverse)]
+        remove_decoy = kwargs.pop('remove_decoy', True)
+        isdecoy = kwargs.pop('is_decoy', is_decoy)
+        kwargs.pop('formula', None)
+        i = bisect_right(scores['q'], fdr)
+        if kwargs.pop('full_output', False):
+            return scores['psm'][:i]
+        cutoff = scores['score'][i] if i < scores.size else (
+                scores['score'][-1] + (1, -1)[bool(reverse)])
+        def out():
+            with read(*args, **kwargs) as f:
+                for p in f:
+                    if not remove_decoy or not isdecoy(p):
+                        if better(keyf(p), cutoff):
+                            yield p
+        return out()
 
-    @contextmanager
     def _filter(*args, **kwargs):
         """Read `args` and yield only the PSMs that form a set with
         estimated false discovery rate (FDR) not exceeding `fdr`.
+
+        Requires :py:mod:`numpy`.
 
         Parameters
         ----------
         positional args : file or str
             Files to read PSMs from. All positional arguments are treated as
             files. The rest of the arguments must be named.
+
         fdr : float, 0 <= fdr <= 1
             Desired FDR level.
+
         key : callable, optional
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better). The
             default is a function that tries to extract e-value from the PSM.
+
         reverse : bool, optional
             If :py:const:`True`, then PSMs are sorted in descending order,
             i.e. the value of the key function is higher for better PSMs.
             Default is :py:const:`False`.
+
         is_decoy : callable, optional
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
@@ -483,20 +687,47 @@ def _make_filter(read, is_decoy, key, local_fdr):
             .. warning::
                 The default function may not work
                 with your files, because format flavours are diverse.
+
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
 
-            .. note:: If set to :py:const:`False`, then the decoy PSMs will
-               be taken into account when estimating FDR. Refer to the
+            .. note:: If set to :py:const:`False`, then by default the decoy
+               PSMs will be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
                `remove_decoy` is :py:const:`True`, then formula 1 is used
-               to control output FDR, otherwise it's formula 2.
+               to control output FDR, otherwise it's formula 2. This can be
+               changed by overriding the `formula` argument.
+
+        formula : int, optional
+            Can be either 1 or 2, defines which formula should be used for FDR
+            estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+            else 2 (see :py:func:`fdr` for definitions).
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
+
+        correction : int or float, optional
+            Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+            Default is 0 (no correction); 1 accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM; 2 also corrects
+            that probability for finite size of the sample. If a floating point number
+            is given, then instead of the expectation value for the number of false PSMs,
+            the confidence value is used. The value of `correction` is then interpreted as
+            desired confidence level. E.g., if correction=0.95, then the calculated q-values
+            do not exceed the "real" q-values with 95% probability.
+
+        full_output : bool, optional
+            If :py:const:`True`, then an array of PSM objects is returned.
+            Otherwise, an iterator / context manager object is returned, and the
+            files are parsed twice. This saves some RAM, but is ~2x slower.
+            Default is :py:const:`True`.
+
+            .. note:: The name for the parameter comes from the fact that it is
+                      internally passed to :py:func:`qvalues`.
 
         **kwargs : passed to the :py:func:`chain` function.
 
@@ -504,53 +735,200 @@ def _make_filter(read, is_decoy, key, local_fdr):
         -------
         out : iterator
         """
-        yield filter(*args, **kwargs)
+        if kwargs.pop('full_output', True):
+            return filter(*args, full_output=True, **kwargs)
+        return IteratorContextManager(filter, *args, **kwargs)
 
     return _filter
 
-_iter = _make_chain(contextmanager(lambda x: (yield x)), 'iter')
-local_fdr = _make_local_fdr(_iter, None, None)
-filter = _make_filter(_iter, None, None, local_fdr)
+_iter = _make_chain(contextmanager(lambda x, **kw: (yield x)), 'iter')
+qvalues = _make_qvalues(_iter, None, None)
+qvalues.__doc__ =  """
+Read `args` and return a NumPy array with scores and q-values.
+
+Requires :py:mod:`numpy`.
+
+Parameters
+----------
+positional args : iterables
+    Iterables to read PSMs from. All positional arguments are chained.
+    The rest of the arguments must be named.
+
+key : callable
+    A function used for sorting of PSMs. Should accept exactly one
+    argument (PSM) and return a number (the smaller the better).
+
+reverse : bool, optional
+    If :py:const:`True`, then PSMs are sorted in descending order,
+    i.e. the value of the key function is higher for better PSMs.
+    Default is :py:const:`False`.
+
+is_decoy : callable
+    A function used to determine if the PSM is decoy or not. Should
+    accept exactly one argument (PSM) and return a truthy value if the
+    PSM should be considered decoy.
+
+remove_decoy : bool, optional
+    Defines whether decoy matches should be removed from the output.
+    Default is :py:const:`True`.
+
+    .. note:: If set to :py:const:`False`, then by default the decoy
+       PSMs will be taken into account when estimating FDR. Refer to the
+       documentation of :py:func:`fdr` for math; basically, if
+       `remove_decoy` is :py:const:`True`, then formula 1 is used
+       to control output FDR, otherwise it's formula 2. This can be
+       changed by overriding the `formula` argument.
+
+formula : int, optional
+    Can be either 1 or 2, defines which formula should be used for FDR
+    estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+    else 2 (see :py:func:`fdr` for definitions).
+
+ratio : float, optional
+    The size ratio between the decoy and target databases. Default is
+    1. In theory, the "size" of the database is the number of
+    theoretical peptides eligible for assignment to spectra that are
+    produced by *in silico* cleavage of that database.
+
+correction : int or float, optional
+    Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+    Default is 0 (no correction); 1 accounts for the probability that a false
+    positive scores better than the first excluded decoy PSM; 2 also corrects
+    that probability for finite size of the sample. If a floating point number
+    is given, then instead of the expectation value for the number of false PSMs,
+    the confidence value is used. The value of `correction` is then interpreted as
+    desired confidence level. E.g., if correction=0.95, then the calculated q-values
+    do not exceed the "real" q-values with 95% probability.
+
+full_output : bool, optional
+    If :py:const:`True`, then the returned array has PSM objects along
+    with scores and q-values.
+
+**kwargs : passed to the :py:func:`chain` function.
+
+Returns
+-------
+out : numpy.ndarray
+    A sorted array of records with the following fields:
+
+    - 'score': :py:class:`float64`
+    - 'is decoy': :py:class:`int8`
+    - 'q': :py:class:`float64`
+    - 'psm': :py:class:`object_` (if `full_output` is :py:const:`True`)
+"""
+
+filter = _make_filter(_iter, None, None, qvalues)
 filter.chain = _make_chain(filter, 'filter')
-filter.__doc__ = """Iterate ``args`` and yield only the PSMs that form a set with
-        estimated false discovery rate (FDR) not exceeding ``fdr``.
+filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
+        estimated false discovery rate (FDR) not exceeding `fdr`.
+
+        Requires :py:mod:`numpy`.
 
         Parameters
         ----------
         positional args : containers
             Containers to read PSMs from. All positional arguments are chained.
             Keyword arguments are not supported, except for those listed below.
+
         fdr : float, 0 <= fdr <= 1
             Desired FDR level.
+
         key : callable
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better).
+
         is_decoy : callable
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
             PSM should be considered decoy.
+
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
 
-            .. note:: If set to :py:const:`False`, then the decoy PSMs will
-               be taken into account when estimating FDR. Refer to the
+            .. note:: If set to :py:const:`False`, then by default the decoy
+               PSMs will be taken into account when estimating FDR. Refer to the
                documentation of :py:func:`fdr` for math; basically, if
-               ``remove_decoy`` is :py:const:`True`, then formula 1 is used
-               to control output FDR, otherwise it's formula 2.
+               `remove_decoy` is :py:const:`True`, then formula 1 is used
+               to control output FDR, otherwise it's formula 2. This can be
+               changed by overriding the `formula` argument.
+
+        formula : int, optional
+            Can be either 1 or 2, defines which formula should be used for FDR
+            estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+            else 2 (see :py:func:`fdr` for definitions).
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
+
+        correction : int or float, optional
+            Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+            Default is 0 (no correction); 1 accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM; 2 also corrects
+            that probability for finite size of the sample. If a floating point number
+            is given, then instead of the expectation value for the number of false PSMs,
+            the confidence value is used. The value of `correction` is then interpreted as
+            desired confidence level. E.g., if correction=0.95, then the calculated q-values
+            do not exceed the "real" q-values with 95% probability.
+
+        full_output : bool, optional
+            If :py:const:`True`, then an array of PSM objects is returned.
+            Otherwise, an iterator / context manager object is returned, and the
+            files are parsed twice. This saves some RAM, but may be slower.
+            Default is :py:const:`True`.
+
+            .. note:: The name for the parameter comes from the fact that it is
+                      internally passed to :py:func:`qvalues`.
 
         Returns
         -------
         out : iterator
         """
 
+try:
+    import numpy as np
+    _precalc_fact = np.log([math.factorial(n) for n in range(20)])
+    def log_factorial(x):
+        x = np.array(x)
+        pf = _precalc_fact
+        m = (x >= pf.size)
+        out = np.empty(x.shape)
+        out[~m] = pf[x[~m].astype(int)]
+        x = x[m]
+        out[m] = x * np.log(x) - x + 0.5 * np.log(2 * np.pi * x)
+        return out
+
+    def _expectation(n, T, p=0.5):
+        T = np.array(T, dtype=int)
+        m = np.arange(T.max()+1, dtype=int)
+        pi = np.exp(_log_pi(n, m, p))
+        return ((m * pi).cumsum() / pi.cumsum())[T]
+
+    def _confidence_value(conf, n, T, p=0.5):
+        T = np.array(T, dtype=int)
+        m = np.arange(T.max()+1, dtype=int)
+        log_pi = _log_pi(n, m, p)
+        pics = np.exp(log_pi).cumsum()
+        return np.searchsorted(pics, conf * pics[T])
+
+except ImportError:
+    def log_factorial(n):
+        if n > 10:
+            return n * math.log(n) - n + 0.5 * math.log(2*math.pi*n)
+        else:
+            return math.log(math.factorial(n))
+
+def _log_pi_r(n, k, p=0.5):
+    return k * math.log(p) + log_factorial(k + n) - log_factorial(k) - log_factorial(n)
+
+def _log_pi(n, k, p=0.5):
+    return _log_pi_r(n, k, p) + (n + 1) * math.log(1 - p)
+
 def _make_fdr(is_decoy):
-    def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1):
+    def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1, correction=0):
         """Estimate FDR of a data set using TDA.
         Two formulas can be used. The first one (default) is:
 
@@ -562,43 +940,67 @@ def _make_fdr(is_decoy):
 
         .. math::
 
-                FDR = \\frac{2 * N_{decoy}}{N_{total} * ratio}
+                FDR = \\frac{N_{decoy} * (1 + \\frac{1}{ratio})}{N_{total}}
 
         Parameters
         ----------
         psms : iterable
             An iterable of PSMs, e.g. as returned by :py:func:`read`.
+
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
-            estimation. Default is ``1``.
+            estimation. Default is 1.
+
         is_decoy : callable, optional
-            Shoould accept exactly one argument (PSM) and return a truthy value
+            Should accept exactly one argument (PSM) and return a truthy value
             if the PSM is considered decoy. Default is :py:func:`is_decoy`.
 
             .. warning::
                 The default function may not work
                 with your files, because format flavours are diverse.
+
         ratio : float, optional
-            The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            The size ratio between the decoy and target databases. Default is 1.
+            In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
+
+        correction : int or float, optional
+            Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+            Default is 0 (no correction); 1 accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM; 2 also corrects
+            that probability for finite size of the sample. If a floating point number
+            is given, then instead of the expectation value for the number of false PSMs,
+            the confidence value is used. The value of `correction` is then interpreted as
+            desired confidence level. E.g., if correction=0.95, then the calculated q-values
+            do not exceed the "real" q-values with 95% probability.
+
+            Requires :py:mod:`numpy`, if `correction` is a float or 2.
 
         Returns
         -------
         out : float
-            The estimation of FDR, between 0 and 1.
+            The estimation of FDR, (roughly) between 0 and 1.
         """
         if formula not in {1, 2}:
-            raise PyteomicsError("`formula` must be either 1 or 2")
+            raise PyteomicsError('`formula` must be either 1 or 2.')
         total, decoy = 0, 0
         for psm in psms:
             total += 1
             if is_decoy(psm):
                 decoy += 1
+        tfalse = decoy
+        if correction == 1 or (correction == 2 and total/decoy > 10):
+            tfalse += 1
+        elif correction == 2:
+            p = 1. / (1. + ratio)
+            tfalse = _expectation(decoy, total-decoy, p)
+        elif 0 < correction < 1:
+            p = 1. / (1. + ratio)
+            tfalse = _confidence_value(correction, decoy, total-decoy, p)
         if formula == 1:
-            return float(decoy) / (total - decoy) / ratio
-        return 2. * decoy / total / ratio
+            return float(tfalse) / (total - decoy) / ratio
+        return (decoy + tfalse / ratio) / total
     return fdr
 
 fdr = _make_fdr(None)
@@ -613,28 +1015,43 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA.
 
         .. math::
 
-                FDR = \\frac{2 * N_{decoy}}{N_{total} * ratio}
+                FDR = \\frac{N_{decoy} * (1 + \\frac{1}{ratio})}{N_{total}}
 
         Parameters
         ----------
         psms : iterable
             An iterable of PSMs.
+
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
-            estimation. Default is ``1``.
+            estimation. Default is 1.
+
         is_decoy : callable
-            Shoould accept exactly one argument (PSM) and return a truthy value
+            Should accept exactly one argument (PSM) and return a truthy value
             if the PSM is considered decoy.
+
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is
-            ``1``. In theory, the "size" of the database is the number of
+            1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
+
+        correction : int or float, optional
+            Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+            Default is 0 (no correction); 1 accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM; 2 also corrects
+            that probability for finite size of the sample. If a floating point number
+            is given, then instead of the expectation value for the number of false PSMs,
+            the confidence value is used. The value of `correction` is then interpreted as
+            desired confidence level. E.g., if correction=0.95, then the calculated q-values
+            do not exceed the "real" q-values with 95% probability.
+
+            Requires :py:mod:`numpy`, if `correction` is a float or 2.
 
         Returns
         -------
         out : float
-            The estimation of FDR, between 0 and 1.
+            The estimation of FDR, (roughly) between 0 and 1.
         """
 
 def _parse_charge(s, list_only=False):
@@ -645,348 +1062,6 @@ def _parse_charge(s, list_only=False):
             pass
     return ChargeList(s)
 
-
-### XML-related stuff below ###
-
-def _local_name(element):
-    """Strip namespace from the XML element's name"""
-    if element.tag and element.tag[0] == '{':
-        return element.tag.rsplit('}', 1)[1]
-    return element.tag
-
-def _make_version_info(env):
-    from lxml import etree
-    @_keepstate
-    def version_info(source):
-        with _file_obj(source, 'rb') as s:
-            s.seek(0)
-            for _, elem in etree.iterparse(s, events=('start',),
-                    remove_comments=True):
-                if _local_name(elem) == env['element']:
-                    vinfo = elem.attrib.get('version'), elem.attrib.get((
-                        '{{{}}}'.format(elem.nsmap['xsi'])
-                        if 'xsi' in elem.nsmap else '') + 'schemaLocation')
-                    break
-            return vinfo
-    version_info.__doc__ = """
-        Provide version information about the {0} file.
-
-        Parameters:
-        -----------
-        source : str or file
-            {0} file object or path to file
-
-        Returns:
-        --------
-        out : tuple
-            A (version, schema URL) tuple, both elements are strings or None.
-        """.format(env['format'])
-    return version_info
-
-def _make_schema_info(env):
-    from lxml import etree
-    @memoize(100)
-    def _schema_info(source, **kwargs):
-        read_schema = kwargs.get('read_schema', True)
-        if not read_schema: return env['defaults']
-        version, schema = env['version_info'](source)
-        if version == env['default_version']:
-            return env['defaults']
-        ret = {}
-        try:
-            if not schema:
-                schema_url = ''
-                raise PyteomicsError(
-                        'Schema information not found in {}.'.format(
-                            getattr(source, 'name', source)))
-            schema_url = schema.split()[-1]
-            if not (schema_url.startswith('http://') or
-                    schema_url.startswith('file://')):
-                schema_url = 'file://' + schema_url
-            schema_file = urlopen(schema_url)
-            p = etree.XMLParser(remove_comments=True)
-            schema_tree = etree.parse(schema_file, parser=p)
-            types = {'ints': {'int', 'long', 'nonNegativeInteger',
-                        'positiveInt', 'integer', 'unsignedInt'},
-                    'floats': {'float', 'double'},
-                    'bools': {'boolean'},
-                    'intlists': {'listOfIntegers'},
-                    'floatlists': {'listOfFloats'},
-                    'charlists': {'listOfChars', 'listOfCharsOrAny'}}
-            for k, val in types.items():
-                tuples = set()
-                for elem in schema_tree.iter():
-                    if _local_name(elem) == 'attribute' and elem.attrib.get(
-                            'type', '').split(':')[-1] in val:
-                        anc = elem.getparent()
-                        while not (
-                                (_local_name(anc) == 'complexType'
-                                    and 'name' in anc.attrib)
-                                or _local_name(anc) == 'element'):
-                            anc = anc.getparent()
-                            if anc is None:
-                                break
-                        else:
-                            if _local_name(anc) == 'complexType':
-                                elnames = [x.attrib['name'] for x in
-                                    schema_tree.iter() if x.attrib.get(
-                                        'type', '').split(':')[-1] ==
-                                    anc.attrib['name']]
-                            else:
-                                elnames = (anc.attrib['name'],)
-                            for elname in elnames:
-                                tuples.add(
-                                    (elname, elem.attrib['name']))
-                ret[k] = tuples
-            ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
-                '//*[local-name()="element"]') if 'name' in elem.attrib and
-                elem.attrib.get('maxOccurs', '1') != '1')
-        except Exception as e:
-            if isinstance(e, (URLError, socket.error, socket.timeout)):
-                warnings.warn("Can't get the {0[format]} schema for version "
-                "`{1}` from <{2}> at the moment.\n"
-                "Using defaults for {0[default_version]}.\n"
-                "You can disable reading the schema by specifying "
-                "`read_schema=False`.".format(env, version,
-                    schema_url))
-            else:
-                warnings.warn("Unknown {0[format]} version `{1}`. "
-                    "Attempt to use schema\n"
-                    "information from <{2}> failed.\n"
-                    "Exception information:\n{3}\n"
-                    "Falling back to defaults for {0[default_version]}\n"
-                    "NOTE: This is just a warning, probably from a badly-"
-                    "generated XML file.\nYou will still most probably get "
-                    "decent results.\nLook here for suppressing warnings:\n"
-                    "http://docs.python.org/library/warnings.html#"
-                    "temporarily-suppressing-warnings\n"
-                    "You can also disable reading the schema by specifying "
-                    "`read_schema=False`.\n"
-                    "If you think this shouldn't have happened, please "
-                    "report this to\n"
-                    "http://hg.theorchromo.ru/pyteomics/issues\n"
-                    "".format(env, version, schema_url,
-                        format_exc()))
-            ret = env['defaults']
-        return ret
-    _schema_info.__doc__ = """
-        Stores defaults for version {}, tries to retrieve the schema for
-        other versions. Keys are: 'floats', 'ints', 'bools', 'lists',
-        'intlists', 'floatlists', 'charlists'.""".format(env['default_version'])
-    return _schema_info
-
-def _make_get_info(env):
-    def _get_info(source, element, recursive=False, retrieve_refs=False, **kw):
-        """Extract info from element's attributes, possibly recursive.
-        <cvParam> and <userParam> elements are treated in a special way."""
-        name = _local_name(element)
-        kwargs = dict(recursive=recursive, retrieve_refs=retrieve_refs)
-        kwargs.update(kw)
-        schema_info = env['schema_info'](source, **kwargs)
-        if name in {'cvParam', 'userParam'}:
-            if 'value' in element.attrib:
-                try:
-                    value = float(element.attrib['value'])
-                except ValueError:
-                    value = element.attrib['value']
-                return {element.attrib['name']: value}
-            else:
-                return {'name': element.attrib['name']}
-
-        info = dict(element.attrib)
-        # process subelements
-        if recursive:
-            for child in element.iterchildren():
-                cname = _local_name(child)
-                if cname in {'cvParam', 'userParam'}:
-                    newinfo = _get_info(source, child, **kw)
-                    if not ('name' in info and 'name' in newinfo):
-                        info.update(newinfo)
-                    else:
-                        if not isinstance(info['name'], list):
-                            info['name'] = [info['name']]
-                        info['name'].append(newinfo.pop('name'))
-                else:
-                    if cname not in schema_info['lists']:
-                        info[cname] = env['get_info_smart'](
-                                source, child, **kwargs)
-                    else:
-                        info.setdefault(cname, []).append(
-                                env['get_info_smart'](source, child, **kwargs))
-        # process element text
-        if element.text and element.text.strip():
-            stext = element.text.strip()
-            if stext:
-                if info:
-                    info[name] = stext
-                else:
-                    return stext
-        # convert types
-        def str_to_bool(s):
-            if s.lower() in {'true', '1'}: return True
-            if s.lower() in {'false', '0'}: return False
-            raise PyteomicsError('Cannot convert string to bool: ' + s)
-
-        def str_to_num(s, numtype):
-            return numtype(s) if s else None
-
-        to = lambda t: lambda s: str_to_num(s, t)
-
-        converters = {'ints': to(int), 'floats': to(float), 'bools': str_to_bool,
-                'intlists': lambda x: np.fromstring(x.replace('\n', ' '),
-                    dtype=int, sep=' '),
-                'floatlists': lambda x: np.fromstring(x.replace('\n', ' '),
-                    sep=' '),
-                'charlists': list}
-        for k, v in info.items():
-            for t, a in converters.items():
-                if (_local_name(element), k) in schema_info[t]:
-                    info[k] = a(v)
-        # resolve refs
-        # loop is needed to resolve refs pulled from other refs
-        if retrieve_refs:
-            for k, v in dict(info).items():
-                if k.endswith('_ref'):
-                    info.update(env['get_by_id'](source, v,
-                        retrieve_refs=True,
-                        tree=kw.get('tree')))
-                    del info[k]
-                    info.pop('id', None)
-        # flatten the excessive nesting
-        for k, v in dict(info).items():
-            if k in env['keys']:
-                info.update(v)
-                del info[k]
-        # another simplification
-        for k, v in dict(info).items():
-            if isinstance(v, dict) and 'name' in v and len(v) == 1:
-                info[k] = v['name']
-        if len(info) == 2 and 'name' in info and (
-                'value' in info or 'values' in info):
-            name = info.pop('name')
-            info = {name: info.popitem()[1]}
-        return info
-    return _get_info
-
-
-def _make_iterfind(env):
-    from lxml import etree
-    def parse(source):
-        if not hasattr(parse, 'cache'):
-            parse.cache = {}
-        try:
-            try:
-                return parse.cache[source.name]
-            except AttributeError:
-                return parse.cache[source]
-        except KeyError:
-            p = etree.XMLParser(remove_comments=True)
-            tree = etree.parse(source, parser=p)
-            parse.cache = {getattr(source, 'name', source): tree}
-            return tree
-    pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
-    pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
-    def get_rel_path(element, names):
-        if not names:
-            yield element
-        else:
-            for child in element.iterchildren():
-                if _local_name(child).lower() == names[0].lower(
-                        ) or names[0] == '*':
-                    if len(names) == 1:
-                        yield child
-                    else:
-                        for gchild in get_rel_path(child, names[1:]):
-                            yield gchild
-    def satisfied(d, cond):
-        func = {'<': 'lt', '<=': 'le', '=': 'eq', '==': 'eq',
-                '!=': 'ne', '<>': 'ne', '>': 'gt', '>=': 'ge'}
-        try:
-            lhs, sign, rhs = re.match(pattern_cond, cond).groups()
-            if lhs in d:
-                return getattr(op, func[sign])(
-                        d[lhs], ast.literal_eval(rhs))
-            return False
-        except (AttributeError, KeyError, ValueError):
-            raise PyteomicsError('Invalid condition: ' + cond)
-
-    @_keepstate
-    def iterfind(source, path, iterative=None, **kwargs):
-        """Parse `source` and yield info on elements with specified local name
-        or by specified "XPath". Only local names separated with slashes are
-        accepted. An asterisk (``*``) means any element.
-        You can specify a single condition in the end, such as:
-        ``"/path/to/element[some_value>1.5]"``.
-
-        Note: you can do much more powerful filtering using plain Python.
-        The path can be absolute or "free". Please don't specify
-        namespaces."""
-        try:
-            path, _, cond = re.match(pattern_path, path).groups()
-        except AttributeError:
-            raise PyteomicsError('Invalid path: ' + path)
-        if path.startswith('//') or not path.startswith('/'):
-            absolute = False
-            if path.startswith('//'):
-                path = path[2:]
-                if path.startswith('/') or '//' in path:
-                    raise PyteomicsError("Too many /'s in a row.")
-        else:
-            absolute = True
-            path = path[1:]
-        nodes = path.rstrip('/').split('/')
-        if iterative is None:
-            iterative = not kwargs.get('retrieve_refs')
-        if iterative:
-            localname = nodes[0].lower()
-            found = False
-            for ev, elem in etree.iterparse(source, events=('start', 'end'),
-                    remove_comments=True):
-                name_lc = _local_name(elem).lower()
-                if ev == 'start':
-                    if name_lc == localname or localname == '*':
-                        found += True
-                else:
-                    if name_lc == localname or localname == '*':
-                        if (absolute and elem.getparent() is None
-                                ) or not absolute:
-                            for child in get_rel_path(elem, nodes[1:]):
-                                info = env['get_info_smart'](
-                                        source, child, **kwargs)
-                                if cond is None or satisfied(info, cond):
-                                    yield info
-                        if not localname == '*':
-                            found -= 1
-                    if not found:
-                        elem.clear()
-        else:
-            tree = parse(source)
-            xpath = ('/' if absolute else '//') + '/'.join(
-                    '*[local-name()="{}"]'.format(node) for node in nodes)
-            for elem in tree.xpath(xpath):
-                info = env['get_info_smart'](source, elem, tree=tree, **kwargs)
-                if cond is None or satisfied(info, cond):
-                    yield info
-    return iterfind
-
-def _xpath(tree, path, ns=None):
-    """Return the results of XPath query with added namespaces.
-    Assumes the ns declaration is on the root element or absent."""
-    if hasattr(tree, 'getroot'):
-        root = tree.getroot()
-    else:
-        root = tree
-        while root.getparent() is not None:
-            root = root.getparent()
-    ns = root.nsmap.get(ns)
-    def repl(m):
-        s = m.group(1)
-        if not ns: return s
-        if not s: return 'd:'
-        return '/d:'
-    new_path = re.sub('(\/|^)(?![\*\/])', repl, path)
-    n_s = ({'d': ns} if ns else None)
-    return tree.xpath(new_path, namespaces=n_s)
 
 ### Bulky constants for other modules are defined below.
 
@@ -4285,240 +4360,3 @@ _nist_mass = {'Ac': {0: (227, 1.0),
   109: (108.94924, 0.0),
   110: (109.95287, 0.0)},
  'e*': {0: (0.00054857990943, 1.0)}}
-
-_mzml_schema_defaults = {'ints': {
-    ('spectrum', 'index'),
-     ('instrumentConfigurationList', 'count'),
-     ('binaryDataArray', 'encodedLength'),
-     ('cvList', 'count'),
-     ('binaryDataArray', 'arrayLength'),
-     ('scanWindowList', 'count'),
-     ('componentList', 'count'),
-     ('sourceFileList', 'count'),
-     ('productList', 'count'),
-     ('referenceableParamGroupList', 'count'),
-     ('scanList', 'count'),
-     ('spectrum', 'defaultArrayLength'),
-     ('dataProcessingList', 'count'),
-     ('sourceFileRefList', 'count'),
-     ('scanSettingsList', 'count'),
-     ('selectedIonList', 'count'),
-     ('chromatogram', 'defaultArrayLength'),
-     ('precursorList', 'count'),
-     ('chromatogram', 'index'),
-     ('processingMethod', 'order'),
-     ('targetList', 'count'),
-     ('sampleList', 'count'),
-     ('softwareList', 'count'),
-     ('binaryDataArrayList', 'count'),
-     ('spectrumList', 'count'),
-     ('chromatogramList', 'count')},
-        'floats': {},
-        'bools': {},
-        'lists': {'scan', 'spectrum', 'sample', 'cv', 'dataProcessing',
-            'cvParam', 'source', 'userParam', 'detector', 'product',
-            'referenceableParamGroupRef', 'selectedIon', 'sourceFileRef',
-            'binaryDataArray', 'analyzer', 'scanSettings',
-            'instrumentConfiguration', 'chromatogram', 'target',
-            'processingMethod', 'precursor', 'sourceFile',
-            'referenceableParamGroup', 'contact', 'scanWindow', 'software'},
-        'intlists': {},
-        'floatlists': {},
-        'charlists': {}}
-
-_pepxml_schema_defaults = {'ints':
-    {('xpressratio_summary', 'xpress_light'),
-     ('distribution_point', 'obs_5_distr'),
-     ('distribution_point', 'obs_2_distr'),
-     ('enzymatic_search_constraint', 'max_num_internal_cleavages'),
-     ('asapratio_lc_heavypeak', 'right_valley'),
-     ('libra_summary', 'output_type'),
-     ('distribution_point', 'obs_7_distr'),
-     ('spectrum_query', 'index'),
-     ('data_filter', 'number'),
-     ('roc_data_point', 'num_incorr'),
-     ('search_hit', 'num_tol_term'),
-     ('search_hit', 'num_missed_cleavages'),
-     ('asapratio_lc_lightpeak', 'right_valley'),
-     ('libra_summary', 'normalization'),
-     ('specificity', 'min_spacing'),
-     ('database_refresh_timestamp', 'min_num_enz_term'),
-     ('enzymatic_search_constraint', 'min_number_termini'),
-     ('xpressratio_result', 'light_lastscan'),
-     ('distribution_point', 'obs_3_distr'),
-     ('spectrum_query', 'end_scan'),
-     ('analysis_result', 'id'),
-     ('search_database', 'size_in_db_entries'),
-     ('search_hit', 'hit_rank'),
-     ('alternative_protein', 'num_tol_term'),
-     ('search_hit', 'num_tot_proteins'),
-     ('asapratio_summary', 'elution'),
-     ('search_hit', 'tot_num_ions'),
-     ('error_point', 'num_incorr'),
-     ('mixture_model', 'precursor_ion_charge'),
-     ('roc_data_point', 'num_corr'),
-     ('search_hit', 'num_matched_ions'),
-     ('dataset_derivation', 'generation_no'),
-     ('xpressratio_result', 'heavy_firstscan'),
-     ('xpressratio_result', 'heavy_lastscan'),
-     ('error_point', 'num_corr'),
-     ('spectrum_query', 'assumed_charge'),
-     ('analysis_timestamp', 'id'),
-     ('xpressratio_result', 'light_firstscan'),
-     ('distribution_point', 'obs_4_distr'),
-     ('asapratio_lc_heavypeak', 'left_valley'),
-     ('fragment_masses', 'channel'),
-     ('distribution_point', 'obs_6_distr'),
-     ('affected_channel', 'channel'),
-     ('search_result', 'search_id'),
-     ('contributing_channel', 'channel'),
-     ('asapratio_lc_lightpeak', 'left_valley'),
-     ('asapratio_peptide_data', 'area_flag'),
-     ('search_database', 'size_of_residues'),
-     ('asapratio_peptide_data', 'cidIndex'),
-     ('mixture_model', 'num_iterations'),
-     ('mod_aminoacid_mass', 'position'),
-     ('spectrum_query', 'start_scan'),
-     ('asapratio_summary', 'area_flag'),
-     ('mixture_model', 'tot_num_spectra'),
-     ('search_summary', 'search_id'),
-     ('xpressratio_timestamp', 'xpress_light'),
-     ('distribution_point', 'obs_1_distr'),
-     ('intensity', 'channel'),
-     ('asapratio_contribution', 'charge'),
-     ('libra_summary', 'centroiding_preference')},
-    'floats':
-    {('asapratio_contribution', 'error'),
-     ('asapratio_lc_heavypeak', 'area_error'),
-     ('modification_info', 'mod_nterm_mass'),
-     ('distribution_point', 'model_4_neg_distr'),
-     ('distribution_point', 'model_5_pos_distr'),
-     ('spectrum_query', 'precursor_neutral_mass'),
-     ('asapratio_lc_heavypeak', 'time_width'),
-     ('xpressratio_summary', 'masstol'),
-     ('affected_channel', 'correction'),
-     ('distribution_point', 'model_7_neg_distr'),
-     ('error_point', 'error'),
-     ('intensity', 'target_mass'),
-     ('roc_data_point', 'sensitivity'),
-     ('distribution_point', 'model_4_pos_distr'),
-     ('distribution_point', 'model_2_neg_distr'),
-     ('distribution_point', 'model_3_pos_distr'),
-     ('mixture_model', 'prior_probability'),
-     ('roc_data_point', 'error'),
-     ('intensity', 'normalized'),
-     ('modification_info', 'mod_cterm_mass'),
-     ('asapratio_lc_lightpeak', 'area_error'),
-     ('distribution_point', 'fvalue'),
-     ('distribution_point', 'model_1_neg_distr'),
-     ('peptideprophet_summary', 'min_prob'),
-     ('asapratio_result', 'mean'),
-     ('point', 'pos_dens'),
-     ('fragment_masses', 'mz'),
-     ('mod_aminoacid_mass', 'mass'),
-     ('distribution_point', 'model_6_neg_distr'),
-     ('asapratio_lc_lightpeak', 'time_width'),
-     ('asapratio_result', 'heavy2light_error'),
-     ('peptideprophet_result', 'probability'),
-     ('error_point', 'min_prob'),
-     ('peptideprophet_summary', 'est_tot_num_correct'),
-     ('roc_data_point', 'min_prob'),
-     ('asapratio_result', 'heavy2light_mean'),
-     ('distribution_point', 'model_5_neg_distr'),
-     ('mixturemodel', 'neg_bandwidth'),
-     ('asapratio_result', 'error'),
-     ('xpressratio_result', 'light_mass'),
-     ('point', 'neg_dens'),
-     ('asapratio_lc_lightpeak', 'area'),
-     ('distribution_point', 'model_1_pos_distr'),
-     ('xpressratio_result', 'mass_tol'),
-     ('mixturemodel', 'pos_bandwidth'),
-     ('xpressratio_result', 'light_area'),
-     ('asapratio_peptide_data', 'heavy_mass'),
-     ('distribution_point', 'model_2_pos_distr'),
-     ('search_hit', 'calc_neutral_pep_mass'),
-     ('intensity', 'absolute'),
-     ('asapratio_peptide_data', 'light_mass'),
-     ('distribution_point', 'model_3_neg_distr'),
-     ('aminoacid_modification', 'mass'),
-     ('asapratio_lc_heavypeak', 'time'),
-     ('asapratio_lc_lightpeak', 'time'),
-     ('asapratio_lc_lightpeak', 'background'),
-     ('mixture_model', 'est_tot_correct'),
-     ('point', 'value'),
-     ('asapratio_lc_heavypeak', 'background'),
-     ('terminal_modification', 'mass'),
-     ('fragment_masses', 'offset'),
-     ('xpressratio_result', 'heavy_mass'),
-     ('search_hit', 'protein_mw'),
-     ('libra_summary', 'mass_tolerance'),
-     ('spectrum_query', 'retention_time_sec'),
-     ('distribution_point', 'model_7_pos_distr'),
-     ('asapratio_lc_heavypeak', 'area'),
-     ('alternative_protein', 'protein_mw'),
-     ('asapratio_contribution', 'ratio'),
-     ('xpressratio_result', 'heavy_area'),
-     ('distribution_point', 'model_6_pos_distr')},
-    'bools':
-    {('sample_enzyme', 'independent'),
-     ('intensity', 'reject'),
-     ('libra_result', 'is_rejected')},
-    'intlists': set(),
-    'floatlists': set(),
-    'charlists': set(),
-    'lists': {'point', 'aminoacid_modification', 'msms_run_summary',
-            'mixturemodel', 'search_hit', 'mixturemodel_distribution',
-            'sequence_search_constraint', 'specificity', 'alternative_protein',
-            'analysis_result', 'data_filter', 'fragment_masses', 'error_point',
-            'parameter', 'spectrum_query', 'search_result', 'affected_channel',
-            'analysis_summary', 'roc_data_point', 'distribution_point',
-            'search_summary', 'mod_aminoacid_mass', 'search_score', 'intensity',
-            'analysis_timestamp', 'mixture_model', 'terminal_modification',
-            'contributing_channel', 'inputfile'}}
-
-_mzid_schema_defaults = {'ints': {('DBSequence', 'length'),
-                     ('IonType', 'charge'),
-                     ('BibliographicReference', 'year'),
-                     ('SubstitutionModification', 'location'),
-                     ('PeptideEvidence', 'end'),
-                     ('Enzyme', 'missedCleavages'),
-                     ('PeptideEvidence', 'start'),
-                     ('Modification', 'location'),
-                     ('SpectrumIdentificationItem', 'rank'),
-                     ('SpectrumIdentificationItem', 'chargeState')},
-            'floats': {('SubstitutionModification', 'monoisotopicMassDelta'),
-                     ('SpectrumIdentificationItem', 'experimentalMassToCharge'),
-                     ('Residue', 'mass'),
-                     ('SpectrumIdentificationItem', 'calculatedPI'),
-                     ('Modification', 'avgMassDelta'),
-                     ('SearchModification', 'massDelta'),
-                     ('Modification', 'monoisotopicMassDelta'),
-                     ('SubstitutionModification', 'avgMassDelta'),
-                     ('SpectrumIdentificationItem', 'calculatedMassToCharge')},
-            'bools': {('PeptideEvidence', 'isDecoy'),
-                     ('SearchModification', 'fixedMod'),
-                     ('Enzymes', 'independent'),
-                     ('Enzyme', 'semiSpecific'),
-                     ('SpectrumIdentificationItem', 'passThreshold'),
-                     ('ProteinDetectionHypothesis', 'passThreshold')},
-            'lists': {'SourceFile', 'SpectrumIdentificationProtocol',
-                    'ProteinDetectionHypothesis', 'SpectraData', 'Enzyme',
-                    'Modification', 'MassTable', 'DBSequence',
-                    'InputSpectra', 'cv', 'IonType', 'SearchDatabaseRef',
-                    'Peptide', 'SearchDatabase', 'ContactRole', 'cvParam',
-                    'ProteinAmbiguityGroup', 'SubSample',
-                    'SpectrumIdentificationItem', 'TranslationTable',
-                    'AmbiguousResidue', 'SearchModification',
-                    'SubstitutionModification', 'PeptideEvidenceRef',
-                    'PeptideEvidence', 'SpecificityRules',
-                    'SpectrumIdentificationResult', 'Filter', 'FragmentArray',
-                    'InputSpectrumIdentifications', 'BibliographicReference',
-                    'SpectrumIdentification', 'Sample', 'Affiliation',
-                    'PeptideHypothesis',
-                    'Measure', 'SpectrumIdentificationItemRef'},
-            'intlists': {('IonType', 'index'), ('MassTable', 'msLevel')},
-            'floatlists': {('FragmentArray', 'values')},
-            'charlists': {('Modification', 'residues'),
-                    ('SearchModification', 'residues')}}
-
-

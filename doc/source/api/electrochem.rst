@@ -1,2 +1,1 @@
 .. automodule:: pyteomics.electrochem
-   :members:

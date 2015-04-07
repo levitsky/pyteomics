@@ -1,6 +1,6 @@
 """
-mgf - read and write MS/MS data in Mascot Generic Format.
-=========================================================
+mgf - read and write MS/MS data in Mascot Generic Format
+========================================================
 
 Summary
 -------
@@ -12,7 +12,7 @@ exprimental parameters.
 This module provides minimalistic infrastructure for access to data stored in
 MGF files. The most important function is :py:func:`read`, which
 reads spectra and related information as saves them into human-readable
-:py:class:`dict`'s.
+:py:class:`dicts`.
 Also, common parameters can be read from MGF file header with
 :py:func:`read_header` function. :py:func:`write` allows creation of MGF
 files.
@@ -33,8 +33,13 @@ Functions
 
   :py:func:`write` - write an MGF file.
 
--------------------------------------------------------------------------------
 
+Dependencies
+------------
+
+This module requires :py:mod:`numpy`.
+
+-------------------------------------------------------------------------------
 """
 
 #   Copyright 2012 Anton Goloborodko, Lev Levitsky
@@ -53,7 +58,7 @@ Functions
 
 from . import auxiliary as aux
 import numpy as np
-from itertools import cycle
+import itertools as it
 
 _comments = '#;!/'
 
@@ -84,7 +89,7 @@ def read(source=None, use_header=True):
     Returns
     -------
 
-    out : iterator over dicts
+    out : FileReader
     """
     header = read_header(source)
     reading_spectrum = False
@@ -171,6 +176,31 @@ def read_header(source):
             header['charge'] = aux._parse_charge(header['charge'], True)
         return header
 
+_key_order = ['title', 'pepmass', 'rtinseconds', 'charge']
+
+def _pepmass_repr(k, pepmass):
+    outstr = k.upper() + '='
+    if not isinstance(pepmass, (str, int, float)): # assume iterable
+        try:
+            outstr += ' '.join(str(x) for x in pepmass if x is not None)
+        except TypeError:
+            raise aux.PyteomicsError(
+                    'Cannot handle parameter: PEPMASS = {}'.format(pepmass))
+    else:
+        outstr += str(pepmass)
+    return outstr
+
+def _charge_repr(k, charge):
+    return '{}={}'.format(k.upper(), aux._parse_charge(str(charge)))
+
+def _default_repr(key, val):
+    return '{}={}'.format(key.upper(), val)
+
+_value_converters = {'pepmass': _pepmass_repr, 'charge': _charge_repr}
+
+def _key_value_line(key, val):
+    return _value_converters.get(key, _default_repr)(key, val) + '\n'
+
 def write(spectra, output=None, header=''):
     """
     Create a file in MGF format.
@@ -190,6 +220,9 @@ def write(spectra, output=None, header=''):
         without any format consistency tests. Values can be of any type allowing
         string representation.
 
+        .. note:: Key order is defined by :py:data:`_key_order` variable. Value
+            representation is configured via :py:data:`_value_converters`.
+
         'charge array' can also be specified.
 
     output : str or file or None, optional
@@ -201,7 +234,7 @@ def write(spectra, output=None, header=''):
     header : dict or (multiline) str or list of str, optional
         In case of a single string or a list of strings, the header will be
         written 'as is'. In case of dict, the keys (must be strings) will be
-        uppercased, the values will be written as strings, also uppercased.
+        uppercased.
 
     Returns
     -------
@@ -212,7 +245,7 @@ def write(spectra, output=None, header=''):
 
         if isinstance(header, dict):
             head_dict = header.copy()
-            head_lines = ['%s=%s' % (x.upper(), str(header[x])) for x in header]
+            head_lines = [_key_value_line(k, v) for k, v in header.items()]
             head_str = '\n'.join(head_lines)
         else:
             if isinstance(header, str):
@@ -222,48 +255,37 @@ def write(spectra, output=None, header=''):
                 head_lines = list(header)
                 head_str = '\n'.join(header)
             head_dict = {}
-        for line in head_lines:
-            if not line.strip() or any(
+            for line in head_lines:
+                if not line.strip() or any(
                     line.startswith(c) for c in _comments):
                    continue
-            l = line.split('=')
-            if len(l) == 2:
-                head_dict[l[0].lower()] = l[1].strip()
-        output.write(head_str)
+                l = line.split('=')
+                if len(l) == 2:
+                    head_dict[l[0].lower()] = l[1].strip()
+        if head_str:
+            output.write(head_str + '\n\n')
 
         for spectrum in spectra:
-            output.write('\n\nBEGIN IONS\n')
-            output.write('\n'.join('{}={}'.format(key.upper(), val)
-                for key, val in spectrum['params'].items() if not
-                (val == head_dict.get(key) or
-                # handle PEPMASS and CHARGE later
-                (key.lower() in {'pepmass', 'charge'} and
-                    not isinstance(val, (str, int, float))))))
-            # time to handle PEPMASS and CHARGE
-            for key, val in spectrum['params'].items():
-                outstr = ''
-                if key.lower() == 'pepmass' and not isinstance(val,
-                        (str, int, float)): # assume iterable
-                    try:
-                        outstr = '\nPEPMASS=' + ' '.join(
-                            str(x) for x in val if x is not None)
-                    except TypeError:
-                        raise aux.PyteomicsError('Cannot handle parameter:'
-                                ' {} = {}'.format(key, val))
-                elif key.lower() == 'charge':
-                    outstr = '\nCHARGE={}'.format(aux._parse_charge(str(val)))
-                output.write(outstr)
-            output.write('\n')
+            output.write('BEGIN IONS\n')
+            found = set()
+            for key in it.chain(_key_order, spectrum['params']):
+                if key not in found and key in spectrum['params']:
+                    found.add(key)
+                    val = spectrum['params'][key]
+                    if val != head_dict.get(key):
+                        output.write(_key_value_line(key, val))
+
             try:
-                for m, i, c in zip(spectrum['m/z array'], spectrum['intensity array'],
-                        spectrum.get('charge array', cycle((None,)))):
-                    output.write('\n{} {} {}'.format(
-                        m, i, (c if c not in (None, np.nan, np.ma.masked) else '')))
+                for m, i, c in zip(spectrum['m/z array'],
+                        spectrum['intensity array'],
+                        spectrum.get('charge array', it.cycle((None,)))):
+                    output.write('{} {} {}\n'.format(
+                        m, i,
+                        (c if c not in (None, np.nan, np.ma.masked) else '')))
             except KeyError:
-                raise aux.PyteomicsError("'m/z array' and 'intensity array' must be"
-                        " present in all spectra.")
-            output.write('\nEND IONS')
-        output.write('\n')
+                raise aux.PyteomicsError("'m/z array' and 'intensity array'"
+                        " must be present in all spectra.")
+            output.write('END IONS\n\n')
         return output
 
 chain = aux._make_chain(read, 'read')

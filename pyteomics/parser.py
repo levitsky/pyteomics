@@ -99,8 +99,7 @@ Data
 import re
 from collections import deque
 import itertools as it
-import numpy as np
-from .auxiliary import PyteomicsError, memoize
+from .auxiliary import PyteomicsError, memoize, BasicComposition
 
 std_amino_acids = ['Q','W','E','R','T','Y','I','P','A','S',
                    'D','F','G','H','K','L','C','V','N','M']
@@ -350,16 +349,16 @@ def fast_valid(sequence, labels=std_labels):
     With strings, this only works as expected on sequences without
     modifications or terminal groups.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     sequence : iterable (expectedly, str)
         The sequence to check. A valid sequence would be a string of
         labels, all present in `labels`.
     labels : iterable, optional
         An iterable of known labels.
 
-    Returns:
-    --------
+    Returns
+    -------
     out : bool
     """
     labels = set(labels)
@@ -457,7 +456,7 @@ def amino_acid_composition(sequence,
         raise PyteomicsError('Unsupported type of a sequence.'
                 'Must be str or list, not %s' % type(sequence))
 
-    aa_dict = {}
+    aa_dict = BasicComposition()
 
     # Process terminal amino acids.
     if term_aa:
@@ -471,7 +470,7 @@ def amino_acid_composition(sequence,
 
     # Process core amino acids.
     for aa in parsed_sequence:
-        aa_dict[aa] = aa_dict.get(aa, 0) + 1
+        aa_dict[aa] += 1
 
     return aa_dict
 
@@ -528,8 +527,8 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None, **kwargs):
     return peptides
 
 def num_sites(sequence, rule, **kwargs):
-    """Count the number of sites where ``sequence`` can be cleaved using
-    the given ``rule`` (e.g. number of miscleavages for a peptide).
+    """Count the number of sites where `sequence` can be cleaved using
+    the given `rule` (e.g. number of miscleavages for a peptide).
 
     Parameters
     ----------
@@ -778,9 +777,11 @@ def isoforms(sequence, **kwargs):
         raise PyteomicsError('Unsupported value of "format": {}'.format(format_))
 
 def coverage(protein, peptides):
-    """Calculate how much of ``protein`` is covered by ``peptides``.
-    Peptides can overlap. If a peptide is found multiple times in ``protein``,
+    """Calculate how much of `protein` is covered by `peptides`.
+    Peptides can overlap. If a peptide is found multiple times in `protein`,
     it contributes more to the overall coverage.
+
+    Requires :py:mod:`numpy`.
 
     .. note::
         Modifications and terminal groups are discarded.
@@ -802,6 +803,7 @@ def coverage(protein, peptides):
     >>> coverage('PEPTIDES'*100, ['PEP', 'EPT'])
     0.5
     """
+    import numpy as np
     protein = re.sub(r'[^A-Z]', '', protein)
     mask = np.zeros(len(protein), dtype=np.int8)
     for peptide in peptides:

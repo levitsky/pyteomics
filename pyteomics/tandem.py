@@ -13,12 +13,15 @@ XML file. The output format is described
 `here (PDF) <http://www.thegpm.org/docs/X_series_output_form.pdf>`_.
 
 This module provides a minimalistic way to extract information from X!Tandem
-output files. The main idea is the same as in :py:mod:`pyteomics.pepxml`:
-the top-level function :py:func:`read` allows iterating over entries in
+output files. You can use the old functional interface (:py:func:`read`) or the
+new object-oriented interface (:py:class:`TandemXML`) to iterate over entries in
 `<group>` elements, i.e. identifications for a certain spectrum.
 
 Data access
 -----------
+
+  :py:class:`TandemXML` - a class representing a single MzIdentML file.
+  Other data access functions use this class internally.
 
   :py:func:`read` - iterate through peptide-spectrum matches in an X!Tandem
   output file. Data from a single PSM are converted to a human-readable dict.
@@ -39,14 +42,27 @@ Data access
   :py:func:`filter.chain.from_iterable` - chain a series of filters applied
   independently to an iterable of files.
 
-  :py:func:`iterfind` - iterate over elements in an X!Tandem file.
-
-Auxiliary
----------
+Miscellaneous
+-------------
 
   :py:func:`is_decoy` - determine if a PSM is from the decoy database.
 
   :py:func:`fdr` - estimate the FDR in a data set using TDA.
+
+  :py:func:`qvalues` - get an array of scores and local FDR values for a PSM
+  set using the target-decoy approach.
+
+Deprecated functions
+--------------------
+
+  :py:func:`iterfind` - iterate over elements in an X!Tandem file.
+  You can just call the corresponding method of the :py:class:`TandemXML`
+  object.
+
+Dependencies
+------------
+
+This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 
 -------------------------------------------------------------------------------
 """
@@ -67,50 +83,75 @@ Auxiliary
 
 import itertools as it
 import operator
-import numpy as np
-from . import auxiliary as aux
+from . import xml, auxiliary as aux
 
-def _get_info_smart(source, element, **kw):
-    info = _get_info(source, element, **kw)
-    # handy simplifications below
-    if isinstance(info.get('note'), list
-            ) and len(info['note']) == 1 and set(
-                    info['note'][0]) == {'label', 'note'}:
-        info['note'] = info['note'][0]['note']
-    if 'protein' in info and 'label' in info:
-        del info['label']
-    if 'group' in info:
-        for g in info['group']:
-            label = g.pop('label')
-            type_ = g.pop('type')
-            info.setdefault(type_, {})[label] = g
-        del info['group']
-    if 'trace' in info:
-        for t in info['trace']:
-            info[t.pop('type')] = t
-        del info['trace']
-    if isinstance(info.get('values'), dict):
-        info['values'] = info['values']['values']
-    if isinstance(info.get('attribute'), list):
-        for a in info.pop('attribute'):
-            info[a['type']] = float(a['attribute'])
-    if 'support' in info:
-        for d in info['support']['supporting data'].values():
-            for l in ['Xdata', 'Ydata']:
-                d[l]['values'] = d[l]['values'].astype(int)
-        fims = info['support']['fragment ion mass spectrum']
-        fims.update(fims.pop('tandem mass spectrum'))
-        for d in it.chain(info['support']['supporting data'].values(),
-                (info['support']['fragment ion mass spectrum'],)):
-            for l in ['Xdata', 'Ydata']:
-                del d[l]['label']
-    if 'charge' in info:
-        info['charge'] = int(info['charge'])
-    return info
+class TandemXML(xml.XML):
+    """Parser class for TandemXML files."""
+    file_format = "TandemXML"
+    _root_element = "bioml"
+    _default_schema = xml._tandem_schema_defaults
+    _default_iter_tag = 'group[type="model"]'
+    _structures_to_flatten = {'domain'}
 
-@aux._file_reader('rb')
+    def __init__(self, *args, **kwargs):
+        if 'recursive' not in kwargs:
+            super(TandemXML, self).__init__(*args, recursive=True, **kwargs)
+        else:
+            super(TandemXML, self).__init__(*args, **kwargs)
+
+    __init__.__doc__ = xml.XML.__init__.__doc__
+
+    def _get_info_smart(self, element, **kw):
+        info = self._get_info(element, **kw)
+        # handy simplifications below
+        if isinstance(info.get('note'), list
+                ) and len(info['note']) == 1 and set(
+                        info['note'][0]) == {'label', 'note'}:
+            info['note'] = info['note'][0]['note']
+        if 'protein' in info and 'label' in info:
+            del info['label']
+        if 'group' in info:
+            for g in info['group']:
+                label = g.pop('label')
+                type_ = g.pop('type')
+                info.setdefault(type_, {})[label] = g
+            del info['group']
+        if 'trace' in info:
+            for t in info['trace']:
+                info[t.pop('type')] = t
+            del info['trace']
+        if isinstance(info.get('values'), dict):
+            info['values'] = info['values']['values']
+        if isinstance(info.get('attribute'), list):
+            for a in info.pop('attribute'):
+                info[a['type']] = float(a['attribute'])
+        if 'support' in info:
+            for d in info['support'].get('supporting data', {}).values():
+                for l in ['Xdata', 'Ydata']:
+                    d[l]['values'] = d[l]['values'].astype(int)
+            fims = info['support']['fragment ion mass spectrum']
+            fims.update(fims.pop('tandem mass spectrum'))
+            for d in it.chain(
+                    info['support'].get('supporting data', {}).values(),
+                    (info['support']['fragment ion mass spectrum'],)):
+                for l in ['Xdata', 'Ydata']:
+                    del d[l]['label']
+        if 'charge' in info:
+            info['charge'] = int(info['charge'])
+        return info
+
+    def _get_schema_info(self, read_schema):
+        return self._default_schema
+
+    def __next__(self):
+        n = super(TandemXML, self).__next__()
+        del n['type']
+        return n
+
+    next = __next__
+
 def read(source, iterative=True):
-    """Parse ``source`` and iterate through peptide-spectrum matches.
+    """Parse `source` and iterate through peptide-spectrum matches.
 
     Parameters
     ----------
@@ -127,41 +168,54 @@ def read(source, iterative=True):
     out : iterator
        An iterator over dicts with PSM properties.
     """
+    return TandemXML(source, read_schema=False,
+            recursive=True, iterative=iterative)
 
-    for g in iterfind(source, 'group[type="model"]',
-            recursive=True, read_schema=False, iterative=iterative):
-        del g['type']
-        yield g
+def iterfind(source, path, **kwargs):
+    """Parse `source` and yield info on elements with specified local
+    name or by specified "XPath".
 
-def _schema_info(_, **kw):
-    """Stores defaults for X!Tandem output. Keys are: 'floats', 'ints',
-    'bools', 'lists', 'intlists', 'floatlists', 'charlists'."""
+    .. note:: This function is provided for backward compatibility only.
+        If you do multiple :py:func:`iterfind` calls on one file, you should
+        create a :py:class:`TandemXML` object and use its
+        :py:meth:`!iterfind` method.
 
-    return {'ints': {
-        ('group', 'z'), ('aa', 'at')} | {('domain', k) for k in [
-            'missed_cleavages', 'start', 'end', 'y_ions', 'b_ions',
-            'a_ions', 'x_ions', 'c_ions', 'z_ions']},
+    Parameters
+    ----------
+    source : str or file
+        File name or file-like object.
 
-            'floats': {('group', k) for k in [
-                'fI', 'sumI', 'maxI', 'mh', 'expect', 'rt']} | {
-                   ('domain', k) for k in [
-                       'expect', 'hyperscore', 'b_score', 'y_score',
-                       'a_score', 'x_score', 'c_score', 'z_score',
-                       'nextscore', 'delta', 'mh']} | {
-                   ('protein', 'expect'), ('protein', 'sumI'),
-                   ('aa', 'modified')},
+    path : str
+        Element name or XPath-like expression. Only local names separated
+        with slashes are accepted. An asterisk (`*`) means any element.
+        You can specify a single condition in the end, such as:
+        ``"/path/to/element[some_value>1.5]"``
+        Note: you can do much more powerful filtering using plain Python.
+        The path can be absolute or "free". Please don't specify
+        namespaces.
 
-            'bools': set(),
-            'lists': {'group', 'trace', 'attribute', 'protein', 'aa', 'note'},
-            'floatlists': {('values', 'values')},
-            'intlists': set(), 'charlists': set()}
+    recursive : bool, optional
+        If :py:const:`False`, subelements will not be processed when
+        extracting info from elements. Default is :py:const:`True`.
 
-_getinfo_env = {'keys': {'domain'}, 'schema_info': _schema_info,
-    'get_info_smart': _get_info_smart}
-_get_info = aux._make_get_info(_getinfo_env)
+    iterative : bool, optional
+        Specifies whether iterative XML parsing should be used. Iterative
+        parsing significantly reduces memory usage and may be just a little
+        slower. When `retrieve_refs` is :py:const:`True`, however, it is
+        highly recommended to disable iterative parsing if possible.
+        Default value is :py:const:`True`.
 
-_iterfind_env = {'get_info_smart': _get_info_smart}
-iterfind = aux._make_iterfind(_iterfind_env)
+    read_schema : bool, optional
+        If :py:const:`True`, attempt to extract information from the XML schema
+        mentioned in the mzIdentML header (default). Otherwise, use default
+        parameters. Disable this to avoid waiting on long network connections or
+        if you don't like to get the related warnings.
+
+    Returns
+    -------
+    out : iterator
+    """
+    return TandemXML(source, **kwargs).iterfind(path, **kwargs)
 
 chain = aux._make_chain(read, 'read')
 
@@ -182,8 +236,8 @@ def is_decoy(psm, prefix='DECOY_'):
     """
     return all(prot['label'].startswith(prefix) for prot in psm['protein'])
 
-local_fdr = aux._make_local_fdr(chain, is_decoy, operator.itemgetter('expect'))
+qvalues = aux._make_qvalues(chain, is_decoy, operator.itemgetter('expect'))
 filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'),
-        local_fdr)
+        qvalues)
 fdr = aux._make_fdr(is_decoy)
 filter.chain = aux._make_chain(filter, 'filter')

@@ -133,7 +133,7 @@ def read(source=None, ignore_comments=False, parser=None):
 
 def write(entries, output=None):
     """
-    Create a FASTA file with ``entries``.
+    Create a FASTA file with `entries`.
 
     Parameters
     ----------
@@ -150,17 +150,15 @@ def write(entries, output=None):
         The file where the FASTA is written.
     """
 
-    with aux._file_obj(output, 'a') as foutput:
+    with aux._file_obj(output, 'a') as fout:
         for descr, seq in entries:
-            # write the description
-            foutput.write('>' + descr.replace('\n', '\n;') + '\n')
-            # write the sequence; it should be interrupted with \n every 70 characters
-            foutput.write(''.join([('%s\n' % seq[i:i+70])
+            fout.write('>' + descr.replace('\n', '\n;') + '\n')
+            fout.write(''.join([('%s\n' % seq[i:i+70])
                 for i in range(0, len(seq), 70)]) + '\n')
 
-        return foutput.file
+        return fout.file
 
-def decoy_sequence(sequence, mode):
+def decoy_sequence(sequence, mode, keep_nterm=False):
     """
     Create a decoy sequence out of a given sequence string.
 
@@ -168,14 +166,19 @@ def decoy_sequence(sequence, mode):
     ----------
     sequence : str
         The initial sequence string.
-    mode : {'reverse', 'shuffle'}
-        Type of decoy sequence.
+    mode : str
+        Type of decoy sequence. Should be one of 'reverse', 'shuffle'.
+    keep_nterm : bool, optional
+        If :py:const:`True`, then the N-terminal residue will be kept.
+        Default is :py:const:`False`.
 
     Returns
     -------
     modified_sequence : str
         The modified sequence.
     """
+    if keep_nterm and sequence:
+        return sequence[0] + decoy_sequence(sequence[1:], mode, False)
     if mode == 'reverse':
         return sequence[::-1]
     if mode == 'shuffle':
@@ -187,7 +190,8 @@ def decoy_sequence(sequence, mode):
             'shuffle', not {}""".format(mode))
 
 @aux._file_reader()
-def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False):
+def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
+        keep_nterm=False):
     """Iterate over sequences for a decoy database out of a given ``source``.
 
     Parameters
@@ -205,6 +209,9 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False):
         `output`. If :py:const:`False`, the entries from `source` will be
         written first.
         :py:const:`False` by default.
+    keep_nterm : bool, optional
+        If :py:const:`True`, then the N-terminal residue will be kept.
+        Default is :py:const:`False`.
 
     Returns
     -------
@@ -221,14 +228,14 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False):
     # return to the initial position in the source file to read again
     source.seek(pos)
 
-    decoy_entries = ((prefix + descr, decoy_sequence(seq, mode))
+    decoy_entries = (Protein(prefix + descr, decoy_sequence(seq, mode, keep_nterm))
         for descr, seq in read(source))
 
     for x in decoy_entries:
         yield x
 
 def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
-        decoy_only=False):
+        decoy_only=False, keep_nterm=False):
     """Generate a decoy database out of a given ``source`` and write to file.
 
     If `output` is a path, the file will be open for appending, so no information
@@ -255,6 +262,9 @@ def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
         `output`. If :py:const:`False`, the entries from `source` will be
         written as well.
         :py:const:`False` by default.
+    keep_nterm : bool, optional
+        If :py:const:`True`, then the N-terminal residue will be kept.
+        Default is :py:const:`False`.
 
     Returns
     -------
@@ -262,7 +272,7 @@ def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
         A file object for the created file.
     """
     with aux._file_obj(output, 'a') as fout, decoy_db(
-            source, mode, prefix, decoy_only) as entries:
+            source, mode, prefix, decoy_only, keep_nterm) as entries:
         write(entries, fout)
         return fout.file
 

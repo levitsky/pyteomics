@@ -77,15 +77,13 @@ Data
 from __future__ import division
 import math
 from . import parser
-from .auxiliary import PyteomicsError, _xpath, _local_name
-from .auxiliary import _nist_mass
+from .auxiliary import PyteomicsError, _nist_mass, BasicComposition
 from itertools import chain
 from collections import defaultdict
 try:
     from urllib import urlopen
 except ImportError:
     from urllib.request import urlopen
-from lxml import etree
 from datetime import datetime
 import re
 import operator
@@ -130,7 +128,7 @@ _isotope_string = r'^([A-Z][a-z+]*)(?:\[(\d+)\])?$'
 _atom = r'([A-Z][a-z+]*)(?:\[(\d+)\])?([+-]?\d+)?'
 _formula = r'^({})*$'.format(_atom)
 
-class Composition(defaultdict):
+class Composition(BasicComposition):
     """
     A Composition object stores a chemical composition of a
     substance. Basically, it is a dict object, with the names
@@ -140,64 +138,6 @@ class Composition(defaultdict):
     The main improvement over dict is that Composition objects allow
     adding and subtraction.
     """
-
-    def __str__(self):
-        return 'Composition({})'.format(dict.__repr__(self))
-
-    def __repr__(self):
-        return str(self)
-
-    def __add__(self, other):
-        result = self.copy()
-        for elem, cnt in other.items():
-            result[elem] += cnt
-        return result
-
-    def __radd__(self, other):
-        return self + other
-
-    def __sub__(self, other):
-        result = self.copy()
-        for elem, cnt in other.items():
-            result[elem] -= cnt
-        return result
-
-    def __rsub__(self, other):
-        return (self - other) * (-1)
-
-    def __mul__(self, other):
-        if not isinstance(other, int):
-            raise PyteomicsError('Cannot multiply Composition by non-integer',
-                    other)
-        return Composition({k: v*other for k, v in self.items()})
-
-    def __rmul__(self, other):
-        return self * other
-
-    def __eq__(self, other):
-        if not isinstance(other, dict):
-            return False
-        self_items = {i for i in self.items() if i[1]}
-        other_items = {i for i in other.items() if i[1]}
-        return self_items == other_items
-
-    # override default behavior:
-    # we don't want to add 0's to the dictionary
-    def __missing__(self, key):
-        return 0
-
-    def __setitem__(self, key, value):
-        if isinstance(value, float): value = int(round(value))
-        elif not isinstance(value, int):
-            raise PyteomicsError('Only integers allowed as values in '
-                    'Composition, got {}.'.format(type(value).__name__))
-        if value: # reject 0's
-            super(Composition, self).__setitem__(key, value)
-        elif key in self:
-            del self[key]
-
-    def copy(self):
-        return Composition(self)
 
     def _from_parsed_sequence(self, parsed_sequence, aa_comp):
         self.clear()
@@ -308,13 +248,13 @@ class Composition(defaultdict):
         split_sequence : list of tuples of str, optional
             A polypeptyde sequence parsed into a list of tuples
             (as returned be :py:func:`pyteomics.parser.parse` with
-            'split=True').
+            ``split=True``).
         aa_comp : dict, optional
             A dict with the elemental composition of the amino acids (the
             default value is std_aa_comp).
         mass_data : dict, optional
             A dict with the masses of chemical elements (the default
-            value is :py:data:`nist_mass`). It is used for formulae parsing only. 
+            value is :py:data:`nist_mass`). It is used for formulae parsing only.
         """
         defaultdict.__init__(self, int)
 
@@ -360,13 +300,70 @@ class Composition(defaultdict):
         else:
             self._from_dict(kwargs)
 
-    def __reduce__(self):
-        class_, args, state, list_iterator, dict_iterator = super(Composition, self).__reduce__()
-        # Override the reduce of defaultdict so we do not provide the `int` type as the first argument
-        # which prevents from correctly unpickling the object
-        args = ()
-        return class_, args, state, list_iterator, dict_iterator
+    def mass(self, **kwargs):
+        """Calculate the mass or *m/z* of a :py:class:`Composition`.
 
+        Parameters
+        ----------
+        average : bool, optional
+            If :py:const:`True` then the average mass is calculated. Note that mass
+            is not averaged for elements with specified isotopes. Default is
+            :py:const:`False`.
+        charge : int, optional
+            If not 0 then m/z is calculated: the mass is increased
+            by the corresponding number of proton masses and divided
+            by `charge`.
+        mass_data : dict, optional
+            A dict with the masses of the chemical elements (the default
+            value is :py:data:`nist_mass`).
+        ion_comp : dict, optional
+            A dict with the relative elemental compositions of peptide ion
+            fragments (default is :py:data:`std_ion_comp`).
+        ion_type : str, optional
+            If specified, then the polypeptide is considered to be in the form
+            of the corresponding ion. Do not forget to specify the charge state!
+
+        Returns
+        -------
+        mass : float
+        """
+        composition = self.copy()
+        mass_data = kwargs.get('mass_data', nist_mass)
+        ion_comp = kwargs.get('ion_comp', std_ion_comp)
+        if 'ion_type' in kwargs:
+            composition += ion_comp[kwargs['ion_type']]
+
+        # Get charge.
+        charge = composition['H+']
+        if 'charge' in kwargs:
+            if charge:
+                raise PyteomicsError(
+                    'Charge is specified both by the number of protons and '
+                    '`charge` in kwargs')
+            charge = kwargs['charge']
+            composition['H+'] = charge
+
+        # Calculate mass.
+        mass = 0.0
+        average = kwargs.get('average', False)
+        for isotope_string in composition:
+            element_name, isotope_num = _parse_isotope_string(isotope_string)
+            # Calculate average mass if required and the isotope number is
+            # not specified.
+            if (not isotope_num) and average:
+                for isotope in mass_data[element_name]:
+                    if isotope != 0:
+                        mass += (composition[element_name]
+                                 * mass_data[element_name][isotope][0]
+                                 * mass_data[element_name][isotope][1])
+            else:
+                mass += (composition[isotope_string]
+                         * mass_data[element_name][isotope_num][0])
+
+        # Calculate m/z if required.
+        if charge:
+            mass /= charge
+        return mass
 
 std_aa_comp.update({
     'A':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1}),
@@ -428,12 +425,12 @@ def calculate_mass(*args, **kwargs):
     One or none of the following keyword arguments is required:
     **formula**, **sequence**, **parsed_sequence**, **split_sequence**
     or **composition**.
-    All arguments given are used to create a Composition object, unless
-    an existing one is passed as a keyword argument.
+    All arguments given are used to create a :py:class:`Composition` object,
+    unless an existing one is passed as a keyword argument.
 
-    Note that if a sequence string is supplied then the mass is
-    calculated for a polypeptide with standard terminal groups (NH2-
-    and -OH).
+    Note that if a sequence string is supplied and terminal groups are not
+    explicitly shown, then the mass is calculated for a polypeptide with
+    standard terminal groups (NH2- and -OH).
 
     .. warning::
 
@@ -450,72 +447,36 @@ def calculate_mass(*args, **kwargs):
         A polypeptide sequence parsed into a list of amino acids.
     composition : Composition, optional
         A Composition object with the elemental composition of a substance.
+    aa_comp : dict, optional
+        A dict with the elemental composition of the amino acids (the
+        default value is std_aa_comp).
     average : bool, optional
         If :py:const:`True` then the average mass is calculated. Note that mass
         is not averaged for elements with specified isotopes. Default is
         :py:const:`False`.
-    ion_type : str, optional
-        If specified, then the polypeptide is considered to be in the form
-        of the corresponding ion. Do not forget to specify the charge state!
     charge : int, optional
         If not 0 then m/z is calculated: the mass is increased
         by the corresponding number of proton masses and divided
-        by z.
-    aa_comp : dict, optional
-        A dict with the elemental composition of the amino acids (the
-        default value is std_aa_comp).
+        by `charge`.
     mass_data : dict, optional
         A dict with the masses of the chemical elements (the default
         value is :py:data:`nist_mass`).
     ion_comp : dict, optional
         A dict with the relative elemental compositions of peptide ion
         fragments (default is :py:data:`std_ion_comp`).
+    ion_type : str, optional
+        If specified, then the polypeptide is considered to be in the form
+        of the corresponding ion. Do not forget to specify the charge state!
 
     Returns
     -------
-        mass : float
+    mass : float
     """
-    mass_data = kwargs.get('mass_data', nist_mass)
-    ion_comp = kwargs.get('ion_comp', std_ion_comp)
-    # Make a deep copy of `composition` keyword argument.
+    # Make a copy of `composition` keyword argument.
     composition = (Composition(kwargs['composition'])
                    if 'composition' in kwargs
                    else Composition(*args, **kwargs))
-
-    if 'ion_type' in kwargs:
-        composition += ion_comp[kwargs['ion_type']]
-
-    # Get charge.
-    charge = composition['H+']
-    if 'charge' in kwargs:
-        if charge:
-            raise PyteomicsError(
-                'Charge is specified both by the number of protons and '
-                '`charge` in kwargs')
-        charge = kwargs['charge']
-        composition['H+'] = charge
-
-    # Calculate mass.
-    mass = 0.0
-    average = kwargs.get('average', False)
-    for isotope_string in composition:
-        element_name, isotope_num = _parse_isotope_string(isotope_string)
-        # Calculate average mass if required and the isotope number is
-        # not specified.
-        if (not isotope_num) and average:
-            for isotope in mass_data[element_name]:
-                if isotope != 0:
-                    mass += (composition[element_name]
-                             * mass_data[element_name][isotope][0]
-                             * mass_data[element_name][isotope][1])
-        else:
-            mass += (composition[isotope_string]
-                     * mass_data[element_name][isotope_num][0])
-
-    # Calculate m/z if required.
-    if charge:
-        mass /= charge
-    return mass
+    return composition.mass(**kwargs)
 
 def most_probable_isotopic_composition(*args, **kwargs):
     """Calculate the most probable isotopic composition of a peptide
@@ -817,13 +778,15 @@ class Unimod():
     def __init__(self, source='http://www.unimod.org/xml/unimod.xml'):
         """Create a database and fill it from XML file retrieved from `source`.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
 
         source : str or file, optional
             A file-like object or a URL to read from. Don't forget the 'file://'
             prefix when pointing to local files.
         """
+        from lxml import etree
+        from .xml import _local_name
         def process_mod(mod):
             d = mod.attrib
             new_d = {}
@@ -892,9 +855,10 @@ class Unimod():
             self._mods.append(process_mod(mod))
 
     def _xpath(self, path, element=None):
+        from .xml import xpath
         if element is None:
-            return _xpath(self._tree, path, 'umod')
-        return _xpath(element, path, 'umod')
+            return xpath(self._tree, path, 'umod')
+        return xpath(element, path, 'umod')
 
     def _mass_data(self):
         massdata = defaultdict(dict)
@@ -934,8 +898,8 @@ class Unimod():
         """Search modifications by title. If a single modification is found,
         it is returned. Otherwise, a list will be returned.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         title : str
             The modification title.
         strict : bool, optional
@@ -943,8 +907,8 @@ class Unimod():
             whose title **contains** `title`, otherwise equality is required.
             :py:const:`True` by default.
 
-        Returns:
-        --------
+        Returns
+        -------
         out : dict or list
             A single modification or a list of modifications.
         """
@@ -959,8 +923,8 @@ class Unimod():
         """Search modifications by name. If a single modification is found,
         it is returned. Otherwise, a list will be returned.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         name : str
             The full name of the modification(s).
         strict : bool, optional
@@ -968,8 +932,8 @@ class Unimod():
             whose full name **contains** `title`, otherwise equality is
             required. :py:const:`True` by default.
 
-        Returns:
-        --------
+        Returns
+        -------
         out : dict or list
             A single modification or a list of modifications.
         """
