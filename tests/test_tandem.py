@@ -7,7 +7,7 @@ class TandemTest(unittest.TestCase):
         self.maxDiff = None
 
     def testReadPSM(self):
-        for func in [read, chain,
+        for func in [TandemXML, read, chain,
                 lambda x, **kw: chain.from_iterable([x], **kw)]:
             for it in range(2):
                 with func('test.t.xml', iterative=it) as r:

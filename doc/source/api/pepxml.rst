@@ -1,5 +1,4 @@
 .. automodule:: pyteomics.pepxml
-   :members:
 
    .. autofunction:: chain
    .. py:function :: chain.from_iterable(files, **kwargs)
@@ -32,3 +31,4 @@
    .. autofunction:: version_info
    .. autofunction:: iterfind
    .. autofunction:: fdr
+   .. autofunction:: qvalues

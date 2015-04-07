@@ -20,6 +20,9 @@ human-readable dicts. This function relies on the terminology of the underlying
 Data access
 -----------
 
+  :py:class:`PepXML` - a class representing a single pepXML file.
+  Other data access functions use this class internally.
+
   :py:func:`read` - iterate through peptide-spectrum matches in a pepXML
   file. Data for a single spectrum are converted to an easy-to-use dict.
 
@@ -37,21 +40,35 @@ Data access
   :py:func:`filter.chain.from_iterable` - chain a series of filters applied
   independently to an iterable of files.
 
-  :py:func:`iterfind` - iterate over elements in a pepXML file.
-
 Miscellaneous
 -------------
 
   :py:func:`fdr` - estimate the false discovery rate of a PSM set using the
   target-decoy approach.
 
+  :py:func:`qvalues` - get an array of scores and local FDR values for a PSM
+  set using the target-decoy approach.
+
   :py:func:`is_decoy` - determine whether a PSM is decoy or not.
 
   :py:func:`roc_curve` - get a receiver-operator curve (min peptideprophet
   probability is a sample vs. false discovery rate) of peptideprophet analysis.
 
-  :py:func:`version_info` - get version information about the pepXML file.
+Deprecated functions
+--------------------
 
+  :py:func:`iterfind` - iterate over elements in a pepXML file.
+  You can just call the corresponding method of the :py:class:`PepXML`
+  object.
+
+  :py:func:`version_info` - get information about pepXML version and schema.
+  You can just read the corresponding attribute of the :py:class:`PepXML`
+  object.
+
+Dependencies
+------------
+
+This module requires :py:mod:`lxml`.
 
 -------------------------------------------------------------------------------
 """
@@ -71,94 +88,104 @@ Miscellaneous
 #   limitations under the License.
 
 from lxml import etree
-from . import auxiliary as aux
+from . import xml, auxiliary as aux
 
-def _get_info_smart(source, element, **kw):
-    """Extract the info in a smart way depending on the element type"""
-    name = aux._local_name(element)
-    kwargs = dict(kw)
-    rec = kwargs.pop('recursive', None)
-    if name == 'msms_pipeline_analysis':
-        info = _get_info(source, element, rec if rec is not None else False,
-                **kwargs)
-    else:
-        info = _get_info(source, element, rec if rec is not None else True,
-                **kwargs)
+class PepXML(xml.XML):
+    """Parser class for pepXML files."""
+    file_format = 'pepXML'
+    _root_element = 'msms_pipeline_analysis'
+    _default_schema = xml._pepxml_schema_defaults
+    _default_version = '1.15'
+    _default_iter_tag = 'spectrum_query'
+    _structures_to_flatten = {'search_score_summary', 'modification_info'}
 
-    # attributes which contain unconverted values
-    convert = {'float':  {'calc_neutral_pep_mass', 'massdiff'},
-        'int': {'start_scan', 'end_scan', 'index'},
-        'bool': {'is_rejected'},
-        'floatarray': {'all_ntt_prob'}}
-    def safe_float(s):
-        try:
-            return float(s)
-        except ValueError:
-            if s.startswith('+-0'): return 0
-            return None
-
-    converters = {'float': safe_float, 'int': int,
-            'bool': lambda x: x.lower() in {'1', 'true'},
-            'floatarray': lambda x: list(map(float, x[1:-1].split(',')))}
-    for k, v in dict(info).items():
-        for t, s in convert.items():
-            if k in s:
-                del info[k]
-                info[k] = converters[t](v)
-    for k in {'search_score', 'parameter'}:
-        if k in info and isinstance(info[k], list) and all(
-                isinstance(x, dict) and len(x) == 1 for x in info[k]):
-            scores = {}
-            for score in info[k]:
-                name, value = score.popitem()
-                try:
-                    scores[name] = float(value)
-                except ValueError:
-                    scores[name] = value
-            info[k] = scores
-    if 'search_result' in info and len(info['search_result']) == 1:
-        info.update(info['search_result'][0])
-        del info['search_result']
-    if 'protein' in info and 'peptide' in info:
-        info['proteins'] = [{'protein': info.pop('protein'),
-            'protein_descr': info.pop('protein_descr', None)}]
-        for add_key in {'peptide_prev_aa', 'peptide_next_aa', 'protein_mw'}:
-            if add_key in info:
-                info['proteins'][0][add_key] = info.pop(add_key)
-        info['proteins'][0]['num_tol_term'] = info.pop('num_tol_term', 0)
-        if 'alternative_protein' in info:
-            info['proteins'].extend(info['alternative_protein'])
-            del info['alternative_protein']
-    if 'peptide' in info and not 'modified_peptide' in info:
-        info['modified_peptide'] = info['peptide']
-    if 'peptide' in info:
-        info['modifications'] = info.pop('mod_aminoacid_mass', [])
-        if 'mod_nterm_mass' in info:
-            info['modifications'].insert(0, {'position': 0,
-                'mass': float(info.pop('mod_nterm_mass'))})
-        if 'mod_cterm_mass' in info:
-            info['modifications'].append({'position': 1 + len(info['peptide']),
-                'mass': float(info.pop('mod_cterm_mass'))})
-    if 'modified_peptide' in info and info['modified_peptide'] == info.get(
-            'peptide'):
-        if not info.get('modifications'):
-            info['modifications'] = []
+    def _get_info_smart(self, element, **kw):
+        """Extract the info in a smart way depending on the element type"""
+        name = xml._local_name(element)
+        kwargs = dict(kw)
+        rec = kwargs.pop('recursive', None)
+        if name == 'msms_pipeline_analysis':
+            info = self._get_info(element,
+                    recursive=(rec if rec is not None else False),
+                    **kwargs)
         else:
-            mp = info['modified_peptide']
-            for mod in sorted(info['modifications'],
-                    key=lambda m: m['position'],
-                    reverse=True):
-                if mod['position'] not in {0, 1+len(info['peptide'])}:
-                    p = mod['position']
-                    mp = mp[:p] + '[{}]'.format(int(mod['mass'])) + mp[p:]
-            info['modified_peptide'] = mp
-    if 'search_hit' in info:
-        info['search_hit'].sort(key=lambda x: x['hit_rank'])
-    return info
+            info = self._get_info(element,
+                    recursive=(rec if rec is not None else True),
+                    **kwargs)
 
-@aux._file_reader('rb')
+        # attributes which contain unconverted values
+        convert = {'float':  {'calc_neutral_pep_mass', 'massdiff'},
+            'int': {'start_scan', 'end_scan', 'index'},
+            'bool': {'is_rejected'},
+            'floatarray': {'all_ntt_prob'}}
+        def safe_float(s):
+            try:
+                return float(s)
+            except ValueError:
+                if s.startswith('+-0'): return 0
+                return None
+
+        converters = {'float': safe_float, 'int': int,
+                'bool': lambda x: x.lower() in {'1', 'true'},
+                'floatarray': lambda x: list(map(float, x[1:-1].split(',')))}
+        for k, v in dict(info).items():
+            for t, s in convert.items():
+                if k in s:
+                    del info[k]
+                    info[k] = converters[t](v)
+        for k in {'search_score', 'parameter'}:
+            if k in info and isinstance(info[k], list) and all(
+                    isinstance(x, dict) and len(x) == 1 for x in info[k]):
+                scores = {}
+                for score in info[k]:
+                    name, value = score.popitem()
+                    try:
+                        scores[name] = float(value)
+                    except ValueError:
+                        scores[name] = value
+                info[k] = scores
+        if 'search_result' in info and len(info['search_result']) == 1:
+            info.update(info['search_result'][0])
+            del info['search_result']
+        if 'protein' in info and 'peptide' in info:
+            info['proteins'] = [{'protein': info.pop('protein'),
+                'protein_descr': info.pop('protein_descr', None)}]
+            for add_key in {'peptide_prev_aa', 'peptide_next_aa', 'protein_mw'}:
+                if add_key in info:
+                    info['proteins'][0][add_key] = info.pop(add_key)
+            info['proteins'][0]['num_tol_term'] = info.pop('num_tol_term', 0)
+            if 'alternative_protein' in info:
+                info['proteins'].extend(info['alternative_protein'])
+                del info['alternative_protein']
+        if 'peptide' in info and not 'modified_peptide' in info:
+            info['modified_peptide'] = info['peptide']
+        if 'peptide' in info:
+            info['modifications'] = info.pop('mod_aminoacid_mass', [])
+            if 'mod_nterm_mass' in info:
+                info['modifications'].insert(0, {'position': 0,
+                    'mass': float(info.pop('mod_nterm_mass'))})
+            if 'mod_cterm_mass' in info:
+                info['modifications'].append({'position': 1 + len(info['peptide']),
+                    'mass': float(info.pop('mod_cterm_mass'))})
+        if 'modified_peptide' in info and info['modified_peptide'] == info.get(
+                'peptide'):
+            if not info.get('modifications'):
+                info['modifications'] = []
+            else:
+                mp = info['modified_peptide']
+                for mod in sorted(info['modifications'],
+                        key=lambda m: m['position'],
+                        reverse=True):
+                    if mod['position'] not in {0, 1+len(info['peptide'])}:
+                        p = mod['position']
+                        mp = mp[:p] + '[{}]'.format(int(mod['mass'])) + mp[p:]
+                info['modified_peptide'] = mp
+        if 'search_hit' in info:
+            info['search_hit'].sort(key=lambda x: x['hit_rank'])
+        return info
+
 def read(source, read_schema=True, iterative=True):
-    """Parse ``source`` and iterate through peptide-spectrum matches.
+    """Parse `source` and iterate through peptide-spectrum matches.
 
     Parameters
     ----------
@@ -178,12 +205,59 @@ def read(source, read_schema=True, iterative=True):
 
     Returns
     -------
-    out : iterator
+    out : PepXML
        An iterator over dicts with PSM properties.
     """
 
-    return iterfind(source, 'spectrum_query',
-            read_schema=read_schema, iterative=iterative)
+    return PepXML(source, read_schema=read_schema, iterative=iterative)
+
+def iterfind(source, path, **kwargs):
+    """Parse `source` and yield info on elements with specified local
+    name or by specified "XPath".
+
+    .. note:: This function is provided for backward compatibility only.
+        If you do multiple :py:func:`iterfind` calls on one file, you should
+        create an :py:class:`PepXML` object and use its
+        :py:meth:`!iterfind` method.
+
+    Parameters
+    ----------
+    source : str or file
+        File name or file-like object.
+
+    path : str
+        Element name or XPath-like expression. Only local names separated
+        with slashes are accepted. An asterisk (`*`) means any element.
+        You can specify a single condition in the end, such as:
+        ``"/path/to/element[some_value>1.5]"``
+        Note: you can do much more powerful filtering using plain Python.
+        The path can be absolute or "free". Please don't specify
+        namespaces.
+
+    recursive : bool, optional
+        If :py:const:`False`, subelements will not be processed when
+        extracting info from elements. Default is :py:const:`True`.
+
+    iterative : bool, optional
+        Specifies whether iterative XML parsing should be used. Iterative
+        parsing significantly reduces memory usage and may be just a little
+        slower. When `retrieve_refs` is :py:const:`True`, however, it is
+        highly recommended to disable iterative parsing if possible.
+        Default value is :py:const:`True`.
+
+    read_schema : bool, optional
+        If :py:const:`True`, attempt to extract information from the XML schema
+        mentioned in the mzIdentML header (default). Otherwise, use default
+        parameters. Disable this to avoid waiting on long network connections or
+        if you don't like to get the related warnings.
+
+    Returns
+    -------
+    out : iterator
+    """
+    return PepXML(source, **kwargs).iterfind(path, **kwargs)
+
+version_info = xml._make_version_info(PepXML)
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.
@@ -216,21 +290,6 @@ def roc_curve(source):
 
     return sorted(roc_curve, key=lambda x: x['min_prob'])
 
-_version_info_env = {'format': 'pepXML', 'element': 'msms_pipeline_analysis'}
-version_info = aux._make_version_info(_version_info_env)
-
-_schema_env = {'format': 'pepXML', 'version_info': version_info,
-        'default_version': '1.15', 'defaults': aux._pepxml_schema_defaults}
-_schema_info = aux._make_schema_info(_schema_env)
-
-_getinfo_env = {'keys': {'search_score_summary', 'modification_info'},
-        'schema_info': _schema_info,
-        'get_info_smart': _get_info_smart}
-_get_info = aux._make_get_info(_getinfo_env)
-
-_iterfind_env = {'get_info_smart': _get_info_smart}
-iterfind = aux._make_iterfind(_iterfind_env)
-
 chain = aux._make_chain(read, 'read')
 
 def is_decoy(psm, prefix='DECOY_'):
@@ -256,6 +315,6 @@ def is_decoy(psm, prefix='DECOY_'):
 fdr = aux._make_fdr(is_decoy)
 _key = lambda x: min(
     sh['search_score']['expect'] for sh in x['search_hit'])
-local_fdr = aux._make_local_fdr(chain, is_decoy, _key)
-filter = aux._make_filter(chain, is_decoy, _key, local_fdr)
+qvalues = aux._make_qvalues(chain, is_decoy, _key)
+filter = aux._make_filter(chain, is_decoy, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter')

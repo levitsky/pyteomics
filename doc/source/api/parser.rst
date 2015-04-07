@@ -1,2 +1,1 @@
 .. automodule:: pyteomics.parser
-   :members:

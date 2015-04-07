@@ -1,3 +1,75 @@
+3.0.0
+-----
+ - XML parsers are now implemented as objects, each format has its own class.
+   Those classes can be instantiated using the same arguments as :py:func:`read`
+   functions accepted, and support direct iteration and the ``with`` syntax.
+   The :py:func:`read` functions are now simple aliases to the corresponding
+   constructors.
+
+ - As a result, functions :py:func:`iterfind`, :py:func:`version_info` and
+   :py:func:`get_by_id` functions are now deprecated in favor of methods
+   :py:meth:`iterfind` and :py:meth:`get_by_id` and attribute
+   :py:attr:`version_info` of corresponding instances.
+
+ - In :py:func:`pyteomics.mgf.write`, the order of keys and the format of values
+   are now controlled via module-level variables.
+
+ - In :py:mod:`pyteomics.electrochem`, correction for pK of terminal groups
+   depending on the terminal residue is implemented; example set of pK and
+   corrected pK added.
+
+ - Imports of external dependencies are delayed where possible, so that
+   unnecessary :py:exc:`ImportErrors` do not occur.
+
+ - :py:func:`local_fdr` renamed to :py:func:`qvalues` in :py:mod:`pepxml`,
+   :py:mod:`mzid`, :py:mod:`tandem` and :py:mod:`auxiliary`.
+   :py:func:`local_fdr` did not reflect the semantics of the function.
+   The algorithm has been also corrected so that the array of q-values
+   is always sorted (as it should be by definition).
+
+ - :py:func:`qvalues` now also accepts a parameter `full_output` which keeps the
+   PSMs alongside their scores and associated q-values.
+
+ - All :py:func:`fdr`, :py:func:`qvalues`, and :py:func:`!filter` functions
+   now accept a new parameter `correction`. It is used for more accurate
+   estimation of the number of false positives using TDA (paper with explanation
+   submitted to JPR).
+
+ - :py:func:`!filter` functions now support both iterator protocol and context
+   manager protocol. They now also accept the `full_output` parameter, which has
+   the following meaning: if :py:const:`True` (default), then an array of PSMs
+   is directly returned by the function. Otherwise, an iterator is returned, as
+   before. The array takes some memory, but this way is usually around 2x faster.
+
+ - New function :py:func:`pyteomics.pylab_aux.plot_qvalue_curve`.
+
+ - :py:class:`pyteomics.mass.Composition` objects now have a :py:meth:`mass`
+   method (equivalent to :py:func:`pyteomics.mass.calculate_mass`.
+
+ - Also, :py:class:`Composition` and objects returned by
+   :py:func:`pyteomics.parser.amino_acid_composition` now inherit from
+   :py:class:`collections.defaultdict` **and** :py:class:`collections.Counter`.
+
+ - Decoy-related functions in :py:mod:`pyteomics.fasta` now accept a new parameter
+   `keep_nterm` that preserves the N-terminal residue in the generated decoy
+   sequences.
+
+ - Minor fixes.
+
+API changes
+...........
+
+ - In :py:func:`pyteomics.pylab_aux.scatter_trend`, keyword arguments for
+   :py:func:`pylab.scatter` and :py:func:`pylab.plot` are now accepted as dicts
+   `scatter_kwargs` and `plot_kwargs`. Keyword argument `alpha` is now not
+   accepted and should be put in the appropriate dict.
+ - In :py:func:`pyteomics.pylab_aux.plot_function_3d` and
+   :py:func:`pyteomics.pylab_aux.plot_function_contour`, arbitrary kwargs can
+   now also be passed to the plotting function.
+ - :py:func:`!filter` functions do not support context manager protocol by
+   default. To keep using them as iterators / context managers, specify
+   ``full_output=False`` (see above for details).
+
 2.5.5
 -----
 
