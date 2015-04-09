@@ -908,11 +908,14 @@ try:
         return ((m * pi).cumsum() / pi.cumsum())[T]
 
     def _confidence_value(conf, n, T, p=0.5):
-        T = np.array(T, dtype=int)
-        m = np.arange(T.max()+1, dtype=int)
+        if T is not None:
+            T = np.array(T, dtype=int)
+            m = np.arange(T.max()+1, dtype=int)
+        else:
+            m = np.arange(max(50*n, 10000))
         log_pi = _log_pi(n, m, p)
         pics = np.exp(log_pi).cumsum()
-        return np.searchsorted(pics, conf * pics[T])
+        return np.searchsorted(pics, conf * (pics[T] if T is not None else 1))
 
 except ImportError:
     def log_factorial(n):
