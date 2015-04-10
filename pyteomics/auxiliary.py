@@ -65,6 +65,11 @@ from bisect import bisect_right
 from collections import Counter, defaultdict
 import math
 
+try:
+    basestring
+except NameError:
+    basestring = (str, bytes)
+
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
 
@@ -327,7 +332,7 @@ class _file_obj(object):
             self.file = {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout
                     }[mode[0]]
             self.none = True
-        elif isinstance(f, str):
+        elif isinstance(f, basestring):
             self.file = open(f, mode)
         else:
             self.file = f
