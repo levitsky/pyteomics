@@ -90,6 +90,9 @@ def scatter_trend(x, y, **kwargs):
     plot_kwargs : dict, optional
         Keyword arguments for :py:func:`pylab.plot`.
         Empty by default.
+    legend_kwargs : dict, optional
+        Keyword arguments for :py:func:`pylab.legend`.
+        Default is :py:const:`{'loc': 'upper left'}`.
     """
     a, b, r, stderr = linear_regression(x, y)
     pylab.title(kwargs.get('title', ''))
@@ -100,7 +103,7 @@ def scatter_trend(x, y, **kwargs):
         '$y\,=\,{:.3f}x\,{}\,{:.3f}$, '
         '$R^2=\,{:.3f}$ \n$\sigma\,=\,{:.3f}$'.format(
             a, '-' if b < 0 else '+', abs(b), r*r, stderr))
-    legend = pylab.legend(loc='upper left')
+    legend = pylab.legend(**kwargs.get('legend_kwargs', {'loc': 'upper left'}))
     legend_frame = legend.get_frame()
     legend_frame.set_alpha(kwargs.get('alpha_legend', 1.0))
     if kwargs.get('plot_trend', True):
