@@ -1,3 +1,5 @@
+#!/bin/sh
+
 ver=$(cat VERSION)
 sed -i "s/^pkgver=.*/pkgver=${ver}/" PKGBUILD
 mkaurball -f

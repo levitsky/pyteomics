@@ -257,6 +257,13 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.0001, **kwargs):
         are amino acid labels and the values are lists of tuples (pK,
         charge_in_ionized_state), a tuple per ionizable group. The default
         value is `pK_lehninger`.
+    pK_nterm : dict {str: [(float, int),]}, optional
+    pK_cterm : dict {str: [(float, int),]}, optional
+        Sets of pK of N-terminal and C-terminal (respectively) amino acids'
+        ionizable groups. Dicts with the same structure as ``pK``. These
+        values (if present) are used for N-terminal and C-terminal residues,
+        respectively. If given, `sequence` must be a :py:class:`str` or a
+        :py:class:`list`. The default value is an empty dict.
 
     Returns
     -------
