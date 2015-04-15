@@ -1,3 +1,11 @@
+3.0.1
+-----
+
+ - Added `legend_kwargs` as a keyword argument to
+   :py:func:`pyteomics.pylab_aux.scatter_trend`.
+
+ - Minor fixes.
+
 3.0.0
 -----
  - XML parsers are now implemented as objects, each format has its own class.
