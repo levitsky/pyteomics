@@ -26,6 +26,15 @@ package manager. The shell code for a freshly installed Ubuntu system::
     sudo easy_install pip
     sudo pip install lxml numpy matplotlib pyteomics
 
+Arch-based distros
+..................
+
+On Arch Linux and related distros, you can install Pyteomics from AUR:
+
+ - `python-pyteomics <https://aur.archlinux.org/packages/python-pyteomics/>`_
+ - `python2-pyteomics <https://aur.archlinux.org/packages/python2-pyteomics/>`_
+
+
 Windows
 -------
 
