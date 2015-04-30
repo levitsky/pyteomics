@@ -649,6 +649,8 @@ def _make_filter(read, is_decoy, key, qvalues):
         i = bisect_right(scores['q'], fdr)
         if kwargs.pop('full_output', False):
             return scores['psm'][:i]
+        elif not scores.size:
+            return (_ for _ in ())
         cutoff = scores['score'][i] if i < scores.size else (
                 scores['score'][-1] + (1, -1)[bool(reverse)])
         def out():
