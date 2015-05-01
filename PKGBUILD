@@ -12,7 +12,7 @@ optdepends=('python-matplotlib: for pylab_aux module, optional' \
             'python-numpy: for lots of features, highly recommended')
 options=(!emptydirs)
 source=("https://pypi.python.org/packages/source/p/pyteomics/pyteomics-${pkgver}.tar.gz")
-md5sums=('2c838cc1c16dce69148662b883c755b9')
+md5sums=('aa94a564982b5cf73772b586afd65384')
 changelog="CHANGELOG"
 package() {
   cd "${srcdir}/pyteomics-${pkgver}"
