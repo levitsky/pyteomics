@@ -1,1 +1,3 @@
-
+- make filter.chain work with full_output=True
+- make filter & qvalues work nicer with arrays & dataframes
+- tests for filter & qvalues
