@@ -571,8 +571,6 @@ def _make_qvalues(read, is_decoy, key):
                         scores.append((keyf(psm), isdecoy(psm), None))
             return scores
 
-        args = [arg if not isinstance(arg, types.GeneratorType)
-                else list(arg) for arg in args]
         keyf = kwargs.pop('key', key)
         ratio = kwargs.pop('ratio', 1)
         reverse = kwargs.pop('reverse', False)
@@ -649,6 +647,8 @@ def _make_filter(read, is_decoy, key, qvalues):
         except KeyError:
             raise PyteomicsError('Keyword argument required: fdr')
 
+        args = [arg if not isinstance(arg, types.GeneratorType)
+                else list(arg) for arg in args]
         scores = qvalues(*args, **kwargs)
         keyf = kwargs.pop('key', key)
         reverse = kwargs.pop('reverse', False)
