@@ -69,6 +69,10 @@ try:
     basestring
 except NameError:
     basestring = (str, bytes)
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
@@ -480,11 +484,11 @@ def _make_chain(reader, readername):
 def _make_qvalues(read, is_decoy, key):
     """Create a function that reads PSMs from a file and calculates q-values
     for each value of `key`."""
-    import numpy as np
+    
     def qvalues(*args, **kwargs):
         """Read `args` and return a NumPy array with scores and q-values.
 
-        Requires :py:mod:`numpy`.
+        Requires :py:mod:`numpy` (and optionally :py:mod:`pandas`).
 
         Parameters
         ----------
@@ -493,20 +497,25 @@ def _make_qvalues(read, is_decoy, key):
             Files to read PSMs from. All positional arguments are treated as
             files. The rest of the arguments must be named.
 
-        key : callable, optional
-            A function used for sorting of PSMs. Should accept exactly one
-            argument (PSM) and return a number (the smaller the better). The
-            default is a function that tries to extract e-value from the PSM.
+        key : callable / array-like / str, optional
+            If callable, a function used for sorting of PSMs. Should accept
+            exactly one argument (PSM) and return a number (the smaller the better).
+            If array-like, should contain scores for all given PSMs.
+            If string, it is used as a field name (PSMs must be in a record array
+            or a :py:class:`DataFrame`)
 
         reverse : bool, optional
             If :py:const:`True`, then PSMs are sorted in descending order,
             i.e. the value of the key function is higher for better PSMs.
             Default is :py:const:`False`.
 
-        is_decoy : callable, optional
-            A function used to determine if the PSM is decoy or not. Should
-            accept exactly one argument (PSM) and return a truthy value if the
+        is_decoy : callable / array-like / str, optional
+            If callable, a function used to determine if the PSM is decoy or not.
+            Should accept exactly one argument (PSM) and return a truthy value if the
             PSM should be considered decoy.
+            If array-like, should contain boolean values for all given PSMs.
+            If string, it is used as a field name (PSMs must be in a record array
+            or a :py:class:`DataFrame`)
 
             .. warning::
                 The default function may not work
@@ -552,14 +561,19 @@ def _make_qvalues(read, is_decoy, key):
 
         Returns
         -------
-        out : numpy.ndarray
+        out : numpy.ndarray or pandas.DataFrame
             A sorted array of records with the following fields:
 
             - 'score': :py:class:`np.float64`
             - 'is decoy': :py:class:`np.int8`
             - 'q': :py:class:`np.float64`
             - 'psm': :py:class:`object_` (if `full_output` is :py:const:`True`)
+
+            If :py:class:`DataFrame` objects were in the input and `full_output` is :py:const:`True`,
+            a :py:class:`DataFrame` will be returned. The 'q' field will contain calculated q-values.
+            'score' and 'is decoy' fields will be added if not already present.
         """
+        import numpy as np
         @_keepstate
         def get_scores(*args, **kwargs):
             scores = []
@@ -582,20 +596,19 @@ def _make_qvalues(read, is_decoy, key):
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2')
 
-        fields = [('score', np.float64), ('is decoy', np.uint8),
-            ('q', np.float64)]
-        # if all args are NumPy arrays with common dtype, use it in the output
-        if full:
-            dtypes = {getattr(arg, 'dtype', None) for arg in args}
-            if len(dtypes) == 1 and None not in dtypes:
-                psm_dtype = dtypes.pop()
-            else:
-                psm_dtype = np.object_
-            dtype = np.dtype(fields + [('psm', psm_dtype)])
-        else:
-            dtype = np.dtype(fields)
-            
         if callable(keyf) or callable(isdecoy):
+            fields = [('score', np.float64), ('is decoy', np.uint8),
+            ('q', np.float64)]
+            # if all args are NumPy arrays with common dtype, use it in the output
+            if full:
+                dtypes = {getattr(arg, 'dtype', None) for arg in args}
+                if len(dtypes) == 1 and None not in dtypes:
+                    psm_dtype = dtypes.pop()
+                else:
+                    psm_dtype = np.object_
+                dtype = np.dtype(fields + [('psm', psm_dtype)])
+            else:
+                dtype = np.dtype(fields)
             scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
         else:
             raise NotImplementedError
@@ -610,7 +623,7 @@ def _make_qvalues(read, is_decoy, key):
         scores = scores[np.lexsort(keys)]
         cumsum = scores['is decoy'].cumsum(dtype=np.float64)
         tfalse = cumsum.copy()
-        ind = 1 + np.arange(scores.size)
+        ind = np.arange(1., scores.size + 1., dtype=np.float64)
 
         if correction == 1:
             tfalse += 1
@@ -767,7 +780,13 @@ def _make_filter(read, is_decoy, key, qvalues):
 
     return _filter
 
-_iter = _make_chain(contextmanager(lambda x, **kw: (yield x)), 'iter')
+@contextmanager
+def _itercontext(x, **kw):
+    try:
+        yield (row for i, row in x.iterrows())
+    except AttributeError:
+        yield x
+_iter = _make_chain(_itercontext, 'iter')
 qvalues = _make_qvalues(_iter, None, None)
 qvalues.__doc__ =  """
 Read `args` and return a NumPy array with scores and q-values.

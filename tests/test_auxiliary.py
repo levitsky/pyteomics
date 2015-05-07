@@ -3,6 +3,7 @@ import string
 from itertools import count
 import operator as op
 import numpy as np
+import pandas as pd
 from pyteomics import auxiliary as aux
 
 class QvalueTest(unittest.TestCase):
@@ -46,8 +47,16 @@ class QvalueTest(unittest.TestCase):
         q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1,
             full_output=True)
         self._run_check(q, 1)
-        # print(q.dtype)
         self.assertTrue(q['psm'].dtype == dtype)
+
+    def test_qvalues_from_dataframe(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        psms = pd.DataFrame(np.array(list(self.psms), dtype=dtype))
+        q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1)
+        self._run_check(q, 1)
+        q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1,
+            full_output=True)
+        self._run_check(q, 1)
 
 if __name__ == '__main__':
     unittest.main()
