@@ -570,6 +570,7 @@ def _make_qvalues(read, is_decoy, key):
                     else:
                         scores.append((keyf(psm), isdecoy(psm), None))
             return scores
+
         args = [arg if not isinstance(arg, types.GeneratorType)
                 else list(arg) for arg in args]
         keyf = kwargs.pop('key', key)
@@ -586,17 +587,24 @@ def _make_qvalues(read, is_decoy, key):
             ('q', np.float64)]
         dtype = np.dtype(fields) if not full else np.dtype(
                 fields + [('psm', np.object_)])
-        scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
+
+        if callable(keyf) or callable(isdecoy):
+            scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
+        else:
+            raise NotImplementedError
+
         if not scores.size:
             return scores
         if not reverse:
             keys = scores['is decoy'], scores['score']
         else:
             keys = scores['is decoy'], -scores['score']
+
         scores = scores[np.lexsort(keys)]
         cumsum = scores['is decoy'].cumsum(dtype=np.float64)
         tfalse = cumsum.copy()
         ind = 1 + np.arange(scores.size)
+
         if correction == 1:
             tfalse += 1
         elif correction == 2:
@@ -611,6 +619,7 @@ def _make_qvalues(read, is_decoy, key):
                 tfalse[i] = _confidence_value(correction, cumsum[i], targ[i], p)
         elif correction:
             raise PyteomicsError('Invalid value for `correction`.')
+
         if formula == 1:
             scores['q'] = tfalse / (ind - cumsum) / ratio
         else:
@@ -621,6 +630,7 @@ def _make_qvalues(read, is_decoy, key):
             if (scores['score'][i] == scores['score'][i-1] or
                     scores['q'][i-1] > scores['q'][i]):
                 scores['q'][i-1] = scores['q'][i]
+
         if remove_decoy:
             scores = scores[scores['is decoy'] == 0]
         return scores
