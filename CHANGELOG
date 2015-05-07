@@ -1,3 +1,19 @@
+3.1
+---
+
+This release offers integration with the :py:mod:`pandas` library.
+Working with :py:func:`qvalues` and :py:func:`!filter` functions
+is now much easier if you have your PSMs in a :py:class:`DataFrame`.
+Many search engines use CSV as their output format, allowing direct
+creation of :py:class:`DataFrame` objects. New functions
+:py:func:`pyteomics.tandem.DataFrame` and :py:func:`pyteomics.pepxml.DataFrame`
+allow creation of DataFrames from corresponding formats.
+
+ - In :py:func:`qvalues` and :py:func:`!filter` functions,
+   `key` and `is_decoy` can now be array-like objects or strings.
+   If a string is given, it is used as a field name in the PSM array
+   or :py:class:`DataFrame`.
+
 3.0.1
 -----
 
@@ -8,6 +24,7 @@
 
 3.0.0
 -----
+
  - XML parsers are now implemented as objects, each format has its own class.
    Those classes can be instantiated using the same arguments as :py:func:`read`
    functions accepted, and support direct iteration and the ``with`` syntax.
