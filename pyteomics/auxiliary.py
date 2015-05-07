@@ -581,11 +581,20 @@ def _make_qvalues(read, is_decoy, key):
         correction = kwargs.pop('correction', 0)
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2')
+
         fields = [('score', np.float64), ('is decoy', np.uint8),
             ('q', np.float64)]
-        dtype = np.dtype(fields) if not full else np.dtype(
-                fields + [('psm', np.object_)])
-
+        # if all args are NumPy arrays with common dtype, use it in the output
+        if full:
+            dtypes = {getattr(arg, 'dtype', None) for arg in args}
+            if len(dtypes) == 1 and None not in dtypes:
+                psm_dtype = dtypes.pop()
+            else:
+                psm_dtype = np.object_
+            dtype = np.dtype(fields + [('psm', psm_dtype)])
+        else:
+            dtype = np.dtype(fields)
+            
         if callable(keyf) or callable(isdecoy):
             scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
         else:
