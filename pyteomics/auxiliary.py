@@ -578,49 +578,91 @@ def _make_qvalues(read, is_decoy, key):
         def get_scores(*args, **kwargs):
             scores = []
             with read(*args, **kwargs) as f:
-                for psm in f:
+                for i, psm in enumerate(f):
+                    row = []
+                    for func in (keyf, isdecoy):
+                        if callable(func):
+                            row.append(func(psm))
+                        elif isinstance(func, basestring):
+                            row.append(psm[func])
+                        else:
+                            row.append(func[i])
+                    row.append(None)
                     if full:
-                        scores.append((keyf(psm), isdecoy(psm), None, psm))
-                    else:
-                        scores.append((keyf(psm), isdecoy(psm), None))
+                        row.append(psm)
+                    scores.append(tuple(row))
             return scores
 
         keyf = kwargs.pop('key', key)
+        if isinstance(keyf, types.GeneratorType):
+            keyf = np.array(list(keyf))
         ratio = kwargs.pop('ratio', 1)
         reverse = kwargs.pop('reverse', False)
         remove_decoy = kwargs.pop('remove_decoy', True)
         isdecoy = kwargs.pop('is_decoy', is_decoy)
+        if isinstance(isdecoy, types.GeneratorType):
+            isdecoy = np.array(list(isdecoy))
         full = kwargs.pop('full_output', False)
         formula = kwargs.pop('formula', (2, 1)[bool(remove_decoy)])
         correction = kwargs.pop('correction', 0)
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2')
 
-        if callable(keyf) or callable(isdecoy):
-            fields = [('score', np.float64), ('is decoy', np.uint8),
+        fields = [('score', np.float64), ('is decoy', np.uint8),
             ('q', np.float64)]
-            # if all args are NumPy arrays with common dtype, use it in the output
-            if full:
-                dtypes = {getattr(arg, 'dtype', None) for arg in args}
-                if len(dtypes) == 1 and None not in dtypes:
-                    psm_dtype = dtypes.pop()
-                else:
-                    psm_dtype = np.object_
-                dtype = np.dtype(fields + [('psm', psm_dtype)])
+        # if all args are NumPy arrays with common dtype, use it in the output
+        if full:
+            dtypes = {getattr(arg, 'dtype', None) for arg in args}
+            if len(dtypes) == 1 and None not in dtypes:
+                psm_dtype = dtypes.pop()
             else:
-                dtype = np.dtype(fields)
+                psm_dtype = np.object_
+            dtype = np.dtype(fields + [('psm', psm_dtype)])
+        else:
+            dtype = np.dtype(fields)
+        
+        arr_flag = False
+        psms = None
+        if callable(keyf) or callable(isdecoy):
             scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
         else:
-            raise NotImplementedError
+            if pd is not None and all(isinstance(arg, pd.DataFrame) for arg in args):
+                psms = pd.concat(args)
+            else:
+                psms = np.concatenate([list(arg) if isinstance(arg, types.GeneratorType) else arg
+                    for arg in args])
+
+            if not isinstance(keyf, basestring):
+                keyf = np.array(keyf)
+                arr_flag = True
+            if not isinstance(isdecoy, basestring):
+                isdecoy = np.array(isdecoy)
+                arr_flag = True
+            if arr_flag:
+                scores = np.empty(keyf.size if hasattr(keyf, 'size') else isdecoy.size,
+                    dtype=dtype)
+                for func, label in zip((keyf, isdecoy), ('score', 'is decoy')):
+                    if not isinstance(func, basestring):
+                        scores[label] = func
+                    else:
+                        scores[label] = psms[func]
+            else:
+                psms.sort([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
+                scores = psms[[keyf, isdecoy]]
+                scores.colummns = ['score', 'is decoy']
 
         if not scores.size:
             return scores
-        if not reverse:
-            keys = scores['is decoy'], scores['score']
-        else:
-            keys = scores['is decoy'], -scores['score']
+        if psms is None or arr_flag:
+            if not reverse:
+                keys = scores['is decoy'], scores['score']
+            else:
+                keys = scores['is decoy'], -scores['score']
+            i = np.lexsort(keys)
+            scores = scores[i]
+            if psms is not None:
+                psms = psms[i]
 
-        scores = scores[np.lexsort(keys)]
         cumsum = scores['is decoy'].cumsum(dtype=np.float64)
         tfalse = cumsum.copy()
         ind = np.arange(1., scores.size + 1., dtype=np.float64)
@@ -653,6 +695,15 @@ def _make_qvalues(read, is_decoy, key):
 
         if remove_decoy:
             scores = scores[scores['is decoy'] == 0]
+            if psms is not None:
+                psms = psms[scores['is decoy'] == 0]
+
+        if full and psms is not None and arr_flag:
+            for func, label in zip((keyf, isdecoy), ('score', 'is decoy')):
+                if not isinstance(func, basestring):
+                    psms[label] = scores[label]
+            psms['q'] = scores['q']
+            return psms
         return scores
     return qvalues
 
