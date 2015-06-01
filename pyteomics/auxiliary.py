@@ -608,7 +608,7 @@ def _make_qvalues(read, is_decoy, key):
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2')
 
-        fields = [('score', np.float64), ('is decoy', np.uint8),
+        fields = [('score', np.float64), ('is decoy', np.bool_),
             ('q', np.float64)]
         # if all args are NumPy arrays with common dtype, use it in the output
         if full:
@@ -648,8 +648,9 @@ def _make_qvalues(read, is_decoy, key):
                         scores[label] = psms[func]
             else:
                 psms.sort([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
-                scores = psms[[keyf, isdecoy]]
-                scores.colummns = ['score', 'is decoy']
+                scores = np.empty(psms.shape[0], dtype=fields)
+                scores['score'] = psms[keyf]
+                scores['is decoy'] = psms[isdecoy]
 
         if not scores.size:
             return scores
@@ -665,7 +666,7 @@ def _make_qvalues(read, is_decoy, key):
 
         cumsum = scores['is decoy'].cumsum(dtype=np.float64)
         tfalse = cumsum.copy()
-        ind = np.arange(1., scores.size + 1., dtype=np.float64)
+        ind = np.arange(1., scores.shape[0] + 1., dtype=np.float64)
 
         if correction == 1:
             tfalse += 1
@@ -683,20 +684,20 @@ def _make_qvalues(read, is_decoy, key):
             raise PyteomicsError('Invalid value for `correction`.')
 
         if formula == 1:
-            scores['q'] = tfalse / (ind - cumsum) / ratio
+            q = tfalse / (ind - cumsum) / ratio
         else:
-            scores['q'] = (cumsum + tfalse / ratio) / ind
+            q = (cumsum + tfalse / ratio) / ind
         # Make sure that q-values are equal for equal scores (conservatively)
         # and that q-values are monotonic
         for i in range(scores.size-1, 0, -1):
             if (scores['score'][i] == scores['score'][i-1] or
-                    scores['q'][i-1] > scores['q'][i]):
-                scores['q'][i-1] = scores['q'][i]
-
+                    q[i-1] > q[i]):
+                q[i-1] = q[i]
+        scores['q'] = q
         if remove_decoy:
-            scores = scores[scores['is decoy'] == 0]
             if psms is not None:
-                psms = psms[scores['is decoy'] == 0]
+                psms = psms[~scores['is decoy']]
+            scores = scores[~scores['is decoy']]
 
         if full and psms is not None and arr_flag:
             for func, label in zip((keyf, isdecoy), ('score', 'is decoy')):
