@@ -699,7 +699,7 @@ def _make_qvalues(read, is_decoy, key):
                 psms = psms[~scores['is decoy']]
             scores = scores[~scores['is decoy']]
 
-        if full and psms is not None and arr_flag:
+        if full and psms is not None:
             for func, label in zip((keyf, isdecoy), ('score', 'is decoy')):
                 if not isinstance(func, basestring):
                     psms[label] = scores[label]
