@@ -628,9 +628,8 @@ def _make_qvalues(read, is_decoy, key):
         else:
             if pd is not None and all(isinstance(arg, pd.DataFrame) for arg in args):
                 psms = pd.concat(args)
-            else:
-                psms = np.concatenate([list(arg) if isinstance(arg, types.GeneratorType) else arg
-                    for arg in args])
+            elif all(isinstance(arg, np.ndarray) for arg in args):
+                psms = np.concatenate(args)
 
             if not isinstance(keyf, basestring):
                 keyf = np.array(keyf)
@@ -638,6 +637,7 @@ def _make_qvalues(read, is_decoy, key):
             if not isinstance(isdecoy, basestring):
                 isdecoy = np.array(isdecoy)
                 arr_flag = True
+
             if arr_flag:
                 scores = np.empty(keyf.size if hasattr(keyf, 'size') else isdecoy.size,
                     dtype=dtype)
@@ -647,22 +647,26 @@ def _make_qvalues(read, is_decoy, key):
                     else:
                         scores[label] = psms[func]
             else:
-                psms.sort([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
                 scores = np.empty(psms.shape[0], dtype=fields)
-                scores['score'] = psms[keyf]
-                scores['is decoy'] = psms[isdecoy]
+                if psms:
+                    scores['score'] = psms[keyf]
+                    scores['is decoy'] = psms[isdecoy]
+                    if pd is not None and isinstance(psms, pd.DataFrame):
+                        psms.sort([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
 
         if not scores.size:
+            if full and psms is not None:
+                return psms
             return scores
-        if psms is None or arr_flag:
-            if not reverse:
-                keys = scores['is decoy'], scores['score']
-            else:
-                keys = scores['is decoy'], -scores['score']
-            i = np.lexsort(keys)
-            scores = scores[i]
-            if psms is not None:
-                psms = psms[i]
+
+        if not reverse:
+            keys = scores['is decoy'], scores['score']
+        else:
+            keys = scores['is decoy'], -scores['score']
+        i = np.lexsort(keys)
+        scores = scores[i]
+        if psms is not None and pd is not None and not isinstance(psms, pd.DataFrame):
+            psms = psms[i]
 
         cumsum = scores['is decoy'].cumsum(dtype=np.float64)
         tfalse = cumsum.copy()
