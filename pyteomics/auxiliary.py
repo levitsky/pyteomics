@@ -648,11 +648,10 @@ def _make_qvalues(read, is_decoy, key):
                         scores[label] = psms[func]
             else:
                 scores = np.empty(psms.shape[0], dtype=fields)
-                if psms:
-                    scores['score'] = psms[keyf]
-                    scores['is decoy'] = psms[isdecoy]
-                    if pd is not None and isinstance(psms, pd.DataFrame):
-                        psms.sort([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
+                scores['score'] = psms[keyf]
+                scores['is decoy'] = psms[isdecoy]
+                if pd is not None and isinstance(psms, pd.DataFrame):
+                    psms.sort([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
 
         if not scores.size:
             if full and psms is not None:
