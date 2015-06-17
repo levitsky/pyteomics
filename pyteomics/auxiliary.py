@@ -977,7 +977,7 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         full_output : bool, optional
             If :py:const:`True`, then an array of PSM objects is returned.
             Otherwise, an iterator / context manager object is returned, and the
-            files are parsed twice. This saves some RAM, but may be slower.
+            input is read twice. This saves some RAM, but may be slower.
             Default is :py:const:`True`.
 
             .. note:: The name for the parameter comes from the fact that it is
