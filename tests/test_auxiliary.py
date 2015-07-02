@@ -24,7 +24,7 @@ class QvalueTest(unittest.TestCase):
         self.setUp()
 
     def test_qvalues(self):
-        q = aux.qvalues(self.psms, key=self.key, is_decoy=self.is_decoy)
+        q = aux.qvalues(self.psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=True)
         self.assertTrue(np.allclose(q['q'], 0))
         self.assertTrue(np.allclose(q['is decoy'], 0))
         self.assertTrue(np.allclose(q['score'], np.arange(26)))

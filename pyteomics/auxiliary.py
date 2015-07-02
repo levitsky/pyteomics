@@ -523,7 +523,7 @@ def _make_qvalues(read, is_decoy, key):
 
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
-            Default is :py:const:`True`.
+            Default is :py:const:`False`.
 
             .. note:: If set to :py:const:`False`, then by default the decoy
                PSMs will be taken into account when estimating FDR. Refer to the
@@ -598,7 +598,7 @@ def _make_qvalues(read, is_decoy, key):
             keyf = np.array(list(keyf))
         ratio = kwargs.pop('ratio', 1)
         reverse = kwargs.pop('reverse', False)
-        remove_decoy = kwargs.pop('remove_decoy', True)
+        remove_decoy = kwargs.pop('remove_decoy', False)
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         if isinstance(isdecoy, types.GeneratorType):
             isdecoy = np.array(list(isdecoy))
@@ -664,20 +664,24 @@ def _make_qvalues(read, is_decoy, key):
             keys = scores['is decoy'], -scores['score']
         i = np.lexsort(keys)
         scores = scores[i]
-        if psms is not None and pd is not None and not isinstance(psms, pd.DataFrame):
-            psms = psms[i]
+        if psms is not None and arr_flag:
+            if pd is not None and isinstance(psms, pd.DataFrame):
+                psms = psms.iloc[i]
+            else:
+                psms = psms[i]
 
         cumsum = scores['is decoy'].cumsum(dtype=np.float64)
         tfalse = cumsum.copy()
         ind = np.arange(1., scores.shape[0] + 1., dtype=np.float64)
 
-        if correction == 1:
-            tfalse += 1
-        elif correction == 2:
-            p = 1. / (1. + ratio)
-            targ = ind - cumsum
-            for i in range(tfalse.size):
-                tfalse[i] = _expectation(cumsum[i], targ[i], p)
+        if isinstance(correction, int):
+            if correction == 1:
+                tfalse += 1
+            elif correction == 2:
+                p = 1. / (1. + ratio)
+                targ = ind - cumsum
+                for i in range(tfalse.size):
+                    tfalse[i] = _expectation(cumsum[i], targ[i], p)
         elif 0 < correction < 1:
             p = 1. / (1. + ratio)
             targ = ind - cumsum
@@ -735,7 +739,12 @@ def _make_filter(read, is_decoy, key, qvalues):
         kwargs.pop('formula', None)
         i = bisect_right(scores['q'], fdr)
         if kwargs.pop('full_output', False):
-            return scores['psm'][:i]
+            if pd is not None and isinstance(scores, pd.DataFrame):
+                return scores.iloc[:i]
+            elif callable(keyf) or callable(isdecoy):
+                return scores['psm'][:i]
+            else:
+                return scores[:i]
         elif not scores.size:
             return (_ for _ in ())
         cutoff = scores['score'][i] if i < scores.size else (

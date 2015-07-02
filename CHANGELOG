@@ -14,6 +14,11 @@ allow creation of DataFrames from corresponding formats.
    If a string is given, it is used as a field name in the PSM array
    or :py:class:`DataFrame`.
 
+API changes
+...........
+
+- Default value of `remove_decoy` in :py:func:`qvalues` is now :py:const:`False`.
+
 3.0.1
 -----
 
