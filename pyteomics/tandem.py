@@ -20,7 +20,7 @@ new object-oriented interface (:py:class:`TandemXML`) to iterate over entries in
 Data access
 -----------
 
-  :py:class:`TandemXML` - a class representing a single MzIdentML file.
+  :py:class:`TandemXML` - a class representing a single X!Tandem output file.
   Other data access functions use this class internally.
 
   :py:func:`read` - iterate through peptide-spectrum matches in an X!Tandem
@@ -30,6 +30,8 @@ Data access
 
   :py:func:`chain.from_iterable` - read multiple files at once, using an
   iterable of files.
+
+  :py:func:`DataFrame` - read X!Tandem output files into a :py:class:`pandas.DataFrame`.
 
   :py:func:`filter` - iterate through peptide-spectrum matches in a chain of
   X!Tandem output files, yielding only top PSMs and keeping false discovery rate
