@@ -31,6 +31,8 @@ Data access
   :py:func:`chain.from_iterable` - read multiple files at once, using an
   iterable of files.
 
+  :py:func:`DataFrame` - read pepXML files into a :py:class:`pandas.DataFrame`.
+
   :py:func:`filter` - filter PSMs from a chain of pepXML files to a specific FDR
   using TDA.
 
@@ -318,3 +320,23 @@ _key = lambda x: min(
 qvalues = aux._make_qvalues(chain, is_decoy, _key)
 filter = aux._make_filter(chain, is_decoy, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter')
+
+def DataFrame(*args, **kwargs):
+    import pandas as pd
+    data = []
+    with chain(*args, **kwargs) as f:
+        for item in f:
+            info = {}
+            for k, v in item.items():
+                if isinstance(v, (str, int, float)):
+                    info[k] = v
+            sh = item['search_hit'][0]
+            info['protein'] = sh.pop('proteins')[0]['protein']
+            info.update(sh.pop('search_score'))
+            mods = sh.pop('modifications', [])
+            info['modifications'] = ','.join('{0[mass]:.3f}@{0[position]}'.format(x) for x in mods)
+            for k, v in sh.items():
+                if isinstance(v, (str, int, float)):
+                    info[k] = v
+            data.append(info)
+    return pd.DataFrame(data)
