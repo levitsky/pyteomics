@@ -243,3 +243,22 @@ filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'),
         qvalues)
 fdr = aux._make_fdr(is_decoy)
 filter.chain = aux._make_chain(filter, 'filter')
+
+def DataFrame(*args):
+    import pandas as pd
+    data = []
+    with chain(*args) as f:
+        for item in f:
+            info = {}
+            for k, v in item.items():
+                if isinstance(v, (str, int, float)):
+                    info[k] = v
+            protein = item['protein'][0]
+            info['protein_expect'] = protein['expect']
+            info['protein'] = protein['label']
+            aa = protein['peptide'].pop('aa', [])
+            info['modifications'] = ','.join('{0[modified]:.3f}@{0[type]}'.format(x) for x in aa)
+            info.update(protein['peptide'])
+            info['scan'] = item['support']['fragment ion mass spectrum']['note']
+            data.append(info)
+    return pd.DataFrame(data)
