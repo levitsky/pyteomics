@@ -244,10 +244,10 @@ filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'),
 fdr = aux._make_fdr(is_decoy)
 filter.chain = aux._make_chain(filter, 'filter')
 
-def DataFrame(*args):
+def DataFrame(*args, **kwargs):
     import pandas as pd
     data = []
-    with chain(*args) as f:
+    with chain(*args, **kwargs) as f:
         for item in f:
             info = {}
             for k, v in item.items():
