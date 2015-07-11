@@ -63,6 +63,10 @@ from contextlib import contextmanager
 import types
 from bisect import bisect_right
 from collections import Counter, defaultdict
+try:
+    from collections import Container, Sized
+except ImportError:
+    from collections.abc import Container, Sized
 import math
 
 try:
@@ -728,8 +732,8 @@ def _make_filter(read, is_decoy, key, qvalues):
         except KeyError:
             raise PyteomicsError('Keyword argument required: fdr')
 
-        args = [arg if not isinstance(arg, types.GeneratorType)
-                else list(arg) for arg in args]
+        args = [list(arg) if not isinstance(arg, (Container, Sized))
+                else arg for arg in args]
         remove_decoy = kwargs.pop('remove_decoy', True)
         scores = qvalues(*args, remove_decoy=remove_decoy, **kwargs)
         keyf = kwargs.pop('key', key)
