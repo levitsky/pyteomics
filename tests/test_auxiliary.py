@@ -96,92 +96,50 @@ class FilterTest(unittest.TestCase):
         self.key = op.itemgetter(0)
         self.is_decoy = lambda x: x[1].islower()
 
-    def test_filter(self):
-        f11 = aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
-        f12 = aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
-            formula=2)
-        f21 = aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
-            remove_decoy=False, formula=1)
-        f22 = aux.filter(iter(self.psms), key=self.key, is_decoy=self.is_decoy, fdr=0.5,
-            remove_decoy=False)
+    def _run_check(self, psms, key=None, is_decoy=None):
+        key = key or self.key
+        is_decoy = is_decoy or self.is_decoy
+        f11 = aux.filter(psms, key=key, is_decoy=is_decoy, fdr=0.5)
+        f12 = aux.filter(psms, key=key, is_decoy=is_decoy, fdr=0.5, formula=2)
+        f21 = aux.filter(psms, key=key, is_decoy=is_decoy, fdr=0.5, remove_decoy=False, formula=1)
+        f22 = aux.filter(psms, key=key, is_decoy=is_decoy, fdr=0.5, remove_decoy=False)
+
         self.assertEqual(f11.size, 26)
         self.assertEqual(f12.size, 26)
         self.assertEqual(len(f21), 39)
         self.assertEqual(f22.shape[0], 34)
 
-    def test_filter_with(self):
-        with aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
-            full_output=False) as f:
+        with aux.filter(psms, key=key, is_decoy=is_decoy, fdr=0.5, full_output=False) as f:
             f11 = list(f)
-        with aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
-            formula=2, full_output=False) as f:
+        with aux.filter(psms, key=key, is_decoy=is_decoy, fdr=0.5, formula=2, full_output=False) as f:
             f12 = list(f)
-        with aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
-            remove_decoy=False, formula=1, full_output=False) as f:
+        with aux.filter(psms, key=key, is_decoy=is_decoy, fdr=0.5, remove_decoy=False, formula=1, full_output=False) as f:
             f21 = list(f)
-        with aux.filter(iter(self.psms), key=self.key, is_decoy=self.is_decoy, fdr=0.5,
-            remove_decoy=False, full_output=False) as f:
+        with aux.filter(psms, key=key, is_decoy=is_decoy, fdr=0.5, remove_decoy=False, full_output=False) as f:
             f22 = list(f)
+
         self.assertEqual(len(f11), 26)
         self.assertEqual(len(f12), 26)
         self.assertEqual(len(f21), 39)
         self.assertEqual(len(f22), 34)
+
+    def test_filter(self):
+        self._run_check(self.psms)
 
     def test_filter_array(self):
         dtype = [('score', np.int8), ('label', np.str_, 1)]
         psms = np.array(self.psms, dtype=dtype)
-        f11 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
-        f12 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, formula=2)
-        f21 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, remove_decoy=False, formula=1)
-        f22 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, remove_decoy=False)
-        self.assertEqual(f11.size, 26)
-        self.assertEqual(f12.size, 26)
-        self.assertEqual(len(f21), 39)
-        self.assertEqual(f22.shape[0], 34)
-
-    def test_filter_array_with(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
-        psms = np.array(self.psms, dtype=dtype)
-        with aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
-            full_output=False) as f:
-            f11 = list(f)
-        with aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
-            formula=2, full_output=False) as f:
-            f12 = list(f)
-        with aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
-            remove_decoy=False, formula=1, full_output=False) as f:
-            f21 = list(f)
-        with aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
-            remove_decoy=False, full_output=False) as f:
-            f22 = list(f)
-        self.assertEqual(len(f11), 26)
-        self.assertEqual(len(f12), 26)
-        self.assertEqual(len(f21), 39)
-        self.assertEqual(len(f22), 34)
+        self._run_check(psms)
 
     def test_filter_array_str_is_decoy(self):
         dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
         psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
-        f11 = aux.filter(psms, key=self.key, is_decoy='is decoy', fdr=0.5)
-        f12 = aux.filter(psms, key=self.key, is_decoy='is decoy', fdr=0.5, formula=2)
-        f21 = aux.filter(psms, key=self.key, is_decoy='is decoy', fdr=0.5, remove_decoy=False, formula=1)
-        f22 = aux.filter(psms, key=self.key, is_decoy='is decoy', fdr=0.5, remove_decoy=False)
-        self.assertEqual(f11.size, 26)
-        self.assertEqual(f12.size, 26)
-        self.assertEqual(len(f21), 39)
-        self.assertEqual(f22.shape[0], 34)
+        self._run_check(psms, is_decoy='is decoy')
 
     def test_filter_dataframe(self):
         dtype = [('score', np.int8), ('label', np.str_, 1)]
         psms = pd.DataFrame(np.array(self.psms, dtype=dtype))
-        f11 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
-        f12 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, formula=2)
-        f21 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, remove_decoy=False, formula=1)
-        f22 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, remove_decoy=False)
-        self.assertEqual(f11.size, 26)
-        self.assertEqual(f12.size, 26)
-        self.assertEqual(len(f21), 39)
-        self.assertEqual(f22.shape[0], 34)
+        self._run_check(psms)
 
 if __name__ == '__main__':
     unittest.main()
