@@ -753,11 +753,19 @@ def _make_filter(read, is_decoy, key, qvalues):
             return (_ for _ in ())
         cutoff = scores['score'][i] if i < scores.size else (
                 scores['score'][-1] + (1, -1)[bool(reverse)])
+        funcd = {}
+        for func, label in [(isdecoy, 'is decoy'), (keyf, 'key')]:
+            if isinstance(func, basestring):
+                funcd[label] = lambda x, func=func: x[1][func]
+            elif not callable(func):
+                funcd[label] = lambda x, func=func: func[x[0]]
+            else:
+                funcd[label] = lambda x, func=func: func(x[1])
         def out():
             with read(*args, **kwargs) as f:
-                for p in f:
-                    if not remove_decoy or not isdecoy(p):
-                        if better(keyf(p), cutoff):
+                for p in enumerate(f):
+                    if not remove_decoy or not funcd['is decoy'](p):
+                        if better(funcd['key'](p), cutoff):
                             yield p
         return out()
 
