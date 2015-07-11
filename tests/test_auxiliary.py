@@ -8,7 +8,8 @@ from pyteomics import auxiliary as aux
 
 class QvalueTest(unittest.TestCase):
     def setUp(self):
-        self.psms = zip(count(), string.ascii_uppercase + string.ascii_lowercase)
+        self.psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase))
+        np.random.shuffle(self.psms)
         self.key = op.itemgetter(0)
         self.is_decoy = lambda x: x[1].islower()
 
@@ -86,6 +87,28 @@ class QvalueTest(unittest.TestCase):
         q = aux.qvalues(psms, key='score', is_decoy='is decoy', remove_decoy=False, formula=1,
             full_output=True)
         self._run_check(q, 1)
+
+class FilterTest(unittest.TestCase):
+    def setUp(self):
+        self.psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase))
+        np.random.shuffle(self.psms)
+        self.key = op.itemgetter(0)
+        self.is_decoy = lambda x: x[1].islower()
+
+    def _run_check(self, f, formula):
+        self.assertTrue(np.allclose(q['q'][:26], 0))
+        if formula == 2:
+            self.assertTrue(np.allclose(q['q'][26:], 2 * np.arange(1., 27.) / (26 + np.arange(1, 27))))
+        else:
+            self.assertTrue(np.allclose(q['q'][26:], np.arange(1., 27.) / 26))
+        self.assertTrue(np.allclose(q['is decoy'][:26], 0))
+        self.assertTrue(np.allclose(q['is decoy'][26:], 1))
+        self.assertTrue(np.allclose(q['score'], np.arange(52)))
+        self.setUp()
+
+    def test_filter(self):
+        f = aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
+        self.assertEqual(len(f), 26)
 
 if __name__ == '__main__':
     unittest.main()

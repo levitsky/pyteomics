@@ -484,7 +484,7 @@ def _make_chain(reader, readername):
 def _make_qvalues(read, is_decoy, key):
     """Create a function that reads PSMs from a file and calculates q-values
     for each value of `key`."""
-    
+
     def qvalues(*args, **kwargs):
         """Read `args` and return a NumPy array with scores and q-values.
 
@@ -620,7 +620,7 @@ def _make_qvalues(read, is_decoy, key):
             dtype = np.dtype(fields + [('psm', psm_dtype)])
         else:
             dtype = np.dtype(fields)
-        
+
         arr_flag = False
         psms = None
         if callable(keyf) or callable(isdecoy):
@@ -730,11 +730,11 @@ def _make_filter(read, is_decoy, key, qvalues):
 
         args = [arg if not isinstance(arg, types.GeneratorType)
                 else list(arg) for arg in args]
-        scores = qvalues(*args, **kwargs)
+        remove_decoy = kwargs.pop('remove_decoy', True)
+        scores = qvalues(*args, remove_decoy=remove_decoy, **kwargs)
         keyf = kwargs.pop('key', key)
         reverse = kwargs.pop('reverse', False)
         better = [op.lt, op.gt][bool(reverse)]
-        remove_decoy = kwargs.pop('remove_decoy', True)
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         kwargs.pop('formula', None)
         i = bisect_right(scores['q'], fdr)
