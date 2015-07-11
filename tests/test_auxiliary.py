@@ -8,8 +8,9 @@ from pyteomics import auxiliary as aux
 
 class QvalueTest(unittest.TestCase):
     def setUp(self):
-        self.psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase))
-        np.random.shuffle(self.psms)
+        psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase))
+        np.random.shuffle(psms)
+        self.psms = iter(psms)
         self.key = op.itemgetter(0)
         self.is_decoy = lambda x: x[1].islower()
 
@@ -95,20 +96,80 @@ class FilterTest(unittest.TestCase):
         self.key = op.itemgetter(0)
         self.is_decoy = lambda x: x[1].islower()
 
-    def _run_check(self, f, formula):
-        self.assertTrue(np.allclose(q['q'][:26], 0))
-        if formula == 2:
-            self.assertTrue(np.allclose(q['q'][26:], 2 * np.arange(1., 27.) / (26 + np.arange(1, 27))))
-        else:
-            self.assertTrue(np.allclose(q['q'][26:], np.arange(1., 27.) / 26))
-        self.assertTrue(np.allclose(q['is decoy'][:26], 0))
-        self.assertTrue(np.allclose(q['is decoy'][26:], 1))
-        self.assertTrue(np.allclose(q['score'], np.arange(52)))
-        self.setUp()
-
     def test_filter(self):
-        f = aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
-        self.assertEqual(len(f), 26)
+        f11 = aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
+        f12 = aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+            formula=2)
+        f21 = aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+            remove_decoy=False, formula=1)
+        f22 = aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+            remove_decoy=False)
+        self.assertEqual(f11.size, 26)
+        self.assertEqual(f12.size, 26)
+        self.assertEqual(len(f21), 39)
+        self.assertEqual(f22.shape[0], 34)
+
+    def test_filter_with(self):
+        with aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+            full_output=False) as f:
+            f11 = list(f)
+        with aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+            formula=2, full_output=False) as f:
+            f12 = list(f)
+        with aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+            remove_decoy=False, formula=1, full_output=False) as f:
+            f21 = list(f)
+        with aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+            remove_decoy=False, full_output=False) as f:
+            f22 = list(f)
+        self.assertEqual(len(f11), 26)
+        self.assertEqual(len(f12), 26)
+        self.assertEqual(len(f21), 39)
+        self.assertEqual(len(f22), 34)
+
+    def test_filter_array(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        psms = np.array(self.psms, dtype=dtype)
+        f11 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
+        f12 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, formula=2)
+        f21 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, remove_decoy=False, formula=1)
+        f22 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, remove_decoy=False)
+        self.assertEqual(f11.size, 26)
+        self.assertEqual(f12.size, 26)
+        self.assertEqual(len(f21), 39)
+        self.assertEqual(f22.shape[0], 34)
+
+    def test_filter_array_with(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        psms = np.array(self.psms, dtype=dtype)
+        with aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+            full_output=False) as f:
+            f11 = list(f)
+        with aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+            formula=2, full_output=False) as f:
+            f12 = list(f)
+        with aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+            remove_decoy=False, formula=1, full_output=False) as f:
+            f21 = list(f)
+        with aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+            remove_decoy=False, full_output=False) as f:
+            f22 = list(f)
+        self.assertEqual(len(f11), 26)
+        self.assertEqual(len(f12), 26)
+        self.assertEqual(len(f21), 39)
+        self.assertEqual(len(f22), 34)
+
+    def test_filter_array_str_is_decoy(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
+        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        f11 = aux.filter(psms, key=self.key, is_decoy='is decoy', fdr=0.5)
+        f12 = aux.filter(psms, key=self.key, is_decoy='is decoy', fdr=0.5, formula=2)
+        f21 = aux.filter(psms, key=self.key, is_decoy='is decoy', fdr=0.5, remove_decoy=False, formula=1)
+        f22 = aux.filter(psms, key=self.key, is_decoy='is decoy', fdr=0.5, remove_decoy=False)
+        self.assertEqual(f11.size, 26)
+        self.assertEqual(f12.size, 26)
+        self.assertEqual(len(f21), 39)
+        self.assertEqual(f22.shape[0], 34)
 
 if __name__ == '__main__':
     unittest.main()
