@@ -102,7 +102,7 @@ class FilterTest(unittest.TestCase):
             formula=2)
         f21 = aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
             remove_decoy=False, formula=1)
-        f22 = aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+        f22 = aux.filter(iter(self.psms), key=self.key, is_decoy=self.is_decoy, fdr=0.5,
             remove_decoy=False)
         self.assertEqual(f11.size, 26)
         self.assertEqual(f12.size, 26)
@@ -119,7 +119,7 @@ class FilterTest(unittest.TestCase):
         with aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
             remove_decoy=False, formula=1, full_output=False) as f:
             f21 = list(f)
-        with aux.filter(self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5,
+        with aux.filter(iter(self.psms), key=self.key, is_decoy=self.is_decoy, fdr=0.5,
             remove_decoy=False, full_output=False) as f:
             f22 = list(f)
         self.assertEqual(len(f11), 26)
@@ -166,6 +166,18 @@ class FilterTest(unittest.TestCase):
         f12 = aux.filter(psms, key=self.key, is_decoy='is decoy', fdr=0.5, formula=2)
         f21 = aux.filter(psms, key=self.key, is_decoy='is decoy', fdr=0.5, remove_decoy=False, formula=1)
         f22 = aux.filter(psms, key=self.key, is_decoy='is decoy', fdr=0.5, remove_decoy=False)
+        self.assertEqual(f11.size, 26)
+        self.assertEqual(f12.size, 26)
+        self.assertEqual(len(f21), 39)
+        self.assertEqual(f22.shape[0], 34)
+
+    def test_filter_dataframe(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        psms = pd.DataFrame(np.array(self.psms, dtype=dtype))
+        f11 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
+        f12 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, formula=2)
+        f21 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, remove_decoy=False, formula=1)
+        f22 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, remove_decoy=False)
         self.assertEqual(f11.size, 26)
         self.assertEqual(f12.size, 26)
         self.assertEqual(len(f21), 39)
