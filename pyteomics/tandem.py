@@ -244,7 +244,7 @@ qvalues = aux._make_qvalues(chain, is_decoy, operator.itemgetter('expect'))
 filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'),
         qvalues)
 fdr = aux._make_fdr(is_decoy)
-filter.chain = aux._make_chain(filter, 'filter')
+filter.chain = aux._make_chain(filter, 'filter', True)
 
 def DataFrame(*args, **kwargs):
     """Read X!Tandem output files into a :py:class:`pandas.DataFrame`.

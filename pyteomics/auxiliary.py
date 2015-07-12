@@ -397,7 +397,6 @@ class IteratorContextManager(object):
 
     next = __next__
 
-
 class FileReader(IteratorContextManager):
     """Abstract class implementing context manager protocol
     for file readers.
@@ -447,7 +446,15 @@ def _file_reader(mode='r'):
         return helper
     return decorator
 
-def _make_chain(reader, readername):
+def _make_chain(reader, readername, full_output=False):
+
+    def concat_results(*args, **kwargs):
+        results = [reader(arg, **kwargs) for arg in args]
+        if pd is not None and all(isinstance(a, pd.DataFrame) for a in args):
+            return pd.concat(results)
+        else:
+            return np.concatenate(results)
+
     def _iter(files, kwargs):
         for f in files:
             with reader(f, **kwargs) as r:
@@ -463,15 +470,25 @@ def _make_chain(reader, readername):
     @contextmanager
     def _chain(*files, **kwargs):
         yield chain(*files, **kwargs)
-    _chain.__doc__ = """Chain :py:func:`{0}` for several files.
-        Positional arguments should be file names or file objects.
-        Keyword arguments are passed to the :py:func:`{0}` function.
-        """.format(readername)
 
     @contextmanager
     def _from_iterable(files, **kwargs):
         yield from_iterable(files, **kwargs)
-    _from_iterable.__doc__ = """Chain :py:func:`{0}` for several files.
+
+    def dispatch(*args, **kwargs):
+        return dispatch_from_iterable(args, **kwargs)
+
+    def dispatch_from_iterable(args, **kwargs):
+        if kwargs.get('full_output', full_output):
+            return concat_results(*args, **kwargs)
+        else:
+            return _chain(*args, **kwargs)
+
+    dispatch.__doc__ = """Chain :py:func:`{0}` for several files.
+        Positional arguments should be file names or file objects.
+        Keyword arguments are passed to the :py:func:`{0}` function.
+        """.format(readername)
+    dispatch_from_iterable.__doc__ = """Chain :py:func:`{0}` for several files.
         Keyword arguments are passed to the :py:func:`{0}` function.
 
         Parameters
@@ -479,9 +496,9 @@ def _make_chain(reader, readername):
         files : iterable
             Iterable of file names or file objects.
         """.format(readername)
+    dispatch.from_iterable = dispatch_from_iterable
 
-    _chain.from_iterable = _from_iterable
-    return _chain
+    return dispatch
 
 ### End of file helpers section ###
 
@@ -874,169 +891,168 @@ def _itercontext(x, **kw):
         yield x
 _iter = _make_chain(_itercontext, 'iter')
 qvalues = _make_qvalues(_iter, None, None)
-qvalues.__doc__ =  """
-Read `args` and return a NumPy array with scores and q-values.
+qvalues.__doc__ =  """Read `args` and return a NumPy array with scores and q-values.
 
-Requires :py:mod:`numpy`.
+    Requires :py:mod:`numpy`.
 
-Parameters
-----------
-positional args : iterables
-    Iterables to read PSMs from. All positional arguments are chained.
-    The rest of the arguments must be named.
+    Parameters
+    ----------
+    positional args : iterables
+        Iterables to read PSMs from. All positional arguments are chained.
+        The rest of the arguments must be named.
 
-key : callable / iterable / array-like / str, optional
-    A function used for sorting of PSMs. If callable, should accept exactly one
-    argument (PSM) and return a number (the smaller the better, unless `reverse`
-    is :py:const:`True`). If iterator or array-like, must be the same length as
-    positional arguments combined. If :py:class:`str`, it will used as a label
-    and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
-    DataFrames.
+    key : callable / iterable / array-like / str, optional
+        A function used for sorting of PSMs. If callable, should accept exactly one
+        argument (PSM) and return a number (the smaller the better, unless `reverse`
+        is :py:const:`True`). If iterator or array-like, must be the same length as
+        positional arguments combined. If :py:class:`str`, it will used as a label
+        and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
+        DataFrames.
 
-is_decoy : callable / iterable / array-like / str, optional
-    A function used to determine if the PSM is decoy or not. If callable, should
-    accept exactly one argument (PSM) and return a truthy value if the
-    PSM should be considered decoy. If iterator or array-like, must be the same length as
-    positional arguments combined. If :py:class:`str`, it will used as a label
-    and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
-    DataFrames.
+    is_decoy : callable / iterable / array-like / str, optional
+        A function used to determine if the PSM is decoy or not. If callable, should
+        accept exactly one argument (PSM) and return a truthy value if the
+        PSM should be considered decoy. If iterator or array-like, must be the same length as
+        positional arguments combined. If :py:class:`str`, it will used as a label
+        and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
+        DataFrames.
 
-reverse : bool, optional
-    If :py:const:`True`, then PSMs are sorted in descending order,
-    i.e. the value of the key function is higher for better PSMs.
-    Default is :py:const:`False`.
+    reverse : bool, optional
+        If :py:const:`True`, then PSMs are sorted in descending order,
+        i.e. the value of the key function is higher for better PSMs.
+        Default is :py:const:`False`.
 
-remove_decoy : bool, optional
-    Defines whether decoy matches should be removed from the output.
-    Default is :py:const:`True`.
+    remove_decoy : bool, optional
+        Defines whether decoy matches should be removed from the output.
+        Default is :py:const:`True`.
 
-    .. note:: If set to :py:const:`False`, then by default the decoy
-       PSMs will be taken into account when estimating FDR. Refer to the
-       documentation of :py:func:`fdr` for math; basically, if
-       `remove_decoy` is :py:const:`True`, then formula 1 is used
-       to control output FDR, otherwise it's formula 2. This can be
-       changed by overriding the `formula` argument.
+        .. note:: If set to :py:const:`False`, then by default the decoy
+           PSMs will be taken into account when estimating FDR. Refer to the
+           documentation of :py:func:`fdr` for math; basically, if
+           `remove_decoy` is :py:const:`True`, then formula 1 is used
+           to control output FDR, otherwise it's formula 2. This can be
+           changed by overriding the `formula` argument.
 
-formula : int, optional
-    Can be either 1 or 2, defines which formula should be used for FDR
-    estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
-    else 2 (see :py:func:`fdr` for definitions).
+    formula : int, optional
+        Can be either 1 or 2, defines which formula should be used for FDR
+        estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+        else 2 (see :py:func:`fdr` for definitions).
 
-ratio : float, optional
-    The size ratio between the decoy and target databases. Default is
-    1. In theory, the "size" of the database is the number of
-    theoretical peptides eligible for assignment to spectra that are
-    produced by *in silico* cleavage of that database.
+    ratio : float, optional
+        The size ratio between the decoy and target databases. Default is
+        1. In theory, the "size" of the database is the number of
+        theoretical peptides eligible for assignment to spectra that are
+        produced by *in silico* cleavage of that database.
 
-correction : int or float, optional
-    Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
-    Default is 0 (no correction); 1 accounts for the probability that a false
-    positive scores better than the first excluded decoy PSM; 2 also corrects
-    that probability for finite size of the sample. If a floating point number
-    is given, then instead of the expectation value for the number of false PSMs,
-    the confidence value is used. The value of `correction` is then interpreted as
-    desired confidence level. E.g., if correction=0.95, then the calculated q-values
-    do not exceed the "real" q-values with 95% probability.
+    correction : int or float, optional
+        Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+        Default is 0 (no correction); 1 accounts for the probability that a false
+        positive scores better than the first excluded decoy PSM; 2 also corrects
+        that probability for finite size of the sample. If a floating point number
+        is given, then instead of the expectation value for the number of false PSMs,
+        the confidence value is used. The value of `correction` is then interpreted as
+        desired confidence level. E.g., if correction=0.95, then the calculated q-values
+        do not exceed the "real" q-values with 95% probability.
 
-full_output : bool, optional
-    If :py:const:`True`, then the returned array has PSM objects along
-    with scores and q-values.
+    full_output : bool, optional
+        If :py:const:`True`, then the returned array has PSM objects along
+        with scores and q-values.
 
-**kwargs : passed to the :py:func:`chain` function.
+    **kwargs : passed to the :py:func:`chain` function.
 
-Returns
--------
-out : numpy.ndarray or pandas.DataFrame
-    A sorted array of records with the following fields:
+    Returns
+    -------
+    out : numpy.ndarray or pandas.DataFrame
+        A sorted array of records with the following fields:
 
-    - 'score': :py:class:`np.float64`
-    - 'is decoy': :py:class:`np.int8`
-    - 'q': :py:class:`np.float64`
-    - 'psm': :py:class:`object_` (if `full_output` is :py:const:`True`)
+        - 'score': :py:class:`np.float64`
+        - 'is decoy': :py:class:`np.int8`
+        - 'q': :py:class:`np.float64`
+        - 'psm': :py:class:`object_` (if `full_output` is :py:const:`True`)
 
-    If :py:class:`DataFrame` objects were in the input and `full_output` is :py:const:`True`,
-    a :py:class:`DataFrame` will be returned. The 'q' field will contain calculated q-values.
-    'score' and 'is decoy' fields will be added if not already present (if present, they will
-    be overwritten).
-"""
+        If :py:class:`DataFrame` objects were in the input and `full_output` is :py:const:`True`,
+        a :py:class:`DataFrame` will be returned. The 'q' field will contain calculated q-values.
+        'score' and 'is decoy' fields will be added if not already present (if present, they will
+        be overwritten).
+    """
 
 filter = _make_filter(_iter, None, None, qvalues)
-filter.chain = _make_chain(filter, 'filter')
+filter.chain = _make_chain(filter, 'filter', True)
 filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
-        estimated false discovery rate (FDR) not exceeding `fdr`.
+    estimated false discovery rate (FDR) not exceeding `fdr`.
 
-        Requires :py:mod:`numpy`.
+    Requires :py:mod:`numpy`.
 
-        Parameters
-        ----------
-        positional args : containers
-            Containers to read PSMs from. All positional arguments are chained.
-            Keyword arguments are not supported, except for those listed below.
+    Parameters
+    ----------
+    positional args : containers
+        Containers to read PSMs from. All positional arguments are chained.
+        Keyword arguments are not supported, except for those listed below.
 
-        fdr : float, 0 <= fdr <= 1
-            Desired FDR level.
+    fdr : float, 0 <= fdr <= 1
+        Desired FDR level.
 
-        key : callable / iterable / array-like / str, optional
-            A function used for sorting of PSMs. If callable, should accept exactly one
-            argument (PSM) and return a number (the smaller the better, unless `reverse`
-            is :py:const:`True`). If iterator or array-like, must be the same length as
-            positional arguments combined. If :py:class:`str`, it will used as a label
-            and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
-            DataFrames.
+    key : callable / iterable / array-like / str, optional
+        A function used for sorting of PSMs. If callable, should accept exactly one
+        argument (PSM) and return a number (the smaller the better, unless `reverse`
+        is :py:const:`True`). If iterator or array-like, must be the same length as
+        positional arguments combined. If :py:class:`str`, it will used as a label
+        and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
+        DataFrames.
 
-        is_decoy : callable / iterable / array-like / str, optional
-            A function used to determine if the PSM is decoy or not. If callable, should
-            accept exactly one argument (PSM) and return a truthy value if the
-            PSM should be considered decoy. If iterator or array-like, must be the same length as
-            positional arguments combined. If :py:class:`str`, it will used as a label
-            and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
-            DataFrames.
+    is_decoy : callable / iterable / array-like / str, optional
+        A function used to determine if the PSM is decoy or not. If callable, should
+        accept exactly one argument (PSM) and return a truthy value if the
+        PSM should be considered decoy. If iterator or array-like, must be the same length as
+        positional arguments combined. If :py:class:`str`, it will used as a label
+        and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
+        DataFrames.
 
-        remove_decoy : bool, optional
-            Defines whether decoy matches should be removed from the output.
-            Default is :py:const:`True`.
+    remove_decoy : bool, optional
+        Defines whether decoy matches should be removed from the output.
+        Default is :py:const:`True`.
 
-            .. note:: If set to :py:const:`False`, then by default the decoy
-               PSMs will be taken into account when estimating FDR. Refer to the
-               documentation of :py:func:`fdr` for math; basically, if
-               `remove_decoy` is :py:const:`True`, then formula 1 is used
-               to control output FDR, otherwise it's formula 2. This can be
-               changed by overriding the `formula` argument.
+        .. note:: If set to :py:const:`False`, then by default the decoy
+           PSMs will be taken into account when estimating FDR. Refer to the
+           documentation of :py:func:`fdr` for math; basically, if
+           `remove_decoy` is :py:const:`True`, then formula 1 is used
+           to control output FDR, otherwise it's formula 2. This can be
+           changed by overriding the `formula` argument.
 
-        formula : int, optional
-            Can be either 1 or 2, defines which formula should be used for FDR
-            estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
-            else 2 (see :py:func:`fdr` for definitions).
+    formula : int, optional
+        Can be either 1 or 2, defines which formula should be used for FDR
+        estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+        else 2 (see :py:func:`fdr` for definitions).
 
-        ratio : float, optional
-            The size ratio between the decoy and target databases. Default is
-            1. In theory, the "size" of the database is the number of
-            theoretical peptides eligible for assignment to spectra that are
-            produced by *in silico* cleavage of that database.
+    ratio : float, optional
+        The size ratio between the decoy and target databases. Default is
+        1. In theory, the "size" of the database is the number of
+        theoretical peptides eligible for assignment to spectra that are
+        produced by *in silico* cleavage of that database.
 
-        correction : int or float, optional
-            Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
-            Default is 0 (no correction); 1 accounts for the probability that a false
-            positive scores better than the first excluded decoy PSM; 2 also corrects
-            that probability for finite size of the sample. If a floating point number
-            is given, then instead of the expectation value for the number of false PSMs,
-            the confidence value is used. The value of `correction` is then interpreted as
-            desired confidence level. E.g., if correction=0.95, then the calculated q-values
-            do not exceed the "real" q-values with 95% probability.
+    correction : int or float, optional
+        Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+        Default is 0 (no correction); 1 accounts for the probability that a false
+        positive scores better than the first excluded decoy PSM; 2 also corrects
+        that probability for finite size of the sample. If a floating point number
+        is given, then instead of the expectation value for the number of false PSMs,
+        the confidence value is used. The value of `correction` is then interpreted as
+        desired confidence level. E.g., if correction=0.95, then the calculated q-values
+        do not exceed the "real" q-values with 95% probability.
 
-        full_output : bool, optional
-            If :py:const:`True`, then an array of PSM objects is returned.
-            Otherwise, an iterator / context manager object is returned, and the
-            input is read twice. This saves some RAM, but may be slower.
-            Default is :py:const:`True`.
+    full_output : bool, optional
+        If :py:const:`True`, then an array of PSM objects is returned.
+        Otherwise, an iterator / context manager object is returned, and the
+        input is read twice. This saves some RAM, but may be slower.
+        Default is :py:const:`True`.
 
-            .. note:: The name for the parameter comes from the fact that it is
-                      internally passed to :py:func:`qvalues`.
+        .. note:: The name for the parameter comes from the fact that it is
+                  internally passed to :py:func:`qvalues`.
 
-        Returns
-        -------
-        out : iterator
-        """
+    Returns
+    -------
+    out : iterator
+    """
 
 try:
     import numpy as np
@@ -1158,54 +1174,54 @@ def _make_fdr(is_decoy):
 
 fdr = _make_fdr(None)
 fdr.__doc__ = """Estimate FDR of a data set using TDA.
-        Two formulas can be used. The first one (default) is:
+    Two formulas can be used. The first one (default) is:
 
-        .. math::
+    .. math::
 
-                FDR = \\frac{N_{decoy}}{N_{target} * ratio}
+            FDR = \\frac{N_{decoy}}{N_{target} * ratio}
 
-        The second formula is:
+    The second formula is:
 
-        .. math::
+    .. math::
 
-                FDR = \\frac{N_{decoy} * (1 + \\frac{1}{ratio})}{N_{total}}
+            FDR = \\frac{N_{decoy} * (1 + \\frac{1}{ratio})}{N_{total}}
 
-        Parameters
-        ----------
-        psms : iterable
-            An iterable of PSMs.
+    Parameters
+    ----------
+    psms : iterable
+        An iterable of PSMs.
 
-        formula : int, optional
-            Can be either 1 or 2, defines which formula should be used for FDR
-            estimation. Default is 1.
+    formula : int, optional
+        Can be either 1 or 2, defines which formula should be used for FDR
+        estimation. Default is 1.
 
-        is_decoy : callable
-            Should accept exactly one argument (PSM) and return a truthy value
-            if the PSM is considered decoy.
+    is_decoy : callable
+        Should accept exactly one argument (PSM) and return a truthy value
+        if the PSM is considered decoy.
 
-        ratio : float, optional
-            The size ratio between the decoy and target databases. Default is
-            1. In theory, the "size" of the database is the number of
-            theoretical peptides eligible for assignment to spectra that are
-            produced by *in silico* cleavage of that database.
+    ratio : float, optional
+        The size ratio between the decoy and target databases. Default is
+        1. In theory, the "size" of the database is the number of
+        theoretical peptides eligible for assignment to spectra that are
+        produced by *in silico* cleavage of that database.
 
-        correction : int or float, optional
-            Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
-            Default is 0 (no correction); 1 accounts for the probability that a false
-            positive scores better than the first excluded decoy PSM; 2 also corrects
-            that probability for finite size of the sample. If a floating point number
-            is given, then instead of the expectation value for the number of false PSMs,
-            the confidence value is used. The value of `correction` is then interpreted as
-            desired confidence level. E.g., if correction=0.95, then the calculated q-values
-            do not exceed the "real" q-values with 95% probability.
+    correction : int or float, optional
+        Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+        Default is 0 (no correction); 1 accounts for the probability that a false
+        positive scores better than the first excluded decoy PSM; 2 also corrects
+        that probability for finite size of the sample. If a floating point number
+        is given, then instead of the expectation value for the number of false PSMs,
+        the confidence value is used. The value of `correction` is then interpreted as
+        desired confidence level. E.g., if correction=0.95, then the calculated q-values
+        do not exceed the "real" q-values with 95% probability.
 
-            Requires :py:mod:`numpy`, if `correction` is a float or 2.
+        Requires :py:mod:`numpy`, if `correction` is a float or 2.
 
-        Returns
-        -------
-        out : float
-            The estimation of FDR, (roughly) between 0 and 1.
-        """
+    Returns
+    -------
+    out : float
+        The estimation of FDR, (roughly) between 0 and 1.
+    """
 
 def _parse_charge(s, list_only=False):
     if not list_only:

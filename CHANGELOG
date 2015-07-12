@@ -10,9 +10,13 @@ creation of :py:class:`DataFrame` objects. New functions
 allow creation of DataFrames from corresponding formats.
 
  - In :py:func:`qvalues` and :py:func:`!filter` functions,
-   `key` and `is_decoy` can now be array-like objects or strings.
+   `key` and `is_decoy` can now be array-like objects or strings
+   (as well as functions and iterators).
    If a string is given, it is used as a field name in the PSM array
    or :py:class:`DataFrame`.
+
+ - Fixed the behavior of :py:func:`filter.chain` functions. They now treat
+   the `full_output` argument the same way as :py:func:`!filter` functions.
 
 API changes
 ...........

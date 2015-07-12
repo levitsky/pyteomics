@@ -321,7 +321,7 @@ _key = lambda x: min(
     sh['search_score']['expect'] for sh in x['search_hit'])
 qvalues = aux._make_qvalues(chain, is_decoy, _key)
 filter = aux._make_filter(chain, is_decoy, _key, qvalues)
-filter.chain = aux._make_chain(filter, 'filter')
+filter.chain = aux._make_chain(filter, 'filter', True)
 
 def DataFrame(*args, **kwargs):
     """Read pepXML output files into a :py:class:`pandas.DataFrame`.
