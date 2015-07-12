@@ -711,16 +711,26 @@ def _make_qvalues(read, is_decoy, key):
             scores = scores[~scores['is decoy']]
 
         if full and psms is not None:
-            for func, label in zip((keyf, isdecoy), ('score', 'is decoy')):
-                if not isinstance(func, basestring):
-                    psms[label] = scores[label]
             if isinstance(psms, np.ndarray):
                 fields = sorted(psms.dtype.fields, key=lambda x: psms.dtype.fields[x][1])
-                newdt = np.dtype([(name, psms.dtype.fields[name][0]) for name in fields] + [('q', np.float64)])
+                extra = []
+                for func, label in zip((keyf, isdecoy), ('score', 'is decoy')):
+                    if not (isinstance(func, basestring) or label in psms.dtype.fields):
+                        extra.append(label)
+                    elif label in psms.dtype.fields:
+                        psms[label] = scores[label]
+                newdt = [(name, psms.dtype.fields[name][0]) for name in fields] + [
+                    (name, np.float64) for name in extra] + [('q', np.float64)]
                 psms_ = psms
                 psms = np.empty_like(psms_, dtype=newdt)
                 for f in fields:
                     psms[f] = psms_[f]
+                for f in extra:
+                    psms[f] = scores[f]
+            else:
+                for func, label in zip((keyf, isdecoy), ('score', 'is decoy')):
+                    if not isinstance(label, basestring):
+                        psms[label] = scores[label]
             psms['q'] = scores['q']
             return psms
         return scores
