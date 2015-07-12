@@ -42,6 +42,8 @@ Data access
   :py:func:`filter.chain.from_iterable` - chain a series of filters applied
   independently to an iterable of files.
 
+  :py:func:`filter_df` - filter pepXML files and return a :py:class:`pandas.DataFrame`.
+
 Miscellaneous
 -------------
 
@@ -352,3 +354,28 @@ def DataFrame(*args, **kwargs):
                     info[k] = v
             data.append(info)
     return pd.DataFrame(data)
+
+def filter_df(*args, **kwargs):
+    """Read pepXML files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.
+    Positional arguments can be pepXML files or DataFrames.
+
+    Requires :py:mod:`pandas`.
+
+    Parameters
+    ----------
+
+    key : str / iterable / callable, optional
+        Default is 'expect'
+    is_decoy : str / iterable / callable, optional
+        Default is to check if all strings in the "protein" column start with "DECOY_"
+    *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+    """
+    import pandas as pd
+    kwargs.setdefault('key', 'expect')
+    if all(isinstance(arg, pd.DataFrame) for arg in args):
+        df = pd.concat(args)
+    else:
+        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema'] if k in kwargs}
+        df = DataFrame(*args, **read_kw)
+    kwargs.setdefault('is_decoy', [p.startswith('DECOY_') for p in df['protein']])
+    return aux.filter(df, **kwargs)
