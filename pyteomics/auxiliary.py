@@ -714,6 +714,13 @@ def _make_qvalues(read, is_decoy, key):
             for func, label in zip((keyf, isdecoy), ('score', 'is decoy')):
                 if not isinstance(func, basestring):
                     psms[label] = scores[label]
+            if isinstance(psms, np.ndarray):
+                fields = sorted(psms.dtype.fields, key=lambda x: psms.dtype.fields[x][1])
+                newdt = np.dtype([(name, psms.dtype.fields[name][0]) for name in fields] + [('q', np.float64)])
+                psms_ = psms
+                psms = np.empty_like(psms_, dtype=newdt)
+                for f in fields:
+                    psms[f] = psms_[f]
             psms['q'] = scores['q']
             return psms
         return scores
@@ -756,6 +763,7 @@ def _make_filter(read, is_decoy, key, qvalues):
         funcd = {}
         for func, label in [(isdecoy, 'is decoy'), (keyf, 'key')]:
             if isinstance(func, basestring):
+                # abuse lambda's default args to keep func in scope
                 funcd[label] = lambda x, func=func: x[1][func]
             elif not callable(func):
                 funcd[label] = lambda x, func=func: func[x[0]]
