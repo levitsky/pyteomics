@@ -345,7 +345,7 @@ def DataFrame(*args, **kwargs):
                 if isinstance(v, (str, int, float)):
                     info[k] = v
             sh = item['search_hit'][0]
-            info['protein'] = sh.pop('proteins')[0]['protein']
+            info['proteins'] = ';'.join(p['protein'] for p in sh.pop('proteins'))
             info.update(sh.pop('search_score'))
             mods = sh.pop('modifications', [])
             info['modifications'] = ','.join('{0[mass]:.3f}@{0[position]}'.format(x) for x in mods)
@@ -364,7 +364,7 @@ def filter_df(*args, **kwargs):
     Parameters
     ----------
     key : str / iterable / callable, optional
-        Default is 'expect'
+        Default is 'expect'.
     is_decoy : str / iterable / callable, optional
         Default is to check if all strings in the "protein" column start with "DECOY_"
     *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
@@ -380,5 +380,6 @@ def filter_df(*args, **kwargs):
     else:
         read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema'] if k in kwargs}
         df = DataFrame(*args, **read_kw)
-    kwargs.setdefault('is_decoy', [p.startswith('DECOY_') for p in df['protein']])
+    kwargs.setdefault('is_decoy',
+        [all(p.startswith('DECOY_') for p in prot.split(';')) for prot in df['proteins']])
     return aux.filter(df, **kwargs)
