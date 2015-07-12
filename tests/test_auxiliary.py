@@ -130,15 +130,34 @@ class FilterTest(unittest.TestCase):
         f11 = aux.filter.chain(self.psms, self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
         self.assertEqual(f11.shape[0], 52)
 
+    def test_filter_chain_with(self):
+        with aux.filter.chain(self.psms, self.psms, key=self.key, is_decoy=self.is_decoy,
+            fdr=0.5, full_output=False) as f:
+            f11 = list(f)
+        self.assertEqual(len(f11), 52)
+
     def test_filter_chain_arr_str_key(self):
         dtype = [('score', np.int8), ('label', np.str_, 1)]
         psms = np.array(self.psms, dtype=dtype)
         f11 = aux.filter.chain(psms, psms, key='score', is_decoy=self.is_decoy, fdr=0.5)
         self.assertEqual(f11.shape[0], 52)
 
+    def test_filter_chain_arr_str_key_with(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        psms = np.array(self.psms, dtype=dtype)
+        with aux.filter.chain(psms, psms, key='score', is_decoy=self.is_decoy, fdr=0.5, full_output=False) as f:
+            f11 = list(f)
+        self.assertEqual(len(f11), 52)
+
     def test_filter_chain_from_iterable(self):
         f11 = aux.filter.chain.from_iterable([self.psms, self.psms], key=self.key, is_decoy=self.is_decoy, fdr=0.5)
         self.assertEqual(f11.shape[0], 52)
+
+    def test_filter_chain_from_iterable_with(self):
+        with aux.filter.chain.from_iterable([self.psms, self.psms],
+            key=self.key, is_decoy=self.is_decoy, fdr=0.5, full_output=False) as f:
+            f11 = list(f)
+        self.assertEqual(len(f11), 52)
 
     def test_filter_array(self):
         dtype = [('score', np.int8), ('label', np.str_, 1)]
