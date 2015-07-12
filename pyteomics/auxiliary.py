@@ -748,7 +748,12 @@ def _make_filter(read, is_decoy, key, qvalues):
         better = [op.lt, op.gt][bool(reverse)]
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         kwargs.pop('formula', None)
-        i = bisect_right(scores['q'], fdr)
+        try:
+            i = scores['q'].searchsorted(fdr, side='right')
+            if isinstance(i, Sized):
+                i = i[0]
+        except AttributeError:
+            i = bisect_right(scores['q'], fdr)
         if kwargs.pop('full_output', False):
             if pd is not None and isinstance(scores, pd.DataFrame):
                 return scores.iloc[:i]
