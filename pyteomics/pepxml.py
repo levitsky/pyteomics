@@ -363,12 +363,15 @@ def filter_df(*args, **kwargs):
 
     Parameters
     ----------
-
     key : str / iterable / callable, optional
         Default is 'expect'
     is_decoy : str / iterable / callable, optional
         Default is to check if all strings in the "protein" column start with "DECOY_"
     *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+
+    Returns
+    -------
+    out : pandas.DataFrame
     """
     import pandas as pd
     kwargs.setdefault('key', 'expect')
