@@ -97,8 +97,8 @@ class FilterTest(unittest.TestCase):
         self.is_decoy = lambda x: x[1].islower()
 
     def _run_check(self, psms, key=None, is_decoy=None):
-        key = key or self.key
-        is_decoy = is_decoy or self.is_decoy
+        key = key if key is not None else self.key
+        is_decoy = is_decoy if is_decoy is not None else self.is_decoy
         f11 = aux.filter(psms, key=key, is_decoy=is_decoy, fdr=0.5)
         f12 = aux.filter(psms, key=key, is_decoy=is_decoy, fdr=0.5, formula=2)
         f21 = aux.filter(psms, key=key, is_decoy=is_decoy, fdr=0.5, remove_decoy=False, formula=1)
@@ -135,6 +135,23 @@ class FilterTest(unittest.TestCase):
         dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
         psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
         self._run_check(psms, is_decoy='is decoy')
+
+    def test_filter_array_str_is_decoy_str_key(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
+        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        self._run_check(psms, is_decoy='is decoy', key='score')
+
+    def test_filter_array_list_key(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        psms = np.array(self.psms, dtype=dtype)
+        key = [self.key(psm) for psm in psms]
+        self._run_check(psms, key=key)
+
+    def test_filter_array_arr_is_decoy(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        psms = np.array(self.psms, dtype=dtype)
+        is_decoy = np.array([self.is_decoy(psm) for psm in self.psms])
+        self._run_check(psms, is_decoy=is_decoy)
 
     def test_filter_dataframe(self):
         dtype = [('score', np.int8), ('label', np.str_, 1)]
