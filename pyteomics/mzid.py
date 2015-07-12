@@ -284,4 +284,4 @@ _key = lambda x: min(
     sii['mascot:expectation value'] for sii in x['SpectrumIdentificationItem'])
 qvalues = aux._make_qvalues(chain, is_decoy, _key)
 filter = aux._make_filter(chain, is_decoy, _key, qvalues)
-filter.chain = aux._make_chain(filter, 'filter')
+filter.chain = aux._make_chain(filter, 'filter', True)

@@ -126,6 +126,20 @@ class FilterTest(unittest.TestCase):
     def test_filter(self):
         self._run_check(self.psms)
 
+    def test_filter_chain(self):
+        f11 = aux.filter.chain(self.psms, self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
+        self.assertEqual(f11.shape[0], 52)
+
+    def test_filter_chain_arr_str_key(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        psms = np.array(self.psms, dtype=dtype)
+        f11 = aux.filter.chain(psms, psms, key='score', is_decoy=self.is_decoy, fdr=0.5)
+        self.assertEqual(f11.shape[0], 52)
+
+    def test_filter_chain_from_iterable(self):
+        f11 = aux.filter.chain.from_iterable([self.psms, self.psms], key=self.key, is_decoy=self.is_decoy, fdr=0.5)
+        self.assertEqual(f11.shape[0], 52)
+
     def test_filter_array(self):
         dtype = [('score', np.int8), ('label', np.str_, 1)]
         psms = np.array(self.psms, dtype=dtype)
