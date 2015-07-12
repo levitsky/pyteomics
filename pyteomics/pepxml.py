@@ -322,6 +322,18 @@ filter = aux._make_filter(chain, is_decoy, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter')
 
 def DataFrame(*args, **kwargs):
+    """Read pepXML output files into a :py:class:`pandas.DataFrame`.
+
+    Requires :py:mod:`pandas`.
+
+    Parameters
+    ----------
+    *args, **kwargs : passed to :py:func:`chain`
+
+    Returns
+    -------
+    out : pandas.DataFrame
+    """
     import pandas as pd
     data = []
     with chain(*args, **kwargs) as f:

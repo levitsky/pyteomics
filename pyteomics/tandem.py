@@ -245,6 +245,18 @@ fdr = aux._make_fdr(is_decoy)
 filter.chain = aux._make_chain(filter, 'filter')
 
 def DataFrame(*args, **kwargs):
+    """Read X!Tandem output files into a :py:class:`pandas.DataFrame`.
+
+    Requires :py:mod:`pandas`.
+
+    Parameters
+    ----------
+    *args, **kwargs : passed to :py:func:`chain`
+
+    Returns
+    -------
+    out : pandas.DataFrame
+    """
     import pandas as pd
     data = []
     with chain(*args, **kwargs) as f:
