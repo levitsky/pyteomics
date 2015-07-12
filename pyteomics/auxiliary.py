@@ -501,7 +501,7 @@ def _make_qvalues(read, is_decoy, key):
             Files to read PSMs from. All positional arguments are treated as
             files. The rest of the arguments must be named.
 
-        key : callable / array-like / str, optional
+        key : callable / array-like / iterable / str, optional
             If callable, a function used for sorting of PSMs. Should accept
             exactly one argument (PSM) and return a number (the smaller the better).
             If array-like, should contain scores for all given PSMs.
@@ -513,7 +513,7 @@ def _make_qvalues(read, is_decoy, key):
             i.e. the value of the key function is higher for better PSMs.
             Default is :py:const:`False`.
 
-        is_decoy : callable / array-like / str, optional
+        is_decoy : callable / array-like / iterable / str, optional
             If callable, a function used to determine if the PSM is decoy or not.
             Should accept exactly one argument (PSM) and return a truthy value if the
             PSM should be considered decoy.
@@ -559,23 +559,19 @@ def _make_qvalues(read, is_decoy, key):
 
         full_output : bool, optional
             If :py:const:`True`, then the returned array has PSM objects along
-            with scores and q-values.
+            with scores and q-values. Default is :py:const:`False`.
 
         **kwargs : passed to the :py:func:`chain` function.
 
         Returns
         -------
-        out : numpy.ndarray or pandas.DataFrame
+        out : numpy.ndarray
             A sorted array of records with the following fields:
 
             - 'score': :py:class:`np.float64`
-            - 'is decoy': :py:class:`np.int8`
+            - 'is decoy': :py:class:`np.bool_`
             - 'q': :py:class:`np.float64`
-            - 'psm': :py:class:`object_` (if `full_output` is :py:const:`True`)
-
-            If :py:class:`DataFrame` objects were in the input and `full_output` is :py:const:`True`,
-            a :py:class:`DataFrame` will be returned. The 'q' field will contain calculated q-values.
-            'score' and 'is decoy' fields will be added if not already present.
+            - 'psm': :py:class:`np.object_` (if `full_output` is :py:const:`True`)
         """
         import numpy as np
         @_keepstate
@@ -889,19 +885,26 @@ positional args : iterables
     Iterables to read PSMs from. All positional arguments are chained.
     The rest of the arguments must be named.
 
-key : callable
-    A function used for sorting of PSMs. Should accept exactly one
-    argument (PSM) and return a number (the smaller the better).
+key : callable / iterable / array-like / str, optional
+    A function used for sorting of PSMs. If callable, should accept exactly one
+    argument (PSM) and return a number (the smaller the better, unless `reverse`
+    is :py:const:`True`). If iterator or array-like, must be the same length as
+    positional arguments combined. If :py:class:`str`, it will used as a label
+    and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
+    DataFrames.
+
+is_decoy : callable / iterable / array-like / str, optional
+    A function used to determine if the PSM is decoy or not. If callable, should
+    accept exactly one argument (PSM) and return a truthy value if the
+    PSM should be considered decoy. If iterator or array-like, must be the same length as
+    positional arguments combined. If :py:class:`str`, it will used as a label
+    and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
+    DataFrames.
 
 reverse : bool, optional
     If :py:const:`True`, then PSMs are sorted in descending order,
     i.e. the value of the key function is higher for better PSMs.
     Default is :py:const:`False`.
-
-is_decoy : callable
-    A function used to determine if the PSM is decoy or not. Should
-    accept exactly one argument (PSM) and return a truthy value if the
-    PSM should be considered decoy.
 
 remove_decoy : bool, optional
     Defines whether decoy matches should be removed from the output.
@@ -943,13 +946,18 @@ full_output : bool, optional
 
 Returns
 -------
-out : numpy.ndarray
+out : numpy.ndarray or pandas.DataFrame
     A sorted array of records with the following fields:
 
-    - 'score': :py:class:`float64`
-    - 'is decoy': :py:class:`int8`
-    - 'q': :py:class:`float64`
+    - 'score': :py:class:`np.float64`
+    - 'is decoy': :py:class:`np.int8`
+    - 'q': :py:class:`np.float64`
     - 'psm': :py:class:`object_` (if `full_output` is :py:const:`True`)
+
+    If :py:class:`DataFrame` objects were in the input and `full_output` is :py:const:`True`,
+    a :py:class:`DataFrame` will be returned. The 'q' field will contain calculated q-values.
+    'score' and 'is decoy' fields will be added if not already present (if present, they will
+    be overwritten).
 """
 
 filter = _make_filter(_iter, None, None, qvalues)
@@ -968,14 +976,21 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         fdr : float, 0 <= fdr <= 1
             Desired FDR level.
 
-        key : callable
-            A function used for sorting of PSMs. Should accept exactly one
-            argument (PSM) and return a number (the smaller the better).
+        key : callable / iterable / array-like / str, optional
+            A function used for sorting of PSMs. If callable, should accept exactly one
+            argument (PSM) and return a number (the smaller the better, unless `reverse`
+            is :py:const:`True`). If iterator or array-like, must be the same length as
+            positional arguments combined. If :py:class:`str`, it will used as a label
+            and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
+            DataFrames.
 
-        is_decoy : callable
-            A function used to determine if the PSM is decoy or not. Should
+        is_decoy : callable / iterable / array-like / str, optional
+            A function used to determine if the PSM is decoy or not. If callable, should
             accept exactly one argument (PSM) and return a truthy value if the
-            PSM should be considered decoy.
+            PSM should be considered decoy. If iterator or array-like, must be the same length as
+            positional arguments combined. If :py:class:`str`, it will used as a label
+            and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
+            DataFrames.
 
         remove_decoy : bool, optional
             Defines whether decoy matches should be removed from the output.
