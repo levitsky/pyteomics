@@ -598,13 +598,13 @@ def _make_qvalues(read, is_decoy, key):
             return scores
 
         keyf = kwargs.pop('key', key)
-        if isinstance(keyf, types.GeneratorType):
+        if not callable(keyf) and not isinstance(keyf, (Sized, Container)):
             keyf = np.array(list(keyf))
         ratio = kwargs.pop('ratio', 1)
         reverse = kwargs.pop('reverse', False)
         remove_decoy = kwargs.pop('remove_decoy', False)
         isdecoy = kwargs.pop('is_decoy', is_decoy)
-        if isinstance(isdecoy, types.GeneratorType):
+        if not callable(isdecoy) and not isinstance(isdecoy, (Sized, Container)):
             isdecoy = np.array(list(isdecoy))
         full = kwargs.pop('full_output', False)
         formula = kwargs.pop('formula', (2, 1)[bool(remove_decoy)])
@@ -775,20 +775,11 @@ def _make_filter(read, is_decoy, key, qvalues):
             return (_ for _ in ())
         cutoff = scores['score'][i] if i < scores.size else (
                 scores['score'][-1] + (1, -1)[bool(reverse)])
-        funcd = {}
-        for func, label in [(isdecoy, 'is decoy'), (keyf, 'key')]:
-            if isinstance(func, basestring):
-                # abuse lambda's default args to keep func in scope
-                funcd[label] = lambda x, func=func: x[1][func]
-            elif not callable(func):
-                funcd[label] = lambda x, func=func: func[x[0]]
-            else:
-                funcd[label] = lambda x, func=func: func(x[1])
         def out():
             with read(*args, **kwargs) as f:
-                for p in enumerate(f):
-                    if not remove_decoy or not funcd['is decoy'](p):
-                        if better(funcd['key'](p), cutoff):
+                for p, s in zip(f, scores):
+                    if not remove_decoy or not s['is decoy']:
+                        if better(s['score'], cutoff):
                             yield p
         return out()
 
