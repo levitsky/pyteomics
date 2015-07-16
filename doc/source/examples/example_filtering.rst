@@ -3,4 +3,5 @@
 Example 3: Search engines and PSM filtering
 ===========================================
 
-Aww yiss.
+In this example we are going to parse the output of several search engines and see what we can do with it
+using **Pyteomics**.
