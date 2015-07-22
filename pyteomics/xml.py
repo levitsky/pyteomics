@@ -224,8 +224,8 @@ class XML(FileReader):
                 "You can disable reading the schema by specifying "
                 "`read_schema=False`.".format(self, version, schema_url))
             else:
-                warnings.warn("Unknown {0.file_format} version `{1}`. "
-                    "Attempt to use schema\n"
+                warnings.warn("Unknown {0.file_format} version `{1}`.\n"
+                    "Attempt to use schema "
                     "information from <{2}> failed.\n"
                     "Exception information:\n{3}\n"
                     "Falling back to defaults for {0._default_version}\n"

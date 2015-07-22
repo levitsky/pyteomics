@@ -13,5 +13,4 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 """
-from pkgutil import extend_path
-__path__ = extend_path(__path__, __name__)
+__import__('pkg_resources').declare_namespace(__name__)
