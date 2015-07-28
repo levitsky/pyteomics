@@ -332,8 +332,8 @@ def valid(*args, **kwargs):
     """Try to parse sequence and catch the exceptions.
     All parameters are passed to :py:func:`parse`.
 
-    Returns:
-    --------
+    Returns
+    -------
     out : bool
         :py:const:`True` if the sequence was parsed successfully, and
         :py:const:`False` otherwise.
@@ -600,7 +600,7 @@ at Expasy.
 
 def isoforms(sequence, **kwargs):
     """
-    Apply variable and fixed modifications to the polypeptide and yield 
+    Apply variable and fixed modifications to the polypeptide and yield
     the unique modified sequences.
 
     Parameters
