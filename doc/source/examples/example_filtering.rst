@@ -12,4 +12,4 @@ The files used in this example can be downloaded from
 `here <http://pubdata.theorchromo.ru/pyteomics_filtering_example/>`_.
 The example, including code, figures, and accompanying text, is contained in the IPython Notebook file.
 You can view a rendered version of the notebook `here
-<http://nbviewer.ipython.org/url/bitbucket.org/levitsky/pyteomics/raw/tip/doc/source/examples/filtreing/filtering.ipynb>`_.
+<http://nbviewer.ipython.org/url/bitbucket.org/levitsky/pyteomics/raw/tip/doc/source/examples/filtering/filtering.ipynb>`_.
