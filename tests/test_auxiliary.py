@@ -4,6 +4,9 @@ from itertools import count
 import operator as op
 import numpy as np
 import pandas as pd
+from os import path
+import pyteomics
+pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics import auxiliary as aux
 
 class QvalueTest(unittest.TestCase):
@@ -88,6 +91,14 @@ class QvalueTest(unittest.TestCase):
         q = aux.qvalues(psms, key='score', is_decoy='is decoy', remove_decoy=False, formula=1,
             full_output=True)
         self._run_check(q, 1)
+
+    def test_qvalues_pep_exceptions(self):
+        self.assertRaises(aux.PyteomicsError, aux.qvalues,
+            self.psms, pep='score', is_decoy=self.is_decoy)
+        self.assertRaises(aux.PyteomicsError, aux.qvalues,
+            self.psms, pep='score', remove_decoy=False)
+        self.assertRaises(aux.PyteomicsError, aux.qvalues,
+            self.psms, pep='score', correction=0)
 
 class FilterTest(unittest.TestCase):
     def setUp(self):
