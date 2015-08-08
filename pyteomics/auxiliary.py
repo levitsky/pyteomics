@@ -508,6 +508,7 @@ def _make_qvalues(read, is_decoy, key):
 
     def qvalues(*args, **kwargs):
         """Read `args` and return a NumPy array with scores and q-values.
+        q-values are calculated either using TDA or based on provided values of PEP.
 
         Requires :py:mod:`numpy` (and optionally :py:mod:`pandas`).
 
@@ -550,8 +551,7 @@ def _make_qvalues(read, is_decoy, key):
             or a :py:class:`DataFrame`).
 
             .. note:: If this parameter is given, then PEP values will be used to calculate
-               q-values. Otherwise, decoy PSMs will be
-               used instead. This option conflicts with:
+               q-values. Otherwise, decoy PSMs will be used instead. This option conflicts with:
                `is_decoy`, `remove_decoy`, `formula`, `ratio`, `correction`.
                `key` can still be provided. Without `key`, PSMs will be sorted by PEP.
 
@@ -738,7 +738,6 @@ def _make_qvalues(read, is_decoy, key):
             elif correction:
                 raise PyteomicsError('Invalid value for `correction`.')
 
-
             if formula == 1:
                 q = tfalse / (ind - cumsum) / ratio
             else:
@@ -894,6 +893,18 @@ def _make_filter(read, is_decoy, key, qvalues):
             desired confidence level. E.g., if correction=0.95, then the calculated q-values
             do not exceed the "real" q-values with 95% probability.
 
+        pep : callable / array-like / iterable / str, optional
+            If callable, a function used to determine the posterior error probability (PEP).
+            Should accept exactly one argument (PSM) and return a float.
+            If array-like, should contain float values for all given PSMs.
+            If string, it is used as a field name (PSMs must be in a record array
+            or a :py:class:`DataFrame`).
+
+            .. note:: If this parameter is given, then PEP values will be used to calculate
+               q-values. Otherwise, decoy PSMs will be used instead. This option conflicts with:
+               `is_decoy`, `remove_decoy`, `formula`, `ratio`, `correction`.
+               `key` can still be provided. Without `key`, PSMs will be sorted by PEP.
+
         full_output : bool, optional
             If :py:const:`True`, then an array of PSM objects is returned.
             Otherwise, an iterator / context manager object is returned, and the
@@ -924,8 +935,9 @@ def _itercontext(x, **kw):
 _iter = _make_chain(_itercontext, 'iter')
 qvalues = _make_qvalues(_iter, None, None)
 qvalues.__doc__ =  """Read `args` and return a NumPy array with scores and q-values.
+    q-values are calculated either using TDA or based on provided values of PEP.
 
-    Requires :py:mod:`numpy`.
+    Requires :py:mod:`numpy` (and optionally :py:mod:`pandas`).
 
     Parameters
     ----------
@@ -933,7 +945,7 @@ qvalues.__doc__ =  """Read `args` and return a NumPy array with scores and q-val
         Iterables to read PSMs from. All positional arguments are chained.
         The rest of the arguments must be named.
 
-    key : callable / iterable / array-like / str, optional
+    key : callable / iterable / array-like / str
         A function used for sorting of PSMs. If callable, should accept exactly one
         argument (PSM) and return a number (the smaller the better, unless `reverse`
         is :py:const:`True`). If iterator or array-like, must be the same length as
@@ -941,7 +953,7 @@ qvalues.__doc__ =  """Read `args` and return a NumPy array with scores and q-val
         and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
         DataFrames.
 
-    is_decoy : callable / iterable / array-like / str, optional
+    is_decoy : callable / iterable / array-like / str
         A function used to determine if the PSM is decoy or not. If callable, should
         accept exactly one argument (PSM) and return a truthy value if the
         PSM should be considered decoy. If iterator or array-like, must be the same length as
@@ -986,6 +998,18 @@ qvalues.__doc__ =  """Read `args` and return a NumPy array with scores and q-val
         desired confidence level. E.g., if correction=0.95, then the calculated q-values
         do not exceed the "real" q-values with 95% probability.
 
+    pep : callable / array-like / iterable / str, optional
+        If callable, a function used to determine the posterior error probability (PEP).
+        Should accept exactly one argument (PSM) and return a float.
+        If array-like, should contain float values for all given PSMs.
+        If string, it is used as a field name (PSMs must be in a record array
+        or a :py:class:`DataFrame`).
+
+        .. note:: If this parameter is given, then PEP values will be used to calculate
+           q-values. Otherwise, decoy PSMs will be used instead. This option conflicts with:
+           `is_decoy`, `remove_decoy`, `formula`, `ratio`, `correction`.
+           `key` can still be provided. Without `key`, PSMs will be sorted by PEP.
+
     full_output : bool, optional
         If :py:const:`True`, then the returned array has PSM objects along
         with scores and q-values.
@@ -1024,7 +1048,7 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
     fdr : float, 0 <= fdr <= 1
         Desired FDR level.
 
-    key : callable / iterable / array-like / str, optional
+    key : callable / iterable / array-like / str
         A function used for sorting of PSMs. If callable, should accept exactly one
         argument (PSM) and return a number (the smaller the better, unless `reverse`
         is :py:const:`True`). If iterator or array-like, must be the same length as
@@ -1032,7 +1056,7 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
         DataFrames.
 
-    is_decoy : callable / iterable / array-like / str, optional
+    is_decoy : callable / iterable / array-like / str
         A function used to determine if the PSM is decoy or not. If callable, should
         accept exactly one argument (PSM) and return a truthy value if the
         PSM should be considered decoy. If iterator or array-like, must be the same length as
@@ -1071,6 +1095,18 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         the confidence value is used. The value of `correction` is then interpreted as
         desired confidence level. E.g., if correction=0.95, then the calculated q-values
         do not exceed the "real" q-values with 95% probability.
+
+    pep : callable / array-like / iterable / str, optional
+        If callable, a function used to determine the posterior error probability (PEP).
+        Should accept exactly one argument (PSM) and return a float.
+        If array-like, should contain float values for all given PSMs.
+        If string, it is used as a field name (PSMs must be in a record array
+        or a :py:class:`DataFrame`).
+
+        .. note:: If this parameter is given, then PEP values will be used to calculate
+           q-values. Otherwise, decoy PSMs will be used instead. This option conflicts with:
+           `is_decoy`, `remove_decoy`, `formula`, `ratio`, `correction`.
+           `key` can still be provided. Without `key`, PSMs will be sorted by PEP.
 
     full_output : bool, optional
         If :py:const:`True`, then an array of PSM objects is returned.
