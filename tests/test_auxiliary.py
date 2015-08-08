@@ -165,10 +165,12 @@ class QvalueTest(unittest.TestCase):
 
 class FilterTest(unittest.TestCase):
     def setUp(self):
-        self.psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase))
+        self.psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase,
+                    np.arange(0.01, 0.062, 0.001)))
         np.random.shuffle(self.psms)
         self.key = op.itemgetter(0)
         self.is_decoy = lambda x: x[1].islower()
+        self.pep = op.itemgetter(2)
 
     def _run_check(self, *args, **kwargs):
         key = kwargs.get('key', self.key)
@@ -197,35 +199,82 @@ class FilterTest(unittest.TestCase):
         self.assertEqual(len(f21), 39)
         self.assertEqual(len(f22), 34)
 
+    def _run_check_pep(self, *args, **kwargs):
+        key = kwargs.pop('key', self.key)
+        is_decoy = kwargs.get('is_decoy', self.is_decoy)
+        f11 = aux.filter(*args, key=key, fdr=0.02, **kwargs)
+        f12 = aux.filter(*args, fdr=0.02, **kwargs)
+
+        self.assertEqual(f11.shape[0], 21)
+        self.assertEqual(f12.shape[0], 21)
+
+        with aux.filter(*args, key=key, fdr=0.02, full_output=False, **kwargs) as f:
+            f11 = list(f)
+        with aux.filter(*args, fdr=0.02, full_output=False, **kwargs) as f:
+            f12 = list(f)
+
+        self.assertEqual(len(f11), 21)
+        self.assertEqual(len(f12), 21)
+
     def test_filter(self):
         self._run_check(self.psms)
 
+    def test_filter_pep(self):
+        self._run_check_pep(self.psms, pep=self.pep)
+
     def test_filter_chain(self):
-        f11 = aux.filter.chain(self.psms, self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
-        self.assertEqual(f11.shape[0], 52)
+        f = aux.filter.chain(self.psms, self.psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
+        self.assertEqual(f.shape[0], 52)
+
+    def test_filter_chain_pep(self):
+        f = aux.filter.chain(self.psms, self.psms, pep=self.pep, fdr=0.02)
+        self.assertEqual(f.shape[0], 42)
 
     def test_filter_chain_with(self):
         with aux.filter.chain(self.psms, self.psms, key=self.key, is_decoy=self.is_decoy,
             fdr=0.5, full_output=False) as f:
-            f11 = list(f)
-        self.assertEqual(len(f11), 52)
+            f1 = list(f)
+        self.assertEqual(len(f1), 52)
+
+    def test_filter_pep_chain_with(self):
+        with aux.filter.chain(self.psms, self.psms, pep=self.pep,
+            fdr=0.02, full_output=False) as f:
+            f1 = list(f)
+        self.assertEqual(len(f1), 42)
 
     def test_filter_chain_arr_str_key(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms = np.array(self.psms, dtype=dtype)
         f11 = aux.filter.chain(psms, psms, key='score', is_decoy=self.is_decoy, fdr=0.5)
         self.assertEqual(f11.shape[0], 52)
 
+    def test_filter_pep_chain_arr_str_key(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms = np.array(self.psms, dtype=dtype)
+        f = aux.filter.chain(psms, psms, key='score', pep=self.pep, fdr=0.02)
+        self.assertEqual(f.shape[0], 42)
+
     def test_filter_chain_arr_str_key_with(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms = np.array(self.psms, dtype=dtype)
         with aux.filter.chain(psms, psms, key='score', is_decoy=self.is_decoy, fdr=0.5, full_output=False) as f:
-            f11 = list(f)
-        self.assertEqual(len(f11), 52)
+            f1 = list(f)
+        self.assertEqual(len(f1), 52)
+
+    def test_filter_pep_chain_arr_str_key_with(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms = np.array(self.psms, dtype=dtype)
+        with aux.filter.chain(psms, psms, key='score', pep=self.pep, fdr=0.02, full_output=False) as f:
+            f1 = list(f)
+        self.assertEqual(len(f1), 42)
 
     def test_filter_chain_from_iterable(self):
         f11 = aux.filter.chain.from_iterable([self.psms, self.psms], key=self.key, is_decoy=self.is_decoy, fdr=0.5)
         self.assertEqual(f11.shape[0], 52)
+
+    def test_filter_pep_chain_from_iterable(self):
+        f = aux.filter.chain.from_iterable([self.psms, self.psms], pep=self.pep, fdr=0.02)
+        self.assertEqual(f.shape[0], 42)
 
     def test_filter_chain_from_iterable_with(self):
         with aux.filter.chain.from_iterable([self.psms, self.psms],
@@ -233,41 +282,85 @@ class FilterTest(unittest.TestCase):
             f11 = list(f)
         self.assertEqual(len(f11), 52)
 
+    def test_filter_pep_chain_from_iterable_with(self):
+        with aux.filter.chain.from_iterable([self.psms, self.psms],
+            key=self.key, pep=self.pep, fdr=0.02, full_output=False) as f:
+            f1 = list(f)
+        self.assertEqual(len(f1), 42)
+
     def test_filter_array(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms = np.array(self.psms, dtype=dtype)
         self._run_check(psms)
 
+    def test_filter_pep_array(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms = np.array(self.psms, dtype=dtype)
+        self._run_check_pep(psms, pep=self.pep)
+
     def test_filter_array_str_is_decoy(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
-        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
         self._run_check(psms, is_decoy='is decoy')
 
+    def test_filter_pep_array_str_pep(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
+        self._run_check_pep(psms, pep='pep')
+
     def test_filter_array_str_is_decoy_str_key(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
-        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
         self._run_check(psms, is_decoy='is decoy', key='score')
 
+    def test_filter_pep_array_str_pep_str_key(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
+        self._run_check_pep(psms, pep='pep', key='score')
+
     def test_filter_array_list_key(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms = np.array(self.psms, dtype=dtype)
         key = [self.key(psm) for psm in psms]
         self._run_check(psms, key=key)
 
+    def test_filter_pep_array_list_key(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms = np.array(self.psms, dtype=dtype)
+        key = [self.key(psm) for psm in psms]
+        self._run_check_pep(psms, key=key, pep=self.pep)
+
+    def test_filter_pep_array_list_pep_key(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms = np.array(self.psms, dtype=dtype)
+        pep = [self.pep(psm) for psm in psms]
+        self._run_check_pep(psms, pep=pep)
+
     def test_filter_array_gen_key(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms = np.array(self.psms, dtype=dtype)
         key = (self.key(psm) for psm in psms)
-        f11 = aux.filter(psms, key=key, is_decoy=self.is_decoy, fdr=0.5)
-        self.assertEqual(f11.shape[0], 26)
+        f = aux.filter(psms, key=key, is_decoy=self.is_decoy, fdr=0.5)
+        self.assertEqual(f.shape[0], 26)
         key = (self.key(psm) for psm in psms)
         with aux.filter(psms, key=key, is_decoy=self.is_decoy, fdr=0.5, full_output=False) as f:
+            f1 = list(f)
+        self.assertEqual(len(f1), 26)
+
+    def test_filter_pep_array_gen_key(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms = np.array(self.psms, dtype=dtype)
+        key = (self.key(psm) for psm in psms)
+        f = aux.filter(psms, key=key, pep=self.pep, fdr=0.02)
+        self.assertEqual(f.shape[0], 21)
+        key = (self.key(psm) for psm in psms)
+        with aux.filter(psms, key=key, pep=self.pep, fdr=0.02, full_output=False) as f:
             f11 = list(f)
-        self.assertEqual(len(f11), 26)
+        self.assertEqual(len(f11), 21)
 
     def test_filter_array_iter_key_str_is_decoy(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
-        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
         key = iter([self.key(psm) for psm in psms])
         f11 = aux.filter(psms, key=key, is_decoy='is decoy', fdr=0.5)
         self.assertEqual(f11.shape[0], 26)
@@ -276,55 +369,116 @@ class FilterTest(unittest.TestCase):
             f11 = list(f)
         self.assertEqual(len(f11), 26)
 
+    def test_filter_pep_array_iter_key_str_is_decoy(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
+        key = iter([self.key(psm) for psm in psms])
+        f = aux.filter(psms, key=key, pep='pep', fdr=0.02)
+        self.assertEqual(f.shape[0], 21)
+        key = iter(self.key(psm) for psm in psms)
+        with aux.filter(psms, key=key, pep='pep', fdr=0.02, full_output=False) as f:
+            f1 = list(f)
+        self.assertEqual(len(f1), 21)
+
     def test_filter_array_arr_is_decoy(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms = np.array(self.psms, dtype=dtype)
         is_decoy = np.array([self.is_decoy(psm) for psm in self.psms])
         self._run_check(psms, is_decoy=is_decoy)
 
+    def test_filter_pep_array_arr_is_decoy(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms = np.array(self.psms, dtype=dtype)
+        pep = np.array([self.pep(psm) for psm in self.psms])
+        self._run_check_pep(psms, pep=pep)
+
     def test_filter_dataframe(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms = pd.DataFrame(np.array(self.psms, dtype=dtype))
         self._run_check(psms)
 
+    def test_filter_pep_dataframe(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms = pd.DataFrame(np.array(self.psms, dtype=dtype))
+        self._run_check_pep(psms, pep=self.pep)
+
     def test_filter_dataframe_str_key(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms = pd.DataFrame(np.array(self.psms, dtype=dtype))
         self._run_check(psms, key='score')
 
+    def test_filter_pep_dataframe_str_key(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms = pd.DataFrame(np.array(self.psms, dtype=dtype))
+        self._run_check_pep(psms, key='score', pep=self.pep)
+
     def test_filter_dataframe_str_is_decoy(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
-        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
         psms = pd.DataFrame(psms)
         self._run_check(psms, is_decoy='is decoy')
 
+    def test_filter_pep_dataframe_str_pep(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
+        psms = pd.DataFrame(psms)
+        self._run_check(psms, pep='pep', key=self.key)
+
     def test_filter_dataframe_str_key_str_is_decoy(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
-        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
         psms = pd.DataFrame(psms)
         self._run_check(psms, key='score', is_decoy='is decoy')
 
+    def test_filter_pep_dataframe_str_key_str_pep(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
+        psms = pd.DataFrame(psms)
+        self._run_check_pep(psms, key='score', pep='pep')
+
     def test_filter_dataframe_arr_key_str_is_decoy(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
-        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
         key = psms['score']
         psms = pd.DataFrame(psms)
         self._run_check(psms, key=key, is_decoy='is decoy')
 
+    def test_filter_pep_dataframe_arr_key_str_is_decoy(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
+        key = psms['score']
+        psms = pd.DataFrame(psms)
+        self._run_check(psms, key=key, pep='pep')
+
     def test_filter_dataframe_arr_key(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
-        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
         key = psms['score']
         psms = pd.DataFrame(psms)
         self._run_check(psms, key=key)
 
+    def test_filter_pep_dataframe_arr_key(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
+        key = psms['score']
+        psms = pd.DataFrame(psms)
+        self._run_check_pep(psms, key=key, pep=self.pep)
+
     def test_filter_dataframe_list_key_list_is_decoy(self):
-        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
-        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
         key = list(psms['score'])
         is_decoy = list(psms['is decoy'])
         psms = pd.DataFrame(psms)
         self._run_check(psms, key=key, is_decoy=is_decoy)
+
+    def test_filter_pep_dataframe_list_key_list_pep(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
+        key = list(psms['score'])
+        pep = list(psms['pep'])
+        psms = pd.DataFrame(psms)
+        self._run_check(psms, key=key, pep=pep)
 
     def test_filter_two_lists(self):
         i = np.random.randint(1, len(self.psms)-1)
@@ -332,19 +486,39 @@ class FilterTest(unittest.TestCase):
         psms2 = self.psms[i:]
         self._run_check(psms1, psms2)
 
+    def test_filter_pep_two_lists(self):
+        i = np.random.randint(1, len(self.psms)-1)
+        psms1 = self.psms[:i]
+        psms2 = self.psms[i:]
+        self._run_check_pep(psms1, psms2, pep=self.pep)
+
     def test_filter_two_arrays(self):
         i = np.random.randint(1, len(self.psms)-1)
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms1 = np.array(self.psms[:i], dtype=dtype)
         psms2 = np.array(self.psms[i:], dtype=dtype)
         self._run_check(psms1, psms2)
 
+    def test_filter_pep_two_arrays(self):
+        i = np.random.randint(1, len(self.psms)-1)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms1 = np.array(self.psms[:i], dtype=dtype)
+        psms2 = np.array(self.psms[i:], dtype=dtype)
+        self._run_check_pep(psms1, psms2, pep=self.pep)
+
     def test_filter_two_dataframes(self):
         i = np.random.randint(1, len(self.psms)-1)
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms1 = pd.DataFrame(np.array(self.psms[:i], dtype=dtype))
         psms2 = pd.DataFrame(np.array(self.psms[i:], dtype=dtype))
         self._run_check(psms1, psms2)
+
+    def test_filter_pep_two_dataframes(self):
+        i = np.random.randint(1, len(self.psms)-1)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms1 = pd.DataFrame(np.array(self.psms[:i], dtype=dtype))
+        psms2 = pd.DataFrame(np.array(self.psms[i:], dtype=dtype))
+        self._run_check_pep(psms1, psms2, pep=self.pep)
 
     def test_filter_two_iters(self):
         i = np.random.randint(1, len(self.psms)-1)
@@ -358,14 +532,35 @@ class FilterTest(unittest.TestCase):
             f11 = list(f)
         self.assertEqual(len(f11), 26)
 
+    def test_filter_pep_two_iters(self):
+        i = np.random.randint(1, len(self.psms)-1)
+        psms1 = iter(self.psms[:i])
+        psms2 = iter(self.psms[i:])
+        f = aux.filter(psms1, psms2, key=self.key, pep=self.pep, fdr=0.02)
+        self.assertEqual(f.shape[0], 21)
+        psms1 = iter(self.psms[:i])
+        psms2 = iter(self.psms[i:])
+        with aux.filter(psms1, psms2, key=self.key, pep=self.pep, fdr=0.02, full_output=False) as f:
+            f1 = list(f)
+        self.assertEqual(len(f1), 21)
+
     def test_filter_iter(self):
         psms = iter(self.psms)
-        f11 = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
-        self.assertEqual(f11.shape[0], 26)
+        f = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5)
+        self.assertEqual(f.shape[0], 26)
         psms = iter(self.psms)
         with aux.filter(psms, key=self.key, is_decoy=self.is_decoy, fdr=0.5, full_output=False) as f:
-            f11 = list(f)
-        self.assertEqual(len(f11), 26)
+            f1 = list(f)
+        self.assertEqual(len(f1), 26)
+
+    def test_filter_pep_iter(self):
+        psms = iter(self.psms)
+        f = aux.filter(psms, key=self.key, pep=self.pep, fdr=0.02)
+        self.assertEqual(f.shape[0], 21)
+        psms = iter(self.psms)
+        with aux.filter(psms, key=self.key, pep=self.pep, fdr=0.02, full_output=False) as f:
+            f1 = list(f)
+        self.assertEqual(len(f1), 21)
 
     def test_filter_two_iters_iter_key_iter_is_decoy(self):
         i = np.random.randint(1, len(self.psms)-1)
@@ -383,49 +578,104 @@ class FilterTest(unittest.TestCase):
             f11 = list(f)
         self.assertEqual(len(f11), 26)
 
+    def test_filter_pep_two_iters_iter_key_iter_is_decoy(self):
+        i = np.random.randint(1, len(self.psms)-1)
+        psms1 = iter(self.psms[:i])
+        psms2 = iter(self.psms[i:])
+        key = iter(self.key(p) for p in self.psms)
+        pep = iter(self.pep(p) for p in self.psms)
+        f = aux.filter(psms1, psms2, key=key, pep=pep, fdr=0.02)
+        self.assertEqual(f.shape[0], 21)
+        psms1 = iter(self.psms[:i])
+        psms2 = iter(self.psms[i:])
+        key = iter(self.key(p) for p in self.psms)
+        pep = iter(self.pep(p) for p in self.psms)
+        with aux.filter(psms1, psms2, key=key, pep=pep, fdr=0.02, full_output=False) as f:
+            f1 = list(f)
+        self.assertEqual(len(f1), 21)
+
     def test_filter_two_arrays_str_key(self):
         i = np.random.randint(1, len(self.psms)-1)
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms1 = np.array(self.psms[:i], dtype=dtype)
         psms2 = np.array(self.psms[i:], dtype=dtype)
         self._run_check(psms1, psms2, key='score')
 
+    def test_filter_pep_two_arrays_str_key_str_pep(self):
+        i = np.random.randint(1, len(self.psms)-1)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms1 = np.array(self.psms[:i], dtype=dtype)
+        psms2 = np.array(self.psms[i:], dtype=dtype)
+        self._run_check_pep(psms1, psms2, key='score', pep='pep')
+
     def test_filter_two_dataframes_str_key(self):
         i = np.random.randint(1, len(self.psms)-1)
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms1 = pd.DataFrame(np.array(self.psms[:i], dtype=dtype))
         psms2 = pd.DataFrame(np.array(self.psms[i:], dtype=dtype))
         self._run_check(psms1, psms2, key='score')
 
+    def test_filter_pep_two_dataframes_str_key(self):
+        i = np.random.randint(1, len(self.psms)-1)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms1 = pd.DataFrame(np.array(self.psms[:i], dtype=dtype))
+        psms2 = pd.DataFrame(np.array(self.psms[i:], dtype=dtype))
+        self._run_check_pep(psms1, psms2, key='score', pep=self.pep)
+
     def test_filter_two_arrays_str_key_arr_is_decoy(self):
         i = np.random.randint(1, len(self.psms)-1)
-        dtype = [('score', np.int8), ('label', np.str_, 1)]
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms1 = np.array(self.psms[:i], dtype=dtype)
         psms2 = np.array(self.psms[i:], dtype=dtype)
         is_decoy = np.array([self.is_decoy(p) for p in self.psms])
         self._run_check(psms1, psms2, key='score', is_decoy=is_decoy)
 
+    def test_filter_pep_two_arrays_str_key_arr_pep(self):
+        i = np.random.randint(1, len(self.psms)-1)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms1 = np.array(self.psms[:i], dtype=dtype)
+        psms2 = np.array(self.psms[i:], dtype=dtype)
+        pep = np.array([self.pep(p) for p in self.psms])
+        self._run_check_pep(psms1, psms2, key='score', pep=pep)
+
     def test_filter_two_dataframes_str_key_str_is_decoy(self):
         i = np.random.randint(1, len(self.psms)-1)
-        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
-        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
         psms1 = pd.DataFrame(psms[:i])
         psms2 = pd.DataFrame(psms[i:])
         self._run_check(psms1, psms2, key='score', is_decoy='is decoy')
 
+    def test_filter_pep_two_dataframes_str_key_str_pep(self):
+        i = np.random.randint(1, len(self.psms)-1)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
+        psms1 = pd.DataFrame(psms[:i])
+        psms2 = pd.DataFrame(psms[i:])
+        self._run_check_pep(psms1, psms2, key='score', pep='pep')
+
     def test_filter_two_dataframes_str_key_arr_is_decoy(self):
         i = np.random.randint(1, len(self.psms)-1)
-        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
-        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
         is_decoy = psms['is decoy']
         psms1 = pd.DataFrame(psms[:i])
         psms2 = pd.DataFrame(psms[i:])
         self._run_check(psms1, psms2, key='score', is_decoy=is_decoy)
 
+    def test_filter_pep_two_dataframes_str_key_arr_pep(self):
+        i = np.random.randint(1, len(self.psms)-1)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
+        pep = psms['pep']
+        psms1 = pd.DataFrame(psms[:i])
+        psms2 = pd.DataFrame(psms[i:])
+        self._run_check_pep(psms1, psms2, key='score', pep=pep)
+
     def test_filter_two_dataframes_str_key_iter_is_decoy(self):
         i = np.random.randint(1, len(self.psms)-1)
-        dtype = [('score', np.int8), ('label', np.str_, 1), ('is decoy', np.bool)]
-        psms = np.array([(s, l, self.is_decoy((s, l))) for s, l in self.psms], dtype=dtype)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
         is_decoy = iter(psms['is decoy'])
         psms1 = pd.DataFrame(psms[:i])
         psms2 = pd.DataFrame(psms[i:])
@@ -435,6 +685,20 @@ class FilterTest(unittest.TestCase):
         with aux.filter(psms1, psms2, key='score', is_decoy=is_decoy, fdr=0.5, full_output=False) as f:
             f11 = list(f)
         self.assertEqual(len(f11), 26)
+
+    def test_filter_pep_two_dataframes_str_key_iter_pep(self):
+        i = np.random.randint(1, len(self.psms)-1)
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in self.psms], dtype=dtype)
+        pep = iter(psms['pep'])
+        psms1 = pd.DataFrame(psms[:i])
+        psms2 = pd.DataFrame(psms[i:])
+        f = aux.filter(psms1, psms2, key='score', pep=pep, fdr=0.02)
+        self.assertEqual(f.shape[0], 21)
+        pep = iter(psms['pep'])
+        with aux.filter(psms1, psms2, key='score', pep=pep, fdr=0.02, full_output=False) as f:
+            f1 = list(f)
+        self.assertEqual(len(f1), 21)
 
 
 if __name__ == '__main__':

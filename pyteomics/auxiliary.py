@@ -795,9 +795,14 @@ def _make_filter(read, is_decoy, key, qvalues):
 
         args = [list(arg) if not isinstance(arg, (Container, Sized))
                 else arg for arg in args]
-        remove_decoy = kwargs.pop('remove_decoy', True)
-        scores = qvalues(*args, remove_decoy=remove_decoy, **kwargs)
+        peps = kwargs.get('pep')
+        if peps is None:
+            remove_decoy = kwargs.pop('remove_decoy', True)
+            scores = qvalues(*args, remove_decoy=remove_decoy, **kwargs)
+        else:
+            scores = qvalues(*args, **kwargs)
         keyf = kwargs.pop('key', key)
+        if keyf is None: keyf = peps
         reverse = kwargs.pop('reverse', False)
         better = [op.lt, op.gt][bool(reverse)]
         isdecoy = kwargs.pop('is_decoy', is_decoy)
@@ -822,7 +827,7 @@ def _make_filter(read, is_decoy, key, qvalues):
         def out():
             with read(*args, **kwargs) as f:
                 for p, s in zip(f, scores):
-                    if not remove_decoy or not s['is decoy']:
+                    if peps is not None or not remove_decoy or not s['is decoy']:
                         if better(s['score'], cutoff):
                             yield p
         return out()
@@ -918,7 +923,7 @@ def _make_filter(read, is_decoy, key, qvalues):
 
         Returns
         -------
-        out : iterator
+        out : iterator or :py:class:`numpy.ndarray` or :py:class:`pandas.DataFrame`
         """
         if kwargs.pop('full_output', True):
             return filter(*args, full_output=True, **kwargs)
