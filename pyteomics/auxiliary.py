@@ -650,9 +650,10 @@ def _make_qvalues(read, is_decoy, key):
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2')
 
-        dec_or_pep_label = 'is decoy' if peps is None else 'PEP'
+        decoy_or_pep_label = 'is decoy' if peps is None else 'PEP'
+
         fields = [('score', np.float64),
-            (dec_or_pep_label, np.bool_ if peps is None else np.float64),
+            (decoy_or_pep_label, np.bool_ if peps is None else np.float64),
             ('q', np.float64)]
         # if all args are NumPy arrays with common dtype, use it in the output
         if full:
@@ -685,7 +686,7 @@ def _make_qvalues(read, is_decoy, key):
             if arr_flag:
                 scores = np.empty(keyf.size if hasattr(keyf, 'size') else isdecoy.size,
                     dtype=dtype)
-                for func, label in zip((keyf, isdecoy), ('score', dec_or_pep_label)):
+                for func, label in zip((keyf, isdecoy), ('score', decoy_or_pep_label)):
                     if not isinstance(func, basestring):
                         scores[label] = func
                     else:
@@ -693,7 +694,7 @@ def _make_qvalues(read, is_decoy, key):
             else:
                 scores = np.empty(psms.shape[0], dtype=fields)
                 scores['score'] = psms[keyf]
-                scores[dec_or_pep_label] = psms[isdecoy]
+                scores[decoy_or_pep_label] = psms[isdecoy]
                 if pd is not None and isinstance(psms, pd.DataFrame):
                     psms.sort([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
 
@@ -703,9 +704,9 @@ def _make_qvalues(read, is_decoy, key):
             return scores
 
         if not reverse:
-            keys = scores[dec_or_pep_label], scores['score']
+            keys = scores[decoy_or_pep_label], scores['score']
         else:
-            keys = scores[dec_or_pep_label], -scores['score']
+            keys = scores[decoy_or_pep_label], -scores['score']
         i = np.lexsort(keys)
         scores = scores[i]
         if psms is not None and arr_flag:
@@ -714,7 +715,7 @@ def _make_qvalues(read, is_decoy, key):
             else:
                 psms = psms[i]
 
-        cumsum = scores[dec_or_pep_label].cumsum(dtype=np.float64)
+        cumsum = scores[decoy_or_pep_label].cumsum(dtype=np.float64)
         tfalse = cumsum.copy()
         ind = np.arange(1., scores.shape[0] + 1., dtype=np.float64)
 
@@ -751,14 +752,14 @@ def _make_qvalues(read, is_decoy, key):
         scores['q'] = q
         if remove_decoy:
             if psms is not None:
-                psms = psms[~scores[dec_or_pep_label]]
-            scores = scores[~scores[dec_or_pep_label]]
+                psms = psms[~scores[decoy_or_pep_label]]
+            scores = scores[~scores[decoy_or_pep_label]]
 
         if full and psms is not None:
             if isinstance(psms, np.ndarray):
                 fields = sorted(psms.dtype.fields, key=lambda x: psms.dtype.fields[x][1])
                 extra = []
-                for func, label in zip((keyf, isdecoy), ('score', dec_or_pep_label)):
+                for func, label in zip((keyf, isdecoy), ('score', decoy_or_pep_label)):
                     if not (isinstance(func, basestring) or label in psms.dtype.fields):
                         extra.append(label)
                     elif label in psms.dtype.fields:
@@ -772,7 +773,7 @@ def _make_qvalues(read, is_decoy, key):
                 for f in extra:
                     psms[f] = scores[f]
             else:
-                for func, label in zip((keyf, isdecoy), ('score', dec_or_pep_label)):
+                for func, label in zip((keyf, isdecoy), ('score', decoy_or_pep_label)):
                     if not isinstance(label, basestring):
                         psms[label] = scores[label]
             psms['q'] = scores['q']
