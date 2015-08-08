@@ -25,6 +25,8 @@ probabilities (PEPs) instead of using decoys for q-value calculation.
  - Fixed the behavior of :py:func:`filter.chain` functions. They now treat
    the `full_output` argument the same way as :py:func:`!filter` functions.
 
+ - Pyteomics now uses `setuptools` and is a namespace package.
+
 API changes
 ...........
 
