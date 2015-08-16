@@ -695,8 +695,6 @@ def _make_qvalues(read, is_decoy, key):
                 scores = np.empty(psms.shape[0], dtype=fields)
                 scores['score'] = psms[keyf]
                 scores[decoy_or_pep_label] = psms[isdecoy]
-                if pd is not None and isinstance(psms, pd.DataFrame):
-                    psms.sort([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
 
         if not scores.size:
             if full and psms is not None:
@@ -707,13 +705,16 @@ def _make_qvalues(read, is_decoy, key):
             keys = scores[decoy_or_pep_label], scores['score']
         else:
             keys = scores[decoy_or_pep_label], -scores['score']
-        i = np.lexsort(keys)
-        scores = scores[i]
-        if psms is not None and arr_flag:
+        lexsort = np.lexsort(keys)
+        scores = scores[lexsort]
+        if psms is not None:
             if pd is not None and isinstance(psms, pd.DataFrame):
-                psms = psms.iloc[i]
+                if arr_flag:
+                    psms = psms.iloc[lexsort]
+                else:
+                    psms.sort([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
             else:
-                psms = psms[i]
+                psms = psms[lexsort]
 
         cumsum = scores[decoy_or_pep_label].cumsum(dtype=np.float64)
         tfalse = cumsum.copy()

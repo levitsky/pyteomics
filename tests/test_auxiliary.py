@@ -29,6 +29,12 @@ class QvalueTest(unittest.TestCase):
         self.assertTrue(np.allclose(q['is decoy'][26:], 1))
         self.assertTrue(np.allclose(q['score'], np.arange(52)))
         self.setUp()
+        spsms = sorted(self.psms, key=self.key)
+        self.assertTrue(np.allclose([self.is_decoy(x) for x in spsms],
+            q['is decoy']))
+        self.assertTrue(np.allclose([self.key(x) for x in spsms],
+            q['score']))
+        self.setUp()
 
     def _run_check_pep(self, q):
         self.assertTrue(np.allclose(q['q'], np.arange(0.01, 0.036, 0.0005)))
