@@ -1141,19 +1141,20 @@ try:
         out[m] = x * np.log(x) - x + 0.5 * np.log(2 * np.pi * x)
         return out
 
-    def _expectation(n, T, p=0.5):
+    def _expectation(d, T, p=0.5):
+        if T is None: return d+1
         T = np.array(T, dtype=int)
         m = np.arange(T.max()+1, dtype=int)
-        pi = np.exp(_log_pi(n, m, p))
+        pi = np.exp(_log_pi(d, m, p))
         return ((m * pi).cumsum() / pi.cumsum())[T]
 
-    def _confidence_value(conf, n, T, p=0.5):
+    def _confidence_value(conf, d, T, p=0.5):
         if T is not None:
             T = np.array(T, dtype=int)
             m = np.arange(T.max()+1, dtype=int)
         else:
-            m = np.arange(max(50*n, 10000))
-        log_pi = _log_pi(n, m, p)
+            m = np.arange(max(50*d, 10000))
+        log_pi = _log_pi(d, m, p)
         pics = np.exp(log_pi).cumsum()
         return np.searchsorted(pics, conf * (pics[T] if T is not None else 1))
 
@@ -1164,11 +1165,11 @@ except ImportError:
         else:
             return math.log(math.factorial(n))
 
-def _log_pi_r(n, k, p=0.5):
-    return k * math.log(p) + log_factorial(k + n) - log_factorial(k) - log_factorial(n)
+def _log_pi_r(d, k, p=0.5):
+    return k * math.log(p) + log_factorial(k + d) - log_factorial(k) - log_factorial(d)
 
-def _log_pi(n, k, p=0.5):
-    return _log_pi_r(n, k, p) + (n + 1) * math.log(1 - p)
+def _log_pi(d, k, p=0.5):
+    return _log_pi_r(d, k, p) + (d + 1) * math.log(1 - p)
 
 def _make_fdr(is_decoy):
     def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1, correction=0):
