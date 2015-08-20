@@ -1,1 +1,2 @@
-- add str support in fdr()
+- add tests for fdr() in test_auxiliary
+- add pep to fdr()
