@@ -1172,7 +1172,7 @@ def _log_pi(d, k, p=0.5):
     return _log_pi_r(d, k, p) + (d + 1) * math.log(1 - p)
 
 def _make_fdr(is_decoy):
-    def fdr(psms, formula=1, is_decoy=is_decoy, ratio=1, correction=0):
+    def fdr(psms=None, formula=1, is_decoy=is_decoy, ratio=1, correction=0):
         """Estimate FDR of a data set using TDA.
         Two formulas can be used. The first one (default) is:
 
@@ -1188,15 +1188,16 @@ def _make_fdr(is_decoy):
 
         Parameters
         ----------
-        psms : iterable
+        psms : iterable, optional
             An iterable of PSMs, e.g. as returned by :py:func:`read`.
+            Not needed if `is_decoy` is an iterable.
 
         formula : int, optional
             Can be either 1 or 2, defines which formula should be used for FDR
             estimation. Default is 1.
 
-        is_decoy : callable, optional
-            Should accept exactly one argument (PSM) and return a truthy value
+        is_decoy : callable, iterable, or str, optional
+            If callable, should accept exactly one argument (PSM) and return a truthy value
             if the PSM is considered decoy. Default is :py:func:`is_decoy`.
 
             .. warning::
@@ -1219,7 +1220,13 @@ def _make_fdr(is_decoy):
             desired confidence level. E.g., if correction=0.95, then the calculated q-values
             do not exceed the "real" q-values with 95% probability.
 
-            Requires :py:mod:`numpy`, if `correction` is a float or 2.
+            .. note::
+                Requires :py:mod:`numpy`, if `correction` is a float or 2.
+
+            .. note::
+                Correction is only needed if the PSM set at hand was obtained using TDA-based
+                filtering based on decoy counting (as done by using :py:func:`!filter` without
+                `correction`).
 
         Returns
         -------
@@ -1229,10 +1236,20 @@ def _make_fdr(is_decoy):
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2.')
         total, decoy = 0, 0
-        for psm in psms:
-            total += 1
-            if is_decoy(psm):
-                decoy += 1
+        if isinstance(is_decoy, basestring):
+            decoy = psms[is_decoy].sum()
+            total = psms.shape[0]
+        elif callable(is_decoy):
+            for psm in psms:
+                total += 1
+                if is_decoy(psm):
+                    decoy += 1
+        else:
+            if not isinstance(is_decoy, (Sized, Container)):
+                is_decoy = list(is_decoy)
+            is_decoy = np.array(is_decoy, dtype=np.bool_)
+            decoy = is_decoy.sum()
+            total = is_decoy.shape[0]
         tfalse = decoy
         if correction == 1 or (correction == 2 and total/decoy > 10):
             tfalse += 1
@@ -1263,16 +1280,18 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA.
 
     Parameters
     ----------
-    psms : iterable
-        An iterable of PSMs.
+    psms : iterable, optional
+        An iterable of PSMs. Not needed if `is_decoy` is an iterable.
 
     formula : int, optional
         Can be either 1 or 2, defines which formula should be used for FDR
         estimation. Default is 1.
 
-    is_decoy : callable
-        Should accept exactly one argument (PSM) and return a truthy value
-        if the PSM is considered decoy.
+    is_decoy : callable, iterable or str
+        If callable, should accept exactly one argument (PSM) and return a truthy value
+        if the PSM is considered decoy. If array-like or iterator, should contain boolean
+        values. In that case, `psms` is not needed. If str, `psms` is expected to be a
+        record array or a :py:class:`DataFrame`.
 
     ratio : float, optional
         The size ratio between the decoy and target databases. Default is
@@ -1290,7 +1309,13 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA.
         desired confidence level. E.g., if correction=0.95, then the calculated q-values
         do not exceed the "real" q-values with 95% probability.
 
-        Requires :py:mod:`numpy`, if `correction` is a float or 2.
+        .. note::
+            Requires :py:mod:`numpy`, if `correction` is a float or 2.
+
+        .. note::
+            Correction is only needed if the PSM set at hand was obtained using TDA-based
+            filtering based on decoy counting (as done by using :py:func:`!filter` without
+            `correction`).
 
     Returns
     -------
