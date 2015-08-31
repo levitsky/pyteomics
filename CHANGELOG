@@ -25,7 +25,12 @@ probabilities (PEPs) instead of using decoys for q-value calculation.
  - Fixed the behavior of :py:func:`filter.chain` functions. They now treat
    the `full_output` argument the same way as :py:func:`!filter` functions.
 
+ - Fixed the issue that caused exceptions when calling :py:func:`fasta.decoy_db`
+   and :py:func:`fasta.write_decoy_db` with explicitly given `mode` (signature
+   for creation of :py:class:`pyteomics.auxiliary.FileReader` objects slightly changed).
+
  - Pyteomics now uses `setuptools` and is a namespace package.
+
 
 API changes
 ...........
