@@ -687,7 +687,6 @@ def isoforms(sequence, **kwargs):
             group[0][-1] == '-' and override)):
             group[0] = mod
         elif not is_term_mod(mod):
-            # print(m, group)
             if m and not group[m-1][-1] == '-':
                 if override:
                     group[m-1] = mod
