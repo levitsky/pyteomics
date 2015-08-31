@@ -666,10 +666,11 @@ def isoforms(sequence, **kwargs):
         the specified modifications are yielded obe by one.
     """
     def main(group): # index of the residue (capital letter) in `group`
-        temp = [i for i, x in enumerate(group) if
-                (not is_term_mod(x)) and x.isupper()]
-        if len(temp) != 1: raise PyteomicsError('Invalid group: %s' % group)
-        return temp[0], group[temp[0]]
+        if group[-1][0] == '-':
+            i = -2
+        else:
+            i = -1
+        return len(group) + i, group[i]
 
     def apply_mod(label, mod):
     # `label` is assumed to be a tuple (see split option of parse)
@@ -679,14 +680,15 @@ def isoforms(sequence, **kwargs):
         m = main(group)[0]
         if m == 0 and not is_term_mod(mod):
             group.insert(0, mod)
-        elif mod.startswith('-') and (group[-1] == std_cterm or (
-            group[-1].startswith('-') and override)):
+        elif mod[0] == '-' and (group[-1] == std_cterm or (
+            group[-1][0] == '-' and override)):
             group[-1] = mod
-        elif mod.endswith('-') and (group[0] == std_nterm or (
-            group[0].endswith('-') and override)):
+        elif mod[-1] == '-' and (group[0] == std_nterm or (
+            group[0][-1] == '-' and override)):
             group[0] = mod
         elif not is_term_mod(mod):
-            if not group[m-1].endswith('-'):
+            # print(m, group)
+            if m and not group[m-1][-1] == '-':
                 if override:
                     group[m-1] = mod
             else:
