@@ -124,7 +124,7 @@ class XML(FileReader):
          """
 
         super(XML, self).__init__(source, 'rb', self.iterfind, False,
-                self._default_iter_tag, **kwargs)
+                (self._default_iter_tag,), kwargs)
 
         if iterative:
             self._tree = None

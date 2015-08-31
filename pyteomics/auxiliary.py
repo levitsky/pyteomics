@@ -364,8 +364,8 @@ class _file_obj(object):
         return iter(self.file)
 
 class IteratorContextManager(object):
-    def __init__(self, func, *args, **kwargs):
-        self._func = func
+    def __init__(self, _func, *args, **kwargs):
+        self._func = _func
         self._args = args
         self._kwargs = kwargs
         if type(self) == IteratorContextManager:
@@ -401,7 +401,7 @@ class FileReader(IteratorContextManager):
     """Abstract class implementing context manager protocol
     for file readers.
     """
-    def __init__(self, source, mode, func, pass_file, *args, **kwargs):
+    def __init__(self, source, mode, func, pass_file, args, kwargs):
         super(FileReader, self).__init__(func, *args, **kwargs)
         self._pass_file = pass_file
         self._source_init = source
@@ -431,18 +431,18 @@ class FileReader(IteratorContextManager):
             raise AttributeError
         return getattr(self._source, attr)
 
-def _file_reader(mode='r'):
+def _file_reader(_mode='r'):
     # a lot of the code below is borrowed from
     # http://stackoverflow.com/a/14095585/1258041
-    def decorator(func):
+    def decorator(_func):
         """A decorator implementing the context manager protocol for functions
         that read files.
 
         Note: 'close' must be in kwargs! Otherwise it won't be respected.
         """
-        @wraps(func)
+        @wraps(_func)
         def helper(*args, **kwargs):
-            return FileReader(args[0], mode, func, True, *args[1:], **kwargs)
+            return FileReader(args[0], _mode, _func, True, args[1:], kwargs)
         return helper
     return decorator
 
