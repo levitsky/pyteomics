@@ -5,26 +5,26 @@ auxiliary - common functions and objects
 Math
 ----
 
-  :py:func:`linear_regression` - a wrapper for NumPy linear regression
+  :py:func:`linear_regression` - a wrapper for NumPy linear regression.
 
 Data access
 -----------
 
-  :py:func:`filter` - filter PSMs to specified FDR level using TDA.
+  :py:func:`filter` - filter PSMs to specified FDR level using TDA or given PEPs.
 
   :py:func:`filter.chain` - a chained version of :py:func:`filter`.
 
-  :py:func:`fdr` - estimate FDR in a set of PSMs using TDA.
+  :py:func:`fdr` - estimate FDR in a set of PSMs using TDA or given PEPs.
 
 Project infrastructure
 ----------------------
 
-  :py:class:`PyteomicsError` - a pyteomics-specific exception
+  :py:class:`PyteomicsError` - a pyteomics-specific exception.
 
 Helpers
 -------
 
-  :py:class:`Charge` - a subclass of :py:class:`int` for charge states
+  :py:class:`Charge` - a subclass of :py:class:`int` for charge states.
 
   :py:class:`ChargeList` - a subclass of :py:class:`list` for lists of charges.
 
@@ -33,7 +33,7 @@ Helpers
 
   :py:func:`memoize` - makes a
   `memoization <http://stackoverflow.com/a/1988826/1258041>`_
-  `function decorator <http://stackoverflow.com/a/1594484/1258041>`_
+  `function decorator <http://stackoverflow.com/a/1594484/1258041>`_.
 
 -------------------------------------------------------------------------------
 
@@ -1172,8 +1172,8 @@ def _log_pi(d, k, p=0.5):
     return _log_pi_r(d, k, p) + (d + 1) * math.log(1 - p)
 
 def _make_fdr(is_decoy):
-    def fdr(psms=None, formula=1, is_decoy=is_decoy, ratio=1, correction=0):
-        """Estimate FDR of a data set using TDA.
+    def fdr(psms=None, formula=1, is_decoy=is_decoy, ratio=1, correction=0, pep=None):
+        """Estimate FDR of a data set using TDA or given PEP values.
         Two formulas can be used. The first one (default) is:
 
         .. math::
@@ -1199,10 +1199,24 @@ def _make_fdr(is_decoy):
         is_decoy : callable, iterable, or str, optional
             If callable, should accept exactly one argument (PSM) and return a truthy value
             if the PSM is considered decoy. Default is :py:func:`is_decoy`.
+            If array-like, should contain float values for all given PSMs.
+            If string, it is used as a field name (PSMs must be in a record array
+            or a :py:class:`DataFrame`).
 
             .. warning::
                 The default function may not work
                 with your files, because format flavours are diverse.
+
+        pep : callable, iterable, or str, optional
+            If callable, a function used to determine the posterior error probability (PEP).
+            Should accept exactly one argument (PSM) and return a float.
+            If array-like, should contain float values for all given PSMs.
+            If string, it is used as a field name (PSMs must be in a record array
+            or a :py:class:`DataFrame`).
+
+            .. note:: If this parameter is given, then PEP values will be used to calculate FDR.
+               Otherwise, decoy PSMs will be used instead. This option conflicts with:
+               `is_decoy`, `formula`, `ratio`, `correction`.
 
         ratio : float, optional
             The size ratio between the decoy and target databases. Default is 1.
@@ -1236,6 +1250,8 @@ def _make_fdr(is_decoy):
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2.')
         total, decoy = 0, 0
+        if pep is not None:
+            is_decoy = pep
         if isinstance(is_decoy, basestring):
             decoy = psms[is_decoy].sum()
             total = psms.shape[0]
@@ -1250,6 +1266,8 @@ def _make_fdr(is_decoy):
             is_decoy = np.array(is_decoy, dtype=np.bool_)
             decoy = is_decoy.sum()
             total = is_decoy.shape[0]
+        if pep is not None:
+            return float(decoy) / total
         tfalse = decoy
         if correction == 1 or (correction == 2 and total/decoy > 10):
             tfalse += 1
@@ -1265,7 +1283,7 @@ def _make_fdr(is_decoy):
     return fdr
 
 fdr = _make_fdr(None)
-fdr.__doc__ = """Estimate FDR of a data set using TDA.
+fdr.__doc__ = """Estimate FDR of a data set using TDA or given PEP values.
     Two formulas can be used. The first one (default) is:
 
     .. math::
@@ -1292,6 +1310,17 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA.
         if the PSM is considered decoy. If array-like or iterator, should contain boolean
         values. In that case, `psms` is not needed. If str, `psms` is expected to be a
         record array or a :py:class:`DataFrame`.
+
+    pep : callable, iterable, or str, optional
+        If callable, a function used to determine the posterior error probability (PEP).
+        Should accept exactly one argument (PSM) and return a float.
+        If array-like, should contain float values for all given PSMs.
+        If string, it is used as a field name (PSMs must be in a record array
+        or a :py:class:`DataFrame`).
+
+        .. note:: If this parameter is given, then PEP values will be used to calculate FDR.
+           Otherwise, decoy PSMs will be used instead. This option conflicts with:
+           `is_decoy`, `formula`, `ratio`, `correction`.
 
     ratio : float, optional
         The size ratio between the decoy and target databases. Default is

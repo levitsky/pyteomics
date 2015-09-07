@@ -9,15 +9,18 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics import auxiliary as aux
 
+psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase,
+            np.arange(0.01, 0.062, 0.001)))
+
 class QvalueTest(unittest.TestCase):
+
+    key = staticmethod(op.itemgetter(0))
+    is_decoy = staticmethod(lambda x: x[1].islower())
+    pep = staticmethod(op.itemgetter(2))
+
     def setUp(self):
-        psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase,
-                    np.arange(0.01, 0.062, 0.001)))
         np.random.shuffle(psms)
         self.psms = iter(psms)
-        self.key = op.itemgetter(0)
-        self.is_decoy = lambda x: x[1].islower()
-        self.pep = op.itemgetter(2)
 
     def _run_check(self, q, formula):
         self.assertTrue(np.allclose(q['q'][:26], 0))
@@ -170,13 +173,14 @@ class QvalueTest(unittest.TestCase):
             self.psms, pep='pep', correction=0)
 
 class FilterTest(unittest.TestCase):
+
+    key = staticmethod(op.itemgetter(0))
+    is_decoy = staticmethod(lambda x: x[1].islower())
+    pep = staticmethod(op.itemgetter(2))
+
     def setUp(self):
-        self.psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase,
-                    np.arange(0.01, 0.062, 0.001)))
+        self.psms = psms
         np.random.shuffle(self.psms)
-        self.key = op.itemgetter(0)
-        self.is_decoy = lambda x: x[1].islower()
-        self.pep = op.itemgetter(2)
 
     def _run_check(self, *args, **kwargs):
         key = kwargs.get('key', self.key)
@@ -706,6 +710,13 @@ class FilterTest(unittest.TestCase):
             f1 = list(f)
         self.assertEqual(len(f1), 21)
 
+# class FDRTest(unittest.TestCase):
+#     def setUp(self):
+#         self.is_decoy = lambda x: x[1].islower()
+#         self.pep = op.itemgetter(2)
+
+#     def test_fdr(self):
+#         self.assertAlmostEqual(aux.fdr(psms, is_decoy=))
 
 if __name__ == '__main__':
     unittest.main()
