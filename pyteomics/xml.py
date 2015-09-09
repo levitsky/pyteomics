@@ -337,7 +337,7 @@ class XML(FileReader):
     def build_tree(self):
         """Build and store the :py:class:`ElementTree` instance
         for the underlying file"""
-        p = etree.XMLParser(remove_comments=True)
+        p = etree.XMLParser(remove_comments=True, huge_tree=True)
         self._tree = etree.parse(self._source, parser=p)
 
     def clear_tree(self):
@@ -383,7 +383,7 @@ class XML(FileReader):
             localname = nodes[0].lower()
             found = False
             for ev, elem in etree.iterparse(self, events=('start', 'end'),
-                    remove_comments=True):
+                    remove_comments=True, huge_tree=True):
                 name_lc = _local_name(elem).lower()
                 if ev == 'start':
                     if name_lc == localname or localname == '*':
