@@ -1186,6 +1186,11 @@ def _make_fdr(is_decoy):
 
                 FDR = \\frac{N_{decoy} * (1 + \\frac{1}{ratio})}{N_{total}}
 
+        .. note::
+            This function is less versatile than :py:func:`qvalues`. To obtain FDR,
+            you can call :py:func:`qvalues` and take the last q-value. This function
+            can be used (with `correction = 0` or `1`) when :py:mod:`numpy` is not available.
+
         Parameters
         ----------
         psms : iterable, optional
@@ -1258,14 +1263,16 @@ def _make_fdr(is_decoy):
         elif callable(is_decoy):
             for psm in psms:
                 total += 1
-                if is_decoy(psm):
-                    decoy += 1
+                d = is_decoy(psm)
+                decoy += d if pep is not None else bool(d)
         else:
             if not isinstance(is_decoy, (Sized, Container)):
                 is_decoy = list(is_decoy)
-            is_decoy = np.array(is_decoy, dtype=np.bool_)
-            decoy = is_decoy.sum()
-            total = is_decoy.shape[0]
+            if pep is not None:
+                decoy = sum(is_decoy)
+            else:
+                decoy = sum(map(bool, is_decoy))
+            total = len(is_decoy)
         if pep is not None:
             return float(decoy) / total
         tfalse = decoy

@@ -710,13 +710,49 @@ class FilterTest(unittest.TestCase):
             f1 = list(f)
         self.assertEqual(len(f1), 21)
 
-# class FDRTest(unittest.TestCase):
-#     def setUp(self):
-#         self.is_decoy = lambda x: x[1].islower()
-#         self.pep = op.itemgetter(2)
+class FDRTest(unittest.TestCase):
 
-#     def test_fdr(self):
-#         self.assertAlmostEqual(aux.fdr(psms, is_decoy=))
+    is_decoy = staticmethod(lambda x: x[1].islower())
+    pep = staticmethod(op.itemgetter(2))
+
+    def _run_check(self, psms, **kwargs):
+        is_decoy = kwargs.pop('is_decoy', self.is_decoy)
+        pep = kwargs.pop('pep', self.pep)
+        self.assertAlmostEqual(aux.fdr(psms, is_decoy=is_decoy, formula=1), 1.0)
+        self.assertAlmostEqual(aux.fdr(psms, is_decoy=is_decoy, formula=2), 1.0)
+        self.assertAlmostEqual(aux.fdr(psms, pep=pep), 0.0355)
+
+    def test_fdr(self):
+        self._run_check(psms)
+
+    def test_fdr_iter(self):
+        self.assertAlmostEqual(aux.fdr(iter(psms), is_decoy=self.is_decoy), 1.0)
+        self.assertAlmostEqual(aux.fdr(iter(psms), pep=self.pep), 0.0355)
+        isd = [self.is_decoy((s, l, p)) for s, l, p in psms]
+        pep = [self.pep((s, l, p)) for s, l, p in psms]
+        self.assertAlmostEqual(aux.fdr(iter(psms), is_decoy=iter(isd)), 1.0)
+        self.assertAlmostEqual(aux.fdr(iter(psms), pep=iter(pep)), 0.0355)
+
+    def test_fdr_array_str(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms_ = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in psms], dtype=dtype)
+        self._run_check(psms_, is_decoy='is decoy', pep='pep')
+
+    def test_fdr_df_str(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64), ('is decoy', np.bool)]
+        psms_ = np.array([(s, l, p, self.is_decoy((s, l, p))) for s, l, p in psms], dtype=dtype)
+        psms1 = pd.DataFrame(psms_)
+        self._run_check(psms1, is_decoy='is decoy', pep='pep')
+
+    def test_fdr_no_psms(self):
+        isd = [self.is_decoy((s, l, p)) for s, l, p in psms]
+        pep = [self.pep((s, l, p)) for s, l, p in psms]
+        self._run_check(None, is_decoy=isd, pep=pep)
+
+    def test_fdr_list(self):
+        isd = [self.is_decoy((s, l, p)) for s, l, p in psms]
+        pep = [self.pep((s, l, p)) for s, l, p in psms]
+        self._run_check(psms, is_decoy=isd, pep=pep)
 
 if __name__ == '__main__':
     unittest.main()

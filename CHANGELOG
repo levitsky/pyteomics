@@ -9,18 +9,19 @@ creation of :py:class:`DataFrame` objects. New functions
 :py:func:`pyteomics.tandem.DataFrame` and :py:func:`pyteomics.pepxml.DataFrame`
 faciliatate creation of DataFrames from corresponding formats.
 
-Also, :py:func:`qvalues` and :py:func:`!filter` functions can now use posterior error
-probabilities (PEPs) instead of using decoys for q-value calculation.
+Also, :py:func:`qvalues`, :py:func:`!filter` and :py:func:`fdr` functions can now use
+posterior error probabilities (PEPs) instead of using decoys for q-value calculation.
 
  - In :py:func:`qvalues` and :py:func:`!filter` functions,
    `key` and `is_decoy` can now be array-like objects or strings
    (as well as functions and iterators).
    If a string is given, it is used as a field name in the PSM array
-   or :py:class:`DataFrame`.
+   or :py:class:`DataFrame`. :py:func:`fdr` functions also support strings
+   and iterables as arguments.
 
- - New parameter `pep` in :py:func:`qvalues` and :py:func:`!filter` functions.
+ - New parameter `pep` in :py:func:`qvalues`, :py:func:`!filter` and :py:func:`fdr` functions.
    It can be callable, array-like, or iterator. Conflicts with decoy-related
-   parameters. Compatible with `key`.
+   parameters. Compatible with `key`, but makes it optional.
 
  - Fixed the behavior of :py:func:`filter.chain` functions. They now treat
    the `full_output` argument the same way as :py:func:`!filter` functions.
@@ -30,6 +31,8 @@ probabilities (PEPs) instead of using decoys for q-value calculation.
    for creation of :py:class:`pyteomics.auxiliary.FileReader` objects slightly changed).
 
  - Pyteomics now uses `setuptools` and is a namespace package.
+
+ - Minor fixes.
 
 
 API changes
