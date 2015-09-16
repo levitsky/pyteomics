@@ -381,5 +381,5 @@ def filter_df(*args, **kwargs):
         read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema'] if k in kwargs}
         df = DataFrame(*args, **read_kw)
     kwargs.setdefault('is_decoy',
-        [all(p.startswith('DECOY_') for p in prot.split(';')) for prot in df['proteins']])
+        df['proteins'].str.split(';').apply(lambda s: all(x.startswith('DECOY') for x in s)))
     return aux.filter(df, **kwargs)
