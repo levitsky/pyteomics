@@ -31,6 +31,8 @@ Data access
   :py:func:`chain.from_iterable` - read multiple files at once, using an
   iterable of files.
 
+  :py:func:`DataFrame` - read pepXML files into a :py:class:`pandas.DataFrame`.
+
   :py:func:`filter` - filter PSMs from a chain of pepXML files to a specific FDR
   using TDA.
 
@@ -39,6 +41,8 @@ Data access
 
   :py:func:`filter.chain.from_iterable` - chain a series of filters applied
   independently to an iterable of files.
+
+  :py:func:`filter_df` - filter pepXML files and return a :py:class:`pandas.DataFrame`.
 
 Miscellaneous
 -------------
@@ -317,4 +321,65 @@ _key = lambda x: min(
     sh['search_score']['expect'] for sh in x['search_hit'])
 qvalues = aux._make_qvalues(chain, is_decoy, _key)
 filter = aux._make_filter(chain, is_decoy, _key, qvalues)
-filter.chain = aux._make_chain(filter, 'filter')
+filter.chain = aux._make_chain(filter, 'filter', True)
+
+def DataFrame(*args, **kwargs):
+    """Read pepXML output files into a :py:class:`pandas.DataFrame`.
+
+    Requires :py:mod:`pandas`.
+
+    Parameters
+    ----------
+    *args, **kwargs : passed to :py:func:`chain`
+
+    Returns
+    -------
+    out : pandas.DataFrame
+    """
+    import pandas as pd
+    data = []
+    with chain(*args, **kwargs) as f:
+        for item in f:
+            info = {}
+            for k, v in item.items():
+                if isinstance(v, (str, int, float)):
+                    info[k] = v
+            sh = item['search_hit'][0]
+            info['proteins'] = ';'.join(p['protein'] for p in sh.pop('proteins'))
+            info.update(sh.pop('search_score'))
+            mods = sh.pop('modifications', [])
+            info['modifications'] = ','.join('{0[mass]:.3f}@{0[position]}'.format(x) for x in mods)
+            for k, v in sh.items():
+                if isinstance(v, (str, int, float)):
+                    info[k] = v
+            data.append(info)
+    return pd.DataFrame(data)
+
+def filter_df(*args, **kwargs):
+    """Read pepXML files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.
+    Positional arguments can be pepXML files or DataFrames.
+
+    Requires :py:mod:`pandas`.
+
+    Parameters
+    ----------
+    key : str / iterable / callable, optional
+        Default is 'expect'.
+    is_decoy : str / iterable / callable, optional
+        Default is to check if all strings in the "protein" column start with "DECOY_"
+    *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+
+    Returns
+    -------
+    out : pandas.DataFrame
+    """
+    import pandas as pd
+    kwargs.setdefault('key', 'expect')
+    if all(isinstance(arg, pd.DataFrame) for arg in args):
+        df = pd.concat(args)
+    else:
+        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema'] if k in kwargs}
+        df = DataFrame(*args, **read_kw)
+    kwargs.setdefault('is_decoy',
+        df['proteins'].str.split(';').apply(lambda s: all(x.startswith('DECOY') for x in s)))
+    return aux.filter(df, **kwargs)

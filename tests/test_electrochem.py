@@ -1,3 +1,6 @@
+from os import path
+import pyteomics
+pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import unittest
 from pyteomics.electrochem import charge, pI
 from pyteomics.auxiliary import PyteomicsError
