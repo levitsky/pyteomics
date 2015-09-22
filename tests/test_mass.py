@@ -1,3 +1,6 @@
+from os import path
+import pyteomics
+pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import unittest
 import random
 from pyteomics import mass, auxiliary, parser

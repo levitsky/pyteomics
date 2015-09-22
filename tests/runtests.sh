@@ -5,7 +5,7 @@ if [ $# -eq 0 ]; then
 else
     for f; do
         echo "Executing" "$f"
-        python "$f"
         python2 "$f"
+        python "$f"
     done
 fi

@@ -12,6 +12,21 @@ This module requres :py:mod:`lxml` and :py:mod:`numpy`.
 
 --------------------------------------------------------------------------------
 """
+
+#   Copyright 2012 Anton Goloborodko, Lev Levitsky
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 import re
 import warnings
 warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
@@ -124,7 +139,7 @@ class XML(FileReader):
          """
 
         super(XML, self).__init__(source, 'rb', self.iterfind, False,
-                self._default_iter_tag, **kwargs)
+                (self._default_iter_tag,), kwargs)
 
         if iterative:
             self._tree = None
@@ -224,8 +239,8 @@ class XML(FileReader):
                 "You can disable reading the schema by specifying "
                 "`read_schema=False`.".format(self, version, schema_url))
             else:
-                warnings.warn("Unknown {0.file_format} version `{1}`. "
-                    "Attempt to use schema\n"
+                warnings.warn("Unknown {0.file_format} version `{1}`.\n"
+                    "Attempt to use schema "
                     "information from <{2}> failed.\n"
                     "Exception information:\n{3}\n"
                     "Falling back to defaults for {0._default_version}\n"
@@ -322,7 +337,7 @@ class XML(FileReader):
     def build_tree(self):
         """Build and store the :py:class:`ElementTree` instance
         for the underlying file"""
-        p = etree.XMLParser(remove_comments=True)
+        p = etree.XMLParser(remove_comments=True, huge_tree=True)
         self._tree = etree.parse(self._source, parser=p)
 
     def clear_tree(self):
@@ -368,7 +383,7 @@ class XML(FileReader):
             localname = nodes[0].lower()
             found = False
             for ev, elem in etree.iterparse(self, events=('start', 'end'),
-                    remove_comments=True):
+                    remove_comments=True, huge_tree=True):
                 name_lc = _local_name(elem).lower()
                 if ev == 'start':
                     if name_lc == localname or localname == '*':

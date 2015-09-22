@@ -20,7 +20,7 @@ new object-oriented interface (:py:class:`TandemXML`) to iterate over entries in
 Data access
 -----------
 
-  :py:class:`TandemXML` - a class representing a single MzIdentML file.
+  :py:class:`TandemXML` - a class representing a single X!Tandem output file.
   Other data access functions use this class internally.
 
   :py:func:`read` - iterate through peptide-spectrum matches in an X!Tandem
@@ -30,6 +30,8 @@ Data access
 
   :py:func:`chain.from_iterable` - read multiple files at once, using an
   iterable of files.
+
+  :py:func:`DataFrame` - read X!Tandem output files into a :py:class:`pandas.DataFrame`.
 
   :py:func:`filter` - iterate through peptide-spectrum matches in a chain of
   X!Tandem output files, yielding only top PSMs and keeping false discovery rate
@@ -41,6 +43,8 @@ Data access
 
   :py:func:`filter.chain.from_iterable` - chain a series of filters applied
   independently to an iterable of files.
+
+  :py:func:`filter_df` - filter X!Tandem output files and return a :py:class:`pandas.DataFrame`.
 
 Miscellaneous
 -------------
@@ -240,4 +244,64 @@ qvalues = aux._make_qvalues(chain, is_decoy, operator.itemgetter('expect'))
 filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'),
         qvalues)
 fdr = aux._make_fdr(is_decoy)
-filter.chain = aux._make_chain(filter, 'filter')
+filter.chain = aux._make_chain(filter, 'filter', True)
+
+def DataFrame(*args, **kwargs):
+    """Read X!Tandem output files into a :py:class:`pandas.DataFrame`.
+
+    Requires :py:mod:`pandas`.
+
+    Parameters
+    ----------
+    *args, **kwargs : passed to :py:func:`chain`
+
+    Returns
+    -------
+    out : pandas.DataFrame
+    """
+    import pandas as pd
+    data = []
+    with chain(*args, **kwargs) as f:
+        for item in f:
+            info = {}
+            for k, v in item.items():
+                if isinstance(v, (str, int, float)):
+                    info[k] = v
+            protein = item['protein'][0]
+            info['protein_expect'] = protein['expect']
+            info['proteins'] = ';'.join(prot['label'] for prot in item['protein'])
+            aa = protein['peptide'].pop('aa', [])
+            info['modifications'] = ','.join('{0[modified]:.3f}@{0[type]}'.format(x) for x in aa)
+            info.update(protein['peptide'])
+            info['scan'] = item['support']['fragment ion mass spectrum']['note']
+            data.append(info)
+    return pd.DataFrame(data)
+
+def filter_df(*args, **kwargs):
+    """Read X!Tandem output files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.
+    Positional arguments can be X!Tandem output files or DataFrames.
+
+    Requires :py:mod:`pandas`.
+
+    Parameters
+    ----------
+    key : str / iterable / callable, optional
+        Default is 'expect'.
+    is_decoy : str / iterable / callable, optional
+        Default is to check if all strings in the "protein" column start with "DECOY_"
+    *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+
+    Returns
+    -------
+    out : pandas.DataFrame
+    """
+    import pandas as pd
+    kwargs.setdefault('key', 'expect')
+    if all(isinstance(arg, pd.DataFrame) for arg in args):
+        df = pd.concat(args)
+    else:
+        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema'] if k in kwargs}
+        df = DataFrame(*args, **read_kw)
+    kwargs.setdefault('is_decoy',
+        df['proteins'].str.split(';').apply(lambda s: all(x.startswith('DECOY') for x in s)))
+    return aux.filter(df, **kwargs)

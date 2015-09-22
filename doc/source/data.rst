@@ -376,6 +376,15 @@ can use the :py:class:`pyteomics.pepxml.PepXML` interface.
     precursor_neutral_mass
     start_scan
 
+Reading into a pandas.DataFrame
+...............................
+
+If you like working with tabular data using :py:mod:`pandas`, you can load data from pepXML files
+directly into :py:class:`pandas.DataFrames`
+using the :py:func:`pyteomics.pepxml.DataFrame` function. It can read multiple files
+at once (using :py:func:`pyteomics.pepxml.chain`) and return a combined table with
+essential information about search results. This function requires :py:mod:`pandas`.
+
 X!Tandem
 --------
 
@@ -477,6 +486,14 @@ in the :py:mod:`pyteomics.tandem` module.
 :py:func:`pyteomics.tandem.read` returns a
 :py:class:`pyteomics.tandem.TandemXML` instance, which can also be
 created directly.
+
+Reading into a pandas.DataFrame
+...............................
+
+You can also load data from X!Tandem files directly into :py:class:`pandas.DataFrames`
+using the :py:func:`pyteomics.tandem.DataFrame` function. It can read multiple files
+at once (using :py:func:`pyteomics.tandem.chain`) and return a combined table with
+essential information about search results. Of course, this function requires :py:mod:`pandas`.
 
 mzIdentML
 ---------
@@ -582,5 +599,17 @@ and then provide a reader over top PSMs of all files, whereas
 
 If you want to filter a list representing PSMs in arbitrary format, you can
 use :py:func:`pyteomics.auxiliary.filter`. Instead of files it takes lists
-(or other containers) of PSMs. The rest is the same as for other
+(or other iterables) of PSMs. The rest is the same as for other
 :py:func:`!filter` functions.
+
+NumPy and Pandas support, etc.
+------------------------------
+
+:py:func:`pyteomics.auxiliary.filter` supports structured :py:mod:`numpy` arrays and
+:py:class:`pandas.DataFrames` of PSMs. This makes it easy to filter search results
+stored as CSV files (see :ref:`example-3` for more info).
+
+Generally, PSMs can be provided as iterators, lists, arrays, and :py:class:`DataFrames`,
+and `key` and `is_decoy` parameters to :py:func:`!filter` can be functions, strings,
+lists, arrays, or iterators. If a string is given, the PSMs need to be in a structured
+array or a :py:class:`DataFrame`.

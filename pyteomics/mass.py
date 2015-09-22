@@ -32,6 +32,8 @@ Mass calculations
   :py:func:`fast_mass` - a less powerful but much faster function for
   polypeptide mass calculation.
 
+  :py:func:`fast_mass2` - a version of `fast_mass` that supports *modX* notation.
+
 Isotopic abundances
 -------------------
 

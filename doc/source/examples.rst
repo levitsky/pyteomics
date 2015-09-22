@@ -11,3 +11,4 @@ Contents:
 
     examples/example_fasta
     examples/example_msms
+    examples/example_filtering
