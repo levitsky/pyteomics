@@ -40,20 +40,9 @@ On Arch Linux and related distros, you can install Pyteomics from AUR:
 Windows
 -------
 
- - Download pre-compiled binary packages for Pyteomics dependencies:
+- `Get pip <https://pip.pypa.io/en/stable/installing/>`_, if you don't have it yet.
 
-   - `numpy <http://pypi.python.org/pypi/numpy>`_
-   - `matplotlib <http://sourceforge.net/projects/matplotlib/files/matplotlib/>`_
-   - `lxml <http://pypi.python.org/pypi/lxml>`_
+- Install Pyteomics and its dependencies::
 
- - Download a pre-compiled binary Pyteomics package from
-   `PyPI <http://pypi.python.org/pypi/pyteomics>`_.
-
-OR
-
-- If you have Enthought Python Distribution / ActivePython,
-  execute in the command line::
-
-      easy_install pip
-      pip install lxml numpy matplotlib pyteomics
+    pip install lxml numpy matplotlib pyteomics
 
