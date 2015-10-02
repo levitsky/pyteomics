@@ -382,17 +382,35 @@ def tostring(parsed_sequence, show_unmodified_termini=True):
     -------
     sequence : str
     """
+    parsed_sequence = list(parsed_sequence)
     labels = []
-    for group in parsed_sequence:
-        if isinstance(group, str):
-            if (group not in (std_cterm, std_nterm)) or show_unmodified_termini:
-                labels.append(group)
-        else: # treat `group` as a tuple
-            group_l = list(group)
-            if not show_unmodified_termini:
-                if std_cterm in group_l: group_l.remove(std_cterm)
-                if std_nterm in group_l: group_l.remove(std_nterm)
-            labels.append(''.join(group_l))
+    nterm = parsed_sequence[0]
+    cterm = parsed_sequence[-1]
+
+    if isinstance(nterm, str):
+        if nterm != std_nterm or show_unmodified_termini:
+            labels.append(nterm)
+        labels.extend(parsed_sequence[1:-1])
+        if len(parsed_sequence) > 1 and (cterm != std_cterm or show_unmodified_termini):
+            labels.append(cterm)
+    else:
+        if len(parsed_sequence) == 1:
+            g = nterm
+            if nterm[0] == std_nterm and not show_unmodified_termini:
+                g = g[1:]
+            if nterm[-1] == std_cterm and not show_unmodified_termini:
+                g = g[:-1]
+            return ''.join(g)
+        if nterm[0] != std_nterm or show_unmodified_termini:
+            labels.append(''.join(nterm))
+        else:
+            labels.append(''.join(nterm[1:]))
+        labels.extend(''.join(g) for g in parsed_sequence[1:-1])
+        if len(parsed_sequence) > 1:
+            if cterm[-1] != std_cterm or show_unmodified_termini:
+                labels.append(''.join(cterm))
+            else:
+                labels.append(''.join(cterm[:-1]))
     return ''.join(labels)
 
 def amino_acid_composition(sequence,
@@ -728,7 +746,7 @@ def isoforms(sequence, **kwargs):
     states.extend([group] + list(set(apply_mod(group, mod)
             for mod in variable_mods if (
                 variable_mods[mod] == True or
-                main(group)[1] in variable_mods[mod]) and not is_term_mod(mod)
+                group[-1] in variable_mods[mod]) and not is_term_mod(mod)
                 ).difference({group}))
         for group in parsed[1:-1])
     # Finally add C-terminal mods and regular mods on the C-terminal residue
