@@ -344,7 +344,7 @@ def valid(*args, **kwargs):
         return False
     return True
 
-def fast_valid(sequence, labels=std_labels):
+def fast_valid(sequence, labels=set(std_labels)):
     """Iterate over `sequence` and check if all items are in `labels`.
     With strings, this only works as expected on sequences without
     modifications or terminal groups.
@@ -361,8 +361,7 @@ def fast_valid(sequence, labels=std_labels):
     -------
     out : bool
     """
-    labels = set(labels)
-    return all(aa in labels for aa in sequence)
+    return set(sequence).issubset(labels)
 
 def tostring(parsed_sequence, show_unmodified_termini=True):
     """Create a string from a parsed sequence.
