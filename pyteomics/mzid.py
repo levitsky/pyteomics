@@ -90,6 +90,8 @@ This module requires :py:mod:`lxml`.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import warnings
+warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
 from . import auxiliary as aux
 from . import xml
 
@@ -124,9 +126,13 @@ class MzIdentML(xml.XML):
         ends in _ref. Removes the id attribute from `info`"""
         for k, v in dict(info).items():
             if k.endswith('_ref'):
-                info.update(self.get_by_id(v, retrieve_refs=True))
-                del info[k]
-                info.pop('id', None)
+                by_id = self.get_by_id(v, retrieve_refs=True)
+                if by_id is None:
+                    warnings.warn('Ignoring unresolved reference: ' + v)
+                else:
+                    info.update(by_id)
+                    del info[k]
+                    info.pop('id', None)
 
 def read(source, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
