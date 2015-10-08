@@ -78,6 +78,10 @@ def scatter_trend(x, y, **kwargs):
     plot_sigmas : bool, optional
         If :py:const:`True` then plot confidence intervals of the linear fit.
         :py:const:`False` by default.
+    show_legend : bool, optional
+        If :py:const:`True`, a legend will be shown with linear fit equation,
+        correlation coefficient, and standard deviation from the fit. Default is
+        :py:const:`True`.
     title : str, optional
         The title. Empty by default.
     xlabel, ylabel : str, optional
@@ -103,9 +107,10 @@ def scatter_trend(x, y, **kwargs):
         '$y\,=\,{:.3f}x\,{}\,{:.3f}$, '
         '$R^2=\,{:.3f}$ \n$\sigma\,=\,{:.3f}$'.format(
             a, '-' if b < 0 else '+', abs(b), r*r, stderr))
-    legend = pylab.legend(**kwargs.get('legend_kwargs', {'loc': 'upper left'}))
-    legend_frame = legend.get_frame()
-    legend_frame.set_alpha(kwargs.get('alpha_legend', 1.0))
+    if kwargs.get('show_legend', True):
+        legend = pylab.legend(**kwargs.get('legend_kwargs', {'loc': 'upper left'}))
+        legend_frame = legend.get_frame()
+        legend_frame.set_alpha(kwargs.get('alpha_legend', 1.0))
     if kwargs.get('plot_trend', True):
         pylab.plot([min(x), max(x)],
                    [a*min(x)+b, a*max(x)+b],
