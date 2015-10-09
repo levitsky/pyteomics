@@ -328,7 +328,10 @@ def _keepstate(func):
         res = func(*args, **kwargs)
         for arg, pos in zip(args, positions):
             if pos is not None:
-                arg.seek(pos)
+                try:
+                    arg.seek(pos)
+                except ValueError:
+                    pass
         return res
     return wrapped
 
