@@ -8,6 +8,7 @@ from os import path
 import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics import auxiliary as aux
+from pyteomics import tandem
 
 psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase,
             np.arange(0.01, 0.062, 0.001)))
@@ -171,6 +172,13 @@ class QvalueTest(unittest.TestCase):
             self.psms, pep='pep', remove_decoy=False)
         self.assertRaises(aux.PyteomicsError, aux.qvalues,
             self.psms, pep='pep', correction=0)
+
+    def test_qvalues_from_tandem(self):
+        psms = tandem.TandemXML('test.t.xml')
+        q0 = aux.qvalues(psms, key=op.itemgetter('expect'), is_decoy=tandem.is_decoy)
+        with tandem.TandemXML('test.t.xml') as psms:
+            q1 = aux.qvalues(psms, key=op.itemgetter('expect'), is_decoy=tandem.is_decoy)
+        self.assertTrue(np.allclose(q0['q'], q1['q']))
 
 class FilterTest(unittest.TestCase):
 
