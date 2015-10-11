@@ -78,7 +78,11 @@ try:
 except ImportError:
     pd = None
 else:
-    if LooseVersion(pd._version.get_versions()['version']) < LooseVersion('0.17'):
+    if hasattr(pd, '_version'):
+        pv = pd._version.get_versions()['version']
+    else:
+        pv = pd.version.version
+    if LooseVersion(pv) < LooseVersion('0.17'):
         pd.DataFrame.sort_values = pd.DataFrame.sort
 
 class PyteomicsError(Exception):
