@@ -68,7 +68,7 @@ try:
 except ImportError:
     from collections.abc import Container, Sized
 import math
-
+from distutils.version import LooseVersion
 try:
     basestring
 except NameError:
@@ -77,6 +77,9 @@ try:
     import pandas as pd
 except ImportError:
     pd = None
+else:
+    if LooseVersion(pd._version.get_versions()['version']) < LooseVersion('0.17'):
+        pd.DataFrame.sort_values = pd.DataFrame.sort
 
 class PyteomicsError(Exception):
     """Exception raised for errors in Pyteomics library.
@@ -715,7 +718,7 @@ def _make_qvalues(read, is_decoy, key):
                 if arr_flag:
                     psms = psms.iloc[lexsort]
                 else:
-                    psms.sort([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
+                    psms.sort_values([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
             else:
                 psms = psms[lexsort]
 
