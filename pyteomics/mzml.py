@@ -147,8 +147,18 @@ class MzML(xml.XML):
                 if k.endswith(' array') and not info[k]:
                     info = {k: array}
                     break
+                elif isinstance(info[k], list) and k == 'name':
+                    knames = info[k]
+                    found = False
+                    for val in knames:
+                        if val.endswith(' array'):
+                            info = {val: array}
+                            found = True
+                            break
+                    if found:
+                        break
             else:
-                info['binary'] == array
+                info['binary'] = array
         if 'binaryDataArray' in info:
             for array in info.pop('binaryDataArray'):
                 info.update(array)
