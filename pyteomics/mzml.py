@@ -147,18 +147,19 @@ class MzML(xml.XML):
                 if k.endswith(' array') and not info[k]:
                     info = {k: array}
                     break
-                elif isinstance(info[k], list) and k == 'name':
-                    knames = info[k]
-                    found = False
+            else:
+                found = False
+                # workaround for https://bitbucket.org/levitsky/pyteomics/issues/11
+                if isinstance(info.get('name'), list):
+                    knames = info['name']
                     for val in knames:
                         if val.endswith(' array'):
                             info = {val: array}
                             found = True
                             break
-                    if found:
-                        break
-            else:
-                info['binary'] = array
+                # last fallback
+                if not found:
+                    info['binary'] = array
         if 'binaryDataArray' in info:
             for array in info.pop('binaryDataArray'):
                 info.update(array)
