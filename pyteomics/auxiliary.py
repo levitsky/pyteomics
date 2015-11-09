@@ -239,6 +239,11 @@ class BasicComposition(defaultdict, Counter):
     def __repr__(self):
         return str(self)
 
+    def _repr_pretty_(self, p, cycle):
+        if cycle: # should never happen
+            p.text('{} object with a cyclic reference'.format(type(self).__name__))
+        p.text(str(self))
+
     def __add__(self, other):
         result = self.copy()
         for elem, cnt in other.items():
