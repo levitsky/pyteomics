@@ -1,3 +1,24 @@
+3.2
+---
+
+New submodule :py:mod:`pyteomics.mass.unimod` contains rewritten machinery
+for handling of Unimod relational databases (contributed by Joshua Klein).
+This is a substitution and extension for the old :py:class:`mass.Unimod` class.
+:py:mod:`pyteomics.mass.unimod` requires SQLAlchemy.
+
+Other changes:
+
+ - New function :py:func:`pyteomics.auxiliary.linear_regression_perpendicular`
+   provides a linear fit minimizing distances from data points to the fit line
+   (as opposed to :py:func:`pyteomics.auxiliary.linear_regression`, which
+   minimizes vertical distances).
+
+ - :py:func:`pyteomics.pylab_aux.scatter_trend` now has an optional parameter
+   `regression` which can be a callable performing the regression.
+   Also, the regression equation is now the label of the regression line, not
+   the scatter plot.
+
+
 3.1.1
 -----
 

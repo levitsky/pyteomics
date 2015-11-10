@@ -97,29 +97,40 @@ def scatter_trend(x, y, **kwargs):
     legend_kwargs : dict, optional
         Keyword arguments for :py:func:`pylab.legend`.
         Default is :py:const:`{'loc': 'upper left'}`.
+    regression : callable, optional
+        Function to perform linear regression. Will be given ``x`` and ``y`` as arguments.
+        Must return a 4-tuple: (a, b, r, stderr).
+        Default is :py:func:`pyteomics.auxiliary.linear_regression`.
     """
-    a, b, r, stderr = linear_regression(x, y)
+    regression = kwargs.get('regression', linear_regression)
+    a, b, r, stderr = regression(x, y)
     pylab.title(kwargs.get('title', ''))
     pylab.xlabel(kwargs.get('xlabel', ''))
     pylab.ylabel(kwargs.get('ylabel', ''))
-    scat_plot = pylab.scatter(x, y, **kwargs.get('scatter_kwargs', {}))
-    scat_plot.set_label(
+    
+    equation = (
         '$y\,=\,{:.3f}x\,{}\,{:.3f}$, '
         '$R^2=\,{:.3f}$ \n$\sigma\,=\,{:.3f}$'.format(
             a, '-' if b < 0 else '+', abs(b), r*r, stderr))
-    if kwargs.get('show_legend', True):
-        legend = pylab.legend(**kwargs.get('legend_kwargs', {'loc': 'upper left'}))
-        legend_frame = legend.get_frame()
-        legend_frame.set_alpha(kwargs.get('alpha_legend', 1.0))
+    
+    pylab.scatter(x, y, **kwargs.get('scatter_kwargs', {}))
+
     if kwargs.get('plot_trend', True):
         pylab.plot([min(x), max(x)],
                    [a*min(x)+b, a*max(x)+b],
+                   label=equation,
                    **kwargs.get('plot_kwargs', {}))
+
     if kwargs.get('plot_sigmas', False):
         for i in [-3.0,-2.0,-1.0,1.0,2.0,3.0]:
             pylab.plot([min(x), max(x)],
                        [a*min(x)+b+i*stderr, a*max(x)+b+i*stderr],
                        'r--')
+
+    if kwargs.get('show_legend', True):
+        legend = pylab.legend(**kwargs.get('legend_kwargs', {'loc': 'upper left'}))
+        legend_frame = legend.get_frame()
+        legend_frame.set_alpha(kwargs.get('alpha_legend', 1.0))
 
 def plot_function_3d(x, y, function, **kwargs):
     """Plot values of a function of two variables in 3D.
