@@ -5,7 +5,14 @@ auxiliary - common functions and objects
 Math
 ----
 
-  :py:func:`linear_regression` - a wrapper for NumPy linear regression.
+  :py:func:`linear_regression_vertical` - a wrapper for NumPy linear regression,
+  minimizes the sum of squares of *y* errors.
+
+  :py:func:`linear_regression` - alias for :py:func:`linear_regression_vertical`.
+
+  :py:func:`linear_regression_perpendicular` - a wrapper for NumPy linear regression,
+  minimizes the sum of squares of (perpendicular) distances between the points and the line.
+
 
 Data access
 -----------
@@ -100,8 +107,9 @@ class PyteomicsError(Exception):
     def __str__(self):
         return "Pyteomics error, message: %s" % (repr(self.message),)
 
-def linear_regression(x, y, a=None, b=None):
+def linear_regression_vertical(x, y, a=None, b=None):
     """Calculate coefficients of a linear regression y = a * x + b.
+    The fit minimizes perpendicular distances between the points and the line.
 
     Requires :py:mod:`numpy`.
 
@@ -138,6 +146,47 @@ def linear_regression(x, y, a=None, b=None):
 
     r = np.corrcoef(x, y)[0, 1]
     stderr = (y - a * x - b).std()
+
+    return a, b, r, stderr
+
+def linear_regression(x, y, a=None, b=None):
+    """Alias of :py:func:`linear_regression_vertical`."""
+    return linear_regression_vertical(x, y, a, b)
+
+def linear_regression_perpendicular(x, y):
+    """Calculate coefficients of a linear regression y = a * x + b.
+    The fit minimizes perpendicular distances between the points and the line.
+
+    Requires :py:mod:`numpy`.
+
+    Parameters
+    ----------
+    x, y : array_like of float
+
+    Returns
+    -------
+    out : 4-tuple of float
+        The structure is (a, b, r, stderr), where
+        a -- slope coefficient,
+        b -- free term,
+        r -- Peason correlation coefficient,
+        stderr -- standard deviation.
+    """
+
+    import numpy as np
+    if not isinstance(x, np.ndarray):
+        x = np.array(x)
+    if not isinstance(y, np.ndarray):
+        y = np.array(y)
+
+    data = np.hstack((x.reshape((-1, 1)), y.reshape((-1, 1))))
+    mu = data.mean(axis=0)
+    eigenvectors, eigenvalues, V = np.linalg.svd((data-mu).T, full_matrices=False)
+    a = eigenvectors[0][1] / eigenvectors[0][0]
+    b = y.mean() - a*x.mean()
+
+    r = np.corrcoef(x, y)[0, 1]
+    stderr = ((y - a * x - b) / np.sqrt(a**2 + 1)).std()
 
     return a, b, r, stderr
 
