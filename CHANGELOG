@@ -18,6 +18,11 @@ Other changes:
    Also, the regression equation is now the label of the regression line, not
    the scatter plot.
 
+ - Another two new parameters for :py:func:`pyteomics.pylab_aux.scatter_trend`
+   are `sigma_kwargs` and `sigma_values`.
+
+ - :py:mod:`pyteomics.pylab_aux` functions :py:func:`plot_line` and
+   :py:func:`scatter_trend` now return the objects they create.
 
 3.1.1
 -----

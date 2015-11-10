@@ -51,21 +51,28 @@ import pylab
 import numpy as np
 from .auxiliary import linear_regression, PyteomicsError
 
-def plot_line(a, b, **kwargs):
+def plot_line(a, b, xlim=None, *args, **kwargs):
     """Plot a line y = a * x + b.
 
     Parameters
     ----------
     a, b : float
         The slope and intercept of the line.
+    xlim : tuple, optional
+        Minimal and maximal values of `x`. If not given, :py:func:`pylab.xlim`
+        will be called.
 
-    **kwargs : passed to :py:func:`pylab.plot`.
+    *args, **kwargs : passed to :py:func:`pylab.plot` after `x` and `y` values.
+    
+    Returns
+    -------
+    out : matplotlib.lines.Line2D
+        The line object.
     """
-    xlim = pylab.xlim()
-    ylim = pylab.ylim()
-    pylab.plot([xlim[0], xlim[1]],
+    if xlim is None: xlim = pylab.xlim()
+    return pylab.plot([xlim[0], xlim[1]],
                [a * xlim[0] + b, a * xlim[1] + b],
-               **kwargs)
+               *args, **kwargs)
 
 def scatter_trend(x, y, **kwargs):
     """Make a scatter plot with a linear regression.
@@ -97,10 +104,21 @@ def scatter_trend(x, y, **kwargs):
     legend_kwargs : dict, optional
         Keyword arguments for :py:func:`pylab.legend`.
         Default is :py:const:`{'loc': 'upper left'}`.
+    sigma_kwargs : dict, optional
+        Keyword arguments for :py:func:`pylab.plot` used for sigma lines.
+        Default is :py:const:`{'color': 'red', 'linestyle': 'dashed'}`.
+    sigma_values : iterable, optional
+        Each value will be multiplied with standard error of the fit, and the line
+        shifted by the resulting value will be plotted. Default is :py:const:`range(-3, 4)`.
     regression : callable, optional
         Function to perform linear regression. Will be given ``x`` and ``y`` as arguments.
         Must return a 4-tuple: (a, b, r, stderr).
         Default is :py:func:`pyteomics.auxiliary.linear_regression`.
+    
+    Returns
+    -------
+    out : tuple
+        A (scatter_plot, trend_line, sigma_lines, legend) tuple.
     """
     regression = kwargs.get('regression', linear_regression)
     a, b, r, stderr = regression(x, y)
@@ -113,24 +131,29 @@ def scatter_trend(x, y, **kwargs):
         '$R^2=\,{:.3f}$ \n$\sigma\,=\,{:.3f}$'.format(
             a, '-' if b < 0 else '+', abs(b), r*r, stderr))
     
-    pylab.scatter(x, y, **kwargs.get('scatter_kwargs', {}))
+    sc = pylab.scatter(x, y, **kwargs.get('scatter_kwargs', {}))
+    xlim = (x.min(), x.max())
 
     if kwargs.get('plot_trend', True):
-        pylab.plot([min(x), max(x)],
-                   [a*min(x)+b, a*max(x)+b],
-                   label=equation,
-                   **kwargs.get('plot_kwargs', {}))
+        line = plot_line(a, b, xlim, label=equation, **kwargs.get('plot_kwargs', {}))
+    else:
+        line = None
 
     if kwargs.get('plot_sigmas', False):
-        for i in [-3.0,-2.0,-1.0,1.0,2.0,3.0]:
-            pylab.plot([min(x), max(x)],
-                       [a*min(x)+b+i*stderr, a*max(x)+b+i*stderr],
-                       'r--')
+        s_lines = []
+        sigma_kwargs = kwargs.get('sigma_kwargs', {'color': 'red', 'linestyle': 'dashed'})
+        for i in kwargs.get('sigma_values', range(-3, 4)):
+            s_lines.append(plot_line(a, b + i*stderr, xlim, **sigma_kwargs))
+    else:
+        s_lines = None
 
     if kwargs.get('show_legend', True):
         legend = pylab.legend(**kwargs.get('legend_kwargs', {'loc': 'upper left'}))
         legend_frame = legend.get_frame()
         legend_frame.set_alpha(kwargs.get('alpha_legend', 1.0))
+    else:
+        legend = None
+    return sc, line, s_lines, legend
 
 def plot_function_3d(x, y, function, **kwargs):
     """Plot values of a function of two variables in 3D.
@@ -249,9 +272,13 @@ def plot_qvalue_curve(qvalues, **kwargs):
         Label for the Y axis. Default is "# of PSMs".
     title : str, optional
         The title. Empty by default.
-    **kwargs : will be given to :py:func:`pylab.plot`.
+    *args, **kwargs : will be given to :py:func:`pylab.plot` after `x` and `y`.
+
+    Returns
+    -------
+    out : matplotlib.lines.Line2D
     """
     pylab.xlabel(kwargs.pop('xlabel', 'q-value'))
     pylab.ylabel(kwargs.pop('ylabel', '# of PSMs'))
     pylab.title(kwargs.pop('title', ''))
-    pylab.plot(qvalues, 1+np.arange(qvalues.size), **kwargs)
+    return pylab.plot(qvalues, 1+np.arange(qvalues.size), *args, **kwargs)
