@@ -762,5 +762,62 @@ class FDRTest(unittest.TestCase):
         pep = [self.pep((s, l, p)) for s, l, p in psms]
         self._run_check(psms, is_decoy=isd, pep=pep)
 
+class OtherTests(unittest.TestCase):
+    x = [1, 2, 3]
+    y = [3, 5, 7]
+    a = 2
+    b = 1
+    r = 1
+    stderr = 0
+
+    def _test_linreg(self, result):
+        a, b, r, stderr = result
+        self.assertAlmostEqual(a, self.a)
+        self.assertAlmostEqual(b, self.b)
+        self.assertAlmostEqual(r, self.r)
+        self.assertAlmostEqual(stderr, self.stderr)
+
+    def test_linear_regression_simple(self):
+        result = aux.linear_regression(self.x, self.y)
+        self._test_linreg(result)
+    
+    def test_linear_regression_simple_vertical(self):
+        result = aux.linear_regression_vertical(self.x, self.y)
+        self._test_linreg(result)
+
+    def test_linear_regression_simple_perpendicular(self):
+        result = aux.linear_regression_perpendicular(self.x, self.y)
+        self._test_linreg(result)
+
+    def test_linear_regression_no_y_list(self):
+        x = list(zip(self.x, self.y))
+        result = aux.linear_regression(x)
+        self._test_linreg(result)
+
+    def test_linear_regression_no_y_list_vertical(self):
+        x = list(zip(self.x, self.y))
+        result = aux.linear_regression_vertical(x)
+        self._test_linreg(result)
+
+    def test_linear_regression_no_y_list_perpendicular(self):
+        x = list(zip(self.x, self.y))
+        result = aux.linear_regression_perpendicular(x)
+        self._test_linreg(result)
+
+    def test_linear_regression_no_y_arr(self):
+        x = np.array(list(zip(self.x, self.y)))
+        result = aux.linear_regression(x)
+        self._test_linreg(result)
+
+    def test_linear_regression_no_y_arr_vertical(self):
+        x = np.array(list(zip(self.x, self.y)))
+        result = aux.linear_regression_vertical(x)
+        self._test_linreg(result)
+
+    def test_linear_regression_no_y_arr_perpendicular(self):
+        x = np.array(list(zip(self.x, self.y)))
+        result = aux.linear_regression_perpendicular(x)
+        self._test_linreg(result)
+
 if __name__ == '__main__':
     unittest.main()

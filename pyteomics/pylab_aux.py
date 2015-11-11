@@ -74,7 +74,7 @@ def plot_line(a, b, xlim=None, *args, **kwargs):
                [a * xlim[0] + b, a * xlim[1] + b],
                *args, **kwargs)
 
-def scatter_trend(x, y, **kwargs):
+def scatter_trend(x, y=None, **kwargs):
     """Make a scatter plot with a linear regression.
 
     Parameters
