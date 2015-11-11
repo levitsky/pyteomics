@@ -80,6 +80,7 @@ def scatter_trend(x, y=None, **kwargs):
     Parameters
     ----------
     x, y : array_like of float
+        1-D arrays of floats. If `y` is omitted, `x` must be a 2-D array of shape (N, 2).
     plot_trend : bool, optional
         If :py:const:`True` then plot a trendline (default).
     plot_sigmas : bool, optional
@@ -131,6 +132,9 @@ def scatter_trend(x, y=None, **kwargs):
         '$R^2=\,{:.3f}$ \n$\sigma\,=\,{:.3f}$'.format(
             a, '-' if b < 0 else '+', abs(b), r*r, stderr))
     
+    if y is None:
+        y = x[:, 1]
+        x = x[:, 1]
     sc = pylab.scatter(x, y, **kwargs.get('scatter_kwargs', {}))
     xlim = (x.min(), x.max())
 

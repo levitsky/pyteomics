@@ -13,6 +13,8 @@ Other changes:
    (as opposed to :py:func:`pyteomics.auxiliary.linear_regression`, which
    minimizes vertical distances).
 
+ - Both new and old linear regression functions now accept a single array of shape (N, 2).
+
  - :py:func:`pyteomics.pylab_aux.scatter_trend` now has an optional parameter
    `regression` which can be a callable performing the regression.
    Also, the regression equation is now the label of the regression line, not

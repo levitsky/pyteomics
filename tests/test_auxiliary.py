@@ -819,5 +819,13 @@ class OtherTests(unittest.TestCase):
         result = aux.linear_regression_perpendicular(x)
         self._test_linreg(result)
 
+    def test_linear_regression_shape_exception_vertical(self):
+        with self.assertRaises(aux.PyteomicsError):
+            aux.linear_regression_vertical(self.x)
+
+    def test_linear_regression_shape_exception_perpendicular(self):
+        with self.assertRaises(aux.PyteomicsError):
+            aux.linear_regression_perpendicular(self.x)
+
 if __name__ == '__main__':
     unittest.main()
