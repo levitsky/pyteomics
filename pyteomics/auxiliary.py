@@ -107,7 +107,7 @@ class PyteomicsError(Exception):
     def __str__(self):
         return "Pyteomics error, message: %s" % (repr(self.message),)
 
-def linear_regression_vertical(x, y, a=None, b=None):
+def linear_regression_vertical(x, y=None, a=None, b=None):
     """Calculate coefficients of a linear regression y = a * x + b.
     The fit minimizes perpendicular distances between the points and the line.
 
@@ -116,6 +116,7 @@ def linear_regression_vertical(x, y, a=None, b=None):
     Parameters
     ----------
     x, y : array_like of float
+        1-D arrays of floats. If `y` is omitted, `x` must be a 2-D array of shape (N, 2).
     a : float, optional
         If specified then the slope coefficient is fixed and equals a.
     b : float, optional
@@ -132,11 +133,15 @@ def linear_regression_vertical(x, y, a=None, b=None):
     """
 
     import numpy as np
-    if not isinstance(x, np.ndarray):
-        x = np.array(x)
-    if not isinstance(y, np.ndarray):
-        y = np.array(y)
-
+    x = np.array(x, copy=False)
+    if y is not None:
+        y = np.array(y, copy=False)
+    else:
+        if len(x.shape) != 2 or x.shape[-1] != 2:
+            raise PyteomicsError(
+                'If `y` is not given, x.shape should be (N, 2), given: {}'.format(x.shape))
+        y = x[:, 1]
+        x = x[:, 0]
     if (a is not None and b is None):
         b = (y - a * x).mean()
     elif (a is not None and b is not None):
@@ -149,11 +154,11 @@ def linear_regression_vertical(x, y, a=None, b=None):
 
     return a, b, r, stderr
 
-def linear_regression(x, y, a=None, b=None):
+def linear_regression(x, y=None, a=None, b=None):
     """Alias of :py:func:`linear_regression_vertical`."""
     return linear_regression_vertical(x, y, a, b)
 
-def linear_regression_perpendicular(x, y):
+def linear_regression_perpendicular(x, y=None):
     """Calculate coefficients of a linear regression y = a * x + b.
     The fit minimizes perpendicular distances between the points and the line.
 
@@ -162,6 +167,7 @@ def linear_regression_perpendicular(x, y):
     Parameters
     ----------
     x, y : array_like of float
+        1-D arrays of floats. If `y` is omitted, `x` must be a 2-D array of shape (N, 2).
 
     Returns
     -------
@@ -174,19 +180,20 @@ def linear_regression_perpendicular(x, y):
     """
 
     import numpy as np
-    if not isinstance(x, np.ndarray):
-        x = np.array(x)
-    if not isinstance(y, np.ndarray):
-        y = np.array(y)
-
-    data = np.hstack((x.reshape((-1, 1)), y.reshape((-1, 1))))
+    x = np.array(x, copy=False)
+    if y is not None:
+        y = np.array(y, copy=False)
+        data = np.hstack((x.reshape((-1, 1)), y.reshape((-1, 1))))
+    else:
+        data = x
     mu = data.mean(axis=0)
     eigenvectors, eigenvalues, V = np.linalg.svd((data-mu).T, full_matrices=False)
     a = eigenvectors[0][1] / eigenvectors[0][0]
-    b = y.mean() - a*x.mean()
+    xm, ym = data.mean(axis=0)
+    b = ym - a * xm
 
-    r = np.corrcoef(x, y)[0, 1]
-    stderr = ((y - a * x - b) / np.sqrt(a**2 + 1)).std()
+    r = np.corrcoef(data[:, 0], data[:, 1])[0, 1]
+    stderr = ((data[:, 1] - a * data[:, 0] - b) / np.sqrt(a**2 + 1)).std()
 
     return a, b, r, stderr
 
