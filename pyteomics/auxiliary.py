@@ -185,6 +185,9 @@ def linear_regression_perpendicular(x, y=None):
         y = np.array(y, copy=False)
         data = np.hstack((x.reshape((-1, 1)), y.reshape((-1, 1))))
     else:
+        if len(x.shape) != 2 or x.shape[-1] != 2:
+            raise PyteomicsError(
+                'If `y` is not given, x.shape should be (N, 2), given: {}'.format(x.shape))
         data = x
     mu = data.mean(axis=0)
     eigenvectors, eigenvalues, V = np.linalg.svd((data-mu).T, full_matrices=False)
