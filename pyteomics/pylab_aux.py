@@ -133,6 +133,7 @@ def scatter_trend(x, y=None, **kwargs):
             a, '-' if b < 0 else '+', abs(b), r*r, stderr))
     
     if y is None:
+        x = np.array(x, copy=False)
         y = x[:, 1]
         x = x[:, 1]
     sc = pylab.scatter(x, y, **kwargs.get('scatter_kwargs', {}))
