@@ -672,7 +672,7 @@ def isoforms(sequence, **kwargs):
     format : str, optional
         If :py:const:`'str'` (default), an iterator over sequences is returned.
         If :py:const:`'split'`, the iterator will yield results in the same
-        format is :py:func:`parse` with the 'split' option, with unmodified
+        format as :py:func:`parse` with the 'split' option, with unmodified
         terminal groups shown.
 
     Returns
