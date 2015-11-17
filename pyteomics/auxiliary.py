@@ -1048,7 +1048,7 @@ qvalues.__doc__ =  """Read `args` and return a NumPy array with scores and q-val
 
     remove_decoy : bool, optional
         Defines whether decoy matches should be removed from the output.
-        Default is :py:const:`True`.
+        Default is :py:const:`False`.
 
         .. note:: If set to :py:const:`False`, then by default the decoy
            PSMs will be taken into account when estimating FDR. Refer to the
