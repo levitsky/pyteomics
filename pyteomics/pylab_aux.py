@@ -258,7 +258,7 @@ def plot_function_contour(x, y, function, **kwargs):
         pylab.contour(X, Y, Z, num_contours,
                 cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
 
-def plot_qvalue_curve(qvalues, **kwargs):
+def plot_qvalue_curve(qvalues, *args, **kwargs):
     """
     Plot a curve with q-values on the X axis and corresponding PSM number
     (starting with ``1``) on the Y axis.
