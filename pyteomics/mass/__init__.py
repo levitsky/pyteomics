@@ -2,5 +2,5 @@ from .mass import *
 try:
     from . import unimod
 except ImportError:
-    # SQLAlchemy is not installed
+    # SQLAlchemy is not available
     pass
