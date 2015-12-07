@@ -100,8 +100,8 @@ def scatter_trend(x, y=None, **kwargs):
         Keyword arguments for :py:func:`pylab.scatter`.
         Empty by default.
     plot_kwargs : dict, optional
-        Keyword arguments for :py:func:`pylab.plot`.
-        Empty by default.
+        Keyword arguments for :py:func:`plot_line`.
+        By default, sets `xlim` and `label`.
     legend_kwargs : dict, optional
         Keyword arguments for :py:func:`pylab.legend`.
         Default is :py:const:`{'loc': 'upper left'}`.
@@ -138,9 +138,11 @@ def scatter_trend(x, y=None, **kwargs):
         x = x[:, 0]
     sc = pylab.scatter(x, y, **kwargs.get('scatter_kwargs', {}))
     xlim = (x.min(), x.max())
-
+    plkw = kwargs.get('plot_kwargs', {}).copy()
+    plkw.setdefault('xlim', xlim)
+    plkw.setdefault('label', equation)
     if kwargs.get('plot_trend', True):
-        line = plot_line(a, b, xlim, label=equation, **kwargs.get('plot_kwargs', {}))
+        line = plot_line(a, b, **plkw)
     else:
         line = None
 
