@@ -1,4 +1,4 @@
-.. automodule:: pyteomics.mass
+.. automodule:: pyteomics.mass.mass
    :exclude-members: Composition
 
    .. automethod:: Composition.__init__

@@ -6,8 +6,8 @@ Summary
 -------
 
 This module defines general functions for mass and isotope abundance
-calculations. For most of the functions, a user may define a studied
-substance in various formats but all of them would be reduced to the
+calculations. For most of the functions, the user can define a given
+substance in various formats, but all of them would be reduced to the
 :py:func:`Composition <Composition.__init__>` object describing its
 chemical composition.
 
@@ -19,7 +19,8 @@ Classes
   composition of a substance.
 
   :py:class:`Unimod` - a class representing a Python interface to the
-  `Unimod database <http://unimod.org/>`_.
+  `Unimod database <http://unimod.org/>`_
+  (see :py:mod:`pyteomics.mass.unimod` for a much more powerful alternative).
 
 Mass calculations
 -----------------
