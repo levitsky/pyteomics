@@ -776,6 +776,10 @@ class Unimod():
     The list of all modifications can be retrieved via `mods` attribute.
     Methods for convenient searching are `by_title` and `by_name`.
     For more elaborate filtering, iterate manually over the list.
+    
+    .. note::
+        See :py:mod:`pyteomics.mass.unimod` for a new alternative class with
+        more features.
     """
 
     def __init__(self, source='http://www.unimod.org/xml/unimod.xml'):
@@ -785,7 +789,7 @@ class Unimod():
         ----------
 
         source : str or file, optional
-            A file-like object or a URL to read from. Don't forget the 'file://'
+            A file-like object or a URL to read from. Don't forget the ``'file://'``
             prefix when pointing to local files.
         """
         from lxml import etree
