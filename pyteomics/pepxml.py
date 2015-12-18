@@ -307,7 +307,7 @@ def is_decoy(psm, prefix='DECOY_'):
     psm : dict
         A dict, as yielded by :py:func:`read`.
     prefix : str, optional
-        A prefix used to mark decoy proteins. Default is "DECOY_".
+        A prefix used to mark decoy proteins. Default is `'DECOY_'`.
 
     Returns
     -------
@@ -366,7 +366,7 @@ def filter_df(*args, **kwargs):
     key : str / iterable / callable, optional
         Default is 'expect'.
     is_decoy : str / iterable / callable, optional
-        Default is to check if all strings in the "protein" column start with "DECOY_"
+        Default is to check if all strings in the "protein" column start with `'DECOY_'`
     *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
 
     Returns

@@ -11,6 +11,7 @@ Contents:
 
    api/parser
    api/mass
+   api/unimod
    api/achrom
    api/electrochem
    api/fasta

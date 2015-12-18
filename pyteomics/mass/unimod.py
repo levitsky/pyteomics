@@ -77,11 +77,11 @@ def preprocess_xml(doc_path):
 
     Parameters
     ----------
-    doc_path: str
+    doc_path : str
 
     Returns
     -------
-    etree.ElementTree
+    out : etree.ElementTree
     """
     tree = etree.parse(doc_path)
     root = tree.getroot()
@@ -100,17 +100,17 @@ def _formula_parser(formula, session):
 
     Parameters
     ----------
-    formula: str
+    formula : str
         A Unimod formula of the form `A(n) B(m)...`
         where A, B, ... are element names or bricks and
         (n), (m)... are parenthesized possibly signed integers or
         omitted in which case they are interpreted as 1
-    session: Session
+    session : Session
         An active SQLAlchemy session for looking up bricks in the database
 
     Returns
     -------
-    CompositionType
+    out : CompositionType
     """
     composition = CompositionType()
     for token in formula.split(' '):
@@ -668,7 +668,21 @@ def session(path='sqlite:///unimod.db'):
 
 
 class Unimod(object):
+    """
+    Main class representing the relational Unimod database.
+    """
     def __init__(self, path=None):
+        """
+        Initialize the object from a database file.
+
+        Parameters
+        ----------
+        path : str or None, optional
+            If :py:class:`str`, should point to a database.
+            Use a dialect-specific prefix, like ``'sqlite://'``.
+            If :py:const:`None` (default), a relational
+            XML file will be downloaded from default location.
+        """
         if path is None:
             self.path = None
             self.session = load(_unimod_xml_download_url)
@@ -684,6 +698,22 @@ class Unimod(object):
                 self.session.query(Modification).first()
 
     def get(self, identifier, strict=True):
+        """
+        Get a modification matching `identifier`.
+        Replaces both :py:mod:`by_name` and :py:mod:`by_title` methods
+        in the old class.
+
+        Parameters
+        ----------
+        identifier : str
+
+        strict : bool, optional
+            Defaults to :py:const:`True`.
+
+        Returns
+        -------
+        out : Modification
+        """
         if isinstance(identifier, int):
             mod = self.session.query(Modification).get(identifier)
             if mod is None:

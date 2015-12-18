@@ -203,7 +203,7 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
         Algorithm of decoy sequence generation. 'reverse' by default.
     prefix : str, optional
         A prefix to the protein descriptions of decoy entries. The default
-        value is 'DECOY_'.
+        value is `'DECOY_'`.
     decoy_only : bool, optional
         If set to :py:const:`True`, only the decoy entries will be written to
         `output`. If :py:const:`False`, the entries from `source` will be
@@ -256,7 +256,7 @@ def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
         Algorithm of decoy sequence generation. 'reverse' by default.
     prefix : str, optional
         A prefix to the protein descriptions of decoy entries. The default
-        value is "DECOY_"
+        value is `'DECOY_'`
     decoy_only : bool, optional
         If set to :py:const:`True`, only the decoy entries will be written to
         `output`. If :py:const:`False`, the entries from `source` will be
