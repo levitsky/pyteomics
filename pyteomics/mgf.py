@@ -201,6 +201,7 @@ _value_converters = {'pepmass': _pepmass_repr, 'charge': _charge_repr}
 def _key_value_line(key, val):
     return _value_converters.get(key, _default_repr)(key, val) + '\n'
 
+@aux._file_writer()
 def write(spectra, output=None, header=''):
     """
     Create a file in MGF format.
@@ -236,56 +237,58 @@ def write(spectra, output=None, header=''):
         written 'as is'. In case of dict, the keys (must be strings) will be
         uppercased.
 
+    file_mode : str, keyword only, optional
+        If `output` is a file name, defines the mode the file will be opened in.
+        Otherwise will be ignored. Default is 'a'.
+
     Returns
     -------
 
     output : file
     """
-    with aux._file_obj(output, 'a') as output:
-
-        if isinstance(header, dict):
-            head_dict = header.copy()
-            head_lines = [_key_value_line(k, v) for k, v in header.items()]
-            head_str = '\n'.join(head_lines)
+    if isinstance(header, dict):
+        head_dict = header.copy()
+        head_lines = [_key_value_line(k, v) for k, v in header.items()]
+        head_str = '\n'.join(head_lines)
+    else:
+        if isinstance(header, str):
+            head_str = header
+            head_lines = header.split('\n')
         else:
-            if isinstance(header, str):
-                head_str = header
-                head_lines = header.split('\n')
-            else:
-                head_lines = list(header)
-                head_str = '\n'.join(header)
-            head_dict = {}
-            for line in head_lines:
-                if not line.strip() or any(
-                    line.startswith(c) for c in _comments):
-                   continue
-                l = line.split('=')
-                if len(l) == 2:
-                    head_dict[l[0].lower()] = l[1].strip()
-        if head_str:
-            output.write(head_str + '\n\n')
+            head_lines = list(header)
+            head_str = '\n'.join(header)
+        head_dict = {}
+        for line in head_lines:
+            if not line.strip() or any(
+                line.startswith(c) for c in _comments):
+               continue
+            l = line.split('=')
+            if len(l) == 2:
+                head_dict[l[0].lower()] = l[1].strip()
+    if head_str:
+        output.write(head_str + '\n\n')
 
-        for spectrum in spectra:
-            output.write('BEGIN IONS\n')
-            found = set()
-            for key in it.chain(_key_order, spectrum['params']):
-                if key not in found and key in spectrum['params']:
-                    found.add(key)
-                    val = spectrum['params'][key]
-                    if val != head_dict.get(key):
-                        output.write(_key_value_line(key, val))
+    for spectrum in spectra:
+        output.write('BEGIN IONS\n')
+        found = set()
+        for key in it.chain(_key_order, spectrum['params']):
+            if key not in found and key in spectrum['params']:
+                found.add(key)
+                val = spectrum['params'][key]
+                if val != head_dict.get(key):
+                    output.write(_key_value_line(key, val))
 
-            try:
-                for m, i, c in zip(spectrum['m/z array'],
-                        spectrum['intensity array'],
-                        spectrum.get('charge array', it.cycle((None,)))):
-                    output.write('{} {} {}\n'.format(
-                        m, i,
-                        (c if c not in (None, np.nan, np.ma.masked) else '')))
-            except KeyError:
-                raise aux.PyteomicsError("'m/z array' and 'intensity array'"
-                        " must be present in all spectra.")
-            output.write('END IONS\n\n')
-        return output
+        try:
+            for m, i, c in zip(spectrum['m/z array'],
+                    spectrum['intensity array'],
+                    spectrum.get('charge array', it.cycle((None,)))):
+                output.write('{} {} {}\n'.format(
+                    m, i,
+                    (c if c not in (None, np.nan, np.ma.masked) else '')))
+        except KeyError:
+            raise aux.PyteomicsError("'m/z array' and 'intensity array'"
+                    " must be present in all spectra.")
+        output.write('END IONS\n\n')
+    return output
 
 chain = aux._make_chain(read, 'read')
