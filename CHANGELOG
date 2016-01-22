@@ -26,6 +26,10 @@ Other changes:
  - :py:mod:`pyteomics.pylab_aux` functions :py:func:`plot_line` and
    :py:func:`scatter_trend` now return the objects they create.
 
+ - Writer functions (:py:func:`pyteomics.mgf.write`, :py:func:`pyteomics.fasta.write`,
+   :py:func:`pyteomics.fasta.write_decoy_db`) now accept a `file_mode` argument that
+   overrides the mode in which the file is opened.
+
 3.1.1
 -----
 

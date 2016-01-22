@@ -131,6 +131,7 @@ def read(source=None, ignore_comments=False, parser=None):
         else:
             accumulated_strings.append(stripped_string)
 
+@aux._file_writer()
 def write(entries, output=None):
     """
     Create a FASTA file with `entries`.
@@ -143,20 +144,21 @@ def write(entries, output=None):
         A file open for writing or a path to write to. If the file exists,
         it will be opened for appending. Default is :py:const:`None`, which
         means write to standard output.
+    file_mode : str, keyword only, optional
+        If `output` is a file name, defines the mode the file will be opened in.
+        Otherwise will be ignored. Default is 'a'.
 
     Returns
     -------
     output_file : file object
         The file where the FASTA is written.
     """
+    for descr, seq in entries:
+        output.write('>' + descr.replace('\n', '\n;') + '\n')
+        output.write(''.join([('%s\n' % seq[i:i+70])
+            for i in range(0, len(seq), 70)]) + '\n')
 
-    with aux._file_obj(output, 'a') as fout:
-        for descr, seq in entries:
-            fout.write('>' + descr.replace('\n', '\n;') + '\n')
-            fout.write(''.join([('%s\n' % seq[i:i+70])
-                for i in range(0, len(seq), 70)]) + '\n')
-
-        return fout.file
+    return output.file
 
 def decoy_sequence(sequence, mode, keep_nterm=False):
     """
@@ -234,6 +236,7 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
     for x in decoy_entries:
         yield x
 
+@aux._file_writer()
 def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
         decoy_only=False, keep_nterm=False):
     """Generate a decoy database out of a given ``source`` and write to file.
@@ -265,16 +268,18 @@ def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
     keep_nterm : bool, optional
         If :py:const:`True`, then the N-terminal residue will be kept.
         Default is :py:const:`False`.
+    file_mode : str, keyword only, optional
+        If `output` is a file name, defines the mode the file will be opened in.
+        Otherwise will be ignored. Default is 'a'.
 
     Returns
     -------
     output : file
         A file object for the created file.
     """
-    with aux._file_obj(output, 'a') as fout, decoy_db(
-            source, mode, prefix, decoy_only, keep_nterm) as entries:
-        write(entries, fout)
-        return fout.file
+    with decoy_db(source, mode, prefix, decoy_only, keep_nterm) as entries:
+        write(entries, output)
+        return output.file
 
 # auxiliary functions for parsing of FASTA headers
 def _split_pairs(s):

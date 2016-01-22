@@ -520,6 +520,22 @@ def _file_reader(_mode='r'):
         return helper
     return decorator
 
+def _file_writer(_mode='a'):
+    def decorator(_func):
+        """A decorator that opens output files for writer functions.
+        """
+        @wraps(_func)
+        def helper(*args, **kwargs):
+            m = kwargs.pop('file_mode', _mode)
+            if len(args) > 1:
+                with _file_obj(args[1], m) as out:
+                    return _func(args[0], out, *args[2:], **kwargs)
+            else:
+                with _file_obj(kwargs.pop('output', None), m) as out:
+                    return _func(*args, output=out, **kwargs)
+        return helper
+    return decorator
+
 def _make_chain(reader, readername, full_output=False):
 
     def concat_results(*args, **kwargs):
@@ -593,19 +609,19 @@ def _make_qvalues(read, is_decoy, key):
             Files to read PSMs from. All positional arguments are treated as
             files. The rest of the arguments must be named.
 
-        key : callable / array-like / iterable / str, optional
+        key : callable / array-like / iterable / str, keyword only, optional
             If callable, a function used for sorting of PSMs. Should accept
             exactly one argument (PSM) and return a number (the smaller the better).
             If array-like, should contain scores for all given PSMs.
             If string, it is used as a field name (PSMs must be in a record array
             or a :py:class:`DataFrame`).
 
-        reverse : bool, optional
+        reverse : bool, keyword only, optional
             If :py:const:`True`, then PSMs are sorted in descending order,
             i.e. the value of the key function is higher for better PSMs.
             Default is :py:const:`False`.
 
-        is_decoy : callable / array-like / iterable / str, optional
+        is_decoy : callable / array-like / iterable / str, keyword only, optional
             If callable, a function used to determine if the PSM is decoy or not.
             Should accept exactly one argument (PSM) and return a truthy value if the
             PSM should be considered decoy.
@@ -617,7 +633,7 @@ def _make_qvalues(read, is_decoy, key):
                 The default function may not work
                 with your files, because format flavours are diverse.
 
-        pep : callable / array-like / iterable / str, optional
+        pep : callable / array-like / iterable / str, keyword only, optional
             If callable, a function used to determine the posterior error probability (PEP).
             Should accept exactly one argument (PSM) and return a float.
             If array-like, should contain float values for all given PSMs.
@@ -629,7 +645,7 @@ def _make_qvalues(read, is_decoy, key):
                `is_decoy`, `remove_decoy`, `formula`, `ratio`, `correction`.
                `key` can still be provided. Without `key`, PSMs will be sorted by PEP.
 
-        remove_decoy : bool, optional
+        remove_decoy : bool, keyword only, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`False`.
 
@@ -640,18 +656,18 @@ def _make_qvalues(read, is_decoy, key):
                to control output FDR, otherwise it's formula 2. This can be
                changed by overriding the `formula` argument.
 
-        formula : int, optional
+        formula : int, keyword only, optional
             Can be either 1 or 2, defines which formula should be used for FDR
             estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
             else 2 (see :py:func:`fdr` for definitions).
 
-        ratio : float, optional
+        ratio : float, keyword only, optional
             The size ratio between the decoy and target databases. Default is
             1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
-        correction : int or float, optional
+        correction : int or float, keyword only, optional
             Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
             Default is 0 (no correction); 1 accounts for the probability that a false
             positive scores better than the first excluded decoy PSM; 2 also corrects
@@ -661,7 +677,7 @@ def _make_qvalues(read, is_decoy, key):
             desired confidence level. E.g., if correction=0.95, then the calculated q-values
             do not exceed the "real" q-values with 95% probability.
 
-        full_output : bool, optional
+        full_output : bool, keyword only, optional
             If :py:const:`True`, then the returned array has PSM objects along
             with scores and q-values. Default is :py:const:`False`.
 
@@ -919,20 +935,20 @@ def _make_filter(read, is_decoy, key, qvalues):
             Files to read PSMs from. All positional arguments are treated as
             files. The rest of the arguments must be named.
 
-        fdr : float, 0 <= fdr <= 1
+        fdr : float, keyword only, 0 <= fdr <= 1
             Desired FDR level.
 
-        key : callable, optional
+        key : callable, keyword only, optional
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better). The
             default is a function that tries to extract e-value from the PSM.
 
-        reverse : bool, optional
+        reverse : bool, keyword only, optional
             If :py:const:`True`, then PSMs are sorted in descending order,
             i.e. the value of the key function is higher for better PSMs.
             Default is :py:const:`False`.
 
-        is_decoy : callable, optional
+        is_decoy : callable, keyword only, optional
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
             PSM should be considered decoy.
@@ -941,7 +957,7 @@ def _make_filter(read, is_decoy, key, qvalues):
                 The default function may not work
                 with your files, because format flavours are diverse.
 
-        remove_decoy : bool, optional
+        remove_decoy : bool, keyword only, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
 
@@ -952,18 +968,18 @@ def _make_filter(read, is_decoy, key, qvalues):
                to control output FDR, otherwise it's formula 2. This can be
                changed by overriding the `formula` argument.
 
-        formula : int, optional
+        formula : int, keyword only, optional
             Can be either 1 or 2, defines which formula should be used for FDR
             estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
             else 2 (see :py:func:`fdr` for definitions).
 
-        ratio : float, optional
+        ratio : float, keyword only, optional
             The size ratio between the decoy and target databases. Default is
             1. In theory, the "size" of the database is the number of
             theoretical peptides eligible for assignment to spectra that are
             produced by *in silico* cleavage of that database.
 
-        correction : int or float, optional
+        correction : int or float, keyword only, optional
             Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
             Default is 0 (no correction); 1 accounts for the probability that a false
             positive scores better than the first excluded decoy PSM; 2 also corrects
@@ -973,7 +989,7 @@ def _make_filter(read, is_decoy, key, qvalues):
             desired confidence level. E.g., if correction=0.95, then the calculated q-values
             do not exceed the "real" q-values with 95% probability.
 
-        pep : callable / array-like / iterable / str, optional
+        pep : callable / array-like / iterable / str, keyword only, optional
             If callable, a function used to determine the posterior error probability (PEP).
             Should accept exactly one argument (PSM) and return a float.
             If array-like, should contain float values for all given PSMs.
@@ -985,7 +1001,7 @@ def _make_filter(read, is_decoy, key, qvalues):
                `is_decoy`, `remove_decoy`, `formula`, `ratio`, `correction`.
                `key` can still be provided. Without `key`, PSMs will be sorted by PEP.
 
-        full_output : bool, optional
+        full_output : bool, keyword only, optional
             If :py:const:`True`, then an array of PSM objects is returned.
             Otherwise, an iterator / context manager object is returned, and the
             files are parsed twice. This saves some RAM, but is ~2x slower.
@@ -1025,7 +1041,7 @@ qvalues.__doc__ =  """Read `args` and return a NumPy array with scores and q-val
         Iterables to read PSMs from. All positional arguments are chained.
         The rest of the arguments must be named.
 
-    key : callable / iterable / array-like / str
+    key : callable / iterable / array-like / str, keyword only
         A function used for sorting of PSMs. If callable, should accept exactly one
         argument (PSM) and return a number (the smaller the better, unless `reverse`
         is :py:const:`True`). If iterator or array-like, must be the same length as
@@ -1033,7 +1049,7 @@ qvalues.__doc__ =  """Read `args` and return a NumPy array with scores and q-val
         and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
         DataFrames.
 
-    is_decoy : callable / iterable / array-like / str
+    is_decoy : callable / iterable / array-like / str, keyword only
         A function used to determine if the PSM is decoy or not. If callable, should
         accept exactly one argument (PSM) and return a truthy value if the
         PSM should be considered decoy. If iterator or array-like, must be the same length as
@@ -1041,12 +1057,12 @@ qvalues.__doc__ =  """Read `args` and return a NumPy array with scores and q-val
         and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
         DataFrames.
 
-    reverse : bool, optional
+    reverse : bool, keyword only, optional
         If :py:const:`True`, then PSMs are sorted in descending order,
         i.e. the value of the key function is higher for better PSMs.
         Default is :py:const:`False`.
 
-    remove_decoy : bool, optional
+    remove_decoy : bool, keyword only, optional
         Defines whether decoy matches should be removed from the output.
         Default is :py:const:`False`.
 
@@ -1057,18 +1073,18 @@ qvalues.__doc__ =  """Read `args` and return a NumPy array with scores and q-val
            to control output FDR, otherwise it's formula 2. This can be
            changed by overriding the `formula` argument.
 
-    formula : int, optional
+    formula : int, keyword only, optional
         Can be either 1 or 2, defines which formula should be used for FDR
         estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
         else 2 (see :py:func:`fdr` for definitions).
 
-    ratio : float, optional
+    ratio : float, keyword only, optional
         The size ratio between the decoy and target databases. Default is
         1. In theory, the "size" of the database is the number of
         theoretical peptides eligible for assignment to spectra that are
         produced by *in silico* cleavage of that database.
 
-    correction : int or float, optional
+    correction : int or float, keyword only, optional
         Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
         Default is 0 (no correction); 1 accounts for the probability that a false
         positive scores better than the first excluded decoy PSM; 2 also corrects
@@ -1078,7 +1094,7 @@ qvalues.__doc__ =  """Read `args` and return a NumPy array with scores and q-val
         desired confidence level. E.g., if correction=0.95, then the calculated q-values
         do not exceed the "real" q-values with 95% probability.
 
-    pep : callable / array-like / iterable / str, optional
+    pep : callable / array-like / iterable / str, keyword only, optional
         If callable, a function used to determine the posterior error probability (PEP).
         Should accept exactly one argument (PSM) and return a float.
         If array-like, should contain float values for all given PSMs.
@@ -1090,7 +1106,7 @@ qvalues.__doc__ =  """Read `args` and return a NumPy array with scores and q-val
            `is_decoy`, `remove_decoy`, `formula`, `ratio`, `correction`.
            `key` can still be provided. Without `key`, PSMs will be sorted by PEP.
 
-    full_output : bool, optional
+    full_output : bool, keyword only, optional
         If :py:const:`True`, then the returned array has PSM objects along
         with scores and q-values.
 
@@ -1125,10 +1141,10 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         Containers to read PSMs from. All positional arguments are chained.
         Keyword arguments are not supported, except for those listed below.
 
-    fdr : float, 0 <= fdr <= 1
+    fdr : float, keyword only, 0 <= fdr <= 1
         Desired FDR level.
 
-    key : callable / iterable / array-like / str
+    key : callable / iterable / array-like / str, keyword only
         A function used for sorting of PSMs. If callable, should accept exactly one
         argument (PSM) and return a number (the smaller the better, unless `reverse`
         is :py:const:`True`). If iterator or array-like, must be the same length as
@@ -1136,7 +1152,7 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
         DataFrames.
 
-    is_decoy : callable / iterable / array-like / str
+    is_decoy : callable / iterable / array-like / str, keyword only
         A function used to determine if the PSM is decoy or not. If callable, should
         accept exactly one argument (PSM) and return a truthy value if the
         PSM should be considered decoy. If iterator or array-like, must be the same length as
@@ -1144,7 +1160,7 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
         DataFrames.
 
-    remove_decoy : bool, optional
+    remove_decoy : bool, keyword only, optional
         Defines whether decoy matches should be removed from the output.
         Default is :py:const:`True`.
 
@@ -1155,18 +1171,18 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
            to control output FDR, otherwise it's formula 2. This can be
            changed by overriding the `formula` argument.
 
-    formula : int, optional
+    formula : int, keyword only, optional
         Can be either 1 or 2, defines which formula should be used for FDR
         estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
         else 2 (see :py:func:`fdr` for definitions).
 
-    ratio : float, optional
+    ratio : float, keyword only, optional
         The size ratio between the decoy and target databases. Default is
         1. In theory, the "size" of the database is the number of
         theoretical peptides eligible for assignment to spectra that are
         produced by *in silico* cleavage of that database.
 
-    correction : int or float, optional
+    correction : int or float, keyword only, optional
         Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
         Default is 0 (no correction); 1 accounts for the probability that a false
         positive scores better than the first excluded decoy PSM; 2 also corrects
@@ -1176,7 +1192,7 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         desired confidence level. E.g., if correction=0.95, then the calculated q-values
         do not exceed the "real" q-values with 95% probability.
 
-    pep : callable / array-like / iterable / str, optional
+    pep : callable / array-like / iterable / str, keyword only, optional
         If callable, a function used to determine the posterior error probability (PEP).
         Should accept exactly one argument (PSM) and return a float.
         If array-like, should contain float values for all given PSMs.
@@ -1188,7 +1204,7 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
            `is_decoy`, `remove_decoy`, `formula`, `ratio`, `correction`.
            `key` can still be provided. Without `key`, PSMs will be sorted by PEP.
 
-    full_output : bool, optional
+    full_output : bool, keyword only, optional
         If :py:const:`True`, then an array of PSM objects is returned.
         Otherwise, an iterator / context manager object is returned, and the
         input is read twice. This saves some RAM, but may be slower.
