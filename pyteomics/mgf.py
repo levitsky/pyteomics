@@ -176,7 +176,7 @@ def read_header(source):
             header['charge'] = aux._parse_charge(header['charge'], True)
         return header
 
-_key_order = ['title', 'pepmass', 'rtinseconds', 'charge']
+_default_key_order = ['title', 'pepmass', 'rtinseconds', 'charge']
 
 def _pepmass_repr(k, pepmass):
     outstr = k.upper() + '='
@@ -196,13 +196,11 @@ def _charge_repr(k, charge):
 def _default_repr(key, val):
     return '{}={}'.format(key.upper(), val)
 
-_value_converters = {'pepmass': _pepmass_repr, 'charge': _charge_repr}
-
-def _key_value_line(key, val):
-    return _value_converters.get(key, _default_repr)(key, val) + '\n'
+_default_value_converters = {'pepmass': _pepmass_repr, 'charge': _charge_repr}
 
 @aux._file_writer()
-def write(spectra, output=None, header=''):
+def write(spectra, output=None, header='', key_order=_default_key_order,
+    fragment_format='{} {} {}', param_converters=_default_value_converters):
     """
     Create a file in MGF format.
 
@@ -221,9 +219,6 @@ def write(spectra, output=None, header=''):
         without any format consistency tests. Values can be of any type allowing
         string representation.
 
-        .. note:: Key order is defined by :py:data:`_key_order` variable. Value
-            representation is configured via :py:data:`_value_converters`.
-
         'charge array' can also be specified.
 
     output : str or file or None, optional
@@ -237,6 +232,26 @@ def write(spectra, output=None, header=''):
         written 'as is'. In case of dict, the keys (must be strings) will be
         uppercased.
 
+    fragment_format : str, optional
+        Format string for m/z, intensity and charge of a fragment. Useful to set
+        the number of decimal places and/or suppress writing charges, e.g.:
+        ``format='{:.4f} {:.0f}'``. Default is ``'{} {} {}'``.
+
+        .. note:: if some or all charges are missing, an empty string is substituted
+            instead, so formatting as float or int will raise an exception.
+
+    key_order : list, optional
+        A list of strings specifying the order in which params will be written in
+        the spectrum header. Unlisted keys will be in arbitrary order.
+        Default is :py:data:`_default_key_order`.
+
+        .. note:: This does not affect the order of lines in the global header.
+
+    param_converters : dict, optional
+        A dict mapping parameter names to functions. Each function must accept
+        two arguments (key and value) and return a string.
+        Default is :py:data:`_default_value_converters`.
+
     file_mode : str, keyword only, optional
         If `output` is a file name, defines the mode the file will be opened in.
         Otherwise will be ignored. Default is 'a'.
@@ -246,9 +261,13 @@ def write(spectra, output=None, header=''):
 
     output : file
     """
+    def key_value_line(key, val):
+        return param_converters.get(key, _default_repr)(key, val) + '\n'
+
+    format_str = fragment_format + '\n'
     if isinstance(header, dict):
         head_dict = header.copy()
-        head_lines = [_key_value_line(k, v) for k, v in header.items()]
+        head_lines = [key_value_line(k, v) for k, v in header.items()]
         head_str = '\n'.join(head_lines)
     else:
         if isinstance(header, str):
@@ -271,18 +290,18 @@ def write(spectra, output=None, header=''):
     for spectrum in spectra:
         output.write('BEGIN IONS\n')
         found = set()
-        for key in it.chain(_key_order, spectrum['params']):
+        for key in it.chain(key_order, spectrum['params']):
             if key not in found and key in spectrum['params']:
                 found.add(key)
                 val = spectrum['params'][key]
                 if val != head_dict.get(key):
-                    output.write(_key_value_line(key, val))
+                    output.write(key_value_line(key, val))
 
         try:
             for m, i, c in zip(spectrum['m/z array'],
                     spectrum['intensity array'],
                     spectrum.get('charge array', it.cycle((None,)))):
-                output.write('{} {} {}\n'.format(
+                output.write(format_str.format(
                     m, i,
                     (c if c not in (None, np.nan, np.ma.masked) else '')))
         except KeyError:
