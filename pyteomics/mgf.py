@@ -235,10 +235,15 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
     fragment_format : str, optional
         Format string for m/z, intensity and charge of a fragment. Useful to set
         the number of decimal places and/or suppress writing charges, e.g.:
-        ``format='{:.4f} {:.0f}'``. Default is ``'{} {} {}'``.
+        ``fragment_format='{:.4f} {:.0f}'``. Default is ``'{} {} {}'``.
 
-        .. note:: if some or all charges are missing, an empty string is substituted
-            instead, so formatting as float or int will raise an exception.
+        .. note::
+            See `the docs
+            <https://docs.python.org/library/string.html#format-specification-mini-language>`_
+            for details on writing the format string.
+            If some or all charges are missing, an empty string is substituted
+            instead, so formatting as :py:class:`!float` or :py:class:`!int` will raise an exception.
+            Hence it is safer to just use ``{}`` for charges.
 
     key_order : list, optional
         A list of strings specifying the order in which params will be written in
