@@ -212,8 +212,10 @@ Fix for a memory leak in :py:func:`pyteomics.mzid.get_by_id`, which affects
 -----
 
  - Bugfixes in :py:func:`pyteomics.parser.isoforms`:
-  - handling of the `labels` argument is now in accordance with new policy
-  - solved memory problems when using `max_mods`
+
+   - handling of the `labels` argument is now in accordance with new policy
+   - solved memory problems when using `max_mods`
+
  - :py:func:`pyteomics.parser.cleave` does not require a valid *modX* sequence
    by default.
 
