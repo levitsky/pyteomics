@@ -196,11 +196,11 @@ def _charge_repr(k, charge):
 def _default_repr(key, val):
     return '{}={}'.format(key.upper(), val)
 
-_default_value_converters = {'pepmass': _pepmass_repr, 'charge': _charge_repr}
+_default_value_formatters = {'pepmass': _pepmass_repr, 'charge': _charge_repr}
 
 @aux._file_writer()
 def write(spectra, output=None, header='', key_order=_default_key_order,
-    fragment_format='{} {} {}', param_converters=_default_value_converters):
+    fragment_format='{} {} {}', param_formatters=_default_value_formatters):
     """
     Create a file in MGF format.
 
@@ -252,10 +252,10 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
 
         .. note:: This does not affect the order of lines in the global header.
 
-    param_converters : dict, optional
+    param_formatters : dict, optional
         A dict mapping parameter names to functions. Each function must accept
         two arguments (key and value) and return a string.
-        Default is :py:data:`_default_value_converters`.
+        Default is :py:data:`_default_value_formatters`.
 
     file_mode : str, keyword only, optional
         If `output` is a file name, defines the mode the file will be opened in.
@@ -267,7 +267,7 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
     output : file
     """
     def key_value_line(key, val):
-        return param_converters.get(key, _default_repr)(key, val) + '\n'
+        return param_formatters.get(key, _default_repr)(key, val) + '\n'
 
     format_str = fragment_format + '\n'
     if isinstance(header, dict):
