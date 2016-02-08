@@ -77,6 +77,31 @@ class FastaTest(unittest.TestCase):
         self.assertEqual(all_entries, self.fasta_entries_long +
                 [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long])
 
+    def test_parser_uniprotkb_decoydb(self):
+        header = ('sp|P27748|ACOX_RALEH Acetoin catabolism protein X OS=Ralstonia'
+            ' eutropha (strain ATCC 17699 / H16 / DSM 428 / Stanier 337)'
+            ' GN=acoX PE=4 SV=2')
+        sequence = 'SEQUENCE'
+        with tempfile.TemporaryFile(mode='r+') as db:
+            write([(header, sequence)], db)
+            db.seek(0)
+            entries = list(decoy_db(db, prefix='PREFIX_', parser=parse, decoy_only=True))
+
+        parsed = {'GN': 'acoX',
+                 'OS': 'Ralstonia eutropha '
+                    '(strain ATCC 17699 / H16 / DSM 428 / Stanier 337)',
+                 'PE': 4,
+                 'SV': 2,
+                 'db': 'PREFIX_sp',
+                 'entry': 'ACOX_RALEH',
+                 'id': 'P27748',
+                 'gene_id': 'ACOX',
+                 'name': 'Acetoin catabolism protein X',
+                 'taxon': 'RALEH'}
+        self.assertEqual(entries[0][0], parsed)
+        self.assertEqual(entries[0][1], 'SEQUENCE'[::-1])
+        self.assertEqual(len(entries), 1)
+
     def test_parser_uniprotkb(self):
         header = ('sp|P27748|ACOX_RALEH Acetoin catabolism protein X OS=Ralstonia'
             ' eutropha (strain ATCC 17699 / H16 / DSM 428 / Stanier 337)'
