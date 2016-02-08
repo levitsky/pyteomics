@@ -193,7 +193,7 @@ def decoy_sequence(sequence, mode, keep_nterm=False):
 
 @aux._file_reader()
 def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
-        keep_nterm=False):
+        keep_nterm=False, ignore_comments=False, parser=None):
     """Iterate over sequences for a decoy database out of a given ``source``.
 
     Parameters
@@ -214,7 +214,17 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
     keep_nterm : bool, optional
         If :py:const:`True`, then the N-terminal residue will be kept.
         Default is :py:const:`False`.
-
+    ignore_comments : bool, optional
+        If True then ignore the second and subsequent lines of description.
+        Default is :py:const:`False`.
+    parser : function or None, optional
+        Defines whether the fasta descriptions should be parsed. If it is a
+        function, that function will be given the description string, and
+        the returned value will be yielded together with the sequence.
+        The :py:data:`std_parsers` dict has parsers for several formats.
+        Hint: specify :py:func:`parse` as the parser to apply automatic
+        format guessing.
+        Default is :py:const:`None`, which means return the header "as is".
     Returns
     -------
     out : iterator
@@ -224,17 +234,17 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
     # store the initial position
     pos = source.tell()
     if not decoy_only:
-        for x in read(source):
-            yield x
+        with read(source, ignore_comments, parser) as f:
+            for x in f:
+                yield x
+        # return to the initial position in the source file to read again
+        source.seek(pos)
 
-    # return to the initial position in the source file to read again
-    source.seek(pos)
-
-    decoy_entries = (Protein(prefix + descr, decoy_sequence(seq, mode, keep_nterm))
-        for descr, seq in read(source))
-
-    for x in decoy_entries:
-        yield x
+    parser = parser or (lambda x: x)
+    with read(source, ignore_comments) as f:
+        for descr, seq in f:
+            yield Protein(parser(prefix + descr), decoy_sequence(seq, mode, keep_nterm))
+    
 
 @aux._file_writer()
 def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',

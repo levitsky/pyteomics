@@ -34,6 +34,9 @@ Other changes:
    intensity and charge values using the optinal `fragment_format` argument. Key order and
    key-value parameter formatters are now also handled via optional arguments.
 
+ - :py:func:`pyteomics.fasta.decoy_db` now supports `ignore_comments` and `parser` arguments.
+
+
 3.1.1
 -----
 
