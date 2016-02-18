@@ -17,6 +17,7 @@ Pyteomics uses the following python packages:
    :py:mod:`pyteomics.tandem`)
  - `pandas <http://pandas.pydata.org/>`_ (can be used with :py:mod:`pyteomics.pepxml`,
    :py:mod:`pyteomics.tandem`, :py:mod:`pyteomics.auxiliary`)
+ - `sqlalchemy <http://www.sqlalchemy.org/>`_ (used by :py:mod:`pyteomics.mass.unimod`)
 
 GNU/Linux
 ---------
