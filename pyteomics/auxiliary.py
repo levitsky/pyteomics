@@ -109,7 +109,7 @@ class PyteomicsError(Exception):
 
 def linear_regression_vertical(x, y=None, a=None, b=None):
     """Calculate coefficients of a linear regression y = a * x + b.
-    The fit minimizes perpendicular distances between the points and the line.
+    The fit minimizes *vertical* distances between the points and the line.
 
     Requires :py:mod:`numpy`.
 
@@ -160,7 +160,7 @@ def linear_regression(x, y=None, a=None, b=None):
 
 def linear_regression_perpendicular(x, y=None):
     """Calculate coefficients of a linear regression y = a * x + b.
-    The fit minimizes perpendicular distances between the points and the line.
+    The fit minimizes *perpendicular* distances between the points and the line.
 
     Requires :py:mod:`numpy`.
 
