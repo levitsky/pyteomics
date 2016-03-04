@@ -98,7 +98,7 @@ References
 
 from . import parser
 from .auxiliary import PyteomicsError
-
+from collections import Iterable
 
 def charge(sequence, pH, **kwargs):
     """Calculate the charge of a polypeptide in given pH or list of pHs using
@@ -121,8 +121,8 @@ def charge(sequence, pH, **kwargs):
     sequence : str or list or dict
         A string with a polypeptide sequence, a list with a parsed
         sequence or a dict of amino acid composition.
-    pH : float or list of floats
-        pH or list of pHs for which the charge is calculated.
+    pH : float or iterable of floats
+        pH or iterable of pHs for which the charge is calculated.
     pK : dict {str: [(float, int), ...]}, optional
         A set of pK of amino acids' ionizable groups. It is a dict, where keys
         are amino acid labels and the values are lists of tuples (pK,
@@ -214,7 +214,7 @@ def charge(sequence, pH, **kwargs):
             pK[cterm] = pK_cterm[cterm][c_aa]
 
     # Process the case when pH is a single float.
-    pH_list = pH if isinstance(pH, list) else [pH,]
+    pH_list = pH if isinstance(pH, Iterable) else [pH,]
 
     # Check if a sequence was parsed with `show_unmodified_termini` enabled.
 
@@ -402,8 +402,7 @@ pK_cterm_bjellqvist = {
         }
     }
 """
-A set of C
--terminal pK from Bjellqvist, B., Basse, B., Olsen, E. and Celis, J.E.
+A set of C-terminal pK from Bjellqvist, B., Basse, B., Olsen, E. and Celis, J.E.
 Reference points for comparisons of two-dimensional maps of proteins from
 different human cell types defined in a pH scale where isoelectric points
 correlate with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
@@ -413,4 +412,3 @@ if __name__ == "__main__":
     import doctest
 
     doctest.testmod()
-
