@@ -62,19 +62,16 @@ class ParserTest(unittest.TestCase):
     def test_cleave(self):
         for seq in self.simple_sequences:
             for elem in cleave(
-                    seq, expasy_rules['trypsin'], int(random.uniform(1, 10)),
-                    labels=uppercase):
+                    seq, expasy_rules['trypsin'], int(random.uniform(1, 10))):
                 self.assertIn(elem, seq)
             self.assertTrue(any(elem == seq
-                for elem in cleave(seq, expasy_rules['trypsin'], len(seq),
-                    labels=uppercase)))
+                for elem in cleave(seq, expasy_rules['trypsin'], len(seq))))
 
     def test_cleave_min_length(self):
         for seq in self.simple_sequences:
             ml = random.uniform(1, 5)
             for elem in cleave(
-                    seq, expasy_rules['trypsin'], int(random.uniform(1, 10)),
-                    ml, labels=uppercase):
+                    seq, expasy_rules['trypsin'], int(random.uniform(1, 10)), ml):
                 self.assertTrue(len(elem) >= ml)
 
     def test_num_sites(self):
