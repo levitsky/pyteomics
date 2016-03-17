@@ -1,3 +1,13 @@
+3.2.1
+-----
+
+API changes
+...........
+
+ - :py:func:`pyteomics.parser.cleave` no longer accepts the `labels` argument.
+   It is emphasized that the input sequences are expected to be in plain one-letter
+   notation, but no checks are performed.
+
 3.2
 ---
 
