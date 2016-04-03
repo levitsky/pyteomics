@@ -63,7 +63,13 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 import numpy as np
 import zlib
 import base64
+import re
 from . import xml, auxiliary as aux
+from .xml import etree
+
+
+
+
 
 def _decode_base64_data_array(source, dtype, is_compressed):
     """Read a base64-encoded binary array.
@@ -245,3 +251,182 @@ def iterfind(source, path, **kwargs):
 version_info = xml._make_version_info(MzML)
 
 chain = aux._make_chain(read, 'read')
+
+
+def read_from_start(obj):
+    """
+    Given an object, try to get a reader for it that is located
+    at the start of the file. If given an actual file object, this function
+    will seek to the start of the file.
+
+    Parameters
+    ----------
+    obj : str or file-like
+        The object to acquire a reader on
+
+    Returns
+    -------
+    file
+    """
+    if hasattr(obj, 'closed'):
+        if obj.closed:
+            obj = open(obj.name)
+        obj.seek(0)
+        return obj
+    else:
+        return open(obj)
+
+
+def find_index_list_offset(file_obj):
+    """
+    Search relative to the bottom of the file upwards to find the offsets
+    of the index lists.
+
+    Parameters
+    ----------
+    file_obj : str or file-like
+        File to search. Opened with :func:`read_from_start`
+
+    Returns
+    -------
+    list of int
+        A list of byte offsets for `<indexList>` elements
+    """
+    f = read_from_start(file_obj)
+    f.seek(-1024, 2)
+    text = f.read(1024)
+    index_offsets = list(map(int, re.findall(r"<indexListOffset>(\d+)</indexListOffset>", text)))
+    f.close()
+    return index_offsets
+
+
+def find_index_list(file_obj):
+    """
+    Extract lists of index offsets from the end of the file.
+
+    Parameters
+    ----------
+    file_obj : str or file-like
+        File to extract indices from. Opened with :func:`read_from_start`
+
+    Returns
+    -------
+    dict of str -> dict of str -> int
+    """
+    offsets = find_index_list_offset(file_obj)
+    index_list = {}
+    name_pattern = re.compile(r"<index name=\"(\S+)\">")
+    offset_pattern = re.compile(r"<offset idRef=\"([^\"]+)\">(\d+)</offset>")
+    end_pattern = re.compile(r"</index>")
+    for offset in offsets:
+        # Sometimes the offset is at the very beginning of the file,
+        # due to a bug in an older version of ProteoWizard. If this crude
+        # check fails, don't bother searching the entire file, and fall back
+        # on the base class's mechanisms.
+        #
+        # Alternative behavior here would be to start searching for the start
+        # of the index from the bottom of the file, but this version of Proteowizard
+        # also emits invalid offsets which do not improve retrieval time.
+        if offset < 1024:
+            continue
+        f = read_from_start(file_obj)
+        f.seek(offset)
+        index_offsets = {}
+        index_name = None
+        for line in f:
+            # print line
+            match = name_pattern.search(line)
+            if match:
+                index_name = match.groups()[0]
+                continue
+            match = offset_pattern.search(line)
+            if match:
+                id_ref, offset = match.groups()
+                offset = int(offset)
+                index_offsets[id_ref] = offset
+                continue
+            match = end_pattern.search(line)
+            if match:
+                index_list[index_name] = index_offsets
+                index_offsets = {}
+    return index_list
+
+
+class IndexedMzML(MzML):
+    def __init__(self, *args, **kwargs):
+        super(IndexedMzML, self).__init__(*args, **kwargs)
+        self._offset_index = None
+        self.reset()
+        self._build_index()
+        self.reset()
+
+    def _build_index(self):
+        """
+        Build up a `dict` of `dict` of offsets for elements. Calls :func:`find_index_list`
+        on :attr:`_source` and assigns the return value to :attr:`_offset_index`
+        """
+        self._offset_index = find_index_list(self._source)
+
+    def _find_by_id_no_reset(self, elem_id):
+        """
+        An almost exact copy of :meth:`get_by_id` with the difference that it does
+        not reset the file reader's position before iterative parsing.
+
+        Parameters
+        ----------
+        elem_id : str
+            The element id to query for
+
+        Returns
+        -------
+        lxml.Element
+        """
+        found = False
+        for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True):
+            if event == 'start':
+                if elem.attrib.get("id") == elem_id:
+                    found = True
+            else:
+                if elem.attrib.get("id") == elem_id:
+                    return elem
+                if not found:
+                    elem.clear()
+
+    def get_by_id(self, elem_id):
+        """
+        Retrieve the requested entity by its id. If the entity
+        is a spectrum described in the offset index, it will be retrieved
+        by immediately seeking to the starting position of the entry, otherwise
+        falling back to parsing from the start of the file.
+
+        Parameters
+        ----------
+        elem_id : str
+            The id value of the entity to retrieve.
+
+        Returns
+        -------
+        dict
+        """
+        try:
+            index = self._offset_index['spectrum']
+            offset = index[elem_id]
+            self._source.seek(offset)
+            elem = self._find_by_id_no_reset(elem_id)
+            data = self._get_info_smart(elem, recursive=True)
+            return data
+        except KeyError:
+            return super(IndexedMzML, self).get_by_id(elem_id)
+
+    def __getitem__(self, elem_id):
+        return self.get_by_id(elem_id)
+
+    def __iter__(self):
+        try:
+            index = self._offset_index['spectrum'].items()
+            items = sorted(index, key=lambda x: x[1])
+            for scan_id, offset in items:
+                yield self.get_by_id(scan_id)
+        except KeyError:
+            for scan in self.iterfind('spectrum'):
+                yield scan
