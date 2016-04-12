@@ -9,7 +9,7 @@ mzML is a standard rich XML-format for raw mass spectrometry data storage.
 Please refer to http://www.psidev.info/index.php?q=node/257 for the detailed
 specification of the format and the structure of mzML files.
 
-This module provides a minimalistic way to extract information from mzIdentML
+This module provides a minimalistic way to extract information from mzML
 files. You can use the old functional interface (:py:func:`read`) or the new
 object-oriented interface (:py:class:`MzML`) to iterate over entries in
 ``<spectrum>`` elements.
@@ -63,7 +63,6 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 import numpy as np
 import zlib
 import base64
-import re
 from . import xml, auxiliary as aux
 from .xml import etree
 
@@ -253,30 +252,7 @@ version_info = xml._make_version_info(MzML)
 chain = aux._make_chain(read, 'read')
 
 
-def read_from_start(obj):
-    """
-    Given an object, try to get a reader for it that is located
-    at the start of the file. If given an actual file object, this function
-    will seek to the start of the file.
-
-    Parameters
-    ----------
-    obj : str or file-like
-        The object to acquire a reader on
-
-    Returns
-    -------
-    file
-    """
-    if hasattr(obj, 'closed'):
-        if obj.closed:
-            obj = open(obj.name)
-        obj.seek(0)
-        return obj
-    else:
-        return open(obj)
-
-
+@aux._keepstate
 def find_index_list_offset(file_obj):
     """
     Search relative to the bottom of the file upwards to find the offsets
@@ -285,21 +261,20 @@ def find_index_list_offset(file_obj):
     Parameters
     ----------
     file_obj : str or file-like
-        File to search. Opened with :func:`read_from_start`
+        File to search.
 
     Returns
     -------
     list of int
         A list of byte offsets for `<indexList>` elements
     """
-    f = read_from_start(file_obj)
-    f.seek(-1024, 2)
-    text = f.read(1024)
+    file_obj.seek(-1024, 2)
+    text = file_obj.read(1024)
     index_offsets = list(map(int, re.findall(r"<indexListOffset>(\d+)</indexListOffset>", text)))
-    f.close()
     return index_offsets
 
 
+@aux._keepstate
 def find_index_list(file_obj):
     """
     Extract lists of index offsets from the end of the file.
@@ -307,7 +282,7 @@ def find_index_list(file_obj):
     Parameters
     ----------
     file_obj : str or file-like
-        File to extract indices from. Opened with :func:`read_from_start`
+        File to extract indices from.
 
     Returns
     -------
@@ -315,9 +290,6 @@ def find_index_list(file_obj):
     """
     offsets = find_index_list_offset(file_obj)
     index_list = {}
-    name_pattern = re.compile(r"<index name=\"(\S+)\">")
-    offset_pattern = re.compile(r"<offset idRef=\"([^\"]+)\">(\d+)</offset>")
-    end_pattern = re.compile(r"</index>")
     for offset in offsets:
         # Sometimes the offset is at the very beginning of the file,
         # due to a bug in an older version of ProteoWizard. If this crude
@@ -329,27 +301,30 @@ def find_index_list(file_obj):
         # also emits invalid offsets which do not improve retrieval time.
         if offset < 1024:
             continue
-        f = read_from_start(file_obj)
-        f.seek(offset)
-        index_offsets = {}
-        index_name = None
-        for line in f:
-            # print line
-            match = name_pattern.search(line)
-            if match:
-                index_name = match.groups()[0]
-                continue
-            match = offset_pattern.search(line)
-            if match:
-                id_ref, offset = match.groups()
-                offset = int(offset)
-                index_offsets[id_ref] = offset
-                continue
-            match = end_pattern.search(line)
-            if match:
-                index_list[index_name] = index_offsets
-                index_offsets = {}
+        index_list.update(_iterparse_index_list(file_obj, offset))
     return index_list
+
+
+@aux._keepstate
+def _iterparse_index_list(file_obj, offset):
+    index_map = {}
+    index = {}
+    file_obj.seek(offset)
+    try:
+        for event, elem in etree.iterparse(file_obj, events=('start', 'end'), remove_comments=True):
+            if event == 'start':
+                if elem.tag == 'index':
+                    index = {}
+                    index_map[elem.attrib['name']] = index
+            else:
+                if elem.tag == "offset":
+                    index[elem.attrib['idRef']] = int(elem.text)
+                elem.clear()
+    except etree.XMLSyntaxError:
+        # The iteration has reached the end of the indexList tag and the parser
+        # encounters the later elements in the document.
+        pass
+    return index_map
 
 
 class IndexedMzML(MzML):
@@ -415,7 +390,7 @@ class IndexedMzML(MzML):
             elem = self._find_by_id_no_reset(elem_id)
             data = self._get_info_smart(elem, recursive=True)
             return data
-        except KeyError:
+        except KeyError, etree.LxmlError:
             return super(IndexedMzML, self).get_by_id(elem_id)
 
     def __getitem__(self, elem_id):

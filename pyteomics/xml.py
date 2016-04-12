@@ -37,7 +37,9 @@ import operator as op
 import ast
 import numpy as np
 from lxml import etree
-from .auxiliary import FileReader, PyteomicsError
+import re
+from collections import OrderedDict, defaultdict
+from .auxiliary import FileReader, PyteomicsError, _keepstate as _keepstate_free_fn
 try: # Python 2.7
     from urllib2 import urlopen, URLError
 except ImportError: # Python 3.x
@@ -541,6 +543,75 @@ def _make_version_info(cls):
     """.format(cls)
     return version_info
 
+
+def generate_offsets(file_obj, names):
+    """
+    Iterate over the lines of an XML file where each line contains exactly one tag,
+    tracking the byte count for each line. When a line contains a tag whose name matches
+    a name in `names`, yield the byte offset, the tag type, and it's attributes.
+
+    Parameters
+    ----------
+    file_obj : file
+        File to parse
+    names : str or iterable of str
+        The name or names to yield byte offsets for
+
+    Yields
+    ------
+    offset : int
+        The byte offset of a matched tag's opening line
+    tag_type : str
+        The type of tag matched
+    attr_dict : dict
+        The attributes on the matched tag
+    """
+    i = 0
+    if isinstance(names, basestring):
+        names = [names]
+    packed = "|".join(names)
+    pattern = re.compile(r"^[ ]*<(%s)\s" % packed)
+    attrs = re.compile(r"(\S+)=\"(\S+)\"")
+    for line in file_obj:
+        match = pattern.match(line)
+        if match:
+            yield i, match.group(1), dict(attrs.findall(line))
+        i += len(line)
+
+
+@_keepstate_free_fn
+def build_byte_index(file_obj, names, lookup_id_key_mapping=None):
+    """
+    Builds a byte offset index for one or more types of tags.
+
+    Parameters
+    ----------
+    file_obj : file-like-object
+    names : str or iterable of str
+        The names of tags to build indices for
+    lookup_id_key_mapping : Mapping, optional
+        A mapping from tag name to the attribute to look up the identity
+        for each entity of that type to be extracted. Defaults to 'id' for
+        each type of tag.
+
+    Returns
+    -------
+    defaultdict(OrderedDict)
+        Mapping from tag type to OrderedDict from identifier to byte offset
+    """
+    if lookup_id_key_mapping is None:
+        lookup_id_key_mapping = {}
+
+    if isinstance(names, basestring):
+        names = [names]
+
+    for name in names:
+        lookup_id_key_mapping.setdefault(name, "id")
+    indices = defaultdict(OrderedDict)
+    g = generate_offsets(file_obj, names)
+    for offset, offset_type, attrs in g:
+        indices[offset_type][attrs[lookup_id_key_mapping[offset_type]]] = offset
+    return indices
 
 
 _mzid_schema_defaults = {'ints': {('DBSequence', 'length'),
