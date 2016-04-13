@@ -8,6 +8,11 @@ API changes
    It is emphasized that the input sequences are expected to be in plain one-letter
    notation, but no checks are performed.
 
+ - :py:func:`DataFrame` functions in :py:mod:`pepxml` and :py:mod:`tandem` now
+   extract more protein-related information. The list-like protein-related values
+   can be reported as lists or packed into strings, depending on the optional
+   paramter `sep`. Some column names have changed as a result.
+
 3.2
 ---
 
