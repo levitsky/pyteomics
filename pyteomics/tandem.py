@@ -255,12 +255,21 @@ def DataFrame(*args, **kwargs):
     ----------
     *args, **kwargs : passed to :py:func:`chain`
 
+    sep : str or None, optional
+        Some values related to PSMs (such as protein information) are variable-length
+        lists. If `sep` is a :py:class:`str`, they will be packed into single string using
+        this delimiter. If `sep` is :py:const:`None`, they are kept as lists. Default is
+        :py:const:`None`.
+
     Returns
     -------
     out : pandas.DataFrame
     """
     import pandas as pd
     data = []
+    prot_keys = ['id', 'uid', 'label', 'expect']
+    pep_keys = ['id', 'pre', 'post', 'start', 'end']
+    sep = kwargs.pop('sep', None)
     with chain(*args, **kwargs) as f:
         for item in f:
             info = {}
@@ -268,10 +277,24 @@ def DataFrame(*args, **kwargs):
                 if isinstance(v, (str, int, float)):
                     info[k] = v
             protein = item['protein'][0]
-            info['protein_expect'] = protein['expect']
-            info['proteins'] = ';'.join(prot['label'] for prot in item['protein'])
+            
+            for key in prot_keys:
+                vals = [prot.get(key) for prot in item['protein']]
+                if sep is not None:
+                    vals = sep.join(str(val) if val is not None else '' for val in vals)
+                info['protein_' + key] = vals
+            for key in pep_keys:
+                vals = [prot['peptide'].get(key) for prot in item['protein']]
+                if sep is not None:
+                    vals = sep.join(str(val) if val is not None else '' for val in vals)
+                info['peptide_' + key] = vals
             aa = protein['peptide'].pop('aa', [])
             info['modifications'] = ','.join('{0[modified]:.3f}@{0[type]}'.format(x) for x in aa)
+            for k in prot_keys:
+                protein.pop(k, None)
+            for k in pep_keys:
+                protein['peptide'].pop(k, None)
+            del protein['peptide']['peptide']
             info.update(protein['peptide'])
             info['scan'] = item['support']['fragment ion mass spectrum']['note']
             data.append(info)
@@ -296,12 +319,17 @@ def filter_df(*args, **kwargs):
     out : pandas.DataFrame
     """
     import pandas as pd
+    sep = kwargs.get('sep')
     kwargs.setdefault('key', 'expect')
     if all(isinstance(arg, pd.DataFrame) for arg in args):
         df = pd.concat(args)
     else:
-        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema'] if k in kwargs}
+        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep'] if k in kwargs}
         df = DataFrame(*args, **read_kw)
-    kwargs.setdefault('is_decoy',
-        df['proteins'].str.split(';').apply(lambda s: all(x.startswith('DECOY') for x in s)))
+    if sep is not None:
+        kwargs.setdefault('is_decoy',
+            df['protein_label'].str.split(sep).apply(lambda s: all(x.startswith('DECOY') for x in s)))
+    else:
+        kwargs.setdefault('is_decoy',
+            df['protein_label'].apply(lambda s: all(x.startswith('DECOY') for x in s)))
     return aux.filter(df, **kwargs)
