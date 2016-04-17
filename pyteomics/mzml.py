@@ -63,12 +63,9 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 import numpy as np
 import zlib
 import base64
+import re
 from . import xml, auxiliary as aux
 from .xml import etree
-
-
-
-
 
 def _decode_base64_data_array(source, dtype, is_compressed):
     """Read a base64-encoded binary array.
@@ -270,7 +267,7 @@ def find_index_list_offset(file_obj):
     """
     file_obj.seek(-1024, 2)
     text = file_obj.read(1024)
-    index_offsets = list(map(int, re.findall(r"<indexListOffset>(\d+)</indexListOffset>", text)))
+    index_offsets = list(map(int, re.findall(br"<indexListOffset>(\d+)</indexListOffset>", text)))
     return index_offsets
 
 
@@ -390,7 +387,7 @@ class IndexedMzML(MzML):
             elem = self._find_by_id_no_reset(elem_id)
             data = self._get_info_smart(elem, recursive=True)
             return data
-        except KeyError, etree.LxmlError:
+        except (KeyError, etree.LxmlError):
             return super(IndexedMzML, self).get_by_id(elem_id)
 
     def __getitem__(self, elem_id):
