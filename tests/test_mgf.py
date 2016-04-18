@@ -4,7 +4,7 @@ pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir
 import tempfile
 import unittest
 from pyteomics.mgf import *
-from data import mgf_spectra_long, mgf_spectra_short
+import data
 
 class MGFTest(unittest.TestCase):
     maxDiff = None
@@ -25,12 +25,30 @@ class MGFTest(unittest.TestCase):
 
     def test_read(self):
         # http://stackoverflow.com/q/14246983/1258041
-        self.assertEqual(mgf_spectra_long, list(read(self.path)))
-        self.assertEqual(mgf_spectra_short, list(read(self.path, False)))
+        self.assertEqual(data.mgf_spectra_long, list(read(self.path)))
+        self.assertEqual(data.mgf_spectra_short, list(read(self.path, False)))
         with read(self.path) as reader:
-            self.assertEqual(mgf_spectra_long, list(reader))
+            self.assertEqual(data.mgf_spectra_long, list(reader))
         with read(self.path, False) as reader:
-            self.assertEqual(mgf_spectra_short, list(reader))
+            self.assertEqual(data.mgf_spectra_short, list(reader))
+
+    def test_read_no_charges(self):
+        with read(self.path, skip_charges=True) as reader:
+            self.assertEqual(data.mgf_spectra_long_no_charges, list(reader))
+        with read(self.path, False, skip_charges=True) as reader:
+            self.assertEqual(data.mgf_spectra_short_no_charges, list(reader))
+
+    def test_read_array_conversion(self):
+        with read(self.path, convert_arrays='none') as reader:
+            self.assertEqual(data.mgf_spectra_lists, list(reader))
+        with read(self.path, convert_arrays='full') as reader:
+            s = next(reader)
+            self.assertTrue(isinstance(s['charge array'], np.ma.core.MaskedArray))
+            self.assertTrue(isinstance(s['m/z array'], np.ndarray))
+        with read(self.path, convert_arrays='regular') as reader:
+            s = next(reader)
+            self.assertTrue(isinstance(s['charge array'], np.ndarray))
+            self.assertTrue(isinstance(s['m/z array'], np.ndarray))
 
     def test_header(self):
         self.assertEqual(self.header, self.header2)
@@ -40,8 +58,8 @@ class MGFTest(unittest.TestCase):
 
     def test_readwrite_keys(self):
         for s, s2 in zip(self.spectra, self.spectra2):
-            self.assertEqual(set(s.keys()), set(s2.keys()))
-            self.assertEqual(set(s.keys()),
+            self.assertEqual(set(s), set(s2))
+            self.assertEqual(set(s),
                     {'intensity array', 'm/z array', 'params', 'charge array'})
 
     def test_readwrite_params(self):
