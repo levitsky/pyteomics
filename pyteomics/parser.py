@@ -543,11 +543,16 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None):
     :py:func:`cleave` for explanation of parameters.
     """
     peptides = []
-    cleavage_sites = deque([0], maxlen=missed_cleavages+2)
-    for i in it.chain(map(lambda x: x.end(), re.finditer(rule, sequence)),
+    ml = missed_cleavages+2
+    trange = range(ml)
+    cleavage_sites = deque([0], maxlen=ml)
+    cl = 1
+    for i in it.chain([x.end() for x in re.finditer(rule, sequence)],
                    [None]):
         cleavage_sites.append(i)
-        for j in range(len(cleavage_sites)-1):
+        if cl < ml:
+            cl += 1
+        for j in trange[:cl-1]:
             seq = sequence[cleavage_sites[j]:cleavage_sites[-1]]
             if seq:
                 if min_length is None or len(seq) >= min_length:
