@@ -5,6 +5,8 @@
    allow using it without :py:mod:`numpy` and possibly improving performance.
    The default behavior is retained.
 
+ - Performance optimizations in :py:func:`mgf.read` and :py:func:`parser.cleave`.
+
 API changes
 ...........
 
