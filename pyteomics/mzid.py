@@ -291,3 +291,12 @@ _key = lambda x: min(
 qvalues = aux._make_qvalues(chain, is_decoy, _key)
 filter = aux._make_filter(chain, is_decoy, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter', True)
+
+
+class IndexedMzIdentML(MzIdentML, xml.IndexedXML):
+    _indexed_tags = {
+        "PeptideEvidence", "SpectrumIdentificationItem", "SearchDatabase",
+        "DBSequence", "SpectraData", "Peptide"}
+
+    def __init__(self, *args, **kwargs):
+        super(IndexedMzIdentML, self).__init__(*args, **kwargs)

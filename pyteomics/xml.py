@@ -544,6 +544,38 @@ def _make_version_info(cls):
     return version_info
 
 
+def _index_finding_chunker(file_obj, read_size=100000):
+    """
+    Read a file in large blocks and chunk up each block into parts
+    resembling XML tags, yielding each chunk.
+    
+    Assumes the file is opened in binary mode.
+    """
+    f = file_obj
+    delim = b"<"
+    buff = f.read(read_size)
+    parts = buff.split(delim)
+    tail = parts[-1]
+    front = parts[:-1]
+    for part in front:
+        if part == b"":
+            continue
+        yield delim + part
+    running = True
+    while running:
+        buff = f.read(read_size)
+        if len(buff) == 0:
+            running = False
+            buff = tail
+        else:
+            buff = tail + buff
+        parts = buff.split(delim)
+        tail = parts[-1]
+        front = parts[:-1]
+        for part in front:
+            yield delim + part
+
+
 def generate_offsets(file_obj, names):
     """
     Iterate over the lines of an XML file where each line contains exactly one tag,
@@ -554,25 +586,25 @@ def generate_offsets(file_obj, names):
     ----------
     file_obj : file
         File to parse
-    names : str or iterable of str
+    names : bytes or iterable of bytes
         The name or names to yield byte offsets for
 
     Yields
     ------
     offset : int
         The byte offset of a matched tag's opening line
-    tag_type : str
+    tag_type : bytes
         The type of tag matched
     attr_dict : dict
         The attributes on the matched tag
     """
     i = 0
-    if isinstance(names, basestring):
+    if isinstance(names, bytes):
         names = [names]
-    packed = "|".join(names)
-    pattern = re.compile(r"^[ ]*<(%s)\s" % packed)
-    attrs = re.compile(r"(\S+)=\"(\S+)\"")
-    for line in file_obj:
+    packed = b"|".join(names)
+    pattern = re.compile(br"^\s*<(%s)\s" % packed)
+    attrs = re.compile(br"(\S+)=[\"']([^\"']+)[\"']")
+    for line in _index_finding_chunker(file_obj):
         match = pattern.match(line)
         if match:
             yield i, match.group(1), dict(attrs.findall(line))
@@ -587,7 +619,7 @@ def build_byte_index(file_obj, names, lookup_id_key_mapping=None):
     Parameters
     ----------
     file_obj : file-like-object
-    names : str or iterable of str
+    names : bytes or iterable of bytes
         The names of tags to build indices for
     lookup_id_key_mapping : Mapping, optional
         A mapping from tag name to the attribute to look up the identity
@@ -602,7 +634,7 @@ def build_byte_index(file_obj, names, lookup_id_key_mapping=None):
     if lookup_id_key_mapping is None:
         lookup_id_key_mapping = {}
 
-    if isinstance(names, basestring):
+    if isinstance(names, bytes):
         names = [names]
 
     for name in names:
@@ -612,6 +644,187 @@ def build_byte_index(file_obj, names, lookup_id_key_mapping=None):
     for offset, offset_type, attrs in g:
         indices[offset_type][attrs[lookup_id_key_mapping[offset_type]]] = offset
     return indices
+
+
+class TagSpecificXMLByteIndex(object):
+    """
+    Encapsulates the construction and querying of a byte offset index
+    for a set of XML tags.
+
+    This type mimics an immutable Mapping.
+    
+    Attributes
+    ----------
+    indexed_tags : iterable of bytes
+        The tag names to index, not including a namespace
+    offsets : defaultdict(OrderedDict(str, int))
+        The hierarchy of byte offsets organized {
+            "tag_type": {
+                "id": byte_offset
+            }
+        }
+
+    Parameters
+    ----------
+    index_tags: iterable of bytes
+        The tag names to include in the index
+
+    """
+    _default_indexed_tags = []
+
+    def __init__(self, indexed_tags=None):
+        if indexed_tags is None:
+            indexed_tags = self._default_indexed_tags
+        self.indexed_tags = indexed_tags
+        self.offsets = defaultdict(OrderedDict)
+
+    def __getitem__(self, key):
+        return self.offsets[key]
+
+    def build_index(self, file_obj):
+        """
+        Perform the byte offset index building for py:object:`file_obj`.
+        
+        Parameters
+        ----------
+        file_obj : file-like
+            The file to parse
+        
+        Returns
+        -------
+        offsets: defaultdict
+            The hierarchical offset, stored in offsets
+        """
+        self.offsets = build_byte_index(file_obj, self.indexed_tags)
+        return self.offsets
+
+    def items(self):
+        return self.offsets.items()
+
+    def keys(self):
+        return self.offsets.keys()
+
+    def __iter__(self):
+        return iter(self.keys())
+
+    @classmethod
+    def build(cls, file_obj, indexed_tags=None):
+        """
+        Factory function to construct instances from input files and
+        tag names directly.
+        
+        Parameters
+        ----------
+        file_obj : file-like
+            The file to parse
+        index_tags: iterable of bytes
+            The tag names to include in the index
+        
+        Returns
+        -------
+        TagSpecificXMLByteIndex
+        """
+        inst = cls(indexed_tags)
+        inst.build_index(file_obj)
+        return inst
+
+
+class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
+    """
+    An alternative interface on top of py:class:`TagSpecificXMLByteIndex` that assumes
+    that identifiers across different tags are globally unique, as in MzIdentML.
+    
+    Attributes
+    ----------
+    offsets : OrderedDict
+        The mapping between ids and byte offsets
+    """
+    def build_index(self, file_obj):
+        hierarchical_index = super(FlatTagSpecificXMLByteIndex, self).build_index(file_obj)
+        flat_index = []
+
+        for tag_type in hierarchical_index.values():
+            flat_index.extend(tag_type.items())
+
+        flat_index.sort(key=lambda x: x[1])
+        self.offsets = OrderedDict(flat_index)
+
+
+class IndexedXML(XML):
+    _indexed_tags = set()
+
+    def __init__(self, *args, **kwargs):
+        super(IndexedXML, self).__init__(*args, **kwargs)
+        self._build_index()
+
+    @_keepstate
+    def _build_index(self):
+        """
+        Build up a `dict` of `dict` of offsets for elements. Calls :func:`find_index_list`
+        on :attr:`_source` and assigns the return value to :attr:`_offset_index`
+        """
+        self._offset_index = FlatTagSpecificXMLByteIndex.build(self._source, self._indexed_tags)
+
+    def _find_by_id_no_reset(self, elem_id):
+        """
+        An almost exact copy of :meth:`get_by_id` with the difference that it does
+        not reset the file reader's position before iterative parsing.
+
+        Parameters
+        ----------
+        elem_id : str
+            The element id to query for
+
+        Returns
+        -------
+        lxml.Element
+        """
+        found = False
+        for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True):
+            if event == 'start':
+                if elem.attrib.get("id") == elem_id:
+                    found = True
+            else:
+                if elem.attrib.get("id") == elem_id:
+                    return elem
+                if not found:
+                    elem.clear()
+
+    @_keepstate
+    def _find_by_id_reset(self, elem_id):
+        return self._find_by_id_no_reset(elem_id)
+
+    def get_by_id(self, elem_id, **kwargs):
+        """
+        Retrieve the requested entity by its id. If the entity
+        is a spectrum described in the offset index, it will be retrieved
+        by immediately seeking to the starting position of the entry, otherwise
+        falling back to parsing from the start of the file.
+
+        Parameters
+        ----------
+        elem_id : str
+            The id value of the entity to retrieve.
+
+        Returns
+        -------
+        dict
+        """
+        try:
+            index = self._offset_index
+            offset = index[elem_id]
+            self._source.seek(offset)
+            elem = self._find_by_id_no_reset(elem_id)
+            data = self._get_info_smart(elem, **kwargs)
+            return data
+        except (KeyError, etree.LxmlError):
+            elem = self._find_by_id_reset(elem_id)
+            data = self._get_info_smart(elem, **kwargs)
+            return data
+
+    def __getitem__(self, elem_id):
+        return self.get_by_id(elem_id)
+
 
 
 _mzid_schema_defaults = {'ints': {('DBSequence', 'length'),

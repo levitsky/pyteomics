@@ -11,7 +11,8 @@ class MzidTest(unittest.TestCase):
     def testReadPSM(self):
         for rec, refs, rs, it in product((True, False), repeat=4):
             for func in [MzIdentML, read, chain,
-                    lambda x, **kw: chain.from_iterable([x], **kw)]:
+                    lambda x, **kw: chain.from_iterable([x], **kw),
+                    IndexedMzIdentML]:
                 with func('test.mzid', recursive=rec, retrieve_refs=refs,
                         read_schema=rs, iterative=it) as reader:
                     psms = list(reader)
