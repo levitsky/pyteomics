@@ -324,7 +324,16 @@ def _iterparse_index_list(file_obj, offset):
     return index_map
 
 
-class IndexedMzML(MzML):
+def _flatten_map(hierarchical_map):
+    all_records = []
+    for key, records in hierarchical_map.items():
+        all_records.extend(records.items())
+
+    all_records.sort(key=lambda x: x[1])
+    return xml.OrderedDict(all_records)
+
+
+class IndexedMzML(MzML, xml.IndexedXML):
     def __init__(self, *args, **kwargs):
         super(IndexedMzML, self).__init__(*args, **kwargs)
         self._offset_index = None
@@ -337,68 +346,4 @@ class IndexedMzML(MzML):
         Build up a `dict` of `dict` of offsets for elements. Calls :func:`find_index_list`
         on :attr:`_source` and assigns the return value to :attr:`_offset_index`
         """
-        self._offset_index = find_index_list(self._source)
-
-    def _find_by_id_no_reset(self, elem_id):
-        """
-        An almost exact copy of :meth:`get_by_id` with the difference that it does
-        not reset the file reader's position before iterative parsing.
-
-        Parameters
-        ----------
-        elem_id : str
-            The element id to query for
-
-        Returns
-        -------
-        lxml.Element
-        """
-        found = False
-        for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True):
-            if event == 'start':
-                if elem.attrib.get("id") == elem_id:
-                    found = True
-            else:
-                if elem.attrib.get("id") == elem_id:
-                    return elem
-                if not found:
-                    elem.clear()
-
-    def get_by_id(self, elem_id):
-        """
-        Retrieve the requested entity by its id. If the entity
-        is a spectrum described in the offset index, it will be retrieved
-        by immediately seeking to the starting position of the entry, otherwise
-        falling back to parsing from the start of the file.
-
-        Parameters
-        ----------
-        elem_id : str
-            The id value of the entity to retrieve.
-
-        Returns
-        -------
-        dict
-        """
-        try:
-            index = self._offset_index['spectrum']
-            offset = index[elem_id]
-            self._source.seek(offset)
-            elem = self._find_by_id_no_reset(elem_id)
-            data = self._get_info_smart(elem, recursive=True)
-            return data
-        except (KeyError, etree.LxmlError):
-            return super(IndexedMzML, self).get_by_id(elem_id)
-
-    def __getitem__(self, elem_id):
-        return self.get_by_id(elem_id)
-
-    def __iter__(self):
-        try:
-            index = self._offset_index['spectrum'].items()
-            items = sorted(index, key=lambda x: x[1])
-            for scan_id, offset in items:
-                yield self.get_by_id(scan_id)
-        except KeyError:
-            for scan in self.iterfind('spectrum'):
-                yield scan
+        self._offset_index = _flatten_map(find_index_list(self._source))
