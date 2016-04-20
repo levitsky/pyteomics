@@ -336,10 +336,6 @@ def _flatten_map(hierarchical_map):
 class IndexedMzML(MzML, xml.IndexedXML):
     def __init__(self, *args, **kwargs):
         super(IndexedMzML, self).__init__(*args, **kwargs)
-        self._offset_index = None
-        self.reset()
-        self._build_index()
-        self.reset()
 
     def _build_index(self):
         """
