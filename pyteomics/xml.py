@@ -754,6 +754,11 @@ class IndexedXML(XML):
     _indexed_tags = set()
 
     def __init__(self, *args, **kwargs):
+        tags = kwargs.get("indexed_tags")
+
+        if tags is not None:
+            self._indexed_tags = tags
+
         super(IndexedXML, self).__init__(*args, **kwargs)
         self._build_index()
 

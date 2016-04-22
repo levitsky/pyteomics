@@ -295,8 +295,8 @@ filter.chain = aux._make_chain(filter, 'filter', True)
 
 class IndexedMzIdentML(MzIdentML, xml.IndexedXML):
     _indexed_tags = {
-        "PeptideEvidence", "SpectrumIdentificationItem", "SearchDatabase",
-        "DBSequence", "SpectraData", "Peptide"}
+        b"PeptideEvidence", b"SpectrumIdentificationItem", b"SearchDatabase",
+        b"DBSequence", b"SpectraData", b"Peptide"}
 
     def __init__(self, *args, **kwargs):
         super(IndexedMzIdentML, self).__init__(*args, **kwargs)
