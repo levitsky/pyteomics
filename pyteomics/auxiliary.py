@@ -77,7 +77,7 @@ except ImportError:
 import math
 from distutils.version import LooseVersion
 try:
-    basestring
+    basestring = basestring
 except NameError:
     basestring = (str, bytes)
 try:

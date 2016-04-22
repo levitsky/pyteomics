@@ -39,7 +39,7 @@ import numpy as np
 from lxml import etree
 import re
 from collections import OrderedDict, defaultdict
-from .auxiliary import FileReader, PyteomicsError, _keepstate as _keepstate_free_fn
+from .auxiliary import FileReader, PyteomicsError, _keepstate as _keepstate_free_fn, basestring
 try: # Python 2.7
     from urllib2 import urlopen, URLError
 except ImportError: # Python 3.x
@@ -750,6 +750,21 @@ class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
         self.offsets = OrderedDict(flat_index)
 
 
+def ensure_bytes(strings):
+    if isinstance(strings, (basestring)):
+        strings = [strings]
+    results = []
+    for string in strings:
+        try:
+            results.append(string.encode("utf-8"))
+        except:
+            if isinstance(string, bytes):
+                results.append(string)
+            else:
+                warnings.warn("%r could not be decoded" % string)
+    return results
+
+
 class IndexedXML(XML):
     _indexed_tags = set()
 
@@ -759,6 +774,7 @@ class IndexedXML(XML):
         if tags is not None:
             self._indexed_tags = tags
 
+        self._indexed_tags = ensure_bytes(self._indexed_tags)
         super(IndexedXML, self).__init__(*args, **kwargs)
         self._build_index()
 
