@@ -39,7 +39,7 @@ import numpy as np
 from lxml import etree
 import re
 from collections import OrderedDict, defaultdict
-from .auxiliary import FileReader, PyteomicsError, _keepstate as _keepstate_free_fn, basestring
+from .auxiliary import FileReader, PyteomicsError, _keepstate as _keepstate_free_fn, basestring, _file_obj
 try: # Python 2.7
     from urllib2 import urlopen, URLError
 except ImportError: # Python 3.x
@@ -544,106 +544,116 @@ def _make_version_info(cls):
     return version_info
 
 
-def _index_finding_chunker(file_obj, read_size=100000):
+class ByteCountingXMLScanner(_file_obj):
     """
-    Read a file in large blocks and chunk up each block into parts
-    resembling XML tags, yielding each chunk.
+    Carry out the construction of a byte offset index for `source` XML file
+    for each type of tag in :attr:`indexed_tags`.
+
+    Inheris from :class:`pyteomics.auxillary._file_obj` to support the object-oriented
+    :func:`_keep_state` interface.
     
-    Assumes the file is opened in binary mode.
+    Attributes
+    ----------
+    block_size : int
+        The size of the each chunk or "block" of the file to hold in memory as a
+        partitioned string at any given time. Defaults to `1000000`
+    indexed_tags : iterable of bytes
+        The XML tags (without namespaces) to build indices for
     """
-    f = file_obj
-    delim = b"<"
-    buff = f.read(read_size)
-    parts = buff.split(delim)
-    tail = parts[-1]
-    front = parts[:-1]
-    for part in front:
-        if part == b"":
-            continue
-        yield delim + part
-    running = True
-    while running:
+    def __init__(self, source, indexed_tags, block_size=1000000):
+        super(ByteCountingXMLScanner, self).__init__(source, 'rb')
+        self.indexed_tags = ensure_bytes(indexed_tags)
+        self.block_size = block_size
+
+    def _chunk_iterator(self):
+        """
+        Read a file in large blocks and chunk up each block into parts
+        resembling XML tags, yielding each chunk.
+        
+        Assumes the file is opened in binary mode.
+        """
+        f = self.file
+        read_size = self.block_size
+        delim = b"<"
         buff = f.read(read_size)
-        if len(buff) == 0:
-            running = False
-            buff = tail
-        else:
-            buff = tail + buff
         parts = buff.split(delim)
         tail = parts[-1]
         front = parts[:-1]
         for part in front:
+            if part == b"":
+                continue
             yield delim + part
+        running = True
+        while running:
+            buff = f.read(read_size)
+            if len(buff) == 0:
+                running = False
+                buff = tail
+            else:
+                buff = tail + buff
+            parts = buff.split(delim)
+            tail = parts[-1]
+            front = parts[:-1]
+            for part in front:
+                yield delim + part        
 
+    def _generate_offsets(self):
+        """
+        Iterate over the lines of an XML file where each line contains exactly one tag,
+        tracking the byte count for each line. When a line contains a tag whose name matches
+        a name in :attr:`indexed_tags`, yield the byte offset, the tag type, and it's attributes.
 
-def generate_offsets(file_obj, names):
-    """
-    Iterate over the lines of an XML file where each line contains exactly one tag,
-    tracking the byte count for each line. When a line contains a tag whose name matches
-    a name in `names`, yield the byte offset, the tag type, and it's attributes.
+        Yields
+        ------
+        offset : int
+            The byte offset of a matched tag's opening line
+        tag_type : bytes
+            The type of tag matched
+        attr_dict : dict
+            The attributes on the matched tag
+        """
+        i = 0
+        packed = b"|".join(self.indexed_tags)
+        pattern = re.compile(br"^\s*<(%s)\s" % packed)
+        attrs = re.compile(br"(\S+)=[\"']([^\"']+)[\"']")
+        for line in self._chunk_iterator():
+            match = pattern.match(line)
+            if match:
+                yield i, match.group(1), dict(attrs.findall(line))
+            i += len(line)
 
-    Parameters
-    ----------
-    file_obj : file
-        File to parse
-    names : bytes or iterable of bytes
-        The name or names to yield byte offsets for
+    @_keepstate
+    def build_byte_index(self, lookup_id_key_mapping=None):
+        """
+        Builds a byte offset index for one or more types of tags.
 
-    Yields
-    ------
-    offset : int
-        The byte offset of a matched tag's opening line
-    tag_type : bytes
-        The type of tag matched
-    attr_dict : dict
-        The attributes on the matched tag
-    """
-    i = 0
-    if isinstance(names, bytes):
-        names = [names]
-    packed = b"|".join(names)
-    pattern = re.compile(br"^\s*<(%s)\s" % packed)
-    attrs = re.compile(br"(\S+)=[\"']([^\"']+)[\"']")
-    for line in _index_finding_chunker(file_obj):
-        match = pattern.match(line)
-        if match:
-            yield i, match.group(1), dict(attrs.findall(line))
-        i += len(line)
+        Parameters
+        ----------
+        lookup_id_key_mapping : Mapping, optional
+            A mapping from tag name to the attribute to look up the identity
+            for each entity of that type to be extracted. Defaults to 'id' for
+            each type of tag.
 
+        Returns
+        -------
+        defaultdict(OrderedDict)
+            Mapping from tag type to OrderedDict from identifier to byte offset
+        """
+        if lookup_id_key_mapping is None:
+            lookup_id_key_mapping = {}
 
-@_keepstate_free_fn
-def build_byte_index(file_obj, names, lookup_id_key_mapping=None):
-    """
-    Builds a byte offset index for one or more types of tags.
+        for name in self.indexed_tags:
+            lookup_id_key_mapping.setdefault(name, "id")
+        indices = defaultdict(OrderedDict)
+        g = self._generate_offsets()
+        for offset, offset_type, attrs in g:
+            indices[offset_type][attrs[lookup_id_key_mapping[offset_type]]] = offset
+        return indices
 
-    Parameters
-    ----------
-    file_obj : file-like-object
-    names : bytes or iterable of bytes
-        The names of tags to build indices for
-    lookup_id_key_mapping : Mapping, optional
-        A mapping from tag name to the attribute to look up the identity
-        for each entity of that type to be extracted. Defaults to 'id' for
-        each type of tag.
-
-    Returns
-    -------
-    defaultdict(OrderedDict)
-        Mapping from tag type to OrderedDict from identifier to byte offset
-    """
-    if lookup_id_key_mapping is None:
-        lookup_id_key_mapping = {}
-
-    if isinstance(names, bytes):
-        names = [names]
-
-    for name in names:
-        lookup_id_key_mapping.setdefault(name, "id")
-    indices = defaultdict(OrderedDict)
-    g = generate_offsets(file_obj, names)
-    for offset, offset_type, attrs in g:
-        indices[offset_type][attrs[lookup_id_key_mapping[offset_type]]] = offset
-    return indices
+    @classmethod
+    def scan(cls, source, indexed_tags):
+        inst = cls(source, indexed_tags)
+        return inst.build_byte_index()
 
 
 class TagSpecificXMLByteIndex(object):
@@ -671,31 +681,29 @@ class TagSpecificXMLByteIndex(object):
 
     """
     _default_indexed_tags = []
+    _scanner_class = ByteCountingXMLScanner
 
-    def __init__(self, indexed_tags=None):
+    def __init__(self, source, indexed_tags=None):
         if indexed_tags is None:
             indexed_tags = self._default_indexed_tags
         self.indexed_tags = indexed_tags
+        self.source = source
         self.offsets = defaultdict(OrderedDict)
+        self.build_index()
 
     def __getitem__(self, key):
         return self.offsets[key]
 
-    def build_index(self, file_obj):
+    def build_index(self):
         """
-        Perform the byte offset index building for py:object:`file_obj`.
-        
-        Parameters
-        ----------
-        file_obj : file-like
-            The file to parse
+        Perform the byte offset index building for py:attr:`source`.
         
         Returns
         -------
         offsets: defaultdict
             The hierarchical offset, stored in offsets
         """
-        self.offsets = build_byte_index(file_obj, self.indexed_tags)
+        self.offsets = self._scanner_class.scan(self.source, self.indexed_tags)
         return self.offsets
 
     def items(self):
@@ -706,27 +714,6 @@ class TagSpecificXMLByteIndex(object):
 
     def __iter__(self):
         return iter(self.keys())
-
-    @classmethod
-    def build(cls, file_obj, indexed_tags=None):
-        """
-        Factory function to construct instances from input files and
-        tag names directly.
-        
-        Parameters
-        ----------
-        file_obj : file-like
-            The file to parse
-        index_tags: iterable of bytes
-            The tag names to include in the index
-        
-        Returns
-        -------
-        TagSpecificXMLByteIndex
-        """
-        inst = cls(indexed_tags)
-        inst.build_index(file_obj)
-        return inst
 
 
 class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
@@ -739,8 +726,8 @@ class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
     offsets : OrderedDict
         The mapping between ids and byte offsets
     """
-    def build_index(self, file_obj):
-        hierarchical_index = super(FlatTagSpecificXMLByteIndex, self).build_index(file_obj)
+    def build_index(self):
+        hierarchical_index = super(FlatTagSpecificXMLByteIndex, self).build_index()
         flat_index = []
 
         for tag_type in hierarchical_index.values():
@@ -748,6 +735,7 @@ class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
 
         flat_index.sort(key=lambda x: x[1])
         self.offsets = OrderedDict(flat_index)
+        return self.offsets
 
 
 def ensure_bytes(strings):
@@ -784,7 +772,7 @@ class IndexedXML(XML):
         Build up a `dict` of `dict` of offsets for elements. Calls :func:`find_index_list`
         on :attr:`_source` and assigns the return value to :attr:`_offset_index`
         """
-        self._offset_index = FlatTagSpecificXMLByteIndex.build(self._source, self._indexed_tags)
+        self._offset_index = FlatTagSpecificXMLByteIndex(self._source, self._indexed_tags)
 
     def _find_by_id_no_reset(self, elem_id):
         """
@@ -848,7 +836,8 @@ class IndexedXML(XML):
 
 
 
-_mzid_schema_defaults = {'ints': {('DBSequence', 'length'),
+_mzid_schema_defaults = {
+            'ints': {('DBSequence', 'length'),
                      ('IonType', 'charge'),
                      ('BibliographicReference', 'year'),
                      ('SubstitutionModification', 'location'),
