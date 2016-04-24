@@ -330,12 +330,12 @@ def _flatten_map(hierarchical_map):
         all_records.extend(records.items())
 
     all_records.sort(key=lambda x: x[1])
-    return xml.OrderedDict(all_records)
+    return xml.ByteEncodingOrderedDict(all_records)
 
 
-class IndexedMzML(MzML, xml.IndexedXML):
+class PreIndexedMzML(MzML, xml.IndexedXML):
     def __init__(self, *args, **kwargs):
-        super(IndexedMzML, self).__init__(*args, **kwargs)
+        super(PreIndexedMzML, self).__init__(*args, **kwargs)
 
     def _build_index(self):
         """
@@ -343,3 +343,12 @@ class IndexedMzML(MzML, xml.IndexedXML):
         on :attr:`_source` and assigns the return value to :attr:`_offset_index`
         """
         self._offset_index = _flatten_map(find_index_list(self._source))
+
+
+class IndexedMzML(MzML, xml.IndexedXML):
+    _indexed_tags = {
+        b"spectrum", b"chromatogram"}
+
+    def __init__(self, *args, **kwargs):
+        MzML.__init__(self, *args, **kwargs)
+        xml.IndexedXML.__init__(self, *args, **kwargs)

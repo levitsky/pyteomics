@@ -544,6 +544,20 @@ def _make_version_info(cls):
     return version_info
 
 
+class ByteEncodingOrderedDict(OrderedDict):
+
+    def __getitem__(self, key):
+        try:
+            return super(ByteEncodingOrderedDict, self).__getitem__(key)
+        except KeyError:
+            key = ensure_bytes_single(key)
+            return super(ByteEncodingOrderedDict, self).__getitem__(key)
+
+    def __setitem__(self, key, value):
+        key = ensure_bytes_single(key)
+        return super(ByteEncodingOrderedDict, self).__setitem__(key, value)
+
+
 class ByteCountingXMLScanner(_file_obj):
     """
     Carry out the construction of a byte offset index for `source` XML file
@@ -636,15 +650,17 @@ class ByteCountingXMLScanner(_file_obj):
 
         Returns
         -------
-        defaultdict(OrderedDict)
-            Mapping from tag type to OrderedDict from identifier to byte offset
+        defaultdict(ByteEncodingOrderedDict)
+            Mapping from tag type to ByteEncodingOrderedDict from identifier to byte offset
         """
         if lookup_id_key_mapping is None:
             lookup_id_key_mapping = {}
 
         for name in self.indexed_tags:
             lookup_id_key_mapping.setdefault(name, "id")
-        indices = defaultdict(OrderedDict)
+            lookup_id_key_mapping[name] = ensure_bytes_single(lookup_id_key_mapping[name])
+
+        indices = defaultdict(ByteEncodingOrderedDict)
         g = self._generate_offsets()
         for offset, offset_type, attrs in g:
             indices[offset_type][attrs[lookup_id_key_mapping[offset_type]]] = offset
@@ -688,7 +704,7 @@ class TagSpecificXMLByteIndex(object):
             indexed_tags = self._default_indexed_tags
         self.indexed_tags = indexed_tags
         self.source = source
-        self.offsets = defaultdict(OrderedDict)
+        self.offsets = defaultdict(ByteEncodingOrderedDict)
         self.build_index()
 
     def __getitem__(self, key):
@@ -723,7 +739,7 @@ class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
     
     Attributes
     ----------
-    offsets : OrderedDict
+    offsets : ByteEncodingOrderedDict
         The mapping between ids and byte offsets
     """
     def build_index(self):
@@ -734,8 +750,17 @@ class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
             flat_index.extend(tag_type.items())
 
         flat_index.sort(key=lambda x: x[1])
-        self.offsets = OrderedDict(flat_index)
+        self.offsets = ByteEncodingOrderedDict(flat_index)
         return self.offsets
+
+
+def ensure_bytes_single(string):
+    if isinstance(string, bytes):
+        return string
+    try:
+        return string.encode("utf-8")
+    except:
+        return string
 
 
 def ensure_bytes(strings):
@@ -758,12 +783,16 @@ class IndexedXML(XML):
 
     def __init__(self, *args, **kwargs):
         tags = kwargs.get("indexed_tags")
+        use_index = kwargs.get("use_index", True)
 
         if tags is not None:
-            self._indexed_tags = tags
+            self._indexed_tags = (tags)
+
+        self._use_index = use_index
 
         self._indexed_tags = ensure_bytes(self._indexed_tags)
         super(IndexedXML, self).__init__(*args, **kwargs)
+        self._offset_index = ByteEncodingOrderedDict()
         self._build_index()
 
     @_keepstate
@@ -772,6 +801,8 @@ class IndexedXML(XML):
         Build up a `dict` of `dict` of offsets for elements. Calls :func:`find_index_list`
         on :attr:`_source` and assigns the return value to :attr:`_offset_index`
         """
+        if not self._indexed_tags or not self._use_index:
+            return
         self._offset_index = FlatTagSpecificXMLByteIndex(self._source, self._indexed_tags)
 
     def _find_by_id_no_reset(self, elem_id):
