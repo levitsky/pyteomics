@@ -39,7 +39,7 @@ import numpy as np
 from lxml import etree
 import re
 from collections import OrderedDict, defaultdict
-from .auxiliary import FileReader, PyteomicsError, _keepstate as _keepstate_free_fn, basestring, _file_obj
+from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj
 try: # Python 2.7
     from urllib2 import urlopen, URLError
 except ImportError: # Python 3.x
@@ -758,24 +758,15 @@ def ensure_bytes_single(string):
     if isinstance(string, bytes):
         return string
     try:
-        return string.encode("utf-8")
-    except:
-        return string
+        return string.encode('utf-8')
+    except (AttributeError, UnicodeEncodeError):
+        raise PyteomicsError('%{!r} could not be decoded'.format(string))
 
 
 def ensure_bytes(strings):
     if isinstance(strings, (basestring)):
         strings = [strings]
-    results = []
-    for string in strings:
-        try:
-            results.append(string.encode("utf-8"))
-        except:
-            if isinstance(string, bytes):
-                results.append(string)
-            else:
-                warnings.warn("%r could not be decoded" % string)
-    return results
+    return [ensure_bytes_single(string) for string in strings]
 
 
 class IndexedXML(XML):
