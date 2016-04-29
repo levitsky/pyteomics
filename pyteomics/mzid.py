@@ -95,7 +95,7 @@ warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
 from . import auxiliary as aux
 from . import xml
 
-class MzIdentML(xml.XML):
+class MzIdentML(xml.IndexedXML):
     """Parser class for MzIdentML files."""
     file_format = 'mzIdentML'
     _root_element = 'MzIdentML'
@@ -103,6 +103,9 @@ class MzIdentML(xml.XML):
     _default_version = '1.1.0'
     _default_iter_tag = 'SpectrumIdentificationResult'
     _structures_to_flatten = {'Fragmentation'}
+    _indexed_tags = {
+        'PeptideEvidence', 'SpectrumIdentificationItem', 'SearchDatabase',
+        'DBSequence', 'SpectraData', 'Peptide'}
 
     def _get_info_smart(self, element, **kwargs):
         """Extract the info in a smart way depending on the element type"""
@@ -291,12 +294,3 @@ _key = lambda x: min(
 qvalues = aux._make_qvalues(chain, is_decoy, _key)
 filter = aux._make_filter(chain, is_decoy, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter', True)
-
-
-class IndexedMzIdentML(MzIdentML, xml.IndexedXML):
-    _indexed_tags = {
-        b"PeptideEvidence", b"SpectrumIdentificationItem", b"SearchDatabase",
-        b"DBSequence", b"SpectraData", b"Peptide"}
-
-    def __init__(self, *args, **kwargs):
-        super(IndexedMzIdentML, self).__init__(*args, **kwargs)
