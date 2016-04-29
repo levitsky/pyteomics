@@ -90,7 +90,7 @@ def _decode_base64_data_array(source, dtype, is_compressed):
     output = np.frombuffer(decoded_source, dtype=dtype)
     return output
 
-class MzML(xml.XML):
+class MzML(xml.IndexedXML):
     """Parser class for mzML files."""
     file_format = 'mzML'
     _root_element = 'mzML'
@@ -98,6 +98,7 @@ class MzML(xml.XML):
     _default_version = '1.1.0'
     _default_iter_tag = 'spectrum'
     _structures_to_flatten = {'binaryDataArrayList'}
+    _indexed_tags = {'spectrum', 'chromatogram'}
 
     def _get_info_smart(self, element, **kw):
         name = xml._local_name(element)
@@ -171,7 +172,7 @@ class MzML(xml.XML):
                 info[k] = int(info[k])
         return info
 
-def read(source, read_schema=True, iterative=True):
+def read(source, read_schema=True, iterative=True, use_index=False):
     """Parse `source` and iterate through spectra.
 
     Parameters
@@ -196,7 +197,7 @@ def read(source, read_schema=True, iterative=True):
        An iterator over the dicts with spectra properties.
     """
 
-    return MzML(source, read_schema=read_schema, iterative=iterative)
+    return MzML(source, read_schema=read_schema, iterative=iterative, use_index=use_index)
 
 def iterfind(source, path, **kwargs):
     """Parse `source` and yield info on elements with specified local
@@ -333,7 +334,7 @@ def _flatten_map(hierarchical_map):
     return xml.ByteEncodingOrderedDict(all_records)
 
 
-class PreIndexedMzML(MzML, xml.IndexedXML):
+class PreIndexedMzML(MzML):
     def __init__(self, *args, **kwargs):
         super(PreIndexedMzML, self).__init__(*args, **kwargs)
 
@@ -343,12 +344,3 @@ class PreIndexedMzML(MzML, xml.IndexedXML):
         on :attr:`_source` and assigns the return value to :attr:`_offset_index`
         """
         self._offset_index = _flatten_map(find_index_list(self._source))
-
-
-class IndexedMzML(MzML, xml.IndexedXML):
-    _indexed_tags = {
-        b"spectrum", b"chromatogram"}
-
-    def __init__(self, *args, **kwargs):
-        MzML.__init__(self, *args, **kwargs)
-        xml.IndexedXML.__init__(self, *args, **kwargs)
