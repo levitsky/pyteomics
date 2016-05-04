@@ -102,7 +102,7 @@ class XML(FileReader):
     as context managers and as iterators.
     """
     # Configurable data
-    file_format = "XML"
+    file_format = 'XML'
     _root_element = None
     _default_schema = {}
     _default_version = 0
@@ -760,7 +760,7 @@ def ensure_bytes_single(string):
     try:
         return string.encode('utf-8')
     except (AttributeError, UnicodeEncodeError):
-        raise PyteomicsError('%{!r} could not be decoded'.format(string))
+        raise PyteomicsError('%{!r} could not be encoded'.format(string))
 
 
 def ensure_bytes(strings):
@@ -773,8 +773,8 @@ class IndexedXML(XML):
     _indexed_tags = set()
 
     def __init__(self, *args, **kwargs):
-        tags = kwargs.get("indexed_tags")
-        use_index = kwargs.get("use_index", True)
+        tags = kwargs.get('indexed_tags')
+        use_index = kwargs.get('use_index', True)
 
         if tags is not None:
             self._indexed_tags = (tags)
@@ -782,6 +782,8 @@ class IndexedXML(XML):
         self._use_index = use_index
 
         self._indexed_tags = ensure_bytes(self._indexed_tags)
+
+        if use_index: kwargs['build_id_cache'] = False
         super(IndexedXML, self).__init__(*args, **kwargs)
         self._offset_index = ByteEncodingOrderedDict()
         self._build_index()
@@ -813,10 +815,10 @@ class IndexedXML(XML):
         found = False
         for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True):
             if event == 'start':
-                if elem.attrib.get("id") == elem_id:
+                if elem.attrib.get('id') == elem_id:
                     found = True
             else:
-                if elem.attrib.get("id") == elem_id:
+                if elem.attrib.get('id') == elem_id:
                     return elem
                 if not found:
                     elem.clear()
