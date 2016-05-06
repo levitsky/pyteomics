@@ -3,6 +3,7 @@ Bulky data structures for assertion in pyteomics test suites.
 """
 
 import numpy as np
+from copy import deepcopy
 
 # http://stackoverflow.com/q/14246983/1258041
 class ComparableArray(np.ndarray):
@@ -1317,6 +1318,17 @@ mgf_spectra_short = [{'intensity array': makeCA(mgf_int[0]),
    'scans': '3',
    'title': 'Spectrum 2'}}]
 
+mgf_spectra_short_no_charges = deepcopy(mgf_spectra_short)
+for s in mgf_spectra_short_no_charges:
+    del s['charge array']
+mgf_spectra_long_no_charges = deepcopy(mgf_spectra_long)
+for s in mgf_spectra_long_no_charges:
+    del s['charge array']
+
+mgf_spectra_lists = deepcopy(mgf_spectra_long)
+for s in mgf_spectra_lists:
+    for key in ['m/z array', 'intensity array', 'charge array']:
+        s[key] = list(s[key])
 
 tandem_spectra = [{'act': '0',
   'expect': 1.5e-07,

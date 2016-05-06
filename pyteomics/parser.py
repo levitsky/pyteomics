@@ -491,25 +491,36 @@ def amino_acid_composition(sequence,
 
     return aa_dict
 
-def cleave(sequence, rule, missed_cleavages=0, min_length=None, **kwargs):
+def cleave(sequence, rule, missed_cleavages=0, min_length=None):
     """Cleaves a polypeptide sequence using a given rule.
 
     Parameters
     ----------
     sequence : str
         The sequence of a polypeptide.
+
+        .. note::
+            The sequence is expected to be in one-letter uppercase notation.
+            Otherwise, some of the cleavage rules in :py:data:`expasy_rules`
+            will not work as expected.
+
     rule : str or compiled regex
         A regular expression describing the site of cleavage. It is recommended
         to design the regex so that it matches only the residue whose C-terminal
         bond is to be cleaved. All additional requirements should be specified
         using `lookaround assertions
         <http://www.regular-expressions.info/lookaround.html>`_.
+        :py:data:`expasy_rules` contains cleavage rules for popular cleavage agents.
     missed_cleavages : int, optional
         Maximum number of allowed missed cleavages. Defaults to 0.
     min_length : int or None, optional
         Minimum peptide length. Defaults to :py:const:`None`.
-    labels : list, optional
-        A list of allowed labels for amino acids and terminal modifications.
+
+        ..note ::
+            This checks for string length, which is only correct for one-letter
+            notation and not for full *modX*. Use :py:func:`length` manually if
+            you know what you are doing and apply :py:func:`cleave` to *modX*
+            sequences.
 
     Returns
     -------
@@ -518,28 +529,33 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, **kwargs):
 
     Examples
     --------
-    >>> cleave('AKAKBK', expasy_rules['trypsin'], 0, labels='ABK') == {'AK', 'BK'}
+    >>> cleave('AKAKBK', expasy_rules['trypsin'], 0) == {'AK', 'BK'}
     True
     >>> cleave('GKGKYKCK', expasy_rules['trypsin'], 2) == \
     {'CK', 'GKYK', 'YKCK', 'GKGK', 'GKYKCK', 'GK', 'GKGKYK', 'YK'}
     True
 
     """
-    return set(_cleave(sequence, rule, missed_cleavages, min_length, **kwargs))
+    return set(_cleave(sequence, rule, missed_cleavages, min_length))
 
-def _cleave(sequence, rule, missed_cleavages=0, min_length=None, **kwargs):
+def _cleave(sequence, rule, missed_cleavages=0, min_length=None):
     """Like :py:func:`cleave`, but the result is a list. Refer to
     :py:func:`cleave` for explanation of parameters.
     """
     peptides = []
-    cleavage_sites = deque([0], maxlen=missed_cleavages+2)
-    for i in it.chain(map(lambda x: x.end(), re.finditer(rule, sequence)),
+    ml = missed_cleavages+2
+    trange = range(ml)
+    cleavage_sites = deque([0], maxlen=ml)
+    cl = 1
+    for i in it.chain([x.end() for x in re.finditer(rule, sequence)],
                    [None]):
         cleavage_sites.append(i)
-        for j in range(len(cleavage_sites)-1):
+        if cl < ml:
+            cl += 1
+        for j in trange[:cl-1]:
             seq = sequence[cleavage_sites[j]:cleavage_sites[-1]]
             if seq:
-                if min_length is None or length(seq, **kwargs) >= min_length:
+                if min_length is None or len(seq) >= min_length:
                     peptides.append(seq)
     return peptides
 

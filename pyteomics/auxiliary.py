@@ -109,7 +109,7 @@ class PyteomicsError(Exception):
 
 def linear_regression_vertical(x, y=None, a=None, b=None):
     """Calculate coefficients of a linear regression y = a * x + b.
-    The fit minimizes perpendicular distances between the points and the line.
+    The fit minimizes *vertical* distances between the points and the line.
 
     Requires :py:mod:`numpy`.
 
@@ -160,7 +160,7 @@ def linear_regression(x, y=None, a=None, b=None):
 
 def linear_regression_perpendicular(x, y=None):
     """Calculate coefficients of a linear regression y = a * x + b.
-    The fit minimizes perpendicular distances between the points and the line.
+    The fit minimizes *perpendicular* distances between the points and the line.
 
     Requires :py:mod:`numpy`.
 
@@ -1151,6 +1151,11 @@ filter.__doc__ = """Iterate `args` and yield only the PSMs that form a set with
         positional arguments combined. If :py:class:`str`, it will used as a label
         and positional arguments must be structured :py:mod:`numpy` arrays or :py:mod:`pandas`
         DataFrames.
+
+    reverse : bool, keyword only, optional
+            If :py:const:`True`, then PSMs are sorted in descending order,
+            i.e. the value of the key function is higher for better PSMs.
+            Default is :py:const:`False`.
 
     is_decoy : callable / iterable / array-like / str, keyword only
         A function used to determine if the PSM is decoy or not. If callable, should
