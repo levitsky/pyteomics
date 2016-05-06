@@ -332,12 +332,19 @@ def DataFrame(*args, **kwargs):
     ----------
     *args, **kwargs : passed to :py:func:`chain`
 
+    sep : str or None, optional
+        Some values related to PSMs (such as protein information) are variable-length
+        lists. If `sep` is a :py:class:`str`, they will be packed into single string using
+        this delimiter. If `sep` is :py:const:`None`, they are kept as lists. Default is
+        :py:const:`None`.
+
     Returns
     -------
     out : pandas.DataFrame
     """
     import pandas as pd
     data = []
+    sep = kwargs.pop('sep', None)
     with chain(*args, **kwargs) as f:
         for item in f:
             info = {}
@@ -345,7 +352,19 @@ def DataFrame(*args, **kwargs):
                 if isinstance(v, (str, int, float)):
                     info[k] = v
             sh = item['search_hit'][0]
-            info['proteins'] = ';'.join(p['protein'] for p in sh.pop('proteins'))
+            proteins = sh.pop('proteins')
+            prot_dict = {}
+            for p in proteins:
+                for k in p:
+                    prot_dict[k] = []
+            for p in proteins:
+                for k, v in prot_dict.items():
+                    v.append(p.get(k))
+            if sep is None:
+                info.update(prot_dict)
+            else:
+                for k, v in prot_dict.items():
+                    info[k] = sep.join(str(val) if val is not None else '' for val in v)
             info.update(sh.pop('search_score'))
             mods = sh.pop('modifications', [])
             info['modifications'] = ','.join('{0[mass]:.3f}@{0[position]}'.format(x) for x in mods)
@@ -374,12 +393,17 @@ def filter_df(*args, **kwargs):
     out : pandas.DataFrame
     """
     import pandas as pd
+    sep = kwargs.get('sep')
     kwargs.setdefault('key', 'expect')
     if all(isinstance(arg, pd.DataFrame) for arg in args):
         df = pd.concat(args)
     else:
-        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema'] if k in kwargs}
+        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep'] if k in kwargs}
         df = DataFrame(*args, **read_kw)
-    kwargs.setdefault('is_decoy',
-        df['proteins'].str.split(';').apply(lambda s: all(x.startswith('DECOY') for x in s)))
+    if sep is not None:
+        kwargs.setdefault('is_decoy',
+            df['protein'].str.split(';').apply(lambda s: all(x.startswith('DECOY') for x in s)))
+    else:
+        kwargs.setdefault('is_decoy',
+            df['protein'].apply(lambda s: all(x.startswith('DECOY') for x in s)))
     return aux.filter(df, **kwargs)

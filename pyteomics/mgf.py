@@ -33,12 +33,6 @@ Functions
 
   :py:func:`write` - write an MGF file.
 
-
-Dependencies
-------------
-
-This module requires :py:mod:`numpy`.
-
 -------------------------------------------------------------------------------
 """
 
@@ -57,13 +51,36 @@ This module requires :py:mod:`numpy`.
 #   limitations under the License.
 
 from . import auxiliary as aux
-import numpy as np
+try:
+    import numpy as np
+except ImportError:
+    np = None
 import itertools as it
 
-_comments = '#;!/'
+_comments = set('#;!/')
+_array = np.array if np is not None else None
+_ma = (lambda x: np.ma.masked_equal(x, 0)) if np is not None else None
+_identity = lambda x: x
+_array_converters = {
+    'm/z array': {
+        'none': _identity,
+        'regular': _array,
+        'full': _array
+    },
+    'intensity array': {
+        'none': _identity,
+        'regular': _array,
+        'full': _array
+    },
+    'charge array': {
+        'none': _identity,
+        'regular': _array,
+        'full': _ma
+    }
+}
 
 @aux._file_reader()
-def read(source=None, use_header=True):
+def read(source=None, use_header=True, convert_arrays='full', skip_charges=False):
     """Read an MGF file and return entries iteratively.
 
     Read the specified MGF file, **yield** spectra one by one.
@@ -86,11 +103,23 @@ def read(source=None, use_header=True):
         override those from the header in case of conflict.
         Default is :py:const:`True`.
 
+    convert_arrays : one of {'full', 'regular', 'none'}, optional
+        If 'none', m/z, intensities and (possibly) charges will be returned as regular lists.
+        If 'regular', they will be converted to regular :py:class:`numpy.ndarray`'s.
+        If 'full', charges will be reported as a masked array (default).
+        The default option is the slowest. 'full' and 'regular' require :py:mod:`numpy`.
+
+    skip_charges : bool, optional
+        If `True`, fragment charges are not reported (improves performance).
+        Default is `False`.
+
     Returns
     -------
 
     out : FileReader
     """
+    if convert_arrays != 'none' and np is None:
+        raise PyteomicsError('numpy is required for array conversion')
     header = read_header(source)
     reading_spectrum = False
     params = {}
@@ -99,15 +128,15 @@ def read(source=None, use_header=True):
     charges = []
     if use_header: params.update(header)
     for line in source:
+        sline = line.strip()
         if not reading_spectrum:
-            if line.strip() == 'BEGIN IONS':
+            if sline == 'BEGIN IONS':
                 reading_spectrum = True
             # otherwise we are not interested; do nothing, just move along
         else:
-            if not line.strip() or any(
-                line.startswith(c) for c in _comments):
-                    pass
-            elif line.strip() == 'END IONS':
+            if not sline or sline[0] in _comments:
+                pass
+            elif sline == 'END IONS':
                 reading_spectrum = False
                 if 'pepmass' in params:
                     try:
@@ -119,10 +148,12 @@ def read(source=None, use_header=True):
                         params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
                 if isinstance(params.get('charge'), str):
                     params['charge'] = aux._parse_charge(params['charge'], True)
-                out = {'params': params,
-                       'm/z array': np.array(masses),
-                       'intensity array': np.array(intensities),
-                       'charge array': np.ma.masked_equal(charges, 0)}
+                out = {'params': params}
+                data = {'m/z array': masses, 'intensity array': intensities}
+                if not skip_charges:
+                    data['charge array'] = charges
+                for key, values in data.items():
+                    out[key] = _array_converters[key][convert_arrays](values)
                 yield out
                 del out
                 params = dict(header) if use_header else {}
@@ -130,16 +161,17 @@ def read(source=None, use_header=True):
                 intensities = []
                 charges = []
             else:
-                l = line.split('=', 1)
-                if len(l) > 1: # spectrum-specific parameters!
+                if '=' in sline: # spectrum-specific parameters!
+                    l = sline.split('=', 1)
                     params[l[0].lower()] = l[1].strip()
-                elif len(l) == 1: # this must be a peak list
-                    l = line.split()
+                else: # this must be a peak list
+                    l = sline.split()
                     if len(l) >= 2:
                         try:
                             masses.append(float(l[0]))            # this may cause
-                            intensities.append(float(l[1]))       # exceptions...
-                            charges.append(aux._parse_charge(l[2]) if len(l) > 2 else 0)
+                            intensities.append(float(l[1]))       # exceptions...\
+                            if not skip_charges:
+                                charges.append(aux._parse_charge(l[2]) if len(l) > 2 else 0)
                         except ValueError:
                             raise aux.PyteomicsError(
                                  'Error when parsing %s. Line:\n%s' %
@@ -269,6 +301,8 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
     def key_value_line(key, val):
         return param_formatters.get(key, _default_repr)(key, val) + '\n'
 
+    nones = (None, np.nan, np.ma.masked) if np is not None else (None,)
+
     format_str = fragment_format + '\n'
     if isinstance(header, dict):
         head_dict = header.copy()
@@ -308,7 +342,7 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
                     spectrum.get('charge array', it.cycle((None,)))):
                 output.write(format_str.format(
                     m, i,
-                    (c if c not in (None, np.nan, np.ma.masked) else '')))
+                    (c if c not in nones else '')))
         except KeyError:
             raise aux.PyteomicsError("'m/z array' and 'intensity array'"
                     " must be present in all spectra.")
