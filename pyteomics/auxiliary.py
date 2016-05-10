@@ -28,6 +28,8 @@ Project infrastructure
 
   :py:class:`PyteomicsError` - a pyteomics-specific exception.
 
+  :py:class:`BasicComposition` - a generic dictionary subclass for compositions.
+
 Helpers
 -------
 
@@ -41,6 +43,8 @@ Helpers
   :py:func:`memoize` - makes a
   `memoization <http://stackoverflow.com/a/1988826/1258041>`_
   `function decorator <http://stackoverflow.com/a/1594484/1258041>`_.
+
+
 
 -------------------------------------------------------------------------------
 
@@ -284,6 +288,9 @@ def memoize(maxsize=1000):
     return deco
 
 class BasicComposition(defaultdict, Counter):
+    """A generic dictionary for compositions.
+    Keys are supposed to be integers.
+    Allows simple arithmetics."""
 
     def __init__(self, *args, **kwargs):
         defaultdict.__init__(self, int)

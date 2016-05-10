@@ -11,7 +11,7 @@ specification of the format and the structure of mzML files.
 
 This module provides a minimalistic way to extract information from mzML
 files. You can use the old functional interface (:py:func:`read`) or the new
-object-oriented interface (:py:class:`MzML`) to iterate over entries in
+object-oriented interface (:py:class:`MzML` or ) to iterate over entries in
 ``<spectrum>`` elements.
 
 Data access
@@ -19,6 +19,9 @@ Data access
 
   :py:class:`MzML` - a class representing a single mzML file.
   Other data access functions use this class internally.
+
+  :py:class:`PreIndexedMzML` - a class representing a single mzML file.
+  Uses byte offsets listed at the end of the file for quick access to spectrum elements.
 
   :py:func:`read` - iterate through spectra in mzML file. Data from a
   single spectrum are converted to a human-readable dict. Spectra themselves are
@@ -325,16 +328,10 @@ def _iterparse_index_list(file_obj, offset):
     return index_map
 
 
-def _flatten_map(hierarchical_map):
-    all_records = []
-    for key, records in hierarchical_map.items():
-        all_records.extend(records.items())
-
-    all_records.sort(key=lambda x: x[1])
-    return xml.ByteEncodingOrderedDict(all_records)
-
-
 class PreIndexedMzML(MzML):
+    """Parser class for mzML files, subclass of :py:class:`MzML`.
+    Uses byte offsets listed at the end of the file for quick access to spectrum elements.
+    """
     def __init__(self, *args, **kwargs):
         super(PreIndexedMzML, self).__init__(*args, **kwargs)
 
@@ -343,4 +340,4 @@ class PreIndexedMzML(MzML):
         Build up a `dict` of `dict` of offsets for elements. Calls :func:`find_index_list`
         on :attr:`_source` and assigns the return value to :attr:`_offset_index`
         """
-        self._offset_index = _flatten_map(find_index_list(self._source))
+        self._offset_index = xml._flatten_map(find_index_list(self._source))

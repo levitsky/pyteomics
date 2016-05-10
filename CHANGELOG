@@ -1,5 +1,11 @@
 3.3
 ---
+   
+ - mzML and mzIdentML parsers now can create an index of element offsets.
+   This allows quick random access to elements by unique ID.
+   mzML parsers now come in two flavors: :py:class:`pyteomics.mzml.MzML` and
+   :py:class:`pyteomics.mzml.PreIndexedMzML`. The latter uses the byte offsets
+   listed at the end of the file.
 
  - New parameters `convert_arrays` and `skip_charges` in :py:func:`mgf.read`
    allow using it without :py:mod:`numpy` and possibly improving performance.
