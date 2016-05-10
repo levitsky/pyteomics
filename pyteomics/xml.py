@@ -2,8 +2,8 @@
 xml - utilities for XML parsing
 ===============================
 
-This module is not intended for end users. It implements the abstract class
-for all XML parsers, :py:class:`XML`, and some utility functions.
+This module is not intended for end users. It implements the abstract classes
+for all XML parsers, :py:class:`XML` and :py:class:`IndexedXML`, and some utility functions.
 
 Dependencies
 ------------
@@ -764,9 +764,18 @@ def ensure_bytes_single(string):
 
 
 def ensure_bytes(strings):
-    if isinstance(strings, (basestring)):
+    if isinstance(strings, basestring):
         strings = [strings]
     return [ensure_bytes_single(string) for string in strings]
+
+
+def _flatten_map(hierarchical_map):
+    all_records = []
+    for key, records in hierarchical_map.items():
+        all_records.extend(records.items())
+
+    all_records.sort(key=lambda x: x[1])
+    return ByteEncodingOrderedDict(all_records)
 
 
 class IndexedXML(XML):
