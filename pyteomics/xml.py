@@ -138,7 +138,7 @@ class XML(FileReader):
             should be built and stored on the instance. It is used in
             :py:meth:`XML.get_by_id`, e.g. when using
             :py:class:`pyteomics.mzid.MzIdentML` with ``retrieve_refs=True``.
-         """
+        """
 
         super(XML, self).__init__(source, 'rb', self.iterfind, False,
                 (self._default_iter_tag,), kwargs)
@@ -563,18 +563,19 @@ class ByteCountingXMLScanner(_file_obj):
     Carry out the construction of a byte offset index for `source` XML file
     for each type of tag in :attr:`indexed_tags`.
 
-    Inheris from :class:`pyteomics.auxillary._file_obj` to support the object-oriented
-    :func:`_keep_state` interface.
-    
-    Attributes
-    ----------
-    block_size : int
-        The size of the each chunk or "block" of the file to hold in memory as a
-        partitioned string at any given time. Defaults to `1000000`
-    indexed_tags : iterable of bytes
-        The XML tags (without namespaces) to build indices for
+    Inheris from :py:class:`pyteomics.auxiliary._file_obj` to support the object-oriented
+    :py:func:`_keep_state` interface.
     """
     def __init__(self, source, indexed_tags, block_size=1000000):
+        """
+        Parameters
+        ----------
+        indexed_tags : iterable of bytes
+            The XML tags (without namespaces) to build indices for.
+        block_size : int, optional
+            The size of the each chunk or "block" of the file to hold in memory as a
+            partitioned string at any given time. Defaults to `1000000`.
+        """
         super(ByteCountingXMLScanner, self).__init__(source, 'rb')
         self.indexed_tags = ensure_bytes(indexed_tags)
         self.block_size = block_size
@@ -588,7 +589,7 @@ class ByteCountingXMLScanner(_file_obj):
         """
         f = self.file
         read_size = self.block_size
-        delim = b"<"
+        delim = b'<'
         buff = f.read(read_size)
         parts = buff.split(delim)
         tail = parts[-1]
@@ -684,11 +685,7 @@ class TagSpecificXMLByteIndex(object):
     indexed_tags : iterable of bytes
         The tag names to index, not including a namespace
     offsets : defaultdict(OrderedDict(str, int))
-        The hierarchy of byte offsets organized {
-            "tag_type": {
-                "id": byte_offset
-            }
-        }
+        The hierarchy of byte offsets organized ``{"tag_type": {"id": byte_offset}}``
 
     Parameters
     ----------
@@ -734,13 +731,13 @@ class TagSpecificXMLByteIndex(object):
 
 class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
     """
-    An alternative interface on top of py:class:`TagSpecificXMLByteIndex` that assumes
+    An alternative interface on top of :py:class:`TagSpecificXMLByteIndex` that assumes
     that identifiers across different tags are globally unique, as in MzIdentML.
     
     Attributes
     ----------
     offsets : ByteEncodingOrderedDict
-        The mapping between ids and byte offsets
+        The mapping between ids and byte offsets.
     """
     def build_index(self):
         hierarchical_index = super(FlatTagSpecificXMLByteIndex, self).build_index()
@@ -779,9 +776,39 @@ def _flatten_map(hierarchical_map):
 
 
 class IndexedXML(XML):
+    """Subclass of :py:class:`XML` which uses an index of byte offsets for some
+    elements for quick random access.
+    """
     _indexed_tags = set()
 
     def __init__(self, *args, **kwargs):
+        """Create an XML parser object.
+
+        Parameters
+        ----------
+        source : str or file
+            File name or file-like object corresponding to an XML file.
+        read_schema : bool, optional
+            Defines whether schema file referenced in the file header
+            should be used to extract information about value conversion.
+            Default is :py:const:`True`.
+        iterative : bool, optional
+            Defines whether an :py:class:`ElementTree` object should be
+            constructed and stored on the instance or if iterative parsing
+            should be used instead. Iterative parsing keeps the memory usage
+            low for large XML files. Default is :py:const:`True`.
+        use_index : bool, optional
+            Defines whether an index of byte offsets needs to be created for
+            elements listed in `indexed_tags`.
+            This is useful for random access to spectra in mzML or elements of mzIdentML files,
+            or for iterative parsing of mzIdentML with ``retrieve_refs=True``.
+            If :py:const:`True`, `build_id_cache`
+            is ignored. If :py:const:`False`, the object acts exactly like :py:class:`XML`.
+            Default is :py:const:`True`.
+        indexed_tags : container of bytes, optional
+            If `use_index` is :py:const:`True`, elements listed in this parameter
+            will be indexed. Empty set by default.
+        """
         tags = kwargs.get('indexed_tags')
         use_index = kwargs.get('use_index', True)
 

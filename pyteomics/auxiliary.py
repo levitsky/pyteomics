@@ -289,7 +289,7 @@ def memoize(maxsize=1000):
 
 class BasicComposition(defaultdict, Counter):
     """A generic dictionary for compositions.
-    Keys are supposed to be integers.
+    Keys should be strings, values should be integers.
     Allows simple arithmetics."""
 
     def __init__(self, *args, **kwargs):

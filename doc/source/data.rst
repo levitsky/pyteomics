@@ -261,9 +261,10 @@ If you need to modify a single sequence, use the
 XML formats
 ===========
 
-XML parsers in **Pyteomics 3.0** are implemented as classes and provide an
-object-oriented interface. The functional interface is preserved and wraps
-the actual class-based machinery. That means that reader objects returned
+XML parsers are implemented as classes and provide an
+object-oriented interface. The functional interface is preserved for backward
+compatibility and wraps the actual class-based machinery.
+That means that reader objects returned
 by :py:func:`read` functions have additional methods.
 
 One of the most important methods is :py:meth:`iterfind`. It allows reading
@@ -315,7 +316,18 @@ Here is an example of the output:
      ->  -> [Thermo Trailer Extra]Monoisotopic M/Z:
      -> no combination
 
+Additionally, :py:class:`pyteomics.mzml.MzML` object support direct indexing
+with spectrum IDs:
 
+.. code-block:: python
+
+    >>> from pyteomics import mzml
+    >>> with mzml.MzML('tests/test.mzML') as reader:
+    >>>    spectrum = reader["controllerType=0 controllerNumber=1 scan=1"]
+    >>>    ...
+
+:py:class:`pyteomics.mzml.PreIndexedMzML` offers the same functionality,
+but it uses byte offset information found at the end of the file.
 
 pepXML
 ------
@@ -504,7 +516,8 @@ Standard Initiative.
 
 The module interface is similar to that of the other reader modules.
 The :py:func:`pyteomics.mzid.read` function returns a
-:py:class:`pyteomics.mzid.MzIdentML` instance.
+:py:class:`pyteomics.mzid.MzIdentML` instance, which you can just as easily
+use directly.
 
 .. code-block:: python
 
