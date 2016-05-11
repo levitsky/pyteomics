@@ -6,13 +6,15 @@ Summary
 -------
 
 mzML is a standard rich XML-format for raw mass spectrometry data storage.
-Please refer to http://www.psidev.info/index.php?q=node/257 for the detailed
-specification of the format and the structure of mzML files.
+Please refer to `psidev.info <http://www.psidev.info/index.php?q=node/257>`_
+for the detailed specification of the format and structure of mzML files.
 
 This module provides a minimalistic way to extract information from mzML
 files. You can use the old functional interface (:py:func:`read`) or the new
-object-oriented interface (:py:class:`MzML` or ) to iterate over entries in
-``<spectrum>`` elements.
+object-oriented interface (:py:class:`MzML` or :py:class:`PreIndexedMzML`)
+to iterate over entries in ``<spectrum>`` elements.
+:py:class:`MzML` and :py:class:`PreIndexedMzML` also support direct indexing
+with spectrum IDs.
 
 Data access
 -----------
@@ -194,6 +196,10 @@ def read(source, read_schema=True, iterative=True, use_index=False):
         memory usage at almost the same parsing speed. Default is
         :py:const:`True`.
 
+    use_index : bool, optional
+        Defines whether an index of byte offsets needs to be created for
+        spectrum elements. Default is :py:const:`False`.
+
     Returns
     -------
     out : iterator
@@ -253,91 +259,75 @@ version_info = xml._make_version_info(MzML)
 chain = aux._make_chain(read, 'read')
 
 
-@aux._keepstate
-def find_index_list_offset(file_obj):
-    """
-    Search relative to the bottom of the file upwards to find the offsets
-    of the index lists.
-
-    Parameters
-    ----------
-    file_obj : str or file-like
-        File to search.
-
-    Returns
-    -------
-    list of int
-        A list of byte offsets for `<indexList>` elements
-    """
-    file_obj.seek(-1024, 2)
-    text = file_obj.read(1024)
-    index_offsets = list(map(int, re.findall(br"<indexListOffset>(\d+)</indexListOffset>", text)))
-    return index_offsets
-
-
-@aux._keepstate
-def find_index_list(file_obj):
-    """
-    Extract lists of index offsets from the end of the file.
-
-    Parameters
-    ----------
-    file_obj : str or file-like
-        File to extract indices from.
-
-    Returns
-    -------
-    dict of str -> dict of str -> int
-    """
-    offsets = find_index_list_offset(file_obj)
-    index_list = {}
-    for offset in offsets:
-        # Sometimes the offset is at the very beginning of the file,
-        # due to a bug in an older version of ProteoWizard. If this crude
-        # check fails, don't bother searching the entire file, and fall back
-        # on the base class's mechanisms.
-        #
-        # Alternative behavior here would be to start searching for the start
-        # of the index from the bottom of the file, but this version of Proteowizard
-        # also emits invalid offsets which do not improve retrieval time.
-        if offset < 1024:
-            continue
-        index_list.update(_iterparse_index_list(file_obj, offset))
-    return index_list
-
-
-@aux._keepstate
-def _iterparse_index_list(file_obj, offset):
-    index_map = {}
-    index = {}
-    file_obj.seek(offset)
-    try:
-        for event, elem in etree.iterparse(file_obj, events=('start', 'end'), remove_comments=True):
-            if event == 'start':
-                if elem.tag == 'index':
-                    index = {}
-                    index_map[elem.attrib['name']] = index
-            else:
-                if elem.tag == "offset":
-                    index[elem.attrib['idRef']] = int(elem.text)
-                elem.clear()
-    except etree.XMLSyntaxError:
-        # The iteration has reached the end of the indexList tag and the parser
-        # encounters the later elements in the document.
-        pass
-    return index_map
-
-
 class PreIndexedMzML(MzML):
     """Parser class for mzML files, subclass of :py:class:`MzML`.
     Uses byte offsets listed at the end of the file for quick access to spectrum elements.
     """
-    def __init__(self, *args, **kwargs):
-        super(PreIndexedMzML, self).__init__(*args, **kwargs)
-
     def _build_index(self):
         """
-        Build up a `dict` of `dict` of offsets for elements. Calls :func:`find_index_list`
-        on :attr:`_source` and assigns the return value to :attr:`_offset_index`
+        Build up a `dict` of `dict` of offsets for elements. Calls :meth:`_find_index_list`
+        and assigns the return value to :attr:`_offset_index`
         """
-        self._offset_index = xml._flatten_map(find_index_list(self._source))
+        self._offset_index = xml._flatten_map(self._find_index_list())
+
+    @xml._keepstate
+    def _iterparse_index_list(self, offset):
+        index_map = {}
+        index = {}
+        self._source.seek(offset)
+        try:
+            for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True):
+                if event == 'start':
+                    if elem.tag == 'index':
+                        index = {}
+                        index_map[elem.attrib['name']] = index
+                else:
+                    if elem.tag == 'offset':
+                        index[elem.attrib['idRef']] = int(elem.text)
+                    elem.clear()
+        except etree.XMLSyntaxError:
+            # The iteration has reached the end of the indexList tag and the parser
+            # encounters the later elements in the document.
+            pass
+        return index_map
+
+    @xml._keepstate
+    def _find_index_list_offset(self):
+        """
+        Search relative to the bottom of the file upwards to find the offsets
+        of the index lists.
+
+        Returns
+        -------
+        list of int
+            A list of byte offsets for `<indexList>` elements
+        """
+        self._source.seek(-1024, 2)
+        text = self._source.read(1024)
+        index_offsets = list(map(int, re.findall(br'<indexListOffset>(\d+)</indexListOffset>', text)))
+        return index_offsets
+
+    @xml._keepstate
+    def _find_index_list(self):
+        """
+        Extract lists of index offsets from the end of the file.
+
+        Returns
+        -------
+        dict of str -> dict of str -> int
+        """
+        offsets = self._find_index_list_offset()
+        index_list = {}
+        for offset in offsets:
+            # Sometimes the offset is at the very beginning of the file,
+            # due to a bug in an older version of ProteoWizard. If this crude
+            # check fails, don't bother searching the entire file, and fall back
+            # on the base class's mechanisms.
+            #
+            # Alternative behavior here would be to start searching for the start
+            # of the index from the bottom of the file, but this version of Proteowizard
+            # also emits invalid offsets which do not improve retrieval time.
+            if offset < 1024:
+                continue
+            index_list.update(self._iterparse_index_list(offset))
+        return index_list

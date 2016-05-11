@@ -16,6 +16,7 @@ object-oriented interface (:py:class:`MzIdentML`) to iterate over entries in
 for a certain spectrum. Note that each entry can contain more than one PSM
 (peptide-spectrum match). They are accessible with "SpectrumIdentificationItem"
 key.
+:py:class:`MzIdentML` objects also support direct indexing by element ID.
 
 Data access
 -----------
@@ -176,12 +177,22 @@ def read(source, **kwargs):
         created :py:class:`MzIdentML` instance. Default value is the value of
         `retrieve_refs`.
 
+    use_index : bool, optional
+        Defines whether an index of byte offsets needs to be created for
+        the indexed elements. If :py:const:`True`, `build_id_cache` is ignored.
+        Default is :py:const:`False`.
+
+    indexed_tags : container of bytes, optional
+        Defines which elements need to be indexed. Empty set by default.
+
     Returns
     -------
     out : MzIdentML
        An iterator over the dicts with PSM properties.
     """
     kwargs = kwargs.copy()
+    if kwargs.get('use_index'):
+        kwargs['build_id_cache'] = False
     kwargs['build_id_cache'] = kwargs.get('build_id_cache',
             kwargs.get('retrieve_refs'))
     return MzIdentML(source, **kwargs)
