@@ -33,9 +33,9 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(data.mgf_spectra_short, list(reader))
 
     def test_read_no_charges(self):
-        with read(self.path, skip_charges=True) as reader:
+        with read(self.path, read_charges=False) as reader:
             self.assertEqual(data.mgf_spectra_long_no_charges, list(reader))
-        with read(self.path, False, skip_charges=True) as reader:
+        with read(self.path, False, read_charges=False) as reader:
             self.assertEqual(data.mgf_spectra_short_no_charges, list(reader))
 
     def test_read_array_conversion(self):

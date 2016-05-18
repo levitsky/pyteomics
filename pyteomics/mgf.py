@@ -80,7 +80,7 @@ _array_converters = {
 }
 
 @aux._file_reader()
-def read(source=None, use_header=True, convert_arrays='full', skip_charges=False):
+def read(source=None, use_header=True, convert_arrays='full', read_charges=True):
     """Read an MGF file and return entries iteratively.
 
     Read the specified MGF file, **yield** spectra one by one.
@@ -109,9 +109,8 @@ def read(source=None, use_header=True, convert_arrays='full', skip_charges=False
         If 'full', charges will be reported as a masked array (default).
         The default option is the slowest. 'full' and 'regular' require :py:mod:`numpy`.
 
-    skip_charges : bool, optional
-        If `True`, fragment charges are not reported (improves performance).
-        Default is `False`.
+    read_charges : bool, optional
+        If `True` (default), fragment charges are reported. Disabling it improves performance.
 
     Returns
     -------
@@ -150,7 +149,7 @@ def read(source=None, use_header=True, convert_arrays='full', skip_charges=False
                     params['charge'] = aux._parse_charge(params['charge'], True)
                 out = {'params': params}
                 data = {'m/z array': masses, 'intensity array': intensities}
-                if not skip_charges:
+                if read_charges:
                     data['charge array'] = charges
                 for key, values in data.items():
                     out[key] = _array_converters[key][convert_arrays](values)
@@ -170,7 +169,7 @@ def read(source=None, use_header=True, convert_arrays='full', skip_charges=False
                         try:
                             masses.append(float(l[0]))            # this may cause
                             intensities.append(float(l[1]))       # exceptions...\
-                            if not skip_charges:
+                            if read_charges:
                                 charges.append(aux._parse_charge(l[2]) if len(l) > 2 else 0)
                         except ValueError:
                             raise aux.PyteomicsError(
