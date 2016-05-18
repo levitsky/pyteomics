@@ -316,7 +316,7 @@ Here is an example of the output:
      ->  -> [Thermo Trailer Extra]Monoisotopic M/Z:
      -> no combination
 
-Additionally, :py:class:`pyteomics.mzml.MzML` object support direct indexing
+Additionally, :py:class:`pyteomics.mzml.MzML` objects support direct indexing
 with spectrum IDs:
 
 .. code-block:: python
@@ -324,6 +324,7 @@ with spectrum IDs:
     >>> from pyteomics import mzml
     >>> with mzml.MzML('tests/test.mzML') as reader:
     >>>    spectrum = reader["controllerType=0 controllerNumber=1 scan=1"]
+    >>>    mz = spectrum['m/z array'] # do something with "spectrum"
     >>>    ...
 
 :py:class:`pyteomics.mzml.PreIndexedMzML` offers the same functionality,
@@ -551,14 +552,38 @@ element.
 
 The parser can retrieve information from these references on the fly, which can
 be enabled by passing ``retrieve_refs=True`` to the
-:py:meth:`pyteomics.mzid.MzIdentML.iterfind` method or to
-:py:func:`pyteomics.mzid.read`. Retrieval of data by reference is implemented in
-the :py:meth:`pyteomics.mzid.MzIdentML.get_by_id` method.
+:py:meth:`pyteomics.mzid.MzIdentML.iterfind` method, to
+:py:class:`pyteomics.mzid.MzIdentML` constructor, or to
+:py:func:`pyteomics.mzid.read`. Retrieval of data by ID is implemented in
+the :py:meth:`pyteomics.mzid.MzIdentML.get_by_id` method. Alternatively, the
+:py:class:`MzIdentML` object itself can be indexed with element IDs::
 
-.. note:: Retrieving a lot of references by doing individual queries is very
-          slow. To speed it up, you can enable caching of element IDs. To build
-          a cache for a file, you can pass ``build_id_cache=True`` to the
-          :py:class:`MzIdentML` constructor, or to :py:func:`pyteomics.mzid.read`,
+    >>> from pyteomics import mzid
+    >>> m = mzid.MzIdentML('tests/test.mzid')
+    >>> m['ipi.HUMAN_decoy']
+    {'DatabaseName': 'database IPI_human',
+     'decoy DB accession regexp': '^SHD',
+     'decoy DB generation algorithm': 'PeakQuant.DecoyDatabaseBuilder',
+     'id': 'ipi.HUMAN_decoy',
+     'location': 'file://www.medizinisches-proteom-center.de/DBServer/ipi.HUMAN/3.15/ipi.HUMAN_decoy.fasta',
+     'name': ['decoy DB from IPI_human',
+      'DB composition target+decoy',
+      'decoy DB type shuffle'],
+     'numDatabaseSequences': 58099,
+     'releaseDate': '2006-02-22T09:30:47Z',
+     'version': '3.15'}
+    >>> m.close()
+
+
+.. note:: Since version 3.3, :py:class:`pyteomics.mzid.MzIdentML` objects keep an index of byte
+          offsets for some of the elements. It helps achieve acceptable performance
+          when using ``retrieve_refs=True``, or when accessing individual elements by their ID.
+
+          This behavior can be disabled by passing
+          ``use_index=False`` to the object constructor.
+          An alternative, older mechanism is caching of element IDs. To build
+          a cache for a file, you can pass ``build_id_cache=True`` and ``use_index=False``
+          to the :py:class:`MzIdentML` constructor, or to :py:func:`pyteomics.mzid.read`,
           or call the :py:meth:`pyteomics.mzid.MzIdentML.build_id_cache` method
           prior to reading the data.
 
