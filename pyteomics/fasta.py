@@ -20,10 +20,21 @@ Data manipulation
 
   :py:func:`parse` - parse a FASTA header.
 
-Decoy database generation
+Decoy sequence generation
 -------------------------
 
-  :py:func:`decoy_sequence` - generate a decoy sequence from a given sequence.
+:py:func:`decoy_sequence` - generate a decoy sequence from a given sequence, using
+one of the other functions listed in this section or any other callable.
+
+:py:func:`reverse` - generate a reversed decoy sequence.
+
+:py:func:`shuffle` - generate a shuffled decoy sequence.
+
+:py:func:`fused_decoy` - generate a "fused" decoy sequence.
+
+
+Decoy database generation
+-------------------------
 
   :py:func:`decoy_db` - generate entries for a decoy database from a given FASTA
   database.
@@ -72,7 +83,6 @@ def read(source=None, ignore_comments=False, parser=None):
 
     Parameters
     ----------
-
     source : str or file or None, optional
         A file object (or file name) with a FASTA database. Default is
         :py:const:`None`, which means read standard input.
@@ -85,14 +95,13 @@ def read(source=None, ignore_comments=False, parser=None):
         the returned value will be yielded together with the sequence.
         The :py:data:`std_parsers` dict has parsers for several formats.
         Hint: specify :py:func:`parse` as the parser to apply automatic
-        format guessing.
+        format recognition.
         Default is :py:const:`None`, which means return the header "as is".
 
     Returns
     -------
-
     out : iterator of tuples
-        A named 2-tuple with FASTA header (str) and sequence (str).
+        A named 2-tuple with FASTA header (str or dict) and sequence (str).
         Attributes 'description' and 'sequence' are also provided.
     """
     f = parser or (lambda x: x)
@@ -160,7 +169,86 @@ def write(entries, output=None):
 
     return output.file
 
-def decoy_sequence(sequence, mode, keep_nterm=False):
+def reverse(sequence, keep_nterm=False):
+    """
+    Create a decoy sequence by reversing the original one.
+
+    Parameters
+    ----------
+    sequence : str
+        The initial sequence string.
+    keep_nterm : bool, optional
+        If :py:const:`True`, then the N-terminal residue will be kept.
+        Default is :py:const:`False`.
+
+    Returns
+    -------
+    decoy_sequence : str
+        The decoy sequence.
+    """
+    if keep_nterm and sequence:
+        return sequence[0] + reverse(sequence[1:], False)
+    return sequence[::-1]
+
+def shuffle(sequence, keep_nterm=False):
+    """
+    Create a decoy sequence by shuffling the original one.
+
+    Parameters
+    ----------
+    sequence : str
+        The initial sequence string.
+    keep_nterm : bool, optional
+        If :py:const:`True`, then the N-terminal residue will be kept.
+        Default is :py:const:`False`.
+
+    Returns
+    -------
+    decoy_sequence : str
+        The decoy sequence.
+    """
+    if keep_nterm and sequence:
+        return sequence[0] + shuffle(sequence[1:], False)
+    modified_sequence = list(sequence)
+    random.shuffle(modified_sequence)
+    return ''.join(modified_sequence)
+
+def fused_decoy(sequence, decoy_mode='reverse', sep='R', **kwargs):
+    """
+    Create a "fused" decoy sequence by concatenating a decoy sequence with the original one.
+
+    Parameters
+    ----------
+    sequence : str
+        The initial sequence string.
+    decoy_mode : str or callable, optional
+        Type of decoy sequence to use. Should be one of the standard modes or any callable.
+        Standard modes are:
+
+        - 'reverse' for :py:func:`reverse`;
+        - 'shuffle' for :py:func:`shuffle`;
+        - 'fused' for :py:func:`fused_decoy` (if you love recursion).
+
+        Default is 'reverse'.
+    sep : str, optional
+        Amino acid motif that separates the decoy sequence from the target one.
+        This setting should reflect the enzyme specificity used in the search against the
+        database being generated. Default is 'R', which is suitable for trypsin searches.
+    **kwargs : given to the decoy generation function.
+
+    Examples
+    --------
+    >>> fused_decoy('PEPT')
+    'TPEPRPEPT'
+    >>> fused_decoy('MPEPT', 'shuffle', 'K', keep_nterm=True)
+    'MPPTEKMPEPT'
+    """
+    decoy = decoy_sequence(sequence, decoy_mode, **kwargs)
+    return decoy + sep + sequence
+
+_decoy_functions = {'reverse': reverse, 'shuffle': shuffle, 'fused': fused_decoy}
+
+def decoy_sequence(sequence, mode='reverse', **kwargs):
     """
     Create a decoy sequence out of a given sequence string.
 
@@ -168,32 +256,32 @@ def decoy_sequence(sequence, mode, keep_nterm=False):
     ----------
     sequence : str
         The initial sequence string.
-    mode : str
-        Type of decoy sequence. Should be one of 'reverse', 'shuffle'.
-    keep_nterm : bool, optional
-        If :py:const:`True`, then the N-terminal residue will be kept.
-        Default is :py:const:`False`.
+    mode : str or callable, optional
+        Type of decoy sequence. Should be one of the standard modes or any callable.
+        Standard modes are:
+
+        - 'reverse' for :py:func:`reverse`;
+        - 'shuffle' for :py:func:`shuffle`;
+        - 'fused' for :py:func:`fused_decoy`.
+
+        Default is 'reverse'.
+    **kwargs : given to the decoy function.
 
     Returns
     -------
-    modified_sequence : str
-        The modified sequence.
+    decoy_sequence : str
+        The decoy sequence.
     """
-    if keep_nterm and sequence:
-        return sequence[0] + decoy_sequence(sequence[1:], mode, False)
-    if mode == 'reverse':
-        return sequence[::-1]
-    if mode == 'shuffle':
-        modified_sequence = list(sequence)
-        random.shuffle(modified_sequence)
-        return ''.join(modified_sequence)
-    raise aux.PyteomicsError(
-            """`fasta.decoy_sequence`: `mode` must be 'reverse' or
-            'shuffle', not {}""".format(mode))
+    fmode = mode
+    if isinstance(mode, str):
+        fmode = _decoy_functions.get(mode)
+        if fmode is None:
+            raise aux.PyteomicsError('Unsupported decoy mode: {}'.format(mode))
+    return fmode(sequence, **kwargs)
 
 @aux._file_reader()
 def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
-        keep_nterm=False, ignore_comments=False, parser=None):
+        ignore_comments=False, parser=None, **kwargs):
     """Iterate over sequences for a decoy database out of a given ``source``.
 
     Parameters
@@ -201,8 +289,9 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
     source : file-like object or str or None, optional
         A path to a FASTA database or a file object itself. Default is
         :py:const:`None`, which means read standard input.
-    mode : {'reverse', 'shuffle'}, optional
+    mode : str or callable, optional
         Algorithm of decoy sequence generation. 'reverse' by default.
+        See :py:func:`decoy_sequence` for more information.
     prefix : str, optional
         A prefix to the protein descriptions of decoy entries. The default
         value is `'DECOY_'`.
@@ -211,9 +300,6 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
         `output`. If :py:const:`False`, the entries from `source` will be
         written first.
         :py:const:`False` by default.
-    keep_nterm : bool, optional
-        If :py:const:`True`, then the N-terminal residue will be kept.
-        Default is :py:const:`False`.
     ignore_comments : bool, optional
         If True then ignore the second and subsequent lines of description.
         Default is :py:const:`False`.
@@ -225,6 +311,8 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
         Hint: specify :py:func:`parse` as the parser to apply automatic
         format guessing.
         Default is :py:const:`None`, which means return the header "as is".
+    **kwargs : given to :py:func:`decoy_sequence`.
+
     Returns
     -------
     out : iterator
@@ -243,12 +331,12 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
     parser = parser or (lambda x: x)
     with read(source, ignore_comments) as f:
         for descr, seq in f:
-            yield Protein(parser(prefix + descr), decoy_sequence(seq, mode, keep_nterm))
+            yield Protein(parser(prefix + descr), decoy_sequence(seq, mode, **kwargs))
     
 
 @aux._file_writer()
 def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
-        decoy_only=False, keep_nterm=False):
+        decoy_only=False, **kwargs):
     """Generate a decoy database out of a given ``source`` and write to file.
 
     If `output` is a path, the file will be open for appending, so no information
@@ -265,8 +353,9 @@ def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
     output : file-like object or str, optional
         A path to the output database or a file open for writing.
         Defaults to :py:const:`None`, the results go to the standard output.
-    mode : {'reverse', 'shuffle'}, optional
+    mode :str or callable, optional
         Algorithm of decoy sequence generation. 'reverse' by default.
+        See :py:func:`decoy_sequence` for more details.
     prefix : str, optional
         A prefix to the protein descriptions of decoy entries. The default
         value is `'DECOY_'`
@@ -275,19 +364,17 @@ def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
         `output`. If :py:const:`False`, the entries from `source` will be
         written as well.
         :py:const:`False` by default.
-    keep_nterm : bool, optional
-        If :py:const:`True`, then the N-terminal residue will be kept.
-        Default is :py:const:`False`.
     file_mode : str, keyword only, optional
         If `output` is a file name, defines the mode the file will be opened in.
         Otherwise will be ignored. Default is 'a'.
+    **kwargs : given to :py:func:`decoy_sequence`.
 
     Returns
     -------
     output : file
-        A file object for the created file.
+        A (closed) file object for the created file.
     """
-    with decoy_db(source, mode, prefix, decoy_only, keep_nterm) as entries:
+    with decoy_db(source, mode, prefix, decoy_only, **kwargs) as entries:
         write(entries, output)
         return output.file
 

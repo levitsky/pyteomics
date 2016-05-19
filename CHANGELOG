@@ -14,6 +14,8 @@
 
  - Performance optimizations in :py:func:`mgf.read` and :py:func:`parser.cleave`.
 
+ - New decoy generation mode called "fused decoy", described in the paper accepted to JASMS.
+
 API changes
 ...........
 
@@ -25,6 +27,9 @@ API changes
    extract more protein-related information. The list-like protein-related values
    can be reported as lists or packed into strings, depending on the optional
    paramter `sep`. Some column names have changed as a result.
+
+ - Call signatures of :py:func:`pyteomics.fasta.decoy_sequence` and the functions using it
+   are slightly changed. Standard modes are now also exposed as individual functions.
 
 3.2
 ---
