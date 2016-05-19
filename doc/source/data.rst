@@ -63,14 +63,12 @@ Reading
 .......
 
 :py:func:`pyteomics.mgf.read` function allows iterating through spectrum entries.
-Spectra are represented as :py:class:`dicts`. MS/MS peak lists are stored
+Spectra are represented as :py:class:`dicts`. By default, MS/MS peak lists are stored
 as :py:class:`numpy.ndarray` objects `mass array` and `intensity array`.
 Fragment charges will be stored in a masked array under the `charge array` key.
 Parameters are stored as a :py:class:`dict` under `params` key.
 
-Here is an example of use:
-
-.. code-block:: python
+Here is an example of use::
 
     >>> from pyteomics import mgf, auxiliary
     >>> with mgf.read('tests/test.mgf') as reader:
@@ -90,6 +88,10 @@ Here is an example of use:
      -> com
     intensity array
     charge array
+
+To speed up parsing, or if you want to avoid using :py:mod:`numpy`, you can tweak the
+behaviour of :py:func:`pyteomics.mgf.read` with parameters `convert_arrays` and `read_charges`.
+
 
 Reading file headers
 ....................
