@@ -39,13 +39,13 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(data.mgf_spectra_short_no_charges, list(reader))
 
     def test_read_array_conversion(self):
-        with read(self.path, convert_arrays='none') as reader:
+        with read(self.path, convert_arrays=0) as reader:
             self.assertEqual(data.mgf_spectra_lists, list(reader))
-        with read(self.path, convert_arrays='full') as reader:
+        with read(self.path, convert_arrays=2) as reader:
             s = next(reader)
             self.assertTrue(isinstance(s['charge array'], np.ma.core.MaskedArray))
             self.assertTrue(isinstance(s['m/z array'], np.ndarray))
-        with read(self.path, convert_arrays='regular') as reader:
+        with read(self.path, convert_arrays=1) as reader:
             s = next(reader)
             self.assertTrue(isinstance(s['charge array'], np.ndarray))
             self.assertTrue(isinstance(s['m/z array'], np.ndarray))

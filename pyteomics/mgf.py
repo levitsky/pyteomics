@@ -62,25 +62,13 @@ _array = np.array if np is not None else None
 _ma = (lambda x: np.ma.masked_equal(x, 0)) if np is not None else None
 _identity = lambda x: x
 _array_converters = {
-    'm/z array': {
-        'none': _identity,
-        'regular': _array,
-        'full': _array
-    },
-    'intensity array': {
-        'none': _identity,
-        'regular': _array,
-        'full': _array
-    },
-    'charge array': {
-        'none': _identity,
-        'regular': _array,
-        'full': _ma
-    }
+    'm/z array': [_identity, _array, _array],
+    'intensity array': [_identity, _array, _array],
+    'charge array': [_identity, _array, _ma]
 }
 
 @aux._file_reader()
-def read(source=None, use_header=True, convert_arrays='full', read_charges=True):
+def read(source=None, use_header=True, convert_arrays=2, read_charges=True):
     """Read an MGF file and return entries iteratively.
 
     Read the specified MGF file, **yield** spectra one by one.
@@ -103,11 +91,11 @@ def read(source=None, use_header=True, convert_arrays='full', read_charges=True)
         override those from the header in case of conflict.
         Default is :py:const:`True`.
 
-    convert_arrays : one of {'full', 'regular', 'none'}, optional
-        If 'none', m/z, intensities and (possibly) charges will be returned as regular lists.
-        If 'regular', they will be converted to regular :py:class:`numpy.ndarray`'s.
-        If 'full', charges will be reported as a masked array (default).
-        The default option is the slowest. 'full' and 'regular' require :py:mod:`numpy`.
+    convert_arrays : one of {0, 1, 2}, optional
+        If `0`, m/z, intensities and (possibly) charges will be returned as regular lists.
+        If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
+        If `2`, charges will be reported as a masked array (default).
+        The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
 
     read_charges : bool, optional
         If `True` (default), fragment charges are reported. Disabling it improves performance.
@@ -117,7 +105,7 @@ def read(source=None, use_header=True, convert_arrays='full', read_charges=True)
 
     out : FileReader
     """
-    if convert_arrays != 'none' and np is None:
+    if convert_arrays and np is None:
         raise PyteomicsError('numpy is required for array conversion')
     header = read_header(source)
     reading_spectrum = False
