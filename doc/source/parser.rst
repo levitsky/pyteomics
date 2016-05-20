@@ -12,8 +12,8 @@ a hyphen (‘-’). By default, both termini are assumed to be unmodified, which
 shown explicitly by 'H-' for N-terminal hydrogen and '-OH' for C-terminal hydroxyl.
 
 ``“H-HoxMMdaN-OH”`` is an example of a valid sequence in *modX*. See
-:doc:`api/parser` for additional information. Note that it is recommended to show
-either zero or 2 terminal group in a *modX* sequence.
+:doc:`api/parser` for additional information. Note that it is recommended to include
+either 0 or 2 terminal groups in a *modX* sequence.
 
 Sequence operations
 -------------------
