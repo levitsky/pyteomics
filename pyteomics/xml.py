@@ -108,6 +108,7 @@ class XML(FileReader):
     _default_version = 0
     _default_iter_tag = None
     _structures_to_flatten = []
+    _schema_location_param = 'schemaLocation'
 
     # Configurable plugin logic
     _converters = XMLValueConverter.converters()
@@ -171,7 +172,7 @@ class XML(FileReader):
             if _local_name(elem) == self._root_element:
                 return (elem.attrib.get('version'),
                         elem.attrib.get(('{{{}}}'.format(elem.nsmap['xsi'])
-                            if 'xsi' in elem.nsmap else '') + 'schemaLocation'))
+                            if 'xsi' in elem.nsmap else '') + self._schema_location_param))
 
     @_keepstate
     def _get_schema_info(self, read_schema=True):
@@ -300,7 +301,7 @@ class XML(FileReader):
                                 self._get_info_smart(child, **kwargs))
 
         # process element text
-        if element.text and element.text.strip():
+        if element.text:
             stext = element.text.strip()
             if stext:
                 if info:
@@ -895,6 +896,40 @@ class IndexedXML(XML):
         return self.get_by_id(elem_id)
 
 
+_featurexml_schema_defaults = {'bools': {
+    ('PeptideIdentification', 'higher_score_better'),
+    ('ProteinIdentification', 'higher_score_better'),
+    ('UnassignedPeptideIdentification', 'higher_score_better')},
+ 'charlists': set(),
+ 'floatlists': set(),
+ 'floats': {('PeptideHit', 'score'),
+            ('PeptideIdentification', 'MZ'),
+            ('PeptideIdentification', 'RT'),
+            ('PeptideIdentification', 'significance_threshold'),
+            ('ProteinHit', 'score'),
+            ('ProteinIdentification', 'significance_threshold'),
+            ('SearchParameters', 'peak_mass_tolerance'),
+            ('SearchParameters', 'precursor_peak_tolerance'),
+            ('UnassignedPeptideIdentification', 'MZ'),
+            ('UnassignedPeptideIdentification', 'RT'),
+            ('UnassignedPeptideIdentification', 'significance_threshold'),
+            ('pt', 'x'), ('pt', 'y'), ('position', 'position'),
+            ('feature', 'overallquality'), ('feature', 'intensity')
+            },
+ 'intlists': set(),
+ 'ints': {('PeptideHit', 'charge'),
+          ('PeptideIdentification', 'spectrum_reference'),
+          ('SearchParameters', 'missed_cleavages'),
+          ('UnassignedPeptideIdentification', 'spectrum_reference'),
+          ('featureList', 'count'), ('convexhull', 'nr'),
+          ('position', 'dim'), ('feature', 'spectrum_index'),
+          ('feature', 'charge'), ('quality', 'dim'), ('quality', 'quality')},
+ 'lists': {'FixedModification', 'IdentificationRun',
+           'PeptideHit', 'PeptideIdentification', 'ProteinHit',
+           'UnassignedPeptideIdentification', 'VariableModification',
+           'convexhull', 'dataProcessing', 'feature', 'hposition',
+           'hullpoint', 'param', 'position', 'processingAction',
+           'pt', 'quality', 'userParam'}}
 
 _mzid_schema_defaults = {
             'ints': {('DBSequence', 'length'),

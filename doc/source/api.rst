@@ -20,6 +20,7 @@ Contents:
    api/pepxml
    api/tandem
    api/mzid
+   api/featurexml
    api/auxiliary
    api/pylab_aux
    api/xml
