@@ -203,7 +203,7 @@ def read(source, read_schema=True, iterative=True, use_index=False):
     Returns
     -------
     out : iterator
-       An iterator over the dicts with spectra properties.
+       An iterator over the dicts with spectrum properties.
     """
 
     return MzML(source, read_schema=read_schema, iterative=iterative, use_index=use_index)
