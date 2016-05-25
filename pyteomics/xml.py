@@ -263,9 +263,13 @@ class XML(FileReader):
 
     def _handle_param(self, element, **kwargs):
         """Unpacks cvParam and userParam tags into key-value pairs"""
+        types = {'int': int, 'float': float, 'string': str}
         if 'value' in element.attrib:
             try:
-                value = float(element.attrib['value'])
+                if element.attrib.get('type') in types:
+                    value = types[element.attrib['type']](element.attrib['value'])
+                else:
+                    value = float(element.attrib['value'])
             except ValueError:
                 value = element.attrib['value']
             return {element.attrib['name']: value}
