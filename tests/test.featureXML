@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<featureMap version="1.6" id="fm_13512195538247056785" xsi:noNamespaceSchemaLocation="http://open-ms.sourceforge.net/schemas/FeatureXML_1_6.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<dataProcessing completion_time="2016-05-11T18:49:34">
+		<software name="FeatureFinderCentroided" version="2.0.0" />
+		<processingAction name="Quantitation" />
+		<userParam type="string" name="parameter: in" value="slice1A.mzML"/>
+		<userParam type="string" name="parameter: out" value="slice.featureXML"/>
+		<userParam type="string" name="parameter: log" value=""/>
+		<userParam type="int" name="parameter: debug" value="0"/>
+		<userParam type="int" name="parameter: threads" value="12"/>
+		<userParam type="string" name="parameter: no_progress" value="false"/>
+		<userParam type="string" name="parameter: force" value="false"/>
+		<userParam type="string" name="parameter: test" value="false"/>
+		<userParam type="string" name="parameter: seeds" value=""/>
+		<userParam type="string" name="parameter: out_mzq" value=""/>
+		<userParam type="string" name="parameter: algorithm:debug" value="false"/>
+		<userParam type="int" name="parameter: algorithm:intensity:bins" value="10"/>
+		<userParam type="float" name="parameter: algorithm:mass_trace:mz_tolerance" value="0.03"/>
+		<userParam type="int" name="parameter: algorithm:mass_trace:min_spectra" value="5"/>
+		<userParam type="int" name="parameter: algorithm:mass_trace:max_missing" value="1"/>
+		<userParam type="float" name="parameter: algorithm:mass_trace:slope_bound" value="0.1"/>
+		<userParam type="int" name="parameter: algorithm:isotopic_pattern:charge_low" value="1"/>
+		<userParam type="int" name="parameter: algorithm:isotopic_pattern:charge_high" value="4"/>
+		<userParam type="float" name="parameter: algorithm:isotopic_pattern:mz_tolerance" value="0.03"/>
+		<userParam type="float" name="parameter: algorithm:isotopic_pattern:intensity_percentage" value="10"/>
+		<userParam type="float" name="parameter: algorithm:isotopic_pattern:intensity_percentage_optional" value="0.1"/>
+		<userParam type="float" name="parameter: algorithm:isotopic_pattern:optional_fit_improvement" value="2"/>
+		<userParam type="float" name="parameter: algorithm:isotopic_pattern:mass_window_width" value="25"/>
+		<userParam type="float" name="parameter: algorithm:isotopic_pattern:abundance_12C" value="98.93"/>
+		<userParam type="float" name="parameter: algorithm:isotopic_pattern:abundance_14N" value="99.632"/>
+		<userParam type="float" name="parameter: algorithm:seed:min_score" value="0.8"/>
+		<userParam type="int" name="parameter: algorithm:fit:max_iterations" value="500"/>
+		<userParam type="float" name="parameter: algorithm:feature:min_score" value="0.7"/>
+		<userParam type="float" name="parameter: algorithm:feature:min_isotope_fit" value="0.8"/>
+		<userParam type="float" name="parameter: algorithm:feature:min_trace_score" value="0.5"/>
+		<userParam type="float" name="parameter: algorithm:feature:min_rt_span" value="0.333"/>
+		<userParam type="float" name="parameter: algorithm:feature:max_rt_span" value="2.5"/>
+		<userParam type="string" name="parameter: algorithm:feature:rt_shape" value="symmetric"/>
+		<userParam type="float" name="parameter: algorithm:feature:max_intersection" value="0.35"/>
+		<userParam type="string" name="parameter: algorithm:feature:reported_mz" value="monoisotopic"/>
+		<userParam type="float" name="parameter: algorithm:user-seed:rt_tolerance" value="5"/>
+		<userParam type="float" name="parameter: algorithm:user-seed:mz_tolerance" value="1.1"/>
+		<userParam type="float" name="parameter: algorithm:user-seed:min_score" value="0.5"/>
+		<userParam type="float" name="parameter: algorithm:debug:pseudo_rt_shift" value="500"/>
+	</dataProcessing>
+	<featureList count="2">
+		<feature id="f_16832770593554750385">
+			<position dim="0">4022.03514673128</position>
+			<position dim="1">489.778444938208</position>
+			<intensity>6.66996e+08</intensity>
+			<quality dim="0">0</quality>
+			<quality dim="1">0</quality>
+			<overallquality>0.791454</overallquality>
+			<charge>1</charge>
+			<convexhull nr="0">
+				<pt x="4020.447" y="489.778198242188" />
+				<pt x="4026.53226" y="489.778198242188" />
+				<pt x="4026.53226" y="489.778747558594" />
+				<pt x="4020.447" y="489.778747558594" />
+			</convexhull>
+			<convexhull nr="1">
+				<pt x="4019.229" y="490.779388427734" />
+				<pt x="4026.53226" y="490.779388427734" />
+				<pt x="4026.53226" y="490.780151367188" />
+				<pt x="4019.229" y="490.780151367188" />
+			</convexhull>
+			<userParam type="int" name="label" value="0"/>
+			<userParam type="float" name="score_fit" value="0.631694771390403"/>
+			<userParam type="float" name="score_correlation" value="0.991616770766787"/>
+			<userParam type="float" name="FWHM" value="8.53579425811768"/>
+			<userParam type="int" name="spectrum_index" value="4"/>
+			<userParam type="string" name="spectrum_native_id" value="controllerType=0 controllerNumber=1 scan=29899"/>
+		</feature>
+		<feature id="f_189396504510444007">
+			<position dim="0">4022.97774692935</position>
+			<position dim="1">639.656521928634</position>
+			<intensity>3.45095e+08</intensity>
+			<quality dim="0">0</quality>
+			<quality dim="1">0</quality>
+			<overallquality>0.945634</overallquality>
+			<charge>3</charge>
+			<convexhull nr="0">
+				<pt x="4020.447" y="639.657653808594" />
+				<pt x="4026.53226" y="639.657653808594" />
+				<pt x="4026.53226" y="639.658386230469" />
+				<pt x="4020.447" y="639.658386230469" />
+			</convexhull>
+			<convexhull nr="1">
+				<pt x="4020.447" y="639.992004394531" />
+				<pt x="4026.53226" y="639.992004394531" />
+				<pt x="4026.53226" y="639.99267578125" />
+				<pt x="4020.447" y="639.99267578125" />
+			</convexhull>
+			<convexhull nr="2">
+				<pt x="4020.447" y="640.325988769531" />
+				<pt x="4026.53226" y="640.325988769531" />
+				<pt x="4026.53226" y="640.326721191406" />
+				<pt x="4020.447" y="640.326721191406" />
+			</convexhull>
+			<convexhull nr="3">
+				<pt x="4020.447" y="640.659912109375" />
+				<pt x="4026.53226" y="640.659912109375" />
+				<pt x="4026.53226" y="640.660400390625" />
+				<pt x="4020.447" y="640.660400390625" />
+			</convexhull>
+			<convexhull nr="4">
+				<pt x="4020.447" y="640.993469238281" />
+				<pt x="4026.53226" y="640.993469238281" />
+				<pt x="4026.53226" y="640.995056152344" />
+				<pt x="4020.447" y="640.995056152344" />
+			</convexhull>
+			<convexhull nr="5">
+				<pt x="4020.447" y="641.328308105469" />
+				<pt x="4026.53226" y="641.328308105469" />
+				<pt x="4026.53226" y="641.331237792969" />
+				<pt x="4020.447" y="641.331237792969" />
+			</convexhull>
+			<userParam type="int" name="label" value="82"/>
+			<userParam type="float" name="score_fit" value="0.899512445523661"/>
+			<userParam type="float" name="score_correlation" value="0.994121041144976"/>
+			<userParam type="float" name="FWHM" value="7.54492568969727"/>
+			<userParam type="int" name="spectrum_index" value="5"/>
+			<userParam type="string" name="spectrum_native_id" value="controllerType=0 controllerNumber=1 scan=29910"/>
+		</feature>
+	</featureList>
+</featureMap>
