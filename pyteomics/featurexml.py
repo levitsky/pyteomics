@@ -5,10 +5,11 @@ featurexml - reader for featureXML files
 Summary
 -------
 
-featureXML is a format specified in the OpenMS project.
+**featureXML** is a format specified in the
+`OpenMS <http://open-ms.sourceforge.net/about/>`_ project.
 It defines a list of LC-MS features observed in an experiment.
 
-This module provides a minimalistic way to extract information from featureXML
+This module provides a minimalistic way to extract information from **featureXML**
 files. You can use the old functional interface (:py:func:`read`) or the new
 object-oriented interface (:py:class:`FeatureXML`)
 to iterate over entries in ``<feature>`` elements.

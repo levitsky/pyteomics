@@ -589,6 +589,34 @@ the :py:meth:`pyteomics.mzid.MzIdentML.get_by_id` method. Alternatively, the
           or call the :py:meth:`pyteomics.mzid.MzIdentML.build_id_cache` method
           prior to reading the data.
 
+
+FeatureXML
+----------
+
+:py:mod:`pyteomics.featurexml` implements a simple parser for **.featureXML** files
+used in the `OpenMS <http://open-ms.sourceforge.net/about/>`_ framework. The usage
+is identical to other XML parsing modules. Since **featureXML** has feature IDs,
+:py:class:`FeatureXML` objects also support direct indexing as well as iteration::
+
+    >>> from pyteomics import featurexml
+
+    >>> # function style, iteration
+    ... with featurexml.read('tests/test.featureXML') as f:
+    ...     qual = [feat['overallquality'] for feat in f]
+    ...     
+
+    >>> qual # qualities of the two features in the test file
+    [0.791454, 0.945634]
+
+    >>> # object-oriented style, direct indexing
+    >>> f = featurexml.FeatureXML('tests/test.featureXML')
+    >>> f['f_189396504510444007']['overallquality']
+    0.945634
+    >>> f.close()
+    
+As always, :py:func:`pyteomics.featurexml.read` and :py:class:`pyteomics.featurexml.FeatureXML` are interchangeable. 
+
+
 FDR estimation and filtering
 ============================
 
