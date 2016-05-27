@@ -1,7 +1,7 @@
 3.3.1
 -----
 
-New submodule :py:mod:`pyteomics.featurexml` with a parser for OpenMS featureXML files.
+New submodule :py:mod:`pyteomics.featurexml` with a parser for OpenMS **featureXML** files.
 
 3.3
 ---
