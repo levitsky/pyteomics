@@ -58,9 +58,9 @@ except ImportError:
 import itertools as it
 
 _comments = set('#;!/')
-_array = np.array if np is not None else None
-_ma = (lambda x: np.ma.masked_equal(x, 0)) if np is not None else None
-_identity = lambda x: x
+_array = (lambda x, dtype: np.array(x, dtype=dtype)) if np is not None else None
+_ma = (lambda x, dtype: np.ma.masked_equal(np.array(x, dtype=dtype), 0)) if np is not None else None
+_identity = lambda x, **kw: x
 _array_converters = {
     'm/z array': [_identity, _array, _array],
     'intensity array': [_identity, _array, _array],
@@ -68,7 +68,7 @@ _array_converters = {
 }
 
 @aux._file_reader()
-def read(source=None, use_header=True, convert_arrays=2, read_charges=True):
+def read(source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None):
     """Read an MGF file and return entries iteratively.
 
     Read the specified MGF file, **yield** spectra one by one.
@@ -99,6 +99,9 @@ def read(source=None, use_header=True, convert_arrays=2, read_charges=True):
 
     read_charges : bool, optional
         If `True` (default), fragment charges are reported. Disabling it improves performance.
+
+    dtype : type, optiuonal
+        dtype argument to numpy array constructor
 
     Returns
     -------
@@ -140,7 +143,7 @@ def read(source=None, use_header=True, convert_arrays=2, read_charges=True):
                 if read_charges:
                     data['charge array'] = charges
                 for key, values in data.items():
-                    out[key] = _array_converters[key][convert_arrays](values)
+                    out[key] = _array_converters[key][convert_arrays](values, dtype=dtype)
                 yield out
                 del out
                 params = dict(header) if use_header else {}
