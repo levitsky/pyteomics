@@ -1,4 +1,5 @@
 from os import path
+import numpy as np
 import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import tempfile
@@ -86,6 +87,13 @@ class MGFTest(unittest.TestCase):
                         self.spectra2[i]['m/z array'][j])
                 self.assertEqual(self.spectra[i]['intensity array'][j],
                         self.spectra2[i]['intensity array'][j])
+
+    def test_read_dtype(self):
+        dtypes = {'m/z array': np.float32, 'intensity array': np.int32}
+        with read(self.path, dtype=dtypes) as f:
+            for spec in f:
+                for k, v in dtypes.items():
+                    self.assertEqual(spec[k].dtype, v)
 
 if __name__ == "__main__":
     unittest.main()

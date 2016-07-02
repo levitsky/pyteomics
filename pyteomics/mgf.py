@@ -66,6 +66,7 @@ _array_converters = {
     'intensity array': [_identity, _array, _array],
     'charge array': [_identity, _array, _ma]
 }
+_array_keys = ['m/z array', 'intensity array', 'charge array']
 
 @aux._file_reader()
 def read(source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None):
@@ -100,8 +101,9 @@ def read(source=None, use_header=True, convert_arrays=2, read_charges=True, dtyp
     read_charges : bool, optional
         If `True` (default), fragment charges are reported. Disabling it improves performance.
 
-    dtype : type, optiuonal
-        dtype argument to numpy array constructor
+    dtype : type or str or dict, optional
+        dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
+        Keys should be 'm/z array', 'intensity array' and/or 'charge array'.
 
     Returns
     -------
@@ -110,6 +112,7 @@ def read(source=None, use_header=True, convert_arrays=2, read_charges=True, dtyp
     """
     if convert_arrays and np is None:
         raise PyteomicsError('numpy is required for array conversion')
+    dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in _array_keys}
     header = read_header(source)
     reading_spectrum = False
     params = {}
@@ -143,7 +146,7 @@ def read(source=None, use_header=True, convert_arrays=2, read_charges=True, dtyp
                 if read_charges:
                     data['charge array'] = charges
                 for key, values in data.items():
-                    out[key] = _array_converters[key][convert_arrays](values, dtype=dtype)
+                    out[key] = _array_converters[key][convert_arrays](values, dtype=dtype_dict.get(key))
                 yield out
                 del out
                 params = dict(header) if use_header else {}
