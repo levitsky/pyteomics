@@ -104,6 +104,17 @@ class MzML(xml.IndexedXML):
     _default_iter_tag = 'spectrum'
     _structures_to_flatten = {'binaryDataArrayList'}
     _indexed_tags = {'spectrum', 'chromatogram'}
+    _dtype_dict = {}
+    _array_keys = ['m/z array', 'intensity array']
+
+    def __init__(self, *args, **kwargs):
+        """Initialize an MzML object."""
+        dtype = kwargs.pop('dtype', None)
+        if isinstance(dtype, dict):
+            self._dtype_dict = dtype
+        elif dtype:
+            self._dtype_dict = {k: dtype for k in self._array_keys}
+        super(MzML, self).__init__(*args, **kwargs)
 
     def _get_info_smart(self, element, **kw):
         name = xml._local_name(element)
@@ -147,13 +158,12 @@ class MzML(xml.IndexedXML):
                     pass
             b = info.pop('binary')
             if b:
-                array = _decode_base64_data_array(
-                                b, dtype, compressed)
+                array = _decode_base64_data_array(b, dtype, compressed)
             else:
                 array = np.array([], dtype=dtype)
             for k in info:
                 if k.endswith(' array') and not info[k]:
-                    info = {k: array}
+                    info = {k: array.astype(self._dtype_dict.get(k))}
                     break
             else:
                 found = False
@@ -162,7 +172,7 @@ class MzML(xml.IndexedXML):
                     knames = info['name']
                     for val in knames:
                         if val.endswith(' array'):
-                            info = {val: array}
+                            info = {val: array.astype(self._dtype_dict.get(k))}
                             found = True
                             break
                 # last fallback
@@ -177,7 +187,7 @@ class MzML(xml.IndexedXML):
                 info[k] = int(info[k])
         return info
 
-def read(source, read_schema=True, iterative=True, use_index=False):
+def read(source, read_schema=True, iterative=True, use_index=False, dtype=None):
     """Parse `source` and iterate through spectra.
 
     Parameters
@@ -200,13 +210,18 @@ def read(source, read_schema=True, iterative=True, use_index=False):
         Defines whether an index of byte offsets needs to be created for
         spectrum elements. Default is :py:const:`False`.
 
+    dtype : type or dict, optional
+        dtype to convert arrays to, one for both m/z and intensity arrays or one for each key.
+        If :py:class:`dict`, keys should be 'm/z array' and 'intensity array'.
+
     Returns
     -------
     out : iterator
        An iterator over the dicts with spectrum properties.
     """
 
-    return MzML(source, read_schema=read_schema, iterative=iterative, use_index=use_index)
+    return MzML(source, read_schema=read_schema, iterative=iterative,
+        use_index=use_index, dtype=dtype)
 
 def iterfind(source, path, **kwargs):
     """Parse `source` and yield info on elements with specified local
