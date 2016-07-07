@@ -37,7 +37,7 @@ This module requres :py:mod:`lxml`.
 --------------------------------------------------------------------------------
 """
 
-from . import xml, auxiliary as aux
+from .. import xml, auxiliary as aux
 
 class FeatureXML(xml.IndexedXML):
     """Parser class for featureXML files."""
