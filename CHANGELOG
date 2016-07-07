@@ -1,3 +1,11 @@
+3.3.2
+-----
+
+ - New parameter `dtype` in :py:func:`pyteomics.mgf.read` and :py:func`pyteomics.mzml.read`
+   allows changing the dtype of arrays yielded by the parsers.
+
+ - :py:mod:`pyteomics.featurexml` moved into a subpackage :py:mod:`pyteomics.openms`.
+
 3.3.1
 -----
 
@@ -5,10 +13,10 @@ New submodule :py:mod:`pyteomics.featurexml` with a parser for OpenMS **featureX
 
 3.3
 ---
-   
+
  - mzML and mzIdentML parsers can now create an index of element offsets.
    This allows quick random access to elements by unique ID.
-   
+
  - mzML parsers now come in two flavors: :py:class:`pyteomics.mzml.MzML` and
    :py:class:`pyteomics.mzml.PreIndexedMzML`. The latter uses the byte offsets
    listed at the end of the file.
@@ -81,7 +89,7 @@ Other changes:
  - Bugfix in :py:mod:`pyteomics.auxiliary`.
 
  - New parameter `show_legend` in :py:func:`pyteomics.pylab_aux.scatter_trend`.
- 
+
  - Performance improvements in :py:mod:`pyteomics.parser`.
 
 3.1

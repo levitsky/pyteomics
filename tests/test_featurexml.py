@@ -5,7 +5,7 @@ pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir
 import unittest
 from itertools import product
 from data import features
-from pyteomics.featurexml import *
+from pyteomics.openms.featurexml import *
 
 class FeatureXMLTest(unittest.TestCase):
     maxDiff = None
