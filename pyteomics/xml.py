@@ -589,7 +589,7 @@ class ByteCountingXMLScanner(_file_obj):
         """
         Read a file in large blocks and chunk up each block into parts
         resembling XML tags, yielding each chunk.
-        
+
         Assumes the file is opened in binary mode.
         """
         f = self.file
@@ -615,7 +615,7 @@ class ByteCountingXMLScanner(_file_obj):
             tail = parts[-1]
             front = parts[:-1]
             for part in front:
-                yield delim + part        
+                yield delim + part
 
     def _generate_offsets(self):
         """
@@ -634,7 +634,7 @@ class ByteCountingXMLScanner(_file_obj):
         """
         i = 0
         packed = b"|".join(self.indexed_tags)
-        pattern = re.compile(br"^\s*<(%s)\s" % packed)
+        pattern = re.compile(("^\s*<(%s)\s" % packed.decode()).encode())
         attrs = re.compile(br"(\S+)=[\"']([^\"']+)[\"']")
         for line in self._chunk_iterator():
             match = pattern.match(line)
@@ -684,7 +684,7 @@ class TagSpecificXMLByteIndex(object):
     for a set of XML tags.
 
     This type mimics an immutable Mapping.
-    
+
     Attributes
     ----------
     indexed_tags : iterable of bytes
@@ -715,7 +715,7 @@ class TagSpecificXMLByteIndex(object):
     def build_index(self):
         """
         Perform the byte offset index building for py:attr:`source`.
-        
+
         Returns
         -------
         offsets: defaultdict
@@ -738,7 +738,7 @@ class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
     """
     An alternative interface on top of :py:class:`TagSpecificXMLByteIndex` that assumes
     that identifiers across different tags are globally unique, as in MzIdentML.
-    
+
     Attributes
     ----------
     offsets : ByteEncodingOrderedDict

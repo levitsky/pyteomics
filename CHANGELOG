@@ -6,6 +6,8 @@
 
  - :py:mod:`pyteomics.featurexml` moved into a subpackage :py:mod:`pyteomics.openms`.
 
+ - Bugfix in XML indexing code to fix it on Python 3.x versions before 3.5.
+
 3.3.1
 -----
 
