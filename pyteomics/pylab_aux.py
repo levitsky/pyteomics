@@ -63,7 +63,7 @@ def plot_line(a, b, xlim=None, *args, **kwargs):
         will be called.
 
     *args, **kwargs : passed to :py:func:`pylab.plot` after `x` and `y` values.
-    
+
     Returns
     -------
     out : matplotlib.lines.Line2D
@@ -115,7 +115,7 @@ def scatter_trend(x, y=None, **kwargs):
         Function to perform linear regression. Will be given ``x`` and ``y`` as arguments.
         Must return a 4-tuple: (a, b, r, stderr).
         Default is :py:func:`pyteomics.auxiliary.linear_regression`.
-    
+
     Returns
     -------
     out : tuple
@@ -126,16 +126,19 @@ def scatter_trend(x, y=None, **kwargs):
     pylab.title(kwargs.get('title', ''))
     pylab.xlabel(kwargs.get('xlabel', ''))
     pylab.ylabel(kwargs.get('ylabel', ''))
-    
+
     equation = (
         '$y\,=\,{:.3f}x\,{}\,{:.3f}$, '
         '$R^2=\,{:.3f}$ \n$\sigma\,=\,{:.3f}$'.format(
             a, '-' if b < 0 else '+', abs(b), r*r, stderr))
-    
+
     if y is None:
         x = np.array(x, copy=False)
         y = x[:, 1]
         x = x[:, 0]
+    else:
+        x = np.array(x)
+        y = np.array(y)
     sc = pylab.scatter(x, y, **kwargs.get('scatter_kwargs', {}))
     xlim = (x.min(), x.max())
     plkw = kwargs.get('plot_kwargs', {}).copy()
