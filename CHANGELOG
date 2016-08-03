@@ -6,7 +6,9 @@
 
  - :py:mod:`pyteomics.featurexml` moved into a subpackage :py:mod:`pyteomics.openms`.
 
- - Bugfix in XML indexing code to fix it on Python 3.x versions before 3.5.
+ - Bugfix in XML indexing code to fix it on Python 3.x versions prior to 3.5.
+
+ - Bugfix in :py:func:`pyteomics.pylab_aux.scatter_trend` (support for lists and other non-ndarrays).
 
 3.3.1
 -----
