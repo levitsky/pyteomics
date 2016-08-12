@@ -899,6 +899,13 @@ class IndexedXML(XML):
     def __getitem__(self, elem_id):
         return self.get_by_id(elem_id)
 
+_trafoxml_schema_defaults = {'bools': set(),
+     'charlists': set(),
+     'floatlists': set(),
+     'floats': {('Pair', 'from'), ('Pair', 'to'), ('TrafoXML', 'version')},
+     'intlists': set(),
+     'ints': {('Pairs', 'count')},
+     'lists': {'Pair', 'Param'}}
 
 _featurexml_schema_defaults = {'bools': {
     ('PeptideIdentification', 'higher_score_better'),
