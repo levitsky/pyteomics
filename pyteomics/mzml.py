@@ -198,7 +198,7 @@ def read(source, read_schema=True, iterative=True, use_index=False, dtype=None):
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
         mentioned in the mzML header (default). Otherwise, use default
-        parameters. Disable this to avoid waiting on long network connections or
+        parameters. Disable this to avoid waiting on slow network connections or
         if you don't like to get the related warnings.
 
     iterative : bool, optional
@@ -260,7 +260,7 @@ def iterfind(source, path, **kwargs):
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
         mentioned in the mzIdentML header (default). Otherwise, use default
-        parameters. Disable this to avoid waiting on long network connections or
+        parameters. Disable this to avoid waiting on slow network connections or
         if you don't like to get the related warnings.
 
     Returns

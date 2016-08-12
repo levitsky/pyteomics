@@ -1213,7 +1213,7 @@ mzid_spectra = {(False, False): [{'id': 'SEQ_spec1',
     'rank': 1}],
   'location': 'proteinscape://www.medizinisches-proteom-center.de/PSServer/Project/Sample/Separation_1D_LC/Fraction_X',
   'spectrumID': 'databasekey=40'}]}
- 
+
 mzml_mz_array = np.load('test_mzml_mz.npy')
 mzml_int_array = np.load('test_mzml_intensity.npy')
 mzml_spectra = [{'MSn spectrum': '',
@@ -1560,3 +1560,7 @@ features = [{'FWHM': 8.53579425811768,
   'score_fit': 0.899512445523661,
   'spectrum_index': 5,
   'spectrum_native_id': 'controllerType=0 controllerNumber=1 scan=29910'}]
+
+pairs = [{'to': 3333.35149999998, 'from': 3329.2416},
+         {'to': 3328.47130000002, 'from': 3324.2217},
+         {'to': 3338.57140000002, 'from': 3334.7217}]

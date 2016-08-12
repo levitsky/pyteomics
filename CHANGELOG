@@ -6,6 +6,8 @@
 
  - :py:mod:`pyteomics.featurexml` moved into a subpackage :py:mod:`pyteomics.openms`.
 
+ - New module :py:mod:`pyteomics.openms.trafoxml` for OpenMS transformation files.
+
  - Bugfix in XML indexing code to fix it on Python 3.x versions prior to 3.5.
 
  - Bugfix in :py:func:`pyteomics.pylab_aux.scatter_trend` (support for lists and other non-ndarrays).
