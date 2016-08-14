@@ -51,7 +51,7 @@ extensions = [
               'matplotlib_sphinxext.only_directives',
               'matplotlib_sphinxext.mathmpl',
               'numpydoc',
-              'sphinxcontrib.googleanalytics'
+              'googleanalytics'
              ]
 
 # Enable Google Analytics via a script from
