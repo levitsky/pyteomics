@@ -559,7 +559,7 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
         A peptide sequence.
     RC_dict : dict
         A set of retention coefficients, length correction parameter and
-        a fixed retention time shift.
+        a fixed retention time shift. Keys are: 'aa', 'lcp' and 'const'.
     raise_no_mod : bool, optional
         If :py:const:`True` then an exception is raised when a modified amino
         acid from `peptides` is not found in `RC_dict`. If :py:const:`False`,
@@ -584,12 +584,12 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
     """
 
     amino_acids = [aa for aa in RC_dict['aa']
-                   if not (aa.startswith('cterm') or aa.startswith('nterm'))]
+                   if not (aa[:5] == 'nterm' or aa[:5] == 'cterm')]
 
     # Check if there are retention coefficients for terminal amino acids.
     term_aa = False
     for aa in RC_dict['aa']:
-        if aa.startswith('nterm') or aa.startswith('cterm'):
+        if aa[:5] == 'nterm' or aa[:5] == 'cterm':
             term_aa = True
             break
 
@@ -599,22 +599,23 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
     RT = 0.0
     for aa in peptide_dict:
         if aa not in RC_dict['aa']:
+            if len(aa) == 1:
+                raise PyteomicsError('No RC for residue "{}".'.format(aa))
             if (not raise_no_mod) and aa[-1] in RC_dict['aa']:
                 RT += peptide_dict[aa] * RC_dict['aa'][aa[-1]]
             else:
                 raise PyteomicsError(
-                    'The amino acid residue ' +
-                    '{0} in the supplied RC_dict. '.format(aa) +
+                    'Residue "{0}" not found in RC_dict. '.format(aa) +
                     'Set raise_no_mod=False to ignore this error ' +
-                    'and use the RC for {0} instead'.format(aa[-1]))
+                    'and use the RC for "{0}"" instead.'.format(aa[-1]))
         else:
             RT += peptide_dict[aa] * RC_dict['aa'][aa]
 
     length_correction_term = (
-        1.0 + RC_dict['lcp'] * np.log(parser.length(peptide_dict)))
+        1.0 + RC_dict.get('lcp', 0) * np.log(parser.length(peptide_dict)))
     RT *= length_correction_term
 
-    RT += RC_dict['const']
+    RT += RC_dict.get('const', 0)
 
     return RT
 
