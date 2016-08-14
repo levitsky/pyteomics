@@ -216,6 +216,12 @@ def shuffle(sequence, keep_nterm=False):
 def fused_decoy(sequence, decoy_mode='reverse', sep='R', **kwargs):
     """
     Create a "fused" decoy sequence by concatenating a decoy sequence with the original one.
+    The method and its use cases are described in:
+
+    Ivanov, M. V., Levitsky, L. I., & Gorshkov, M. V. (2016).
+    `Adaptation of Decoy Fusion Strategy for Existing Multi-Stage Search Workflows.
+    <http://doi.org/10.1007/s13361-016-1436-7>`_
+    Journal of The American Society for Mass Spectrometry, 27(9), 1579-1582.
 
     Parameters
     ----------
@@ -332,7 +338,7 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
     with read(source, ignore_comments) as f:
         for descr, seq in f:
             yield Protein(parser(prefix + descr), decoy_sequence(seq, mode, **kwargs))
-    
+
 
 @aux._file_writer()
 def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
