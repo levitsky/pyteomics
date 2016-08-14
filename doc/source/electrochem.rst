@@ -7,14 +7,14 @@ Electrochemical properties of polypeptides can be assessed via the
 *  the charge of a polypeptide molecule at given pH;
 *  the isoelectric point.
 
-The :py:mod:`pyteomics.electrochem` module is based on the Henderson-Hasselbalch 
+The :py:mod:`pyteomics.electrochem` module is based on the Henderson-Hasselbalch
 equation.
 
 
 Examples
 --------
 
-Both functions in the module accept input in the form of a *modX* sequence, 
+Both functions in the module accept input in the form of a *modX* sequence,
 a parsed sequence or a dict with amino acid composition.
 
 .. code-block:: python
@@ -34,16 +34,16 @@ a parsed sequence or a dict with amino acid composition.
     >>> electrochem.pI('PEPTIDE', precision_pI=0.0001)
     2.876354217529297
 
-.. plot:: source/charge_vs_ph.py
+.. plot:: charge_vs_ph.py
 
 Customization
 -------------
 
-The pK\ :sub:`a`\ s of individual amino acids are stored in dicts in the 
-following format: {`modX label` : (`pKa`, `charge`)}. The module contains 
-several datasets published in scientific journals: 
-:py:data:`pyteomics.electrochem.pK_lehninger` (used by default), 
-:py:data:`pyteomics.electrochem.pK_sillero`, 
+The pK\ :sub:`a`\ s of individual amino acids are stored in dicts in the
+following format: {`modX label` : (`pKa`, `charge`)}. The module contains
+several datasets published in scientific journals:
+:py:data:`pyteomics.electrochem.pK_lehninger` (used by default),
+:py:data:`pyteomics.electrochem.pK_sillero`,
 :py:data:`pyteomics.electrochem.pK_dawson`,
-:py:data:`pyteomics.electrochem.pK_rodwell`. 
+:py:data:`pyteomics.electrochem.pK_rodwell`.
 
