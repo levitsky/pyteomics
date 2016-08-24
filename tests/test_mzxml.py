@@ -17,10 +17,7 @@ class MzXMLTest(unittest.TestCase):
                     lambda x, **kw: chain.from_iterable([x], **kw)]:
                 with func(self.path, read_schema=rs, iterative=it, use_index=ui) as r:
                     # http://stackoverflow.com/q/14246983/1258041
-                    spec = next(r)
-                    for k in mzxml_spectra:
-                        self.assertEqual(mzxml_spectra[k], spec[k], (func, k))
-                    # self.assertEqual(mzxml_spectra, spec)
+                    self.assertEqual(mzxml_spectra, list(r))
 
 if __name__ == '__main__':
     unittest.main()
