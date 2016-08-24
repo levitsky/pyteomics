@@ -24,7 +24,7 @@ def _decode_peaks(info, peaks_data):
     """
     content = peaks_data.encode('ascii')
     data = base64.b64decode(content)
-    if info['compressionType'] == 'zlib':
+    if info.get('compressionType') == 'zlib':
         data = zlib.decompress(data)
     if info['precision'] == "32":
         prec = 4
@@ -64,6 +64,7 @@ class MzXML(xml.IndexedXML):
                        'floats': {('dataProcessing', 'intensityCutoff'),
                                   ('precursorMz', 'precursorIntensity'),
                                   ('precursorMz', 'windowWideness'),
+                                  ('precursorMz', 'precursorMz'),
                                   ('scan', 'basePeakIntensity'),
                                   ('scan', 'basePeakMz'),
                                   ('scan', 'cidGasPressure'),
