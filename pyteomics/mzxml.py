@@ -195,7 +195,8 @@ class MzXML(xml.IndexedXML):
                 for item in iterator_queue:
                     yield item
         else:
-            return super(MzXML, self).iterfind(path, **kwargs)
+            for item in super(MzXML, self).iterfind(path, **kwargs):
+                yield item
 
 
 def read(source, read_schema=True, iterative=True, use_index=False, dtype=None):
