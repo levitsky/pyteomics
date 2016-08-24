@@ -1,3 +1,5 @@
+from collections import deque, defaultdict
+
 from pyteomics import xml, auxiliary as aux
 import base64
 import zlib
@@ -43,6 +45,40 @@ def _decode_peaks(info, peaks_data):
             intensities.append(v)
         i += 1
     return np.array(mzs), np.array(intensities)
+
+
+class IteratorQueue(object):
+    def __init__(self, items):
+        self.queue = deque(items)
+
+    def pop(self):
+        if len(self.queue) == 0:
+            raise IndexError("Empty Queue")
+        return self.queue.popleft()
+
+    def append(self, item):
+        self.queue.append(item)
+
+    def extend(self, items):
+        for item in items:
+            self.append(item)
+
+    def __next__(self):
+        try:
+            return self.pop()
+        except IndexError:
+            raise StopIteration()
+
+    def interleave_load(self, scan, layers):
+        scan.pop("scan", None)
+        self.append(scan)
+        for item in layers[scan['num']]:
+            self.interleave_load(item, layers)
+
+    next = __next__
+
+    def __iter__(self):
+        return self
 
 
 class MzXML(xml.IndexedXML):
@@ -94,6 +130,7 @@ class MzXML(xml.IndexedXML):
 
     def _get_info_smart(self, element, **kw):
         name = xml._local_name(element)
+
         kwargs = dict(kw)
         rec = kwargs.pop('recursive', None)
         if name in {'mzXML'}:
@@ -125,6 +162,40 @@ class MzXML(xml.IndexedXML):
         if "retentionTime" in info:
             info['retentionTime'] = float(info['retentionTime'].strip('PTS'))
         return info
+
+    def iterfind(self, path, **kwargs):
+        if path == 'scan':
+            generator = super(MzXML, self).iterfind(path, **kwargs)
+            collator_layers = defaultdict(list)
+            layer = []
+            top_scan = None
+
+            for scan in generator:
+                if top_scan is None:
+                    top_scan = scan
+                elif int(scan['msLevel']) < int(top_scan["msLevel"]):
+                    top_scan = scan
+                    collator_layers[top_scan['num']] = layer
+                    layer = []
+                if int(scan['msLevel']) == int(top_scan["msLevel"]) and int(scan['msLevel']) != 1:
+                    layer.append(scan)
+                if int(scan['msLevel']) == 1:
+                    if int(top_scan['msLevel']) != 1:
+                        raise ValueError("Invalid Scan Nesting Order")
+                    iterator_queue = IteratorQueue([])
+                    iterator_queue.interleave_load(top_scan, collator_layers)
+                    for item in iterator_queue:
+                        yield item
+                    collator_layers = defaultdict(list)
+                    layer = []
+                    top_scan = None
+            if top_scan is not None:
+                iterator_queue = IteratorQueue([])
+                iterator_queue.interleave_load(top_scan, collator_layers)
+                for item in iterator_queue:
+                    yield item
+        else:
+            return super(MzXML, self).iterfind(path, **kwargs)
 
 
 def read(source, read_schema=True, iterative=True, use_index=False, dtype=None):
