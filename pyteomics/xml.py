@@ -691,6 +691,8 @@ class TagSpecificXMLByteIndex(object):
         The tag names to index, not including a namespace
     offsets : defaultdict(OrderedDict(str, int))
         The hierarchy of byte offsets organized ``{"tag_type": {"id": byte_offset}}``
+    indexed_tag_keys: dict(str, str)
+        A mapping from tag name to unique identifier attribute
 
     Parameters
     ----------
@@ -699,12 +701,16 @@ class TagSpecificXMLByteIndex(object):
 
     """
     _default_indexed_tags = []
+    _default_keys = {}
     _scanner_class = ByteCountingXMLScanner
 
-    def __init__(self, source, indexed_tags=None):
+    def __init__(self, source, indexed_tags=None, keys=None):
+        if keys is None:
+            keys = self._default_keys.copy()
         if indexed_tags is None:
             indexed_tags = self._default_indexed_tags
         self.indexed_tags = indexed_tags
+        self.indexed_tag_keys = keys
         self.source = source
         self.offsets = defaultdict(ByteEncodingOrderedDict)
         self.build_index()
@@ -721,7 +727,8 @@ class TagSpecificXMLByteIndex(object):
         offsets: defaultdict
             The hierarchical offset, stored in offsets
         """
-        self.offsets = self._scanner_class.scan(self.source, self.indexed_tags)
+        scanner = self._scanner_class(self.source, self.indexed_tags)
+        self.offsets = scanner.build_byte_index(self.indexed_tag_keys)
         return self.offsets
 
     def items(self):
@@ -785,6 +792,8 @@ class IndexedXML(XML):
     elements for quick random access.
     """
     _indexed_tags = set()
+    _indexed_tag_keys = {}
+    _default_id_attr = 'id'
 
     def __init__(self, *args, **kwargs):
         """Create an XML parser object.
@@ -815,16 +824,24 @@ class IndexedXML(XML):
             will be indexed. Empty set by default.
         """
         tags = kwargs.get('indexed_tags')
+        tag_index_keys = kwargs.get('indexed_tag_keys')
         use_index = kwargs.get('use_index', True)
 
         if tags is not None:
             self._indexed_tags = (tags)
+        if tag_index_keys is not None:
+            self._indexed_tag_keys = tag_index_keys
 
         self._use_index = use_index
 
         self._indexed_tags = ensure_bytes(self._indexed_tags)
+        self._indexed_tag_keys = {
+            ensure_bytes_single(k): ensure_bytes_single(v)
+            for k, v in self._indexed_tag_keys.items()
+        }
 
-        if use_index: kwargs['build_id_cache'] = False
+        if use_index:
+            kwargs['build_id_cache'] = False
         super(IndexedXML, self).__init__(*args, **kwargs)
         self._offset_index = ByteEncodingOrderedDict()
         self._build_index()
@@ -837,9 +854,11 @@ class IndexedXML(XML):
         """
         if not self._indexed_tags or not self._use_index:
             return
-        self._offset_index = FlatTagSpecificXMLByteIndex(self._source, self._indexed_tags)
+        self._offset_index = FlatTagSpecificXMLByteIndex(
+            self._source, self._indexed_tags,
+            self._indexed_tag_keys)
 
-    def _find_by_id_no_reset(self, elem_id):
+    def _find_by_id_no_reset(self, elem_id, id_key=None):
         """
         An almost exact copy of :meth:`get_by_id` with the difference that it does
         not reset the file reader's position before iterative parsing.
@@ -854,21 +873,24 @@ class IndexedXML(XML):
         lxml.Element
         """
         found = False
-        for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True):
+        if id_key is None:
+            id_key = self._default_id_attr
+        for event, elem in etree.iterparse(
+                self._source, events=('start', 'end'), remove_comments=True):
             if event == 'start':
-                if elem.attrib.get('id') == elem_id:
+                if elem.attrib.get(id_key) == elem_id:
                     found = True
             else:
-                if elem.attrib.get('id') == elem_id:
+                if elem.attrib.get(id_key) == elem_id:
                     return elem
                 if not found:
                     elem.clear()
 
     @_keepstate
-    def _find_by_id_reset(self, elem_id):
-        return self._find_by_id_no_reset(elem_id)
+    def _find_by_id_reset(self, elem_id, id_key=None):
+        return self._find_by_id_no_reset(elem_id, id_key=id_key)
 
-    def get_by_id(self, elem_id, **kwargs):
+    def get_by_id(self, elem_id, id_key=None, **kwargs):
         """
         Retrieve the requested entity by its id. If the entity
         is a spectrum described in the offset index, it will be retrieved
@@ -888,11 +910,11 @@ class IndexedXML(XML):
             index = self._offset_index
             offset = index[elem_id]
             self._source.seek(offset)
-            elem = self._find_by_id_no_reset(elem_id)
+            elem = self._find_by_id_no_reset(elem_id, id_key=id_key)
             data = self._get_info_smart(elem, **kwargs)
             return data
         except (KeyError, etree.LxmlError):
-            elem = self._find_by_id_reset(elem_id)
+            elem = self._find_by_id_reset(elem_id, id_key=id_key)
             data = self._get_info_smart(elem, **kwargs)
             return data
 
