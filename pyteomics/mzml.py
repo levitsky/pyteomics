@@ -66,34 +66,9 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 #   limitations under the License.
 
 import numpy as np
-import zlib
-import base64
 import re
 from . import xml, auxiliary as aux
 from .xml import etree
-
-def _decode_base64_data_array(source, dtype, is_compressed):
-    """Read a base64-encoded binary array.
-
-    Parameters
-    ----------
-    source : str
-        A binary array encoded with base64.
-    dtype : str
-        The type of the array in numpy dtype notation.
-    is_compressed : bool
-        If True then the array will be decompressed with zlib.
-
-    Returns
-    -------
-    out : numpy.array
-    """
-
-    decoded_source = base64.b64decode(source.encode('ascii'))
-    if is_compressed:
-        decoded_source = zlib.decompress(decoded_source)
-    output = np.frombuffer(decoded_source, dtype=dtype)
-    return output
 
 class MzML(xml.IndexedXML):
     """Parser class for mzML files."""
@@ -158,7 +133,7 @@ class MzML(xml.IndexedXML):
                     pass
             b = info.pop('binary')
             if b:
-                array = _decode_base64_data_array(b, dtype, compressed)
+                array = aux._decode_base64_data_array(b, dtype, compressed)
             else:
                 array = np.array([], dtype=dtype)
             for k in info:
