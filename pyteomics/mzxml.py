@@ -1,9 +1,6 @@
 from collections import deque, defaultdict
 
-from pyteomics import xml, auxiliary as aux
-import base64
-import zlib
-import struct
+from . import xml, auxiliary as aux
 import numpy as np
 
 
@@ -24,27 +21,11 @@ def _decode_peaks(info, peaks_data):
         A pair of NumPy arrays containing
         m/z and intensity values.
     """
-    content = peaks_data.encode('ascii')
-    data = base64.b64decode(content)
-    if info.get('compressionType') == 'zlib':
-        data = zlib.decompress(data)
-    if info['precision'] == "32":
-        prec = 4
-    else:
-        prec = 8
-    width = len(data) / prec
-    unpacked = struct.unpack(">%dL" % width, data)
-    mzs = []
-    intensities = []
-    i = 0
-    for d in unpacked:
-        v = struct.unpack("f", struct.pack("I", d))[0]
-        if i % 2 == 0:
-            mzs.append(v)
-        else:
-            intensities.append(v)
-        i += 1
-    return np.array(mzs), np.array(intensities)
+    compressed = (info.get('compressionType') == 'zlib')
+    dt = np.float32 if info['precision'] == '32' else np.float64
+    dtype = np.dtype([('mz', dt), ('intensity', dt)]).newbyteorder('>')
+    data = aux._decode_base64_data_array(peaks_data, dtype, compressed)
+    return data['mz'], data['intensity']
 
 
 class IteratorQueue(object):
@@ -53,7 +34,7 @@ class IteratorQueue(object):
 
     def pop(self):
         if len(self.queue) == 0:
-            raise IndexError("Empty Queue")
+            raise IndexError('Empty Queue')
         return self.queue.popleft()
 
     def append(self, item):
@@ -70,7 +51,7 @@ class IteratorQueue(object):
             raise StopIteration()
 
     def interleave_load(self, scan, layers):
-        scan.pop("scan", None)
+        scan.pop('scan', None)
         self.append(scan)
         for item in layers[scan['num']]:
             self.interleave_load(item, layers)
@@ -82,51 +63,12 @@ class IteratorQueue(object):
 
 
 class MzXML(xml.IndexedXML):
-    _root_element = "mzXML"
+    _root_element = 'mzXML'
     _default_iter_tag = 'scan'
     _indexed_tags = {'scan'}
     _indexed_tag_keys = {'scan': 'num'}
     _default_version = None
-    _default_schema = {'bools': {('dataProcessing', 'centroided'),
-                                 ('dataProcessing', 'chargeDeconvoluted'),
-                                 ('dataProcessing', 'deisotoped'),
-                                 ('dataProcessing', 'spotIntegration'),
-                                 ('maldi', 'collisionGas'),
-                                 ('scan', 'centroided'),
-                                 ('scan', 'chargeDeconvoluted'),
-                                 ('scan', 'deisotoped')},
-                       'charlists': set(),
-                       'floatlists': set(),
-                       'floats': {('dataProcessing', 'intensityCutoff'),
-                                  ('precursorMz', 'precursorIntensity'),
-                                  ('precursorMz', 'windowWideness'),
-                                  ('precursorMz', 'precursorMz'),
-                                  ('scan', 'basePeakIntensity'),
-                                  ('scan', 'basePeakMz'),
-                                  ('scan', 'cidGasPressure'),
-                                  ('scan', 'collisionEnergy'),
-                                  ('scan', 'compensationVoltage'),
-                                  ('scan', 'endMz'),
-                                  ('scan', 'highMz'),
-                                  ('scan', 'ionisationEnergy'),
-                                  ('scan', 'lowMz'),
-                                  ('scan', 'startMz'),
-                                  ('scan', 'totIonCurrent')},
-                       'intlists': set(),
-                       'ints': {('msInstrument', 'msInstrumentID'),
-                                ('peaks', 'compressedLen'),
-                                ('robot', 'deadVolume'),
-                                ('scan', 'msInstrumentID'),
-                                ('scan', 'peaksCount'),
-                                ('scanOrigin', 'num')},
-                       'lists': {'dataProcessing',
-                                 'msInstrument',
-                                 'parentFile',
-                                 'peaks',
-                                 'plate',
-                                 'precursorMz',
-                                 'scanOrigin',
-                                 'spot'}}
+    _default_schema = xml._mzxml_schema_defaults
 
     def _get_info_smart(self, element, **kw):
         name = xml._local_name(element)
@@ -142,7 +84,7 @@ class MzXML(xml.IndexedXML):
             info = self._get_info(element,
                                   recursive=(rec if rec is not None else True),
                                   **kwargs)
-        if "num" in info:
+        if 'num' in info:
             info['id'] = info['num']
         if 'peaks' in info:
             if not isinstance(info['peaks'], (dict, list)):
@@ -159,7 +101,7 @@ class MzXML(xml.IndexedXML):
                     info['m/z array'] = np.array()
                     info['intensity array'] = np.array()
 
-        if "retentionTime" in info:
+        if 'retentionTime' in info:
             info['retentionTime'] = float(info['retentionTime'].strip('PTS'))
         return info
 
@@ -173,15 +115,15 @@ class MzXML(xml.IndexedXML):
             for scan in generator:
                 if top_scan is None:
                     top_scan = scan
-                elif int(scan['msLevel']) < int(top_scan["msLevel"]):
+                elif int(scan['msLevel']) < int(top_scan['msLevel']):
                     top_scan = scan
                     collator_layers[top_scan['num']] = layer
                     layer = []
-                if int(scan['msLevel']) == int(top_scan["msLevel"]) and int(scan['msLevel']) != 1:
+                if int(scan['msLevel']) == int(top_scan['msLevel']) and int(scan['msLevel']) != 1:
                     layer.append(scan)
                 if int(scan['msLevel']) == 1:
                     if int(top_scan['msLevel']) != 1:
-                        raise ValueError("Invalid Scan Nesting Order")
+                        raise ValueError('Invalid Scan Nesting Order')
                     iterator_queue = IteratorQueue([])
                     iterator_queue.interleave_load(top_scan, collator_layers)
                     for item in iterator_queue:
@@ -235,7 +177,7 @@ def read(source, read_schema=True, iterative=True, use_index=False, dtype=None):
 
 def iterfind(source, path, **kwargs):
     """Parse `source` and yield info on elements with specified local
-    name or by specified "XPath".
+    name or by specified XPath.
 
     .. note:: This function is provided for backward compatibility only.
         If you do multiple :py:func:`iterfind` calls on one file, you should

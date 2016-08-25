@@ -68,6 +68,8 @@ from __future__ import print_function
 from functools import wraps
 from traceback import format_exc
 import re
+import zlib
+import base64
 import operator as op
 import sys
 from contextlib import contextmanager
@@ -598,6 +600,8 @@ def _make_chain(reader, readername, full_output=False):
     return dispatch
 
 ### End of file helpers section ###
+
+### Target-decoy approach stuff ###
 
 def _make_qvalues(read, is_decoy, key):
     """Create a function that reads PSMs from a file and calculates q-values
@@ -1461,6 +1465,8 @@ fdr.__doc__ = """Estimate FDR of a data set using TDA or given PEP values.
         The estimation of FDR, (roughly) between 0 and 1.
     """
 
+### Miscellaneous ###
+
 def _parse_charge(s, list_only=False):
     if not list_only:
         try:
@@ -1469,6 +1475,28 @@ def _parse_charge(s, list_only=False):
             pass
     return ChargeList(s)
 
+def _decode_base64_data_array(source, dtype, is_compressed):
+    """Read a base64-encoded binary array.
+
+    Parameters
+    ----------
+    source : str
+        A binary array encoded with base64.
+    dtype : dtype
+        The type of the array in numpy dtype notation.
+    is_compressed : bool
+        If True then the array will be decompressed with zlib.
+
+    Returns
+    -------
+    out : numpy.array
+    """
+
+    decoded_source = base64.b64decode(source.encode('ascii'))
+    if is_compressed:
+        decoded_source = zlib.decompress(decoded_source)
+    output = np.frombuffer(decoded_source, dtype=dtype)
+    return output
 
 ### Bulky constants for other modules are defined below.
 
