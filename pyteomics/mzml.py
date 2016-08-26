@@ -70,7 +70,7 @@ import re
 from . import xml, auxiliary as aux
 from .xml import etree
 
-class MzML(xml.IndexedXML):
+class MzML(xml.ArrayConversionMixin, xml.IndexedXML):
     """Parser class for mzML files."""
     file_format = 'mzML'
     _root_element = 'mzML'
@@ -79,17 +79,6 @@ class MzML(xml.IndexedXML):
     _default_iter_tag = 'spectrum'
     _structures_to_flatten = {'binaryDataArrayList'}
     _indexed_tags = {'spectrum', 'chromatogram'}
-    _dtype_dict = {}
-    _array_keys = ['m/z array', 'intensity array']
-
-    def __init__(self, *args, **kwargs):
-        """Initialize an MzML object."""
-        dtype = kwargs.pop('dtype', None)
-        if isinstance(dtype, dict):
-            self._dtype_dict = dtype
-        elif dtype:
-            self._dtype_dict = {k: dtype for k in self._array_keys}
-        super(MzML, self).__init__(*args, **kwargs)
 
     def _get_info_smart(self, element, **kw):
         name = xml._local_name(element)
@@ -138,7 +127,7 @@ class MzML(xml.IndexedXML):
                 array = np.array([], dtype=dtype)
             for k in info:
                 if k.endswith(' array') and not info[k]:
-                    info = {k: array.astype(self._dtype_dict.get(k))}
+                    info = {k: self._convert_array(k, array)}
                     break
             else:
                 found = False
@@ -147,12 +136,12 @@ class MzML(xml.IndexedXML):
                     knames = info['name']
                     for val in knames:
                         if val.endswith(' array'):
-                            info = {val: array.astype(self._dtype_dict.get(k))}
+                            info = {val: self._convert_array(val, array)}
                             found = True
                             break
                 # last fallback
                 if not found:
-                    info['binary'] = array
+                    info['binary'] = self._convert_array(None, array)
         if 'binaryDataArray' in info:
             for array in info.pop('binaryDataArray'):
                 info.update(array)

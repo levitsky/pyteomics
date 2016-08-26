@@ -19,5 +19,12 @@ class MzXMLTest(unittest.TestCase):
                     # http://stackoverflow.com/q/14246983/1258041
                     self.assertEqual(mzxml_spectra, list(r))
 
+    def test_read_dtype(self):
+        dtypes = {'m/z array': np.float32, 'intensity array': np.int32}
+        with read(self.path, dtype=dtypes) as f:
+            for spec in f:
+                for k, v in dtypes.items():
+                    self.assertEqual(spec[k].dtype, v)
+
 if __name__ == '__main__':
     unittest.main()

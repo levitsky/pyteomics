@@ -85,9 +85,9 @@ def _decode_peaks(info, peaks_data):
     """
     compressed = (info.get('compressionType') == 'zlib')
     dt = np.float32 if info['precision'] == '32' else np.float64
-    dtype = np.dtype([('mz', dt), ('intensity', dt)]).newbyteorder('>')
+    dtype = np.dtype([('m/z array', dt), ('intensity array', dt)]).newbyteorder('>')
     data = aux._decode_base64_data_array(peaks_data, dtype, compressed)
-    return data['mz'], data['intensity']
+    return data
 
 
 class IteratorQueue(object):
@@ -124,7 +124,7 @@ class IteratorQueue(object):
         return self
 
 
-class MzXML(xml.IndexedXML):
+class MzXML(xml.ArrayConversionMixin, xml.IndexedXML):
     """Parser class for mzXML files."""
     _root_element = 'mzXML'
     _default_iter_tag = 'scan'
@@ -151,18 +151,13 @@ class MzXML(xml.IndexedXML):
             info['id'] = info['num']
         if 'peaks' in info:
             if not isinstance(info['peaks'], (dict, list)):
-                mz_array, intensity_array = _decode_peaks(
-                    info, info.pop('peaks'))
-                info['m/z array'] = mz_array
-                info['intensity array'] = intensity_array
+                peak_data = _decode_peaks(info, info.pop('peaks'))
+                for k in self._array_keys:
+                    info[k] = self._convert_array(k, peak_data[k])
             else:
-                peaks_data = info.pop('peaks')[0]
-                try:
-                    info['m/z array'] = peaks_data['m/z array']
-                    info['intensity array'] = peaks_data['intensity array']
-                except KeyError:
-                    info['m/z array'] = np.array()
-                    info['intensity array'] = np.array()
+                peak_data = info.pop('peaks')[0]
+                for k in self._array_keys:
+                    info[k] = self._convert_array(k, peak_data.get(k, np.array([])))
 
         if 'retentionTime' in info:
             info['retentionTime'] = float(info['retentionTime'].strip('PTS'))
@@ -233,9 +228,8 @@ def read(source, read_schema=True, iterative=True, use_index=False, dtype=None):
        An iterator over the dicts with spectrum properties.
     """
 
-    return MzXML(
-        source, read_schema=read_schema, iterative=iterative,
-        use_index=use_index)
+    return MzXML(source, read_schema=read_schema, iterative=iterative,
+        use_index=use_index, dtype=dtype)
 
 
 def iterfind(source, path, **kwargs):

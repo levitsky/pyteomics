@@ -921,6 +921,26 @@ class IndexedXML(XML):
     def __getitem__(self, elem_id):
         return self.get_by_id(elem_id)
 
+class ArrayConversionMixin(object):
+    _dtype_dict = {}
+    _array_keys = ['m/z array', 'intensity array']
+
+    def __init__(self, *args, **kwargs):
+        self._dtype_dict.setdefault(None, None)
+        dtype = kwargs.pop('dtype', None)
+        if isinstance(dtype, dict):
+            self._dtype_dict.update(dtype)
+        elif dtype:
+            self._dtype_dict = {k: dtype for k in self._array_keys}
+            self._dtype_dict[None] = dtype
+        super(ArrayConversionMixin, self).__init__(*args, **kwargs)
+
+    def _convert_array(self, k, array):
+        dtype = self._dtype_dict.get(k)
+        if dtype is not None:
+            return array.astype(dtype)
+        return array
+
 _trafoxml_schema_defaults = {'bools': set(),
      'charlists': set(),
      'floatlists': set(),
