@@ -109,6 +109,7 @@ class XML(FileReader):
     _default_iter_tag = None
     _structures_to_flatten = []
     _schema_location_param = 'schemaLocation'
+    _default_id_attr = 'id'
 
     # Configurable plugin logic
     _converters = XMLValueConverter.converters()
@@ -437,6 +438,34 @@ class XML(FileReader):
         """Clear the element ID cache"""
         self._id_dict = {}
 
+    def _find_by_id_no_reset(self, elem_id, id_key=None):
+        """
+        An almost exact copy of :meth:`get_by_id` with the difference that it does
+        not reset the file reader's position before iterative parsing.
+
+        Parameters
+        ----------
+        elem_id : str
+            The element id to query for
+
+        Returns
+        -------
+        lxml.Element
+        """
+        found = False
+        if id_key is None:
+            id_key = self._default_id_attr
+        for event, elem in etree.iterparse(
+                self._source, events=('start', 'end'), remove_comments=True):
+            if event == 'start':
+                if elem.attrib.get(id_key) == elem_id:
+                    found = True
+            else:
+                if elem.attrib.get(id_key) == elem_id:
+                    return elem
+                if not found:
+                    elem.clear()
+
     @_keepstate
     def get_by_id(self, elem_id, **kwargs):
         """Parse the file and return the element with `id` attribute equal
@@ -451,24 +480,13 @@ class XML(FileReader):
         -------
         out : :py:class:`dict` or :py:const:`None`
         """
+        elem = None
         if not self._id_dict:
-            found = False
-            for event, elem in etree.iterparse(self._source,
-                    events=('start', 'end'), remove_comments=True):
-                if event == 'start':
-                    if elem.attrib.get('id') == elem_id:
-                        found = True
-                else:
-                    if elem.attrib.get('id') == elem_id:
-                        return self._get_info_smart(elem, **kwargs)
-                    if not found:
-                        elem.clear()
-            return None
-        else:
-            try:
-                return self._get_info_smart(self._id_dict[elem_id], **kwargs)
-            except KeyError:
-                return None
+            elem = self._find_by_id_no_reset(elem_id)
+        elif elem_id in self._id_dict:
+            elem = self._id_dict[elem_id]
+        if elem is not None:
+            return self._get_info_smart(elem, **kwargs)
 
 # XPath emulator tools
 pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
@@ -793,7 +811,6 @@ class IndexedXML(XML):
     """
     _indexed_tags = set()
     _indexed_tag_keys = {}
-    _default_id_attr = 'id'
 
     def __init__(self, *args, **kwargs):
         """Create an XML parser object.
@@ -857,34 +874,6 @@ class IndexedXML(XML):
         self._offset_index = FlatTagSpecificXMLByteIndex(
             self._source, self._indexed_tags,
             self._indexed_tag_keys)
-
-    def _find_by_id_no_reset(self, elem_id, id_key=None):
-        """
-        An almost exact copy of :meth:`get_by_id` with the difference that it does
-        not reset the file reader's position before iterative parsing.
-
-        Parameters
-        ----------
-        elem_id : str
-            The element id to query for
-
-        Returns
-        -------
-        lxml.Element
-        """
-        found = False
-        if id_key is None:
-            id_key = self._default_id_attr
-        for event, elem in etree.iterparse(
-                self._source, events=('start', 'end'), remove_comments=True):
-            if event == 'start':
-                if elem.attrib.get(id_key) == elem_id:
-                    found = True
-            else:
-                if elem.attrib.get(id_key) == elem_id:
-                    return elem
-                if not found:
-                    elem.clear()
 
     @_keepstate
     def _find_by_id_reset(self, elem_id, id_key=None):
