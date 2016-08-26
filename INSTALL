@@ -1,13 +1,12 @@
-Required Python versions
-------------------------
+Supported Python versions
+-------------------------
 
-Pyteomics supports Python 2.7 and Python 3. Python 2.6 and older are not
-supported.
+Pyteomics supports Python 2.7 and Python 3.3+.
 
 Project dependencies
 --------------------
 
-Pyteomics uses the following python packages:
+Pyteomics uses the following Python packages:
 
  - `numpy <http://pypi.python.org/pypi/numpy>`_
  - `matplotlib <http://sourceforge.net/projects/matplotlib/files/matplotlib/>`_
@@ -18,6 +17,7 @@ Pyteomics uses the following python packages:
  - `pandas <http://pandas.pydata.org/>`_ (can be used with :py:mod:`pyteomics.pepxml`,
    :py:mod:`pyteomics.tandem`, :py:mod:`pyteomics.auxiliary`)
  - `sqlalchemy <http://www.sqlalchemy.org/>`_ (used by :py:mod:`pyteomics.mass.unimod`)
+
 
 GNU/Linux
 ---------
