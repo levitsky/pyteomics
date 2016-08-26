@@ -24,7 +24,7 @@ setup(
     author             = 'Anton Goloborodko & Lev Levitsky',
     author_email       = 'pyteomics@googlegroups.com',
     url                = 'http://hg.theorchromo.ru/pyteomics',
-    packages           = ['pyteomics', 'pyteomics.mass'],
+    packages           = ['pyteomics', 'pyteomics.mass', 'pyteomics.openms'],
     namespace_packages = ['pyteomics'],
     extras_require     = {'XML': ['lxml', 'numpy'],
                           'FDR': ['numpy'],

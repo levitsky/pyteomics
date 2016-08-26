@@ -1,4 +1,4 @@
-.. automodule:: pyteomics.openms.featurexml
+.. automodule:: pyteomics.mzxml
 
    .. autofunction:: chain
    .. py:function :: chain.from_iterable(files, **kwargs)
@@ -10,3 +10,7 @@
         ----------
         files : iterable
             Iterable of file names or file objects.
+
+
+   .. autofunction:: version_info
+   .. autofunction:: iterfind

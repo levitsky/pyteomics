@@ -1,3 +1,65 @@
+"""
+mzxml - reader for mass spectrometry data in mzXML format
+=========================================================
+
+Summary
+-------
+
+**mzXML** is a (formerly) standard XML-format for raw mass spectrometry data storage,
+intended to be replaced with **mzML**.
+
+This module provides a minimalistic way to extract information from mzXML
+files. You can use the old functional interface (:py:func:`read`) or the new
+object-oriented interface (:py:class:`MzXML`)
+to iterate over entries in ``<scan>`` elements.
+:py:class:`MzXML` also supports direct indexing with scan IDs.
+
+Data access
+-----------
+
+  :py:class:`MzXML` - a class representing a single mzXML file.
+  Other data access functions use this class internally.
+
+  :py:func:`read` - iterate through spectra in mzXML file. Data from a
+  single scan are converted to a human-readable dict. Spectra themselves are
+  stored under 'm/z array' and 'intensity array' keys.
+
+  :py:func:`chain` - read multiple mzXML files at once.
+
+  :py:func:`chain.from_iterable` - read multiple files at once, using an
+  iterable of files.
+
+Deprecated functions
+--------------------
+
+  :py:func:`version_info` - get version information about the mzXML file.
+  You can just read the corresponding attribute of the :py:class:`MzXML` object.
+
+  :py:func:`iterfind` - iterate over elements in an mzXML file.
+  You can just call the corresponding method of the :py:class:`MzXML` object.
+
+Dependencies
+------------
+
+This module requires :py:mod:`lxml` and :py:mod:`numpy`.
+
+-------------------------------------------------------------------------------
+"""
+
+#   Copyright 2016 Joshua Klein, Lev Levitsky
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 from collections import deque, defaultdict
 
 from . import xml, auxiliary as aux
@@ -63,6 +125,7 @@ class IteratorQueue(object):
 
 
 class MzXML(xml.IndexedXML):
+    """Parser class for mzXML files."""
     _root_element = 'mzXML'
     _default_iter_tag = 'scan'
     _indexed_tags = {'scan'}

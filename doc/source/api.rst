@@ -16,11 +16,13 @@ Contents:
    api/electrochem
    api/fasta
    api/mzml
+   api/mzxml
    api/mgf
    api/pepxml
    api/tandem
    api/mzid
    api/featurexml
+   api/trafoxml
    api/auxiliary
    api/pylab_aux
    api/xml
