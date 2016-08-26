@@ -272,14 +272,17 @@ by :py:func:`read` functions have additional methods.
 One of the most important methods is :py:meth:`iterfind`. It allows reading
 additional information from XML files.
 
-mzML
-----
+mzML and mzXML
+--------------
 
-**mzML** is an XML-based format for experimental data obtained on MS/MS or LC-MS
-setups. **Pyteomics** offers you the functionality of :py:mod:`pyteomics.mzml`
-module to gain access to the information contained in mzML files from Python.
+**mzML** and **mzXML** are XML-based formats for experimental data obtained on MS/MS or LC-MS
+setups. **Pyteomics** offers you the functionality of :py:mod:`pyteomics.mzml` and
+:py:mod:`pyteomics.mzxml`
+modules to gain access to the information contained in those files from Python.
+The interfaces of the two modules are very similar, this section will use **mzML**
+for demonstration.
 
-The user can iterate through MS/MS spectra contained in an mzML file via the
+The user can iterate through MS/MS spectra contained in a file via the
 :py:func:`pyteomics.mzml.read` function or :py:class:`pyteomics.mzml.MzML` class.
 Here is an example of the output:
 
@@ -331,6 +334,8 @@ with spectrum IDs:
 
 :py:class:`pyteomics.mzml.PreIndexedMzML` offers the same functionality,
 but it uses byte offset information found at the end of the file.
+Unlike the rest of the functions and classes, :py:class:`pyteomics.mzml.PreIndexedMzML`
+does not have a counterpart in :py:mod:`pyteomics.mzxml`.
 
 pepXML
 ------
@@ -603,7 +608,7 @@ is identical to other XML parsing modules. Since **featureXML** has feature IDs,
     >>> # function style, iteration
     ... with featurexml.read('tests/test.featureXML') as f:
     ...     qual = [feat['overallquality'] for feat in f]
-    ...     
+    ...
 
     >>> qual # qualities of the two features in the test file
     [0.791454, 0.945634]
@@ -613,8 +618,8 @@ is identical to other XML parsing modules. Since **featureXML** has feature IDs,
     >>> f['f_189396504510444007']['overallquality']
     0.945634
     >>> f.close()
-    
-As always, :py:func:`pyteomics.featurexml.read` and :py:class:`pyteomics.featurexml.FeatureXML` are interchangeable. 
+
+As always, :py:func:`pyteomics.featurexml.read` and :py:class:`pyteomics.featurexml.FeatureXML` are interchangeable.
 
 
 FDR estimation and filtering
