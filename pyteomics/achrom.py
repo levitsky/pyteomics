@@ -532,14 +532,19 @@ def get_RCs_vary_lcp(sequences, RTs,
     min_lcp = lcp_range[0]
     max_lcp = lcp_range[1]
     step = (max_lcp - min_lcp) / 10.0
+    peptide_dicts = [
+        parser.amino_acid_composition(peptide, False, term_aa,
+                                      allow_unknown_modifications=True,
+                                      labels=labels)
+        for peptide in sequences]
     while step > lcp_accuracy:
         lcp_grid = np.arange(min_lcp, max_lcp,
                                 (max_lcp - min_lcp) / 10.0)
         for lcp in lcp_grid:
-            RC_dict = get_RCs(sequences, RTs, lcp, term_aa, labels=labels)
+            RC_dict = get_RCs(sequences, RTs, lcp, term_aa, labels=labels, peptide_dicts=peptide_dicts)
             regression_coeffs = linear_regression(
                 RTs,
-                [calculate_RT(peptide, RC_dict) for peptide in sequences])
+                [calculate_RT(peptide, RC_dict) for peptide in peptide_dicts])
             if regression_coeffs[2] > best_r:
                 best_r = regression_coeffs[2]
                 best_RC_dict = dict(RC_dict)
@@ -555,7 +560,7 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
 
     Parameters
     ----------
-    peptide : str
+    peptide : str, parser.amino_acid_composition object
         A peptide sequence.
     RC_dict : dict
         A set of retention coefficients, length correction parameter and
@@ -594,8 +599,11 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
             break
 
     # Calculate retention time.
-    peptide_dict = parser.amino_acid_composition(peptide, False, term_aa,
-        allow_unknown_modifications=True, labels=amino_acids)
+    if isinstance(peptide, str):
+        peptide_dict = parser.amino_acid_composition(peptide, False, term_aa,
+            allow_unknown_modifications=True, labels=amino_acids)
+    else:
+        peptide_dict = peptide
     RT = 0.0
     for aa in peptide_dict:
         if aa not in RC_dict['aa']:
