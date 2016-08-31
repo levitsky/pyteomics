@@ -410,12 +410,12 @@ def get_RCs(sequences, RTs, lcp = -0.21,
 
     # Determine retention coefficients using multidimensional linear
     # regression.
-    composition_array = [
-            [pdict.get(aa, 0.0)
-             * (1.0 + lcp * np.log(parser.length(pdict)))
-               for aa in detected_amino_acids]
-            + [1.0] # Add free term to each peptide.
-        for pdict in peptide_dicts]
+    composition_array = []
+    for pdict in peptide_dicts:
+        pdictl = np.log(parser.length(pdict))
+        composition_array.append([pdict.get(aa, 0.0)
+             * (1.0 + lcp * pdictl)
+               for aa in detected_amino_acids] + [1.0])
 
     # Add normalizing conditions for terminal retention coefficients. The
     # condition we are using here is quite arbitrary. It implies that the sum
