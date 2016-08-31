@@ -560,8 +560,8 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
 
     Parameters
     ----------
-    peptide : str, parser.amino_acid_composition object
-        A peptide sequence.
+    peptide : str or dict
+        A peptide sequence or amino acid composition.
     RC_dict : dict
         A set of retention coefficients, length correction parameter and
         a fixed retention time shift. Keys are: 'aa', 'lcp' and 'const'.
@@ -578,12 +578,15 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
 
     Examples
     --------
-    >>> RT = calculate_RT('AA', {'aa':{'A':1.1},'lcp':0.0,'const':0.1})
+    >>> RT = calculate_RT('AA', {'aa': {'A': 1.1}, 'lcp':0.0, 'const': 0.1})
     >>> abs(RT - 2.3) < 1e-6      # Float comparison
     True
-    >>> RT = calculate_RT('AAA', {'aa': {'ntermA':1.0, 'A':1.1, 'ctermA':1.2},\
-        'lcp':0.0,\
-        'const':0.1})
+    >>> RT = calculate_RT('AAA', {'aa': {'ntermA': 1.0, 'A': 1.1, 'ctermA': 1.2},\
+        'lcp': 0.0, 'const':0.1})
+    >>> abs(RT - 3.4) < 1e-6      # Float comparison
+    True
+    >>> RT = calculate_RT({'A': 3}, {'aa': {'ntermA': 1.0, 'A': 1.1, 'ctermA': 1.2},\
+        'lcp': 0.0, 'const':0.1})
     >>> abs(RT - 3.4) < 1e-6      # Float comparison
     True
     """
@@ -599,11 +602,11 @@ def calculate_RT(peptide, RC_dict, raise_no_mod=True):
             break
 
     # Calculate retention time.
-    if isinstance(peptide, str):
+    if isinstance(peptide, dict):
+        peptide_dict = peptide
+    else:
         peptide_dict = parser.amino_acid_composition(peptide, False, term_aa,
             allow_unknown_modifications=True, labels=amino_acids)
-    else:
-        peptide_dict = peptide
     RT = 0.0
     for aa in peptide_dict:
         if aa not in RC_dict['aa']:
