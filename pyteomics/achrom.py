@@ -371,8 +371,7 @@ def get_RCs(sequences, RTs, lcp = -0.21,
         by default.
     labels : list of str, optional
         List of all possible amino acids and terminal groups
-        (default: 20 standard amino acids, N-terminal 'NH2-' and
-        C-terminal '-OH');
+        If not given, any modX labels are allowed.
 
     Returns
     -------
@@ -400,9 +399,10 @@ def get_RCs(sequences, RTs, lcp = -0.21,
 
     # Make a list of all amino acids present in the sample.
     peptide_dicts = [
-        parser.amino_acid_composition(peptide, False, term_aa,
+            parser.amino_acid_composition(peptide, False, term_aa,
                                allow_unknown_modifications=True,
                                labels=labels)
+            if not isinstance(peptide, dict) else peptide
         for peptide in sequences]
 
     detected_amino_acids = {aa for peptide_dict in peptide_dicts
@@ -412,10 +412,10 @@ def get_RCs(sequences, RTs, lcp = -0.21,
     # regression.
     composition_array = []
     for pdict in peptide_dicts:
-        pdictl = np.log(parser.length(pdict))
-        composition_array.append([pdict.get(aa, 0.0)
-             * (1.0 + lcp * pdictl)
-               for aa in detected_amino_acids] + [1.0])
+        loglen = np.log(parser.length(pdict))
+        composition_array.append([pdict.get(aa, 0.)
+             * (1. + lcp * loglen)
+               for aa in detected_amino_acids] + [1.])
 
     # Add normalizing conditions for terminal retention coefficients. The
     # condition we are using here is quite arbitrary. It implies that the sum
@@ -499,8 +499,7 @@ def get_RCs_vary_lcp(sequences, RTs,
         Range of possible values of the length correction parameter.
     labels : list of str, optional
         List of labels for all possible amino acids and terminal groups
-        (default: 20 standard amino acids, N-terminal NH2- and
-        C-terminal -OH).
+        If not given, any modX labels are allowed.
     lcp_accuracy : float, optional
         The accuracy of the length correction parameter calculation.
 
@@ -533,15 +532,16 @@ def get_RCs_vary_lcp(sequences, RTs,
     max_lcp = lcp_range[1]
     step = (max_lcp - min_lcp) / 10.0
     peptide_dicts = [
-        parser.amino_acid_composition(peptide, False, term_aa,
+            parser.amino_acid_composition(peptide, False, term_aa,
                                       allow_unknown_modifications=True,
                                       labels=labels)
+            if not isinstance(peptide, dict) else peptide
         for peptide in sequences]
     while step > lcp_accuracy:
         lcp_grid = np.arange(min_lcp, max_lcp,
                                 (max_lcp - min_lcp) / 10.0)
         for lcp in lcp_grid:
-            RC_dict = get_RCs(sequences, RTs, lcp, term_aa, labels=labels, peptide_dicts=peptide_dicts)
+            RC_dict = get_RCs(peptide_dicts, RTs, lcp, term_aa, labels=labels)
             regression_coeffs = linear_regression(
                 RTs,
                 [calculate_RT(peptide, RC_dict) for peptide in peptide_dicts])
