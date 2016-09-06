@@ -3,7 +3,8 @@
 
  - New module :py:mod:`pyteomics.mzxml` for parsing of MzXML files.
 
- - New parameter `dtype` in :py:func:`pyteomics.mgf.read` and :py:func:`pyteomics.mzml.read`
+ - New parameter `dtype` in :py:func:`pyteomics.mgf.read`, :py:func:`pyteomics.mzml.read`
+   and :py:func:`pyteomics.mzxml.read`
    allows changing the dtype of arrays yielded by the parsers.
 
  - :py:mod:`pyteomics.featurexml` moved into a subpackage :py:mod:`pyteomics.openms`.
@@ -13,6 +14,8 @@
  - Bugfix in XML indexing code to make it work on Python 3.x versions prior to 3.5.
 
  - Bugfix in :py:func:`pyteomics.pylab_aux.scatter_trend` (support for lists and other non-ndarrays).
+
+ - Performance improvements in :py:mod:`pyteomics.achrom` calibration functions.
 
 3.3.1
 -----
