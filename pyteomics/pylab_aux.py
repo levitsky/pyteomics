@@ -5,8 +5,8 @@ pylab_aux - auxiliary functions for plotting with pylab
 This module serves as a collection of useful routines for data plotting with
 matplotlib.
 
-Data plotting
--------------
+Generic plotting
+----------------
 
   :py:func:`plot_line` - plot a line.
 
@@ -16,6 +16,12 @@ Data plotting
 
   :py:func:`plot_function_contour` - plot a contour graph of a function of
   two variables.
+
+FDR control
+-----------
+
+  :py:func:`plot_qvalue_curve` - plot the dependence of q-value on the amount of PSMs
+  (similar to a ROC curve).
 
 See also
 --------
@@ -270,12 +276,8 @@ def plot_qvalue_curve(qvalues, *args, **kwargs):
 
     Parameters
     ----------
-    qvalues : structured NumPy array
-        An array of q-values and scores, as returned by
-        :py:func:`pyteomics.tandem.qvalues`,
-        :py:func:`pyteomics.pepxml.qvalues`,
-        :py:func:`pyteomics.mzid.qvalues`,
-        :py:func:`pyteomics.auxiliary.qvalues` or your own function.
+    qvalues : array-like
+        An array of q-values for sorted PSMs.
     xlabel : str, optional
         Label for the X axis. Default is "q-value".
     ylabel : str, optional
