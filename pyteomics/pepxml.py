@@ -33,6 +33,9 @@ Data access
 
   :py:func:`DataFrame` - read pepXML files into a :py:class:`pandas.DataFrame`.
 
+Target-decoy approach
+---------------------
+
   :py:func:`filter` - filter PSMs from a chain of pepXML files to a specific FDR
   using TDA.
 
@@ -44,9 +47,6 @@ Data access
 
   :py:func:`filter_df` - filter pepXML files and return a :py:class:`pandas.DataFrame`.
 
-Miscellaneous
--------------
-
   :py:func:`fdr` - estimate the false discovery rate of a PSM set using the
   target-decoy approach.
 
@@ -55,8 +55,11 @@ Miscellaneous
 
   :py:func:`is_decoy` - determine whether a PSM is decoy or not.
 
-  :py:func:`roc_curve` - get a receiver-operator curve (min peptideprophet
-  probability is a sample vs. false discovery rate) of peptideprophet analysis.
+Miscellaneous
+-------------
+
+  :py:func:`roc_curve` - get a receiver-operator curve (min PeptideProphet
+  probability in a sample vs. false discovery rate) of PeptideProphet analysis.
 
 Deprecated functions
 --------------------

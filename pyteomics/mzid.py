@@ -33,6 +33,9 @@ Data access
   :py:func:`chain.from_iterable` - read multiple files at once, using an
   iterable of files.
 
+Target-decoy approach
+---------------------
+
   :py:func:`filter` - read a chain of mzIdentML files and filter to a certain
   FDR using TDA.
 
@@ -41,9 +44,6 @@ Data access
 
   :py:func:`filter.chain.from_iterable` - chain a series of filters applied
   independently to an iterable of files.
-
-Miscellaneous
--------------
 
   :py:func:`is_decoy` - determine if a "SpectrumIdentificationResult" should be
   consiudered decoy.

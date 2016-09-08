@@ -33,6 +33,9 @@ Data access
 
   :py:func:`DataFrame` - read X!Tandem output files into a :py:class:`pandas.DataFrame`.
 
+Target-decoy approach
+---------------------
+
   :py:func:`filter` - iterate through peptide-spectrum matches in a chain of
   X!Tandem output files, yielding only top PSMs and keeping false discovery rate
   (FDR) at the desired level. The FDR is estimated using the target-decoy
@@ -46,8 +49,6 @@ Data access
 
   :py:func:`filter_df` - filter X!Tandem output files and return a :py:class:`pandas.DataFrame`.
 
-Miscellaneous
--------------
 
   :py:func:`is_decoy` - determine if a PSM is from the decoy database.
 
