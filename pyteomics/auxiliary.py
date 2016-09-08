@@ -44,8 +44,6 @@ Helpers
   `memoization <http://stackoverflow.com/a/1988826/1258041>`_
   `function decorator <http://stackoverflow.com/a/1594484/1258041>`_.
 
-
-
 -------------------------------------------------------------------------------
 
 """

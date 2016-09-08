@@ -1,2 +1,2 @@
 .. automodule:: pyteomics.auxiliary
-   :exclude-members: Charge, ChargeList, BasicComposition
+   :exclude-members: Charge, ChargeList, BasicComposition, FileReader
