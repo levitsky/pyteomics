@@ -787,7 +787,7 @@ def ensure_bytes_single(string):
     try:
         return string.encode('utf-8')
     except (AttributeError, UnicodeEncodeError):
-        raise PyteomicsError('%{!r} could not be encoded'.format(string))
+        raise PyteomicsError('{!r} could not be encoded'.format(string))
 
 
 def ensure_bytes(strings):
