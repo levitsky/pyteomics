@@ -389,6 +389,8 @@ std_aa_comp.update({
     'V':   Composition({'H': 9, 'C': 5, 'O': 1, 'N': 1}),
     'W':   Composition({'C': 11, 'H': 10, 'N': 2, 'O': 1}),
     'Y':   Composition({'H': 9, 'C': 9, 'O': 2, 'N': 1}),
+    'U':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1, 'Se' : 1}),
+    'O':   Composition({'H': 19, 'C': 12, 'O': 2, 'N': 3}),
     'H-':  Composition({'H': 1}),
     '-OH': Composition({'O': 1, 'H': 1}),
     })
@@ -638,9 +640,11 @@ std_aa_mass = {
     'M': 131.04049,
     'H': 137.05891,
     'F': 147.06841,
+    'U': 150.95364,
     'R': 156.10111,
     'Y': 163.06333,
     'W': 186.07931,
+    'O': 255.15829,
     }
 """A dictionary with monoisotopic masses of the twenty standard
 amino acid residues.
