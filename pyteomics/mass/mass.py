@@ -52,13 +52,13 @@ Data
   isotopes.
 
   :py:data:`std_aa_comp` - a dict with the elemental compositions
-  of the standard twenty amino acid residues.
+  of the standard twenty amino acid residues, selenocysteine and pyrrolysine.
 
   :py:data:`std_ion_comp` - a dict with the relative elemental
   compositions of the standard peptide fragment ions.
 
   :py:data:`std_aa_mass` - a dict with the monoisotopic masses
-  of the standard twenty amino acid residues.
+  of the standard twenty amino acid residues, selenocysteine and pyrrolysine.
 
 -----------------------------------------------------------------------------
 """
@@ -124,7 +124,8 @@ def _parse_isotope_string(label):
 # description, fill it later.
 std_aa_comp = {}
 """A dictionary with elemental compositions of the twenty standard
-amino acid residues and standard H- and -OH terminal groups.
+amino acid residues, selenocysteine, pyrrolysine,
+and standard H- and -OH terminal groups.
 """
 
 _isotope_string = r'^([A-Z][a-z+]*)(?:\[(\d+)\])?$'
@@ -647,7 +648,7 @@ std_aa_mass = {
     'O': 255.15829,
     }
 """A dictionary with monoisotopic masses of the twenty standard
-amino acid residues.
+amino acid residues, selenocysteine and pyrrolysine.
 """
 
 def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
@@ -954,4 +955,3 @@ class Unimod():
         if len(result) == 1:
             return result[0]
         return result
-

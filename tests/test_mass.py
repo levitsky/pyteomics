@@ -279,6 +279,10 @@ class MassTest(unittest.TestCase):
         self.assertEqual(parsed_sequence, pickle.loads(pickle.dumps(parsed_sequence)))
         self.assertEqual(split_sequence, pickle.loads(pickle.dumps(split_sequence)))
 
+    def test_aa_mass(self):
+        h2o = mass.calculate_mass(formula='H2O')
+        for aa, m in mass.std_aa_mass.items():
+            self.assertEqual(m + h2o, mass.fast_mass(aa))
 
 if __name__ == '__main__':
     unittest.main()
