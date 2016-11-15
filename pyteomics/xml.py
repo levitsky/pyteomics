@@ -290,7 +290,7 @@ class XML(FileReader):
         if kwargs.get('recursive'):
             for child in element.iterchildren():
                 cname = _local_name(child)
-                if cname in {'cvParam', 'userParam'}:
+                if cname in {'cvParam', 'userParam', 'UserParam'}:
                     newinfo = self._handle_param(child, **kwargs)
                     if not ('name' in info and 'name' in newinfo):
                         info.update(newinfo)
