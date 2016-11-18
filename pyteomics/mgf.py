@@ -111,7 +111,7 @@ def read(source=None, use_header=True, convert_arrays=2, read_charges=True, dtyp
     out : FileReader
     """
     if convert_arrays and np is None:
-        raise PyteomicsError('numpy is required for array conversion')
+        raise aux.PyteomicsError('numpy is required for array conversion')
     dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in _array_keys}
     header = read_header(source)
     reading_spectrum = False
