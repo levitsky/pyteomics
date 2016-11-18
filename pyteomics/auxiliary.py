@@ -80,6 +80,7 @@ except ImportError:
     from collections.abc import Container, Sized
 import math
 from distutils.version import LooseVersion
+import codecs
 try:
     basestring = basestring
 except NameError:
@@ -416,13 +417,13 @@ def _keepstate(func):
 class _file_obj(object):
     """Check if `f` is a file name and open the file in `mode`.
     A context manager."""
-    def __init__(self, f, mode):
+    def __init__(self, f, mode, encoding=None):
         if f is None:
             self.file = {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout
                     }[mode[0]]
             self.none = True
         elif isinstance(f, basestring):
-            self.file = open(f, mode)
+            self.file = codecs.open(f, mode, encoding)
         else:
             self.file = f
         self.close_file = (self.file is not f)
@@ -482,17 +483,18 @@ class FileReader(IteratorContextManager):
     """Abstract class implementing context manager protocol
     for file readers.
     """
-    def __init__(self, source, mode, func, pass_file, args, kwargs):
+    def __init__(self, source, mode, func, pass_file, args, kwargs, encoding=None):
         super(FileReader, self).__init__(func, *args, **kwargs)
         self._pass_file = pass_file
         self._source_init = source
         self._mode = mode
+        self._encoding = encoding
         self.reset()
 
     def reset(self):
         if hasattr(self, '_source'):
             self._source.__exit__(None, None, None)
-        self._source = _file_obj(self._source_init, self._mode)
+        self._source = _file_obj(self._source_init, self._mode, self._encoding)
         try:
             if self._pass_file:
                 self._reader = self._func(
@@ -523,7 +525,7 @@ def _file_reader(_mode='r'):
         """
         @wraps(_func)
         def helper(*args, **kwargs):
-            return FileReader(args[0], _mode, _func, True, args[1:], kwargs)
+            return FileReader(args[0], _mode, _func, True, args[1:], kwargs, kwargs.pop('encoding', None))
         return helper
     return decorator
 
