@@ -350,19 +350,16 @@ class Composition(BasicComposition):
         # Calculate mass.
         mass = 0.0
         average = kwargs.get('average', False)
-        for isotope_string in composition:
+        for isotope_string, amount in composition.items():
             element_name, isotope_num = _parse_isotope_string(isotope_string)
             # Calculate average mass if required and the isotope number is
             # not specified.
             if (not isotope_num) and average:
-                for isotope in mass_data[element_name]:
-                    if isotope != 0:
-                        mass += (composition[element_name]
-                                 * mass_data[element_name][isotope][0]
-                                 * mass_data[element_name][isotope][1])
+                for isotope, data in mass_data[element_name].items():
+                    if isotope:
+                        mass += (amount * data[0] * data[1])
             else:
-                mass += (composition[isotope_string]
-                         * mass_data[element_name][isotope_num][0])
+                mass += (amount * mass_data[element_name][isotope_num][0])
 
         # Calculate m/z if required.
         if charge:

@@ -101,8 +101,8 @@ from collections import deque
 import itertools as it
 from .auxiliary import PyteomicsError, memoize, BasicComposition
 
-std_amino_acids = ['Q','W','E','R','T','Y','I','P','A','S',
-                   'D','F','G','H','K','L','C','V','N','M']
+std_amino_acids = ['Q', 'W', 'E', 'R', 'T', 'Y', 'I', 'P', 'A', 'S',
+                   'D', 'F', 'G', 'H', 'K', 'L', 'C', 'V', 'N', 'M']
 """modX labels for the 20 standard amino acids."""
 
 std_nterm = 'H-'
