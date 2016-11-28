@@ -64,14 +64,12 @@ Helpers
 
 from __future__ import print_function
 from functools import wraps
-from traceback import format_exc
 import re
 import zlib
 import base64
 import operator as op
 import sys
 from contextlib import contextmanager
-import types
 from bisect import bisect_right
 from collections import Counter, defaultdict
 try:
@@ -909,7 +907,6 @@ def _make_filter(read, is_decoy, key, qvalues):
     sorted by `key`.
     """
     def filter(*args, **kwargs):
-        import numpy as np
         try:
             fdr = kwargs.pop('fdr')
         except KeyError:

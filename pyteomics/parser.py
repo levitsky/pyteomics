@@ -491,6 +491,7 @@ def amino_acid_composition(sequence,
 
     return aa_dict
 
+@memoize()
 def cleave(sequence, rule, missed_cleavages=0, min_length=None):
     """Cleaves a polypeptide sequence using a given rule.
 
