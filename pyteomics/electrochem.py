@@ -98,7 +98,7 @@ References
 
 from . import parser
 from .auxiliary import PyteomicsError
-from collections import Iterable
+from collections import Iterable, Counter
 
 def charge(sequence, pH, **kwargs):
     """Calculate the charge of a polypeptide in given pH or list of pHs using
@@ -198,8 +198,10 @@ def _prepare_charge_dict(sequence, **kwargs):
 
     elif isinstance(sequence, (str, list)):
         if isinstance(sequence, str):
-            parsed_sequence = parser.parse(sequence,
-                    show_unmodified_termini=True)
+            if sequence.isupper() and sequence.isalpha():
+                parsed_sequence = [parser.std_nterm] + list(sequence) + [parser.std_cterm]
+            else:
+                parsed_sequence = parser.parse(sequence, show_unmodified_termini=True)
         elif isinstance(sequence, list):
             if sequence[0][-1] != '-' or sequence[-1][0] != '-':
                 raise PyteomicsError('Parsed sequences must contain terminal '
@@ -210,7 +212,7 @@ def _prepare_charge_dict(sequence, **kwargs):
         c_aa = parsed_sequence[-2]
         nterm = parsed_sequence[0]
         cterm = parsed_sequence[-1]
-        peptide_dict = parser.amino_acid_composition(parsed_sequence)
+        peptide_dict = Counter(parsed_sequence)
 
     else:
         raise PyteomicsError('Unsupported type of sequence: %s' % type(sequence))
