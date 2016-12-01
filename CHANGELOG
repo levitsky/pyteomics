@@ -1,11 +1,14 @@
 3.4.1
 -----
 
- - Add support for selenocysteine (U) and pyrrolysine (O) in :py:mod:`pyteomics.mass`.
+ - Add selenocysteine ("U") and pyrrolysine ("O") to :py:data:`pyteomics.mass.std_aa_mass` and
+   :py:data:`pyteomics.mass.std_aa_comp`.
 
  - An optional parameter `encoding` is now accepted by text file readers (:py:func:`pyteomics.mgf.read`
    and :py:func:`pyteomics.fasta.read`). This can be useful for MGF files with non-ASCII spectrum
    titles or comments.
+
+ - Performance improvements in :py:func:`pyteomics.electrochem.pI`.
 
 3.4
 ---
