@@ -233,7 +233,7 @@ def charge(sequence, pH, **kwargs):
     return charge_list[0] if len(charge_list) == 1 else charge_list
 
 
-def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.0001, **kwargs):
+def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
     """Calculate the isoelectric point of a polypeptide using a given set
     of amino acids' electrochemical properties.
 
