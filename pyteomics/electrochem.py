@@ -143,6 +143,15 @@ def charge(sequence, pH, **kwargs):
         A single value of charge or a list of charges.
     """
 
+    peptide_dict, pK = _prepare_charge_dict(sequence, **kwargs)
+
+    # Process the case when pH is a single float.
+    pH_list = pH if isinstance(pH, Iterable) else [pH,]
+
+    charge_list = _charge_for_dict(peptide_dict, pH_list, pK)
+    return charge_list[0] if not isinstance(pH, Iterable) else charge_list
+
+def _prepare_charge_dict(sequence, **kwargs):
     nterm = cterm = n_aa = c_aa = None
     pK = kwargs.get('pK', pK_lehninger).copy()
     pK_nterm = kwargs.get('pK_nterm', {})
@@ -213,11 +222,9 @@ def charge(sequence, pH, **kwargs):
         if c_aa in pK_cterm[cterm]:
             pK[cterm] = pK_cterm[cterm][c_aa]
 
-    # Process the case when pH is a single float.
-    pH_list = pH if isinstance(pH, Iterable) else [pH,]
+    return peptide_dict, pK
 
-    # Check if a sequence was parsed with `show_unmodified_termini` enabled.
-
+def _charge_for_dict(peptide_dict, pH_list, pK):
     # Calculate the charge for each value of pH.
     charge_list = []
     for pH_value in pH_list:
@@ -225,13 +232,10 @@ def charge(sequence, pH, **kwargs):
         for aa in peptide_dict:
             for ionizable_group in pK.get(aa, []):
                 charge += peptide_dict[aa] * ionizable_group[1] * (
-                    1.0
-                    / (1.0 + 10 ** (ionizable_group[1]
-                                  * (pH_value - ionizable_group[0]))))
+                    1. / (1. + 10 ** (ionizable_group[1] * (pH_value - ionizable_group[0]))))
         charge_list.append(charge)
 
-    return charge_list[0] if len(charge_list) == 1 else charge_list
-
+    return charge_list
 
 def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
     """Calculate the isoelectric point of a polypeptide using a given set
@@ -276,17 +280,19 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
     if isinstance(sequence, str) or isinstance(sequence, list):
         pK_nterm = kwargs.get('pK_nterm', {})
         pK_cterm = kwargs.get('pK_cterm', {})
-    elif isinstance(sequence,dict) and (("pK_nterm" in kwargs) or ("pK_cterm" in kwargs)):
+    elif isinstance(sequence, dict) and (('pK_nterm' in kwargs) or ('pK_cterm' in kwargs)):
         raise PyteomicsError('Can not use terminal features for %s' % type(sequence))
+    
+    peptide_dict, pK = _prepare_charge_dict(sequence, pK=pK, pK_cterm=pK_cterm, pK_nterm=pK_nterm)
     # The algorithm is based on the fact that charge(pH) is a monotonic function.
     left_x, right_x = pI_range
-    left_y = charge(sequence, left_x, pK=pK, pK_cterm=pK_cterm, pK_nterm=pK_nterm)
-    right_y = charge(sequence, right_x, pK=pK, pK_cterm=pK_cterm, pK_nterm=pK_nterm)
+    left_y = _charge_for_dict(peptide_dict, [left_x], pK)[0]
+    right_y = _charge_for_dict(peptide_dict, [right_x], pK)[0]
     while (right_x - left_x) > precision_pI:
         if left_y * right_y > 0:
             return left_x if abs(left_y) < abs(right_y) else right_x
         middle_x = (left_x + right_x) / 2.0
-        middle_y = charge(sequence, middle_x, pK=pK, pK_cterm=pK_cterm, pK_nterm=pK_nterm)
+        middle_y = _charge_for_dict(peptide_dict, [middle_x], pK)[0]
         if middle_y * left_y < 0:
             right_x = middle_x
             right_y = middle_y
