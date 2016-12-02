@@ -37,7 +37,6 @@ import operator as op
 import ast
 import numpy as np
 from lxml import etree
-import re
 from collections import OrderedDict, defaultdict
 from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj
 try: # Python 2.7
@@ -167,7 +166,6 @@ class XML(FileReader):
         out : tuple
             A (version, schema URL) tuple, both elements are strings or None.
         """
-        vinfo = None
         for _, elem in etree.iterparse(
                 self._source, events=('start',), remove_comments=True):
             if _local_name(elem) == self._root_element:
