@@ -200,8 +200,8 @@ API changes
 
  - All :py:func:`fdr`, :py:func:`qvalues`, and :py:func:`!filter` functions
    now accept a new parameter `correction`. It is used for more accurate
-   estimation of the number of false positives using TDA (paper with explanation
-   submitted to JPR).
+   estimation of the number of false positives using TDA (`paper with explanation
+   <http://dx.doi.org/10.1021/acs.jproteome.6b00144>`_).
 
  - :py:func:`!filter` functions now support both iterator protocol and context
    manager protocol. They now also accept the `full_output` parameter, which has

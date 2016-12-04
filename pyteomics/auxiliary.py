@@ -695,6 +695,8 @@ def _make_qvalues(read, is_decoy, key):
             desired confidence level. E.g., if correction=0.95, then the calculated q-values
             do not exceed the "real" q-values with 95% probability.
 
+            See `this paper <http://dx.doi.org/10.1021/acs.jproteome.6b00144>`_ for further explanation.
+
         full_output : bool, keyword only, optional
             If :py:const:`True`, then the returned array has PSM objects along
             with scores and q-values. Default is :py:const:`False`.
@@ -1021,6 +1023,8 @@ def _make_filter(read, is_decoy, key, qvalues):
             desired confidence level. E.g., if correction=0.95, then the calculated q-values
             do not exceed the "real" q-values with 95% probability.
 
+            See `this paper <http://dx.doi.org/10.1021/acs.jproteome.6b00144>`_ for further explanation.
+
         pep : callable / array-like / iterable / str, keyword only, optional
             If callable, a function used to determine the posterior error probability (PEP).
             Should accept exactly one argument (PSM) and return a float.
@@ -1186,11 +1190,13 @@ def _make_fdr(is_decoy):
             desired confidence level. E.g., if correction=0.95, then the calculated q-values
             do not exceed the "real" q-values with 95% probability.
 
+            See `this paper <http://dx.doi.org/10.1021/acs.jproteome.6b00144>`_ for further explanation.
+
             .. note::
                 Requires :py:mod:`numpy`, if `correction` is a float or 2.
 
             .. note::
-                Correction is only needed if the PSM set at hand was obtained using TDA-based
+                Correction is only needed if the PSM set at hand was obtained using TDA
                 filtering based on decoy counting (as done by using :py:func:`!filter` without
                 `correction`).
 
