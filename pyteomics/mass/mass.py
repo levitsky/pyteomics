@@ -81,7 +81,7 @@ from __future__ import division
 import math
 from .. import parser
 from ..auxiliary import PyteomicsError, _nist_mass, BasicComposition
-from itertools import chain
+from itertools import chain, product, combinations_with_replacement
 from collections import defaultdict
 try:
     from urllib import urlopen
@@ -619,6 +619,69 @@ def isotopic_composition_abundance(*args, **kwargs):
                         ** isotope_content)
 
     return num2 * (num1 / denom)
+
+def isotopologues(*args, **kwargs):
+    """Iterate over possible isotopic states of a molecule.
+    The molecule can be defined by formula, sequence, parsed sequence, or composition.
+
+    Parameters
+    ----------
+    formula : str, optional
+        A string with a chemical formula.
+    sequence : str, optional
+        A polypeptide sequence string in modX notation.
+    parsed_sequence : list of str, optional
+        A polypeptide sequence parsed into a list of amino acids.
+    composition : :py:class:`Composition`, optional
+        A :py:class:`Composition` object with the elemental composition of a
+        substance.
+    elements_with_isotopes : list of str, optional
+        A list of elements to be considered in isotopic distribution
+        (by default, every element has a isotopic distribution).
+    isotope_threshold : float, optional
+        The threshold abundance of a specific isotope to be considered.
+        Default is :py:const:`5e-4`.
+    overall_threshold : float, optional
+        The threshold abundance of the calculateed isotopic composition.
+        Default is :py:const:`None`.
+    aa_comp : dict, optional
+        A dict with the elemental composition of the amino acids (the
+        default value is :py:data:`std_aa_comp`).
+    mass_data : dict, optional
+        A dict with the masses of chemical elements (the default
+        value is :py:data:`nist_mass`).
+
+    Returns
+    -------
+    out : iterator
+        Iterator over possible isotopic compositions.
+    """
+    iso_threshold = kwargs.pop('isotope_threshold', 5e-4)
+    overall_threshold = kwargs.pop('overall_threshold', None)
+    mass_data = kwargs.get('mass_data', nist_mass)
+    elements_with_isotopes = kwargs.get('elements_with_isotopes')
+    composition = Composition(kwargs['composition']) if 'composition' in kwargs else Composition(*args, **kwargs)
+
+    dict_elem_isotopes = {}
+    for element in composition:
+        if elements_with_isotopes is None or element in elements_with_isotopes:
+            element_name, isotope_num = _parse_isotope_string(element)
+            isotopes = {k: v for k, v in mass_data[element_name].items() if k != 0 and v[1] >= iso_threshold}
+            list_isotopes = [_make_isotope_string(element_name, k) for k in isotopes]
+            dict_elem_isotopes[element] = list_isotopes
+        else:
+            dict_elem_isotopes[element] = [element]
+    all_isotoplogues = []
+    for element, list_isotopes in dict_elem_isotopes.items():
+        n = composition[element]
+        list_comb_element_n = []
+        for elementXn in combinations_with_replacement(list_isotopes, n):
+            list_comb_element_n.append(elementXn)
+        all_isotoplogues.append(list_comb_element_n)
+    for isotopologue in product(*all_isotoplogues):
+        ic = Composition(formula=''.join(atom for el in isotopologue for atom in el))
+        if overall_threshold is None or isotopic_composition_abundance(composition=ic) > overall_threshold:
+            yield ic
 
 std_aa_mass = {
     'G': 57.02146,
