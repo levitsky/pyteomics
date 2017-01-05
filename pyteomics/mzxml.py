@@ -160,7 +160,7 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexedXML):
                     info[k] = self._convert_array(k, peak_data.get(k, np.array([])))
 
         if 'retentionTime' in info:
-            info['retentionTime'] = float(info['retentionTime'].strip('PTS'))
+            info['retentionTime'] = info['retentionTime']
         return info
 
     def iterfind(self, path, **kwargs):

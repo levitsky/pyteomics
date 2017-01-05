@@ -1285,9 +1285,9 @@ def _decode_base64_data_array(source, dtype, is_compressed):
 
 
 class unitint(int):
-    def __new__(cls, value, unit_metadata):
+    def __new__(cls, value, unit_info=None):
         inst = super(unitint, cls).__new__(cls, value)
-        inst.unit_info = unit_metadata
+        inst.unit_info = unit_info
         return inst
 
     def __repr__(self):
@@ -1299,9 +1299,9 @@ class unitint(int):
 
 
 class unitfloat(float):
-    def __new__(cls, value, unit_metadata):
+    def __new__(cls, value, unit_info=None):
         inst = super(unitfloat, cls).__new__(cls, value)
-        inst.unit_info = unit_metadata
+        inst.unit_info = unit_info
         return inst
 
     def __repr__(self):
@@ -1313,9 +1313,9 @@ class unitfloat(float):
 
 
 class unitstr(str):
-    def __new__(cls, value, unit_metadata):
+    def __new__(cls, value, unit_info=None):
         inst = super(unitstr, cls).__new__(cls, value)
-        inst.unit_info = unit_metadata
+        inst.unit_info = unit_info
         return inst
 
     def __repr__(self):
