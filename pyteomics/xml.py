@@ -345,8 +345,11 @@ class XML(FileReader):
         converters = self._converters
         for k, v in info.items():
             for t, a in converters.items():
-                if (_local_name(element), k) in schema_info[t]:
-                    info[k] = a(v)
+                try:
+                    if (_local_name(element), k) in schema_info[t]:
+                        info[k] = a(v)
+                except KeyError:
+                    continue
 
         # resolve refs
         if kwargs.get('retrieve_refs'):
