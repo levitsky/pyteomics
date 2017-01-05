@@ -69,6 +69,27 @@ def _keepstate(func):
 
 
 class XMLValueConverter(object):
+    # Adapted from http://stackoverflow.com/questions/2764269/parsing-an-xsduration-datatype-into-a-python-datetime-timedelta-object
+    _duration_parser = re.compile(
+        ('(?P<sign>-?)P(?:(?P<years>\d+\.?\d*)Y)?(?:(?P<months>\d+\.?\d*)M)?(?:(?P<days>\d+\.?\d*)D)?(?:T(?:(?P<hours>\d+\.?\d*)H)?(?:(?P<minutes>\d+\.?\d*)M)?(?:(?P<seconds>\d+\.?\d*)S)?)?'))
+
+    @classmethod
+    def duration_str_to_float(cls, s):
+        # Not a duration, so pass along unchanged
+        if not s.startswith("P"):
+            return unitstr(s, "duration")
+        match = cls._duration_parser.search(s)
+        if match:
+            matchdict = match.groupdict()
+            hours = float(matchdict.get('hours', 0) or 0)
+            minutes = float(matchdict.get('minutes', 0) or 0)
+            seconds = float(matchdict.get('seconds', 0) or 0)
+            minutes += hours * 60.
+            minutes += (seconds / 60.)
+            return unitfloat(minutes, "minute")
+        else:
+            return unitstr(s, "duration")
+
     @classmethod
     def str_to_bool(cls, s):
         if s.lower() in {'true', '1'}:
@@ -90,10 +111,11 @@ class XMLValueConverter(object):
     @classmethod
     def converters(cls):
         return {
-            'ints': cls.to(int), 'floats': cls.to(float), 'bools': cls.str_to_bool,
+            'ints': cls.to(unitint), 'floats': cls.to(unitfloat), 'bools': cls.str_to_bool,
             'intlists': lambda x: np.fromstring(x.replace('\n', ' '), dtype=int, sep=' '),
             'floatlists': lambda x: np.fromstring(x.replace('\n', ' '), sep=' '),
-            'charlists': list
+            'charlists': list,
+            'duration': cls.duration_str_to_float
         }
 
 
@@ -1075,6 +1097,8 @@ _mzxml_schema_defaults = {'bools': {('dataProcessing', 'centroided'),
                                   ('scan', 'lowMz'),
                                   ('scan', 'startMz'),
                                   ('scan', 'totIonCurrent')},
+                       'duration': {("scan", "retentionTime")
+                                    },
                        'intlists': set(),
                        'ints': {('msInstrument', 'msInstrumentID'),
                                 ('peaks', 'compressedLen'),
