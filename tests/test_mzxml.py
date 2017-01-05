@@ -19,6 +19,12 @@ class MzXMLTest(unittest.TestCase):
                     # http://stackoverflow.com/q/14246983/1258041
                     self.assertEqual(mzxml_spectra, list(r))
 
+    def test_coerce_duration_type(self):
+        with MzXML(self.path) as handle:
+            scan = next(handle)
+            time = scan['retentionTime']
+            self.assertEqual(time.unit_info, 'minute')
+
     def test_read_dtype(self):
         dtypes = {'m/z array': np.float32, 'intensity array': np.int32}
         with read(self.path, dtype=dtypes) as f:
