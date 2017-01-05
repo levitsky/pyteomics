@@ -17,5 +17,13 @@ class MzidTest(unittest.TestCase):
                     psms = list(reader)
                     self.assertEqual(psms, mzid_spectra[(rec, refs)])
 
+    def test_unit_info(self):
+        with MzIdentML('test.mzid') as handle:
+            for protocol in handle.iterfind("SpectrumIdentificationProtocol"):
+                fragment_tolerance = protocol['FragmentTolerance']
+                self.assertEqual(fragment_tolerance['search tolerance minus value'].unit_info, 'dalton')
+                parent_tolerance = protocol['ParentTolerance']
+                self.assertEqual(parent_tolerance['search tolerance plus value'].unit_info, 'parts per million')
+
 if __name__ == '__main__':
     unittest.main()

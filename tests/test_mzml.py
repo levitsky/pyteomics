@@ -26,5 +26,20 @@ class MzmlTest(unittest.TestCase):
                 for k, v in dtypes.items():
                     self.assertEqual(spec[k].dtype, v)
 
+    def test_has_built_index(self):
+        with read(self.path, use_index=True) as f:
+            self.assertGreater(len(f._offset_index), 0)
+        with read(self.path, use_index=False) as f:
+            self.assertEqual(len(f._offset_index), 0)
+
+    def test_unit_extract(self):
+        with MzML(self.path) as handle:
+            for scan in handle:
+                scan_inst = scan['scanList']['scan'][0]
+                scan_time = scan_inst['scan start time']
+                scan_window_lower_limit = scan_inst['scanWindowList']['scanWindow'][0]['scan window lower limit']
+                self.assertEqual(scan_time.unit_info, 'minute')
+                self.assertEqual(scan_window_lower_limit.unit_info, 'm/z')
+
 if __name__ == '__main__':
     unittest.main()

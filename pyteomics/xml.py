@@ -39,6 +39,7 @@ import numpy as np
 from lxml import etree
 from collections import OrderedDict, defaultdict
 from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj
+from .auxiliary import unitint, unitfloat, unitstr
 try: # Python 2.7
     from urllib2 import urlopen, URLError
 except ImportError: # Python 3.x
@@ -262,18 +263,24 @@ class XML(FileReader):
 
     def _handle_param(self, element, **kwargs):
         """Unpacks cvParam and userParam tags into key-value pairs"""
-        types = {'int': int, 'float': float, 'string': str}
-        if 'value' in element.attrib:
+        types = {'int': unitint, 'float': unitfloat, 'string': unitstr}
+        attribs = element.attrib
+        unit_info = None
+        if 'unitCvRef' in attribs or 'unitName' in attribs:
+            unit_accesssion = attribs.get('unitAccession')
+            unit_name = attribs.get("unitName", unit_accesssion)
+            unit_info = unit_name
+        if 'value' in attribs:
             try:
-                if element.attrib.get('type') in types:
-                    value = types[element.attrib['type']](element.attrib['value'])
+                if attribs.get('type') in types:
+                    value = types[attribs['type']](attribs['value'], unit_info)
                 else:
-                    value = float(element.attrib['value'])
+                    value = unitfloat(attribs['value'], unit_info)
             except ValueError:
-                value = element.attrib['value']
-            return {element.attrib['name']: value}
+                value = unitstr(attribs['value'], unit_info)
+            return {attribs['name']: value}
         else:
-            return {'name': element.attrib['name']}
+            return {'name': unitstr(attribs['name'], unit_info)}
 
     def _get_info(self, element, **kwargs):
         """Extract info from element's attributes, possibly recursive.
@@ -756,6 +763,9 @@ class TagSpecificXMLByteIndex(object):
     def __iter__(self):
         return iter(self.keys())
 
+    def __len__(self):
+        return sum(len(group) for key, group in self.items())
+
 
 class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
     """
@@ -777,6 +787,9 @@ class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
         flat_index.sort(key=lambda x: x[1])
         self.offsets = ByteEncodingOrderedDict(flat_index)
         return self.offsets
+
+    def __len__(self):
+        return len(self.offsets)
 
 
 def ensure_bytes_single(string):
@@ -1065,6 +1078,7 @@ _mzxml_schema_defaults = {'bools': {('dataProcessing', 'centroided'),
                        'intlists': set(),
                        'ints': {('msInstrument', 'msInstrumentID'),
                                 ('peaks', 'compressedLen'),
+                                ('precursorMz', 'precursorCharge'),
                                 ('robot', 'deadVolume'),
                                 ('scan', 'msInstrumentID'),
                                 ('scan', 'peaksCount'),

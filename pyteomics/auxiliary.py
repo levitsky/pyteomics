@@ -1283,6 +1283,50 @@ def _decode_base64_data_array(source, dtype, is_compressed):
     output = np.frombuffer(decoded_source, dtype=dtype)
     return output
 
+
+class unitint(int):
+    def __new__(cls, value, unit_metadata):
+        inst = super(unitint, cls).__new__(cls, value)
+        inst.unit_info = unit_metadata
+        return inst
+
+    def __repr__(self):
+        base = super(unitint, self).__repr__()
+        if self.unit_info:
+            return "%s %s" % (base, self.unit_info)
+        else:
+            return base
+
+
+class unitfloat(float):
+    def __new__(cls, value, unit_metadata):
+        inst = super(unitfloat, cls).__new__(cls, value)
+        inst.unit_info = unit_metadata
+        return inst
+
+    def __repr__(self):
+        base = super(unitfloat, self).__repr__()
+        if self.unit_info:
+            return "%s %s" % (base, self.unit_info)
+        else:
+            return base
+
+
+class unitstr(str):
+    def __new__(cls, value, unit_metadata):
+        inst = super(unitstr, cls).__new__(cls, value)
+        inst.unit_info = unit_metadata
+        return inst
+
+    def __repr__(self):
+        base = super(unitstr, self).__repr__()
+        if self.unit_info:
+            return "%s %s" % (base, self.unit_info)
+        else:
+            return base
+
+
+
 ### Bulky constants for other modules are defined below.
 
 _nist_mass = {'Ac': {0: (227, 1.0),
