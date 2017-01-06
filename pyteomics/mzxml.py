@@ -61,6 +61,7 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 #   limitations under the License.
 
 from collections import deque, defaultdict
+import heapq
 
 from . import xml, auxiliary as aux
 import numpy as np
@@ -90,38 +91,84 @@ def _decode_peaks(info, peaks_data):
     return data
 
 
-class IteratorQueue(object):
-    def __init__(self, items):
-        self.queue = deque(items)
+class TreeIterator(object):
+    def __init__(self, iterator):
+        self.tree = defaultdict(list)
+        self.scan_store = dict()
+        self.current_id = None
+        self.producer = self.consume(iterator)
 
-    def pop(self):
-        if len(self.queue) == 0:
-            raise IndexError('Empty Queue')
-        return self.queue.popleft()
+    def __setitem__(self, key, value):
+        self.tree[key] = value
 
-    def append(self, item):
-        self.queue.append(item)
+    def __getitem__(self, key):
+        return self.tree[key]
 
-    def extend(self, items):
-        for item in items:
-            self.append(item)
+    def store_scan(self, scan):
+        self.scan_store[scan['num']] = scan
 
-    def __next__(self):
-        try:
-            return self.pop()
-        except IndexError:
-            raise StopIteration()
-
-    def interleave_load(self, scan, layers):
-        scan.pop('scan', None)
-        self.append(scan)
-        for item in layers[scan['num']]:
-            self.interleave_load(item, layers)
-
-    next = __next__
+    def yield_scan(self, num):
+        return self.scan_store.pop(num)
 
     def __iter__(self):
-        return self
+        return self.producer
+
+    def consume(self, iterator):
+        top_scan = None
+        for scan in iterator:
+            if top_scan is None:
+                if scan['msLevel'] != 1:
+                    self[scan['precursorMz'][0]['precursorScanNum']].append(scan['num'])
+                else:
+                    top_scan = scan['num']
+                self.store_scan(scan)
+            else:
+                if scan['msLevel'] != 1:
+                    self[scan['precursorMz'][0]['precursorScanNum']].append(scan['num'])
+                    self.store_scan(scan)
+                else:
+                    self.store_scan(scan)
+                    yield self.yield_scan(top_scan)
+                    spooler = deque(self[top_scan])
+                    while spooler:
+                        next_scan_num = spooler.popleft()
+                        yield self.yield_scan(next_scan_num)
+                        spooler.extendleft(self[next_scan_num])
+                    top_scan = scan['num']
+
+
+class IteratorQueue(object):
+    def __init__(self, iterator):
+        q = list()
+        heapq.heapify(q)
+        self.queue = q
+        self.iterator = iterator
+        self.last_index = -1
+        self.producer = self.consume(iterator)
+
+    def insert_item(self, scan):
+        heapq.heappush(self.queue, (int(scan['num']), scan))
+
+    def __iter__(self):
+        return self.producer
+
+    def consume(self, iterator):
+        for scan in iterator:
+            scan.pop("scan", None)
+            if scan['msLevel'] != 1:
+                self.insert_item(scan)
+            else:
+                self.insert_item(scan)
+                barrier = int(scan['num'])
+                while True:
+                    idx, item = heapq.heappop(self.queue)
+                    if idx >= barrier:
+                        self.insert_item(item)
+                        break
+                    yield item
+        while self.queue:
+            idx, item = heapq.heappop(self.queue)
+            yield item
 
 
 class MzXML(xml.ArrayConversionMixin, xml.IndexedXML):
@@ -166,34 +213,8 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexedXML):
     def iterfind(self, path, **kwargs):
         if path == 'scan':
             generator = super(MzXML, self).iterfind(path, **kwargs)
-            collator_layers = defaultdict(list)
-            layer = []
-            top_scan = None
-
-            for scan in generator:
-                if top_scan is None:
-                    top_scan = scan
-                elif int(scan['msLevel']) < int(top_scan['msLevel']):
-                    top_scan = scan
-                    collator_layers[top_scan['num']] = layer
-                    layer = []
-                if int(scan['msLevel']) == int(top_scan['msLevel']) and int(scan['msLevel']) != 1:
-                    layer.append(scan)
-                if int(scan['msLevel']) == 1:
-                    if int(top_scan['msLevel']) != 1:
-                        raise ValueError('Invalid Scan Nesting Order')
-                    iterator_queue = IteratorQueue([])
-                    iterator_queue.interleave_load(top_scan, collator_layers)
-                    for item in iterator_queue:
-                        yield item
-                    collator_layers = defaultdict(list)
-                    layer = []
-                    top_scan = None
-            if top_scan is not None:
-                iterator_queue = IteratorQueue([])
-                iterator_queue.interleave_load(top_scan, collator_layers)
-                for item in iterator_queue:
-                    yield item
+            for item in IteratorQueue(generator):
+                yield item
         else:
             for item in super(MzXML, self).iterfind(path, **kwargs):
                 yield item
