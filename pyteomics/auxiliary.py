@@ -1290,12 +1290,13 @@ class unitint(int):
         inst.unit_info = unit_info
         return inst
 
-    def __repr__(self):
+    def _repr_pretty_(self, p, cycle):
         base = super(unitint, self).__repr__()
         if self.unit_info:
-            return "%s %s" % (base, self.unit_info)
+            string = "%s %s" % (base, self.unit_info)
         else:
-            return base
+            string = base
+        p.text(string)
 
 
 class unitfloat(float):
@@ -1304,12 +1305,13 @@ class unitfloat(float):
         inst.unit_info = unit_info
         return inst
 
-    def __repr__(self):
+    def _repr_pretty_(self, p, cycle):
         base = super(unitfloat, self).__repr__()
         if self.unit_info:
-            return "%s %s" % (base, self.unit_info)
+            string = "%s %s" % (base, self.unit_info)
         else:
-            return base
+            string = base
+        p.text(string)
 
 
 class unitstr(str):
@@ -1318,13 +1320,13 @@ class unitstr(str):
         inst.unit_info = unit_info
         return inst
 
-    def __repr__(self):
+    def _repr_pretty_(self, p, cycle):
         base = super(unitstr, self).__repr__()
         if self.unit_info:
-            return "%s %s" % (base, self.unit_info)
+            string = "%s %s" % (base, self.unit_info)
         else:
-            return base
-
+            string = base
+        p.text(string)
 
 
 ### Bulky constants for other modules are defined below.
