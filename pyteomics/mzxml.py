@@ -194,9 +194,9 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexedXML):
             info = self._get_info(element,
                                   recursive=(rec if rec is not None else True),
                                   **kwargs)
-        if 'num' in info:
+        if 'num' in info and isinstance(info, dict):
             info['id'] = info['num']
-        if 'peaks' in info:
+        if 'peaks' in info  and isinstance(info, dict):
             if not isinstance(info['peaks'], (dict, list)):
                 peak_data = _decode_peaks(info, info.pop('peaks'))
                 for k in self._array_keys:
@@ -205,9 +205,6 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexedXML):
                 peak_data = info.pop('peaks')[0]
                 for k in self._array_keys:
                     info[k] = self._convert_array(k, peak_data.get(k, np.array([])))
-
-        if 'retentionTime' in info:
-            info['retentionTime'] = info['retentionTime']
         return info
 
     def iterfind(self, path, **kwargs):

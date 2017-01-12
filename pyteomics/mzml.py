@@ -92,7 +92,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexedXML):
             info = self._get_info(element,
                     recursive=(rec if rec is not None else True),
                     **kwargs)
-        if 'binary' in info:
+        if 'binary' in info and isinstance(info, dict):
             types = {'32-bit float': 'f', '64-bit float': 'd'}
             for t, code in types.items():
                 if t in info:
@@ -142,7 +142,8 @@ class MzML(xml.ArrayConversionMixin, xml.IndexedXML):
                 # last fallback
                 if not found:
                     info['binary'] = self._convert_array(None, array)
-        if 'binaryDataArray' in info:
+
+        if 'binaryDataArray' in info and isinstance(info, dict):
             for array in info.pop('binaryDataArray'):
                 info.update(array)
         intkeys = {'ms level'}
