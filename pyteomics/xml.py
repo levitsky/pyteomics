@@ -644,13 +644,22 @@ class ByteCountingXMLScanner(_file_obj):
         read_size = self.block_size
         delim = b'<'
         buff = f.read(read_size)
+        started_with_delim = buff.startswith(delim)
         parts = buff.split(delim)
         tail = parts[-1]
         front = parts[:-1]
+        i = 0
         for part in front:
+            i += 1
             if part == b"":
                 continue
-            yield delim + part
+            if i == 1:
+                if started_with_delim:
+                    yield delim + part
+                else:
+                    yield part
+            else:
+                yield delim + part
         running = True
         while running:
             buff = f.read(read_size)
