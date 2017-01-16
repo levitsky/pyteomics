@@ -12,6 +12,13 @@
 
  - Performance improvements in :py:func:`pyteomics.electrochem.pI`.
 
+ - Fix the issue in :py:mod:`pyteomics.xml` which resulted in very long processing times for indexed XML files
+   with a byte ordering mark (BOM).
+
+ - Change default value of ``retrieve_refs`` in :py:func:`pyteomics.mzid.read` to :py:const:`True`.
+
+ - Preserve unit information extracted from cvParam tags in PSI XML files.
+
 3.4
 ---
 
