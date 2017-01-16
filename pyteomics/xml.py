@@ -878,8 +878,8 @@ class IndexedXML(XML):
             elements listed in `indexed_tags`.
             This is useful for random access to spectra in mzML or elements of mzIdentML files,
             or for iterative parsing of mzIdentML with ``retrieve_refs=True``.
-            If :py:const:`True`, `build_id_cache`
-            is ignored. If :py:const:`False`, the object acts exactly like :py:class:`XML`.
+            If :py:const:`True`, `build_id_cache` is ignored.
+            If :py:const:`False`, the object acts exactly like :py:class:`XML`.
             Default is :py:const:`True`.
         indexed_tags : container of bytes, optional
             If `use_index` is :py:const:`True`, elements listed in this parameter
@@ -917,8 +917,7 @@ class IndexedXML(XML):
         if not self._indexed_tags or not self._use_index:
             return
         self._offset_index = FlatTagSpecificXMLByteIndex(
-            self._source, self._indexed_tags,
-            self._indexed_tag_keys)
+            self._source, self._indexed_tags, self._indexed_tag_keys)
 
     @_keepstate
     def _find_by_id_reset(self, elem_id, id_key=None):
@@ -945,12 +944,10 @@ class IndexedXML(XML):
             offset = index[elem_id]
             self._source.seek(offset)
             elem = self._find_by_id_no_reset(elem_id, id_key=id_key)
-            data = self._get_info_smart(elem, **kwargs)
-            return data
         except (KeyError, etree.LxmlError):
             elem = self._find_by_id_reset(elem_id, id_key=id_key)
-            data = self._get_info_smart(elem, **kwargs)
-            return data
+        data = self._get_info_smart(elem, **kwargs)
+        return data
 
     def __getitem__(self, elem_id):
         return self.get_by_id(elem_id)

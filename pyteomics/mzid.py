@@ -157,7 +157,7 @@ def read(source, **kwargs):
     retrieve_refs : bool, optional
         If :py:const:`True`, additional information from references will be
         automatically added to the results. The file processing time will
-        increase. Default is :py:const:`False`.
+        increase. Default is :py:const:`True`.
 
     iterative : bool, optional
         Specifies whether iterative XML parsing should be used. Iterative
@@ -177,10 +177,11 @@ def read(source, **kwargs):
         created :py:class:`MzIdentML` instance. Default value is the value of
         `retrieve_refs`.
 
+        .. note:: This parameter is ignored when ``use_index`` is ``True`` (default).
+
     use_index : bool, optional
         Defines whether an index of byte offsets needs to be created for
-        the indexed elements. If :py:const:`True`, `build_id_cache` is ignored.
-        Default is :py:const:`False`.
+        the indexed elements. If :py:const:`True` (default), `build_id_cache` is ignored.
 
     indexed_tags : container of bytes, optional
         Defines which elements need to be indexed. Empty set by default.
@@ -191,10 +192,8 @@ def read(source, **kwargs):
        An iterator over the dicts with PSM properties.
     """
     kwargs = kwargs.copy()
-    if kwargs.get('use_index'):
-        kwargs['build_id_cache'] = False
-    kwargs['build_id_cache'] = kwargs.get('build_id_cache',
-            kwargs.get('retrieve_refs'))
+    kwargs.setdefault('retrieve_refs', True)
+    kwargs['build_id_cache'] = kwargs.get('build_id_cache', kwargs.get('retrieve_refs'))
     return MzIdentML(source, **kwargs)
 
 def iterfind(source, path, **kwargs):
