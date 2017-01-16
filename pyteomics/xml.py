@@ -940,7 +940,6 @@ class IndexedXML(XML):
         -------
         dict
         """
-        start_position = self.tell()
         try:
             index = self._offset_index
             offset = index[elem_id]
