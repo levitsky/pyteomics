@@ -924,6 +924,7 @@ class IndexedXML(XML):
     def _find_by_id_reset(self, elem_id, id_key=None):
         return self._find_by_id_no_reset(elem_id, id_key=id_key)
 
+    @_keepstate
     def get_by_id(self, elem_id, id_key=None, **kwargs):
         """
         Retrieve the requested entity by its id. If the entity
@@ -940,12 +941,14 @@ class IndexedXML(XML):
         -------
         dict
         """
+        start_position = self.tell()
         try:
             index = self._offset_index
             offset = index[elem_id]
             self._source.seek(offset)
             elem = self._find_by_id_no_reset(elem_id, id_key=id_key)
             data = self._get_info_smart(elem, **kwargs)
+            end_position = self.tell()
             return data
         except (KeyError, etree.LxmlError):
             elem = self._find_by_id_reset(elem_id, id_key=id_key)
