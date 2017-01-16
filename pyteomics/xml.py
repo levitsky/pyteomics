@@ -948,7 +948,6 @@ class IndexedXML(XML):
             self._source.seek(offset)
             elem = self._find_by_id_no_reset(elem_id, id_key=id_key)
             data = self._get_info_smart(elem, **kwargs)
-            end_position = self.tell()
             return data
         except (KeyError, etree.LxmlError):
             elem = self._find_by_id_reset(elem_id, id_key=id_key)
