@@ -70,6 +70,25 @@ import re
 from . import xml, auxiliary as aux
 from .xml import etree
 
+NON_STANDARD_DATA_ARRAY = 'non-standard data array'
+
+STANDARD_ARRAYS = set([
+    'm/z array',
+    'intensity array',
+    'charge array',
+    'signal to noise array',
+    'time array',
+    'wavelength array',
+    'flow rate array',
+    'pressure array',
+    'temperature array',
+    'mean drift time array',
+    'mean charge array',
+    'resolution array',
+    'baseline array'
+])
+
+
 class MzML(xml.ArrayConversionMixin, xml.IndexedXML):
     """Parser class for mzML files."""
     file_format = 'mzML'
@@ -79,6 +98,126 @@ class MzML(xml.ArrayConversionMixin, xml.IndexedXML):
     _default_iter_tag = 'spectrum'
     _structures_to_flatten = {'binaryDataArrayList'}
     _indexed_tags = {'spectrum', 'chromatogram'}
+
+    def _detect_array_name(self, info):
+        """Determine what the appropriate name for this
+        array is by inspecting the available param-based
+        keys.
+
+        Parameters
+        ----------
+        info : dict
+            The collapsed binary tag plus
+            associated *Param  data
+
+        Returns
+        -------
+        str
+            The name for this array entry
+        """
+        # If this is a non-standard array, we hope the userParams
+        # will conform to the same array suffix pattern.
+        is_non_standard = False
+
+        # Accumulate possible name candidates
+        candidates = []
+        for k in info:
+            if k.endswith(' array') and not info[k]:
+                if NON_STANDARD_DATA_ARRAY == k:
+                    is_non_standard = True
+                else:
+                    candidates.append(k)
+        if isinstance(info.get('name'), list):
+            for val in info['name']:
+                if val.endswith(' array'):
+                    if NON_STANDARD_DATA_ARRAY == val:
+                        is_non_standard = True
+                    else:
+                        candidates.append(val)
+
+        # Name candidate resolution
+        n_candidates = len(candidates)
+        # Easy case, exactly one name given
+        if n_candidates == 1:
+            return candidates[0]
+        # We are missing information, but at least
+        # if we know the array is non-standard we
+        # can report it as such. Otherwise fall back
+        # to "binary". This fallback signals special
+        # behavior elsewhere.
+        elif n_candidates == 0:
+            if is_non_standard:
+                return NON_STANDARD_DATA_ARRAY
+            else:
+                return "binary"
+        # Multiple choices means we need to make a decision which could
+        # mask data from the user. This should never happen but stay safe.
+        # There are multiple options to choose from. There is no way to
+        # make a good choice here. We first prefer the standardized
+        # arrays before falling back to just guessing.
+        else:
+            import warnings
+            warnings.warn("Multiple options for naming binary array: %r" % (candidates))
+            standard_options = set(candidates) & STANDARD_ARRAYS
+            if standard_options:
+                return max(standard_options, key=len)
+            else:
+                return max(candidates, key=len)
+
+    def _handle_binary(self, info, **kwargs):
+        """Special handling when processing and flattening
+        a <binary> tag and its sibling *Param tags.
+
+        Parameters
+        ----------
+        info : dict
+            Unprocessed binary array data and metadata
+
+        Returns
+        -------
+        dict
+            The processed and flattened data array and metadata
+        """
+        types = {'32-bit float': 'f', '64-bit float': 'd'}
+        for t, code in types.items():
+            if t in info:
+                dtype = code
+                del info[t]
+                break
+        # sometimes it's under 'name'
+        else:
+            if 'name' in info:
+                for t, code in types.items():
+                    if t in info['name']:
+                        dtype = code
+                        info['name'].remove(t)
+                        break
+        compressed = True
+        if 'zlib compression' in info:
+            del info['zlib compression']
+        elif 'name' in info and 'zlib compression' in info['name']:
+            info['name'].remove('zlib compression')
+        else:
+            compressed = False
+            info.pop('no compression', None)
+            try:
+                info['name'].remove('no compression')
+                if not info['name']:
+                    del info['name']
+            except (KeyError, TypeError):
+                pass
+        b = info.pop('binary')
+        if b:
+            array = aux._decode_base64_data_array(b, dtype, compressed)
+        else:
+            array = np.array([], dtype=dtype)
+
+        name = self._detect_array_name(info)
+        if name == 'binary':
+            info[name] = self._convert_array(None, array)
+        else:
+            info = {name: self._convert_array(name, array)}
+        return info
 
     def _get_info_smart(self, element, **kw):
         name = xml._local_name(element)
@@ -93,55 +232,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexedXML):
                     recursive=(rec if rec is not None else True),
                     **kwargs)
         if 'binary' in info and isinstance(info, dict):
-            types = {'32-bit float': 'f', '64-bit float': 'd'}
-            for t, code in types.items():
-                if t in info:
-                    dtype = code
-                    del info[t]
-                    break
-            # sometimes it's under 'name'
-            else:
-                if 'name' in info:
-                    for t, code in types.items():
-                        if t in info['name']:
-                            dtype = code
-                            info['name'].remove(t)
-                            break
-            compressed = True
-            if 'zlib compression' in info:
-                del info['zlib compression']
-            elif 'name' in info and 'zlib compression' in info['name']:
-                info['name'].remove('zlib compression')
-            else:
-                compressed = False
-                info.pop('no compression', None)
-                try:
-                    info['name'].remove('no compression')
-                    if not info['name']: del info['name']
-                except (KeyError, TypeError):
-                    pass
-            b = info.pop('binary')
-            if b:
-                array = aux._decode_base64_data_array(b, dtype, compressed)
-            else:
-                array = np.array([], dtype=dtype)
-            for k in info:
-                if k.endswith(' array') and not info[k]:
-                    info = {k: self._convert_array(k, array)}
-                    break
-            else:
-                found = False
-                # workaround for https://bitbucket.org/levitsky/pyteomics/issues/11
-                if isinstance(info.get('name'), list):
-                    knames = info['name']
-                    for val in knames:
-                        if val.endswith(' array'):
-                            info = {val: self._convert_array(val, array)}
-                            found = True
-                            break
-                # last fallback
-                if not found:
-                    info['binary'] = self._convert_array(None, array)
+            info = self._handle_binary(info, **kwargs)
 
         if 'binaryDataArray' in info and isinstance(info, dict):
             for array in info.pop('binaryDataArray'):
