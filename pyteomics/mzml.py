@@ -164,20 +164,8 @@ class MzML(xml.ArrayConversionMixin, xml.IndexedXML):
             else:
                 return max(candidates, key=len)
 
-    def _handle_binary(self, info, **kwargs):
-        """Special handling when processing and flattening
-        a <binary> tag and its sibling *Param tags.
-
-        Parameters
-        ----------
-        info : dict
-            Unprocessed binary array data and metadata
-
-        Returns
-        -------
-        dict
-            The processed and flattened data array and metadata
-        """
+    def _determine_array_dtype(self, info):
+        dtype = None
         types = {'32-bit float': 'f', '64-bit float': 'd'}
         for t, code in types.items():
             if t in info:
@@ -192,6 +180,9 @@ class MzML(xml.ArrayConversionMixin, xml.IndexedXML):
                         dtype = code
                         info['name'].remove(t)
                         break
+        return dtype
+
+    def _determine_compression(self, info):
         compressed = True
         if 'zlib compression' in info:
             del info['zlib compression']
@@ -206,6 +197,25 @@ class MzML(xml.ArrayConversionMixin, xml.IndexedXML):
                     del info['name']
             except (KeyError, TypeError):
                 pass
+        return compressed
+
+    def _handle_binary(self, info, **kwargs):
+        """Special handling when processing and flattening
+        a <binary> tag and its sibling *Param tags.
+
+        Parameters
+        ----------
+        info : dict
+            Unprocessed binary array data and metadata
+
+        Returns
+        -------
+        dict
+            The processed and flattened data array and metadata
+        """
+        dtype = self._determine_array_dtype(info)
+        compressed = self._determine_compression(info)
+
         b = info.pop('binary')
         if b:
             array = aux._decode_base64_data_array(b, dtype, compressed)
