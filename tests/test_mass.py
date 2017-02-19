@@ -44,6 +44,8 @@ class MassTest(unittest.TestCase):
                                                 mass_data=self.mass_data),
                         'Z':   mass.Composition({'C': 1},
                                                 mass_data=self.mass_data),
+                        'F':   mass.Composition({'F': 1},
+                                                mass_data=self.mass_data),
                         'H-':  mass.Composition({'D': 1},
                                                 mass_data=self.mass_data),
                         '-OH': mass.Composition({'E': 1},
@@ -283,6 +285,28 @@ class MassTest(unittest.TestCase):
         h2o = mass.calculate_mass(formula='H2O')
         for aa, m in mass.std_aa_mass.items():
             self.assertEqual(m + h2o, mass.fast_mass(aa))
+
+    def test_isotopologues(self):
+        peptide = 'XYF'
+        states = [{'F[6]': 1, 'A': 1, 'B': 1, 'D': 1, 'E': 1}, {'F[7]': 1, 'A': 1, 'B': 1, 'D': 1, 'E': 1}]
+        abundances = [0.7, 0.3]
+        for state in mass.isotopologues(peptide, elements_with_isotopes='F',
+                aa_comp=self.aa_comp, mass_data=self.mass_data):
+            i = states.index(state)
+            self.assertNotEqual(i, -1)
+            self.assertAlmostEqual(abundances[i], mass.isotopic_composition_abundance(state,
+                aa_comp=self.aa_comp, mass_data=self.mass_data))
+
+    def test_isotopologues_with_abundances(self):
+        peptide = 'XYF'
+        states = [{'F[6]': 1, 'A': 1, 'B': 1, 'D': 1, 'E': 1}, {'F[7]': 1, 'A': 1, 'B': 1, 'D': 1, 'E': 1}]
+        abundances = [0.7, 0.3]
+        for state, abundance in mass.isotopologues(peptide, elements_with_isotopes='F',
+                aa_comp=self.aa_comp, mass_data=self.mass_data, report_abundance=True):
+            i = states.index(state)
+            self.assertNotEqual(i, -1)
+            self.assertAlmostEqual(abundances[i], abundance)
+            
 
 if __name__ == '__main__':
     unittest.main()
