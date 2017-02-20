@@ -415,6 +415,7 @@ def _keepstate(func):
 class _file_obj(object):
     """Check if `f` is a file name and open the file in `mode`.
     A context manager."""
+    
     def __init__(self, f, mode, encoding=None):
         if f is None:
             self.file = {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout
@@ -425,8 +426,10 @@ class _file_obj(object):
         else:
             self.file = f
         self.close_file = (self.file is not f)
+    
     def __enter__(self):
         return self
+    
     def __exit__(self, *args, **kwargs):
         if (not self.close_file) or hasattr(self, 'none'):
             return  # do nothing
@@ -438,8 +441,10 @@ class _file_obj(object):
             exit = getattr(self.file, 'close', None)
             if exit is not None:
                 exit()
+    
     def __getattr__(self, attr):
         return getattr(self.file, attr)
+    
     def __iter__(self):
         return iter(self.file)
 

@@ -640,12 +640,12 @@ def isotopologues(*args, **kwargs):
     composition : :py:class:`Composition`, optional
         A :py:class:`Composition` object with the elemental composition of a
         substance.
-    report_report_abundance : bool, optional
+    report_abundance : bool, optional
         If :py:const:`True`, the output will contain 2-tuples: `(composition, abundance)`.
-        Otherwise, only composition are yielded. Default is :py:const:`False`.
+        Otherwise, only compositions are yielded. Default is :py:const:`False`.
     elements_with_isotopes : container of str, optional
         A set of elements to be considered in isotopic distribution
-        (by default, every element has a isotopic distribution).
+        (by default, every element has an isotopic distribution).
     isotope_threshold : float, optional
         The threshold abundance of a specific isotope to be considered.
         Default is :py:const:`5e-4`.

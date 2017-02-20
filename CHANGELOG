@@ -8,18 +8,20 @@
    and :py:func:`pyteomics.fasta.read`). This can be useful for MGF files with non-ASCII spectrum
    titles or comments.
 
- - New function :py:func:`pyteomics.mass.isotopologues`.
+ - New function :py:func:`pyteomics.mass.mass.isotopologues`.
 
  - Performance improvements in :py:func:`pyteomics.electrochem.pI`.
 
  - Fix the issue in :py:mod:`pyteomics.xml` which resulted in very long processing times for indexed XML files
    with a byte ordering mark (BOM).
 
- - Fix in :py:mod:`pyteomics.mzxml`.
+ - Support all standard and non-standard data array names in :py:mod:`pyteomics.mzml`.
 
  - Change default value of ``retrieve_refs`` in :py:func:`pyteomics.mzid.read` to :py:const:`True`.
 
  - Preserve unit information extracted from cvParam tags in PSI XML files.
+
+ - Fix in :py:mod:`pyteomics.mzxml`, other minor fixes.
 
 3.4
 ---
