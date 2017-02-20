@@ -71,7 +71,7 @@ def _keepstate(func):
 class XMLValueConverter(object):
     # Adapted from http://stackoverflow.com/questions/2764269/parsing-an-xsduration-datatype-into-a-python-datetime-timedelta-object
     _duration_parser = re.compile(
-        ('(?P<sign>-?)P(?:(?P<years>\d+\.?\d*)Y)?(?:(?P<months>\d+\.?\d*)M)?(?:(?P<days>\d+\.?\d*)D)?(?:T(?:(?P<hours>\d+\.?\d*)H)?(?:(?P<minutes>\d+\.?\d*)M)?(?:(?P<seconds>\d+\.?\d*)S)?)?'))
+        (r'(?P<sign>-?)P(?:(?P<years>\d+\.?\d*)Y)?(?:(?P<months>\d+\.?\d*)M)?(?:(?P<days>\d+\.?\d*)D)?(?:T(?:(?P<hours>\d+\.?\d*)H)?(?:(?P<minutes>\d+\.?\d*)M)?(?:(?P<seconds>\d+\.?\d*)S)?)?'))
 
     @classmethod
     def duration_str_to_float(cls, s):
@@ -519,8 +519,8 @@ class XML(FileReader):
             return self._get_info_smart(elem, **kwargs)
 
 # XPath emulator tools
-pattern_path = re.compile('([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
-pattern_cond = re.compile('^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
+pattern_path = re.compile(r'([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
+pattern_cond = re.compile(r'^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
 
 def get_rel_path(element, names):
     if not names:
@@ -570,7 +570,7 @@ def xpath(tree, path, ns=None):
         if not ns: return s
         if not s: return 'd:'
         return '/d:'
-    new_path = re.sub('(\/|^)(?![\*\/])', repl, path)
+    new_path = re.sub(r'(\/|^)(?![\*\/])', repl, path)
     n_s = ({'d': ns} if ns else None)
     return tree.xpath(new_path, namespaces=n_s)
 
@@ -691,7 +691,7 @@ class ByteCountingXMLScanner(_file_obj):
         """
         i = 0
         packed = b"|".join(self.indexed_tags)
-        pattern = re.compile(("^\s*<(%s)\s" % packed.decode()).encode())
+        pattern = re.compile((r"^\s*<(%s)\s" % packed.decode()).encode())
         attrs = re.compile(br"(\S+)=[\"']([^\"']+)[\"']")
         for line in self._chunk_iterator():
             match = pattern.match(line)
