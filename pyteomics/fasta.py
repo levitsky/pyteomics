@@ -359,7 +359,7 @@ def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
     output : file-like object or str, optional
         A path to the output database or a file open for writing.
         Defaults to :py:const:`None`, the results go to the standard output.
-    mode :str or callable, optional
+    mode : str or callable, optional
         Algorithm of decoy sequence generation. 'reverse' by default.
         See :py:func:`decoy_sequence` for more details.
     prefix : str, optional
