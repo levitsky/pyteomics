@@ -799,8 +799,7 @@ def _make_qvalues(read, is_decoy, key):
                 arr_flag = True
 
             if arr_flag:
-                scores = np.empty(keyf.size if hasattr(keyf, 'size') else isdecoy.size,
-                    dtype=dtype)
+                scores = np.empty(keyf.size if hasattr(keyf, 'size') else isdecoy.size, dtype=dtype)
                 for func, label in zip((keyf, isdecoy), ('score', decoy_or_pep_label)):
                     if not isinstance(func, basestring):
                         scores[label] = func
@@ -973,7 +972,7 @@ def _make_filter(read, is_decoy, key, qvalues):
         fdr : float, keyword only, 0 <= fdr <= 1
             Desired FDR level.
 
-        key : callable, keyword only
+        key : callable / array-like / iterable / str, keyword only
             A function used for sorting of PSMs. Should accept exactly one
             argument (PSM) and return a number (the smaller the better). The
             default is a function that tries to extract e-value from the PSM.
@@ -987,7 +986,7 @@ def _make_filter(read, is_decoy, key, qvalues):
             i.e. the value of the key function is higher for better PSMs.
             Default is :py:const:`False`.
 
-        is_decoy : callable, keyword only
+        is_decoy : callable / array-like / iterable / str, keyword only
             A function used to determine if the PSM is decoy or not. Should
             accept exactly one argument (PSM) and return a truthy value if the
             PSM should be considered decoy.
