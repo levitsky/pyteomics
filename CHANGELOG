@@ -1,3 +1,9 @@
+3.4.2
+-----
+
+ - :py:func:`pyteomics.auxiliary.filter` and :py:func:`pyteomics.auxiliary.qvalues` with
+   :py:class:`pandas.DataFrame` input now always return DataFrames with `full_output=True`.
+
 3.4.1
 -----
 
