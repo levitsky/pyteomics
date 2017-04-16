@@ -96,8 +96,7 @@ class QvalueTest(unittest.TestCase):
         psms = pd.DataFrame(np.array(list(self.psms), dtype=dtype))
         q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1)
         self._run_check(q, 1)
-        q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1,
-            full_output=True)
+        q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1, full_output=True)
         self._run_check(q, 1)
 
     def test_qvalues_pep_from_dataframe(self):
@@ -181,7 +180,6 @@ class QvalueTest(unittest.TestCase):
         self.assertTrue(np.allclose(q0['q'], q1['q']))
 
 class FilterTest(unittest.TestCase):
-
     key = staticmethod(op.itemgetter(0))
     is_decoy = staticmethod(lambda x: x[1].islower())
     pep = staticmethod(op.itemgetter(2))
@@ -219,7 +217,7 @@ class FilterTest(unittest.TestCase):
 
     def _run_check_pep(self, *args, **kwargs):
         key = kwargs.pop('key', self.key)
-        is_decoy = kwargs.get('is_decoy', self.is_decoy)
+        # is_decoy = kwargs.get('is_decoy', self.is_decoy)
         f11 = aux.filter(*args, key=key, fdr=0.02, **kwargs)
         f12 = aux.filter(*args, fdr=0.02, **kwargs)
 
@@ -827,5 +825,8 @@ class OtherTests(unittest.TestCase):
         with self.assertRaises(aux.PyteomicsError):
             aux.linear_regression_perpendicular(self.x)
 
+import warnings
 if __name__ == '__main__':
-    unittest.main()
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        unittest.main()
