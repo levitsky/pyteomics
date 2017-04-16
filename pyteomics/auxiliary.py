@@ -611,6 +611,132 @@ def _fix_docstring(f, **defaults):
         if v is not None:
             f.__doc__ = re.sub('{} : .*'.format(argname), lambda m: m.group() + ', optional', f.__doc__)
 
+def _calculate_qvalues(scores, isdecoy, peps=False, **kwargs):
+    """Actual q-value calculation.
+
+    Parameters
+    ----------
+    scores : numpy.ndarray
+        Sorted array of PSMs.
+    isdecoy : numpy.ndarray
+        Sorted array of bools (decoy/target) or floats (PEPs).
+
+    Returns
+    -------
+    out : numpy.ndarray
+        Calculated q-values.
+    """
+    correction = kwargs.pop('correction', 0)
+    ratio = kwargs.pop('ratio', 1)
+    remove_decoy = kwargs.get('remove_decoy', False)
+    formula = kwargs.pop('formula', (2, 1)[bool(remove_decoy)])
+    if formula not in {1, 2}:
+        raise PyteomicsError('`formula` must be either 1 or 2')
+    
+    # score_label = kwargs['score_label']
+    cumsum = isdecoy.cumsum(dtype=np.float64)
+    tfalse = cumsum.copy()
+    ind = np.arange(1., scores.shape[0] + 1., dtype=np.float64)
+
+    if peps:
+        q = cumsum / ind
+    else:
+        if isinstance(correction, int):
+            if correction == 1:
+                tfalse += 1
+            elif correction == 2:
+                p = 1. / (1. + ratio)
+                targ = ind - cumsum
+                for i in range(tfalse.size):
+                    tfalse[i] = _expectation(cumsum[i], targ[i], p)
+        elif 0 < correction < 1:
+            p = 1. / (1. + ratio)
+            targ = ind - cumsum
+            for i in range(tfalse.size):
+                tfalse[i] = _confidence_value(correction, cumsum[i], targ[i], p)
+        elif correction:
+            raise PyteomicsError('Invalid value for `correction`.')
+
+        if formula == 1:
+            q = tfalse / (ind - cumsum) / ratio
+        else:
+            q = (cumsum + tfalse / ratio) / ind
+
+    # Make sure that q-values are equal for equal scores (conservatively)
+    # and that q-values are monotonic
+    for i in range(scores.size-1, 0, -1):
+        if (scores[i] == scores[i-1] or
+                q[i-1] > q[i]):
+            q[i-1] = q[i]
+
+    return q
+
+def _qvalues_df(psms, keyf, isdecoy, **kwargs):
+    full = kwargs.get('full_output', False)
+    remove_decoy = kwargs.get('remove_decoy', False)
+    peps = kwargs.get('pep')
+    decoy_or_pep_label = _decoy_or_pep_label(**kwargs)
+    q_label = kwargs.setdefault('q_label', 'q')
+    if callable(keyf):
+        keyf = psms.apply(keyf, axis=1)
+    if callable(isdecoy):
+        isdecoy = psms.apply(isdecoy, axis=1)
+    if not isinstance(keyf, basestring):
+        psms[kwargs.setdefault('score_label', 'score')] = keyf
+        keyf = kwargs['score_label']
+    if not isinstance(isdecoy, basestring):
+        psms[decoy_or_pep_label] = isdecoy
+        isdecoy = decoy_or_pep_label
+    reverse = kwargs.get('reverse', False)
+    psms.sort_values([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
+
+    q = _calculate_qvalues(psms[keyf].values, psms[isdecoy].values, peps is not None, **kwargs)
+    if remove_decoy:
+        q = q[~psms[isdecoy]]
+        psms = psms[~psms[isdecoy]].copy()
+    if not full:
+        if peps is None:
+            fields = [(keyf, np.float64), (isdecoy, np.bool_), (q_label, np.float64)]
+        else:
+            fields = [(isdecoy, np.float64), (q_label, np.float64)]
+        dtype = np.dtype(fields)
+        psms_ = np.empty_like(q, dtype=dtype)
+        if peps is None:
+            psms_[keyf] = psms[keyf]
+        psms_[isdecoy] = psms[isdecoy]
+        psms_[q_label] = q
+        psms = psms_
+    else:
+        q_label = kwargs['q_label']
+        psms.loc[:, q_label] = q
+    return psms
+
+def _decoy_or_pep_label(**kwargs):
+    peps = kwargs.get('pep')
+    return kwargs.get('is_decoy_label', 'is decoy') if peps is None else kwargs.get(
+        'pep_label', peps if isinstance(peps, basestring) else 'PEP')
+
+def _construct_dtype(*args, **kwargs):
+    full = kwargs.pop('full_output', False)
+    peps = kwargs.get('pep')
+    q_label = kwargs.setdefault('q_label', 'q')
+    score_label = kwargs.setdefault('score_label', 'score')
+
+    fields = [(score_label, np.float64),
+        (_decoy_or_pep_label(**kwargs), np.bool_ if peps is None else np.float64),
+        (q_label, np.float64)]
+    # if all args are NumPy arrays with common dtype, use it in the output
+    if full:
+        dtypes = {getattr(arg, 'dtype', None) for arg in args}
+        if len(dtypes) == 1 and None not in dtypes:
+            psm_dtype = dtypes.pop()
+        else:
+            psm_dtype = np.object_
+        dtype = np.dtype(fields + [('psm', psm_dtype)])
+    else:
+        dtype = np.dtype(fields)
+    return dtype
+
 def _make_qvalues(read, is_decoy, key):
     """Create a function that reads PSMs from a file and calculates q-values
     for each value of `key`."""
@@ -702,6 +828,12 @@ def _make_qvalues(read, is_decoy, key):
 
             See `this paper <http://dx.doi.org/10.1021/acs.jproteome.6b00144>`_ for further explanation.
 
+        q_label : str, optional
+            Field name for q-value in the output. Default is ``'q'``.
+
+        score_label : str, optional
+            Field name for score in the output. Default is ``'score'``.
+
         full_output : bool, keyword only, optional
             If :py:const:`True`, then the returned array has PSM objects along
             with scores and q-values. Default is :py:const:`False`.
@@ -738,57 +870,49 @@ def _make_qvalues(read, is_decoy, key):
                     scores.append(tuple(row))
             return scores
 
-        peps = kwargs.pop('pep', None)
+        peps = kwargs.get('pep', None)
         if peps is not None:
             x = {'is_decoy', 'remove_decoy', 'formula', 'ratio', 'correction'}.intersection(kwargs)
             if x:
                 raise PyteomicsError("Can't use these parameters with `pep`: " + ', '.join(x))
         keyf = kwargs.pop('key', key)
-        reverse = kwargs.pop('reverse', False)
+        reverse = kwargs.get('reverse', False)
         if keyf is None:
             keyf = peps
             if reverse:
                 raise PyteomicsError('reverse = True when using PEPs for sorting')
+        
         if not callable(keyf) and not isinstance(keyf, (Sized, Container)):
             keyf = np.array(list(keyf))
-        ratio = kwargs.pop('ratio', 1)
-        remove_decoy = kwargs.pop('remove_decoy', False)
+
         if peps is None:
             isdecoy = kwargs.pop('is_decoy', is_decoy)
         else:
             isdecoy = peps
+        
         if not callable(isdecoy) and not isinstance(isdecoy, (Sized, Container)):
             isdecoy = np.array(list(isdecoy))
-        full = kwargs.pop('full_output', False)
-        formula = kwargs.pop('formula', (2, 1)[bool(remove_decoy)])
-        correction = kwargs.pop('correction', 0)
-        if formula not in {1, 2}:
-            raise PyteomicsError('`formula` must be either 1 or 2')
 
-        decoy_or_pep_label = 'is decoy' if peps is None else 'PEP'
-
-        fields = [('score', np.float64),
-            (decoy_or_pep_label, np.bool_ if peps is None else np.float64),
-            ('q', np.float64)]
-        # if all args are NumPy arrays with common dtype, use it in the output
-        if full:
-            dtypes = {getattr(arg, 'dtype', None) for arg in args}
-            if len(dtypes) == 1 and None not in dtypes:
-                psm_dtype = dtypes.pop()
-            else:
-                psm_dtype = np.object_
-            dtype = np.dtype(fields + [('psm', psm_dtype)])
-        else:
-            dtype = np.dtype(fields)
-
+        remove_decoy = kwargs.get('remove_decoy', False)
+        decoy_or_pep_label = _decoy_or_pep_label(**kwargs)
+        score_label = kwargs.setdefault('score_label', 'score')
+        q_label = kwargs.setdefault('q_label', 'q')
+        dtype = _construct_dtype(*args, **kwargs)
+        full = kwargs.get('full_output', False)
         arr_flag = False
         psms = None
+        
+
+        # time to check arg type
+        if pd is not None and all(isinstance(arg, pd.DataFrame) for arg in args):
+            psms = pd.concat(args)
+            return _qvalues_df(psms, keyf, isdecoy, **kwargs)
+
         if callable(keyf) or callable(isdecoy):
+            kwargs.pop('full_output', None)
             scores = np.array(get_scores(*args, **kwargs), dtype=dtype)
         else:
-            if pd is not None and all(isinstance(arg, pd.DataFrame) for arg in args):
-                psms = pd.concat(args)
-            elif all(isinstance(arg, np.ndarray) for arg in args):
+            if all(isinstance(arg, np.ndarray) for arg in args):
                 psms = np.concatenate(args)
 
             if not isinstance(keyf, basestring):
@@ -800,14 +924,14 @@ def _make_qvalues(read, is_decoy, key):
 
             if arr_flag:
                 scores = np.empty(keyf.size if hasattr(keyf, 'size') else isdecoy.size, dtype=dtype)
-                for func, label in zip((keyf, isdecoy), ('score', decoy_or_pep_label)):
+                for func, label in zip((keyf, isdecoy), (score_label, decoy_or_pep_label)):
                     if not isinstance(func, basestring):
                         scores[label] = func
                     else:
                         scores[label] = psms[func]
             else:
-                scores = np.empty(psms.shape[0], dtype=fields)
-                scores['score'] = psms[keyf]
+                scores = np.empty(psms.shape[0], dtype=dtype)
+                scores[score_label] = psms[keyf]
                 scores[decoy_or_pep_label] = psms[isdecoy]
 
         if not scores.size:
@@ -816,54 +940,15 @@ def _make_qvalues(read, is_decoy, key):
             return scores
 
         if not reverse:
-            keys = scores[decoy_or_pep_label], scores['score']
+            keys = scores[decoy_or_pep_label], scores[score_label]
         else:
-            keys = scores[decoy_or_pep_label], -scores['score']
+            keys = scores[decoy_or_pep_label], -scores[score_label]
         lexsort = np.lexsort(keys)
         scores = scores[lexsort]
         if psms is not None:
-            if pd is not None and isinstance(psms, pd.DataFrame):
-                if arr_flag:
-                    psms = psms.iloc[lexsort]
-                else:
-                    psms.sort_values([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
-            else:
                 psms = psms[lexsort]
 
-        cumsum = scores[decoy_or_pep_label].cumsum(dtype=np.float64)
-        tfalse = cumsum.copy()
-        ind = np.arange(1., scores.shape[0] + 1., dtype=np.float64)
-
-        if peps is not None:
-            q = cumsum / ind
-        else:
-            if isinstance(correction, int):
-                if correction == 1:
-                    tfalse += 1
-                elif correction == 2:
-                    p = 1. / (1. + ratio)
-                    targ = ind - cumsum
-                    for i in range(tfalse.size):
-                        tfalse[i] = _expectation(cumsum[i], targ[i], p)
-            elif 0 < correction < 1:
-                p = 1. / (1. + ratio)
-                targ = ind - cumsum
-                for i in range(tfalse.size):
-                    tfalse[i] = _confidence_value(correction, cumsum[i], targ[i], p)
-            elif correction:
-                raise PyteomicsError('Invalid value for `correction`.')
-
-            if formula == 1:
-                q = tfalse / (ind - cumsum) / ratio
-            else:
-                q = (cumsum + tfalse / ratio) / ind
-        # Make sure that q-values are equal for equal scores (conservatively)
-        # and that q-values are monotonic
-        for i in range(scores.size-1, 0, -1):
-            if (scores['score'][i] == scores['score'][i-1] or
-                    q[i-1] > q[i]):
-                q[i-1] = q[i]
-        scores['q'] = q
+        scores[q_label] = _calculate_qvalues(scores[score_label], scores[decoy_or_pep_label], peps is not None, **kwargs)
         if remove_decoy:
             if psms is not None:
                 psms = psms[~scores[decoy_or_pep_label]]
@@ -879,7 +964,7 @@ def _make_qvalues(read, is_decoy, key):
                     elif label in psms.dtype.fields:
                         psms[label] = scores[label]
                 newdt = [(name, psms.dtype.fields[name][0]) for name in fields] + [
-                    (name, np.float64) for name in extra] + [('q', np.float64)]
+                    (name, np.float64) for name in extra] + [(q_label, np.float64)]
                 psms_ = psms
                 psms = np.empty_like(psms_, dtype=newdt)
                 for f in fields:
@@ -890,7 +975,7 @@ def _make_qvalues(read, is_decoy, key):
                 for func, label in zip((keyf, isdecoy), ('score', decoy_or_pep_label)):
                     if not isinstance(label, basestring):
                         psms[label] = scores[label]
-            psms['q'] = scores['q']
+            psms[q_label] = scores[q_label]
             return psms
         return scores
     
@@ -918,8 +1003,7 @@ def _make_filter(read, is_decoy, key, qvalues):
         except KeyError:
             raise PyteomicsError('Keyword argument required: fdr')
 
-        args = [list(arg) if not isinstance(arg, (Container, Sized))
-                else arg for arg in args]
+        args = [list(arg) if not isinstance(arg, (Container, Sized)) else arg for arg in args]
         peps = kwargs.get('pep')
         if peps is None:
             remove_decoy = kwargs.pop('remove_decoy', True)
@@ -932,6 +1016,9 @@ def _make_filter(read, is_decoy, key, qvalues):
         better = [op.lt, op.gt][bool(reverse)]
         isdecoy = kwargs.pop('is_decoy', is_decoy)
         kwargs.pop('formula', None)
+        decoy_or_pep_label = _decoy_or_pep_label(**kwargs)
+        score_label = kwargs.setdefault('score_label', 'score')
+
         try:
             i = scores['q'].searchsorted(fdr, side='right')
             if isinstance(i, Sized):
@@ -947,13 +1034,17 @@ def _make_filter(read, is_decoy, key, qvalues):
                 return scores[:i]
         elif not scores.size:
             return (_ for _ in ())
-        cutoff = scores['score'][i] if i < scores.size else (
-                scores['score'][-1] + (1, -1)[bool(reverse)])
+        if peps is None:
+            label = score_label
+        else:
+            label = decoy_or_pep_label
+        cutoff = scores[label][i] if i < scores.size else (
+                scores[label][-1] + (1, -1)[bool(reverse)])
         def out():
             with read(*args, **kwargs) as f:
                 for p, s in zip(f, scores):
-                    if peps is not None or not remove_decoy or not s['is decoy']:
-                        if better(s['score'], cutoff):
+                    if peps is not None or not remove_decoy or not s[decoy_or_pep_label]:
+                        if better(s[label], cutoff):
                             yield p
         return out()
 
