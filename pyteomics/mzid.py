@@ -33,6 +33,8 @@ Data access
   :py:func:`chain.from_iterable` - read multiple files at once, using an
   iterable of files.
 
+  :py:func:`DataFrame` - read MzIdentML files into a :py:class:`pandas.DataFrame`.
+
 Target-decoy approach
 ---------------------
 
@@ -44,6 +46,8 @@ Target-decoy approach
 
   :py:func:`filter.chain.from_iterable` - chain a series of filters applied
   independently to an iterable of files.
+
+  :py:func:`filter_df` - filter MzIdentML files and return a :py:class:`pandas.DataFrame`.
 
   :py:func:`is_decoy` - determine if a "SpectrumIdentificationResult" should be
   consiudered decoy.
