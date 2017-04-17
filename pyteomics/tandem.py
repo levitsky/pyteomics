@@ -155,7 +155,7 @@ class TandemXML(xml.XML):
 
     next = __next__
 
-def read(source, iterative=True):
+def read(source, iterative=True, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
 
     Parameters
