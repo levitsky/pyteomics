@@ -191,7 +191,7 @@ class PepXML(xml.XML):
             info['search_hit'].sort(key=lambda x: x['hit_rank'])
         return info
 
-def read(source, read_schema=True, iterative=True):
+def read(source, read_schema=True, iterative=True, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
 
     Parameters

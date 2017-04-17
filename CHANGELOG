@@ -1,6 +1,9 @@
 3.4.2
 -----
 
+ Add :py:func:`pyteomics.mzid.DataFrame` and :py:func:`pyteomics.mzid.filter_df` functions for convenience.
+ Their behavior may be refined later on.
+
  Changes in behavior of :py:func:`pyteomics.auxiliary.filter` and :py:func:`pyteomics.auxiliary.qvalues`:
 
  - both functions now always return DataFrames with :py:class:`pandas.DataFrame` input and `full_output=True`.
