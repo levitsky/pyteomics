@@ -217,7 +217,6 @@ class FilterTest(unittest.TestCase):
 
     def _run_check_pep(self, *args, **kwargs):
         key = kwargs.pop('key', self.key)
-        # is_decoy = kwargs.get('is_decoy', self.is_decoy)
         f11 = aux.filter(*args, key=key, fdr=0.02, **kwargs)
         f12 = aux.filter(*args, fdr=0.02, **kwargs)
 
