@@ -692,7 +692,7 @@ def _qvalues_df(psms, keyf, isdecoy, **kwargs):
 
     q = _calculate_qvalues(psms[keyf].values, psms[isdecoy].values, peps is not None, **kwargs)
     if remove_decoy:
-        q = q[~psms[isdecoy]]
+        q = q[~psms[isdecoy].values]
         psms = psms[~psms[isdecoy]].copy()
     if not full:
         if peps is None:
@@ -708,7 +708,7 @@ def _qvalues_df(psms, keyf, isdecoy, **kwargs):
         psms = psms_
     else:
         q_label = kwargs['q_label']
-        psms.loc[:, q_label] = q
+        psms[q_label] = q
     return psms
 
 def _decoy_or_pep_label(**kwargs):
