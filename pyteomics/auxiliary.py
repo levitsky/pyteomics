@@ -713,7 +713,7 @@ def _qvalues_df(psms, keyf, isdecoy, **kwargs):
 
 def _decoy_or_pep_label(**kwargs):
     peps = kwargs.get('pep')
-    return kwargs.get('is_decoy_label', 'is decoy') if peps is None else kwargs.get(
+    return kwargs.get('decoy_label', 'is decoy') if peps is None else kwargs.get(
         'pep_label', peps if isinstance(peps, basestring) else 'PEP')
 
 def _construct_dtype(*args, **kwargs):
@@ -834,6 +834,12 @@ def _make_qvalues(read, is_decoy, key):
         score_label : str, optional
             Field name for score in the output. Default is ``'score'``.
 
+        decoy_label : str, optional
+            Field name for the decoy flag in the output. Default is ``'is decoy'``.
+
+        pep_label : str, optional
+            Field name for PEP in the output. Default is ``'PEP'``.
+
         full_output : bool, keyword only, optional
             If :py:const:`True`, then the returned array has PSM objects along
             with scores and q-values. Default is :py:const:`False`.
@@ -902,11 +908,18 @@ def _make_qvalues(read, is_decoy, key):
         arr_flag = False
         psms = None
         
-
         # time to check arg type
         if pd is not None and all(isinstance(arg, pd.DataFrame) for arg in args):
             psms = pd.concat(args)
             return _qvalues_df(psms, keyf, isdecoy, **kwargs)
+
+        if not all(isinstance(arg, np.ndarray) for arg in args):
+            if isinstance(keyf, basestring):
+                keyf = op.itemgetter(keyf)
+            if isinstance(isdecoy, basestring):
+                isdecoy = op.itemgetter(isdecoy)
+            if isinstance(peps, basestring):
+                peps = op.itemgetter(peps)
 
         if callable(keyf) or callable(isdecoy):
             kwargs.pop('full_output', None)
@@ -1018,9 +1031,10 @@ def _make_filter(read, is_decoy, key, qvalues):
         kwargs.pop('formula', None)
         decoy_or_pep_label = _decoy_or_pep_label(**kwargs)
         score_label = kwargs.setdefault('score_label', 'score')
+        q_label = kwargs.get('q_label', 'q')
 
         try:
-            i = scores['q'].searchsorted(fdr, side='right')
+            i = scores[q_label].searchsorted(fdr, side='right')
             if isinstance(i, Sized):
                 i = i[0]
         except AttributeError:
@@ -1140,6 +1154,18 @@ def _make_filter(read, is_decoy, key, qvalues):
 
             .. note:: The name for the parameter comes from the fact that it is
                       internally passed to :py:func:`qvalues`.
+
+        q_label : str, optional
+            Field name for q-value in the output. Default is ``'q'``.
+
+        score_label : str, optional
+            Field name for score in the output. Default is ``'score'``.
+
+        decoy_label : str, optional
+            Field name for the decoy flag in the output. Default is ``'is decoy'``.
+
+        pep_label : str, optional
+            Field name for PEP in the output. Default is ``'PEP'``.
 
         **kwargs : passed to the :py:func:`chain` function.
 

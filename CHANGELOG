@@ -1,8 +1,15 @@
 3.4.2
 -----
 
- - :py:func:`pyteomics.auxiliary.filter` and :py:func:`pyteomics.auxiliary.qvalues` with
-   :py:class:`pandas.DataFrame` input now always return DataFrames with `full_output=True`.
+ Changes in behavior of :py:func:`pyteomics.auxiliary.filter` and :py:func:`pyteomics.auxiliary.qvalues`:
+
+ - both functions now always return DataFrames with :py:class:`pandas.DataFrame` input and `full_output=True`.
+
+ - string values of `key`, `is_decoy` and `pep` are substituted with simple itemgetter functions for
+   non-pandas, non-numpy input;
+
+ - additional parameters `score_label`, `decoy_label`, `pep_label`, and `q_label` for output control.
+
 
 3.4.1
 -----
