@@ -298,6 +298,78 @@ def is_decoy(psm):
     return all(pe['isDecoy'] for sii in psm['SpectrumIdentificationItem']
             for pe in sii['PeptideEvidenceRef'])
 
+
+def DataFrame(*args, **kwargs):
+    """Read MzIdentML files into a :py:class:`pandas.DataFrame`.
+
+    Requires :py:mod:`pandas`.
+
+    .. warning :: Only the first 'SpectrumIdentificationItem' element is considered in every
+                  'SpectrumIdentificationResult'.
+
+    Parameters
+    ----------
+    *args, **kwargs : passed to :py:func:`chain`
+
+    sep : str or None, optional
+        Split protein descriptions by this delimiter, if given.
+
+    Returns
+    -------
+    out : pandas.DataFrame
+    """
+    import pandas as pd
+    data = []
+    
+    sep = kwargs.pop('sep', None)
+    with chain(*args, **kwargs) as f:
+        for item in f:
+            info = {}
+            for k, v in item.items():
+                if isinstance(v, (str, int, float)):
+                    info[k] = v
+            sii = item.get('SpectrumIdentificationItem', [None])[0]
+            if sii is not None:
+                info.update((k, v) for k, v in sii.items() if isinstance(v, (str, int, float)))
+                evref = sii.get('PeptideEvidenceRef', [None])[0]
+                if evref is not None:
+                    info.update((k, v) for k, v in evref.items() if isinstance(v, (str, int, float, list)))
+            data.append(info)
+    df = pd.DataFrame(data)
+    if sep is not None and 'protein description' in df:
+        df['protein description'] = df['protein description'].str.split(sep)
+    return df
+
+def filter_df(*args, **kwargs):
+    """Read MzIdentML files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.
+    Positional arguments can be MzIdentML files or DataFrames.
+
+    Requires :py:mod:`pandas`.
+
+    .. warning :: Only the first 'SpectrumIdentificationItem' element is considered in every
+                  'SpectrumIdentificationResult'.
+
+    Parameters
+    ----------
+    key : str / iterable / callable, optional
+        Default is 'mascot:expectation value'.
+    is_decoy : str / iterable / callable, optional
+        Default is 'isDecoy'.
+    *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+
+    Returns
+    -------
+    out : pandas.DataFrame
+    """
+    import pandas as pd
+    kwargs.setdefault('key', 'mascot:expectation value')
+    kwargs.setdefault('is_decoy', 'isDecoy')
+    if all(isinstance(arg, pd.DataFrame) for arg in args):
+        df = pd.concat(args)
+    else:
+        df = DataFrame(*args, **kwargs)
+    return aux.filter(df, **kwargs)
+
 fdr = aux._make_fdr(is_decoy)
 _key = lambda x: min(
     sii['mascot:expectation value'] for sii in x['SpectrumIdentificationItem'])
