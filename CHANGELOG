@@ -13,7 +13,6 @@
 
  - additional parameters `score_label`, `decoy_label`, `pep_label`, and `q_label` for output control.
 
-
 3.4.1
 -----
 

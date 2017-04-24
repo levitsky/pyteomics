@@ -15,15 +15,16 @@ Pyteomics uses the following Python packages:
    :py:mod:`pyteomics.pepxml`, :py:mod:`pyteomics.mzid`,
    :py:mod:`pyteomics.tandem`)
  - `pandas <http://pandas.pydata.org/>`_ (can be used with :py:mod:`pyteomics.pepxml`,
-   :py:mod:`pyteomics.tandem`, :py:mod:`pyteomics.auxiliary`)
+   :py:mod:`pyteomics.tandem`, :py:mod:`pyteomics.mzid`, :py:mod:`pyteomics.auxiliary`)
  - `sqlalchemy <http://www.sqlalchemy.org/>`_ (used by :py:mod:`pyteomics.mass.unimod`)
 
+All dependencies are optional.
 
 GNU/Linux
 ---------
 
-The preferred way to obtain Pyteomics is via pip Python
-package manager. The shell code for a freshly installed Ubuntu system::
+The preferred way to obtain Pyteomics is via `pip Python package manager <https://pip.pypa.io/>`_.
+The shell code for a freshly installed Ubuntu system::
 
     sudo apt-get install python-setuptools python-dev build-essential
     sudo easy_install pip
