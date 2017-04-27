@@ -106,9 +106,8 @@ class PepXML(xml.XML):
     _default_iter_tag = 'spectrum_query'
     _structures_to_flatten = {'search_score_summary', 'modification_info'}
 
-    def _get_info_smart(self, element, **kw):
+    def _get_info_smart(self, element, **kwargs):
         """Extract the info in a smart way depending on the element type"""
-        kwargs = dict(kw)
         try:
             name = kwargs.pop('ename')
         except KeyError:
