@@ -108,15 +108,18 @@ class PepXML(xml.XML):
 
     def _get_info_smart(self, element, **kw):
         """Extract the info in a smart way depending on the element type"""
-        name = xml._local_name(element)
         kwargs = dict(kw)
+        try:
+            name = kwargs.pop('ename')
+        except:
+            name = xml._local_name(element)
         rec = kwargs.pop('recursive', None)
         if name == 'msms_pipeline_analysis':
-            info = self._get_info(element,
+            info = self._get_info(element, ename=name,
                     recursive=(rec if rec is not None else False),
                     **kwargs)
         else:
-            info = self._get_info(element,
+            info = self._get_info(element, ename=name,
                     recursive=(rec if rec is not None else True),
                     **kwargs)
 

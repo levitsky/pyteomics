@@ -49,7 +49,7 @@ except ImportError: # Python 3.x
 def _local_name(element):
     """Strip namespace from the XML element's name"""
     if element.tag and element.tag[0] == '{':
-        return element.tag.rsplit('}', 1)[1]
+        return element.tag.rpartition('}')[2]
     return element.tag
 
 
@@ -234,15 +234,17 @@ class XML(FileReader):
                     if _local_name(elem) == 'attribute' and elem.attrib.get(
                             'type', '').split(':')[-1] in val:
                         anc = elem.getparent()
+                        anc_name = _local_name(anc)
                         while not (
-                                (_local_name(anc) == 'complexType'
+                                (anc_name == 'complexType'
                                     and 'name' in anc.attrib)
-                                or _local_name(anc) == 'element'):
+                                or anc_name == 'element'):
                             anc = anc.getparent()
+                            anc_name = _local_name(anc)
                             if anc is None:
                                 break
                         else:
-                            if _local_name(anc) == 'complexType':
+                            if anc_name == 'complexType':
                                 elnames = [x.attrib['name'] for x in
                                            schema_tree.iter()
                                            if x.attrib.get('type', ''
@@ -307,7 +309,10 @@ class XML(FileReader):
     def _get_info(self, element, **kwargs):
         """Extract info from element's attributes, possibly recursive.
         <cvParam> and <userParam> elements are treated in a special way."""
-        name = _local_name(element)
+        try:
+            name = kwargs.pop('ename')
+        except:
+            name = _local_name(element)
         schema_info = self.schema_info
         if name in {'cvParam', 'userParam'}:
             return self._handle_param(element)
@@ -327,10 +332,10 @@ class XML(FileReader):
                         info['name'].append(newinfo.pop('name'))
                 else:
                     if cname not in schema_info['lists']:
-                        info[cname] = self._get_info_smart(child, **kwargs)
+                        info[cname] = self._get_info_smart(child, ename=cname, **kwargs)
                     else:
                         info.setdefault(cname, []).append(
-                                self._get_info_smart(child, **kwargs))
+                                self._get_info_smart(child, ename=cname, **kwargs))
 
         # process element text
         if element.text:
@@ -346,7 +351,7 @@ class XML(FileReader):
         for k, v in info.items():
             for t, a in converters.items():
                 try:
-                    if (_local_name(element), k) in schema_info[t]:
+                    if (name, k) in schema_info[t]:
                         info[k] = a(v)
                 except KeyError:
                     continue
@@ -527,8 +532,7 @@ def get_rel_path(element, names):
         yield element
     else:
         for child in element.iterchildren():
-            if _local_name(child).lower() == names[0].lower(
-                    ) or names[0] == '*':
+            if names[0] == '*' or _local_name(child).lower() == names[0].lower():
                 if len(names) == 1:
                     yield child
                 else:
