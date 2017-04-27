@@ -311,7 +311,7 @@ class XML(FileReader):
         <cvParam> and <userParam> elements are treated in a special way."""
         try:
             name = kwargs.pop('ename')
-        except:
+        except KeyError:
             name = _local_name(element)
         schema_info = self.schema_info
         if name in {'cvParam', 'userParam'}:
