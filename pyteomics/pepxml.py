@@ -111,7 +111,7 @@ class PepXML(xml.XML):
         kwargs = dict(kw)
         try:
             name = kwargs.pop('ename')
-        except:
+        except KeyError:
             name = xml._local_name(element)
         rec = kwargs.pop('recursive', None)
         if name == 'msms_pipeline_analysis':
