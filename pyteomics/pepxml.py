@@ -105,6 +105,11 @@ class PepXML(xml.XML):
     _default_version = '1.15'
     _default_iter_tag = 'spectrum_query'
     _structures_to_flatten = {'search_score_summary', 'modification_info'}
+    # attributes which contain unconverted values
+    _convert_items = {'float':  {'calc_neutral_pep_mass', 'massdiff'},
+        'int': {'start_scan', 'end_scan', 'index'},
+        'bool': {'is_rejected'},
+        'floatarray': {'all_ntt_prob'}}.items()
 
     def _get_info_smart(self, element, **kwargs):
         """Extract the info in a smart way depending on the element type"""
@@ -122,11 +127,6 @@ class PepXML(xml.XML):
                     recursive=(rec if rec is not None else True),
                     **kwargs)
 
-        # attributes which contain unconverted values
-        convert = {'float':  {'calc_neutral_pep_mass', 'massdiff'},
-            'int': {'start_scan', 'end_scan', 'index'},
-            'bool': {'is_rejected'},
-            'floatarray': {'all_ntt_prob'}}
         def safe_float(s):
             try:
                 return float(s)
@@ -138,7 +138,7 @@ class PepXML(xml.XML):
                 'bool': lambda x: x.lower() in {'1', 'true'},
                 'floatarray': lambda x: list(map(float, x[1:-1].split(',')))}
         for k, v in dict(info).items():
-            for t, s in convert.items():
+            for t, s in self._convert_items:
                 if k in s:
                     del info[k]
                     info[k] = converters[t](v)
