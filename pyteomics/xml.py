@@ -179,6 +179,8 @@ class XML(FileReader):
         self.version_info = self._get_version_info()
         self.schema_info = self._get_schema_info(read_schema)
 
+        self._converters_items = self._converters.items()
+
     @_keepstate
     def _get_version_info(self):
         """
@@ -347,14 +349,10 @@ class XML(FileReader):
                     return stext
 
         # convert types
-        converters = self._converters
         for k, v in info.items():
-            for t, a in converters.items():
-                try:
-                    if (name, k) in schema_info[t]:
-                        info[k] = a(v)
-                except KeyError:
-                    continue
+            for t, a in self._converters_items:
+                if t in schema_info and (name, k) in schema_info[t]:
+                    info[k] = a(v)
 
         # resolve refs
         if kwargs.get('retrieve_refs'):
