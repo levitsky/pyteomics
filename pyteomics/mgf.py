@@ -159,16 +159,17 @@ def read(source=None, use_header=True, convert_arrays=2, read_charges=True, dtyp
                     params[l[0].lower()] = l[1].strip()
                 else: # this must be a peak list
                     l = sline.split()
-                    if len(l) >= 2:
-                        try:
-                            masses.append(float(l[0]))            # this may cause
-                            intensities.append(float(l[1]))       # exceptions...\
-                            if read_charges:
-                                charges.append(aux._parse_charge(l[2]) if len(l) > 2 else 0)
-                        except ValueError:
-                            raise aux.PyteomicsError(
-                                 'Error when parsing %s. Line:\n%s' %
-                                 (source, line))
+                    try:
+                        masses.append(float(l[0]))            # this may cause
+                        intensities.append(float(l[1]))       # exceptions...\
+                        if read_charges:
+                            charges.append(aux._parse_charge(l[2]) if len(l) > 2 else 0)
+                    except ValueError:
+                        raise aux.PyteomicsError(
+                             'Error when parsing %s. Line:\n%s' %
+                             (source, line))
+                    except IndexError:
+                        pass
 
 @aux._keepstate
 def read_header(source):
