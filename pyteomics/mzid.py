@@ -316,7 +316,10 @@ def DataFrame(*args, **kwargs):
     *args, **kwargs : passed to :py:func:`chain`
 
     sep : str or None, optional
-        Split protein descriptions by this delimiter, if given.
+        Some values related to PSMs (such as protein information) are variable-length
+        lists. If `sep` is a :py:class:`str`, they will be packed into single string using
+        this delimiter. If `sep` is :py:const:`None`, they are kept as lists. Default is
+        :py:const:`None`.
 
     Returns
     -------
@@ -335,13 +338,29 @@ def DataFrame(*args, **kwargs):
             sii = item.get('SpectrumIdentificationItem', [None])[0]
             if sii is not None:
                 info.update((k, v) for k, v in sii.items() if isinstance(v, (str, int, float)))
-                evref = sii.get('PeptideEvidenceRef', [None])[0]
-                if evref is not None:
-                    info.update((k, v) for k, v in evref.items() if isinstance(v, (str, int, float, list)))
+                evref = sii.get('PeptideEvidenceRef')
+                if evref:
+                    prot_descr, accessions, isd, starts, ends, lengths = [], [], [], [], [], []
+                    for d in evref:
+                        prot_descr.append(d['protein description'])
+                        accessions.append(d['accession'])
+                        isd.append(d.get('isDecoy'))
+                        starts.append(d['start'])
+                        ends.append(d['end'])
+                        lengths.append(d['length'])
+                    isd = all(isd)
+                    if sep is not None:
+                        prot_descr = sep.join(prot_descr)
+                        accessions = sep.join(accessions)
+                    info.update((k, v) for k, v in evref[0].items() if isinstance(v, (str, int, float, list)))
+                    info['protein description'] = prot_descr
+                    info['accession'] = accessions
+                    info['isDecoy'] = isd
+                    info['start'] = starts
+                    info['end'] = ends
+                    info['length'] = lengths
             data.append(info)
     df = pd.DataFrame(data)
-    if sep is not None and 'protein description' in df:
-        df['protein description'] = df['protein description'].str.split(sep)
     return df
 
 def filter_df(*args, **kwargs):
