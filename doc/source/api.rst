@@ -18,6 +18,7 @@ Contents:
    api/mzml
    api/mzxml
    api/mgf
+   api/ms1
    api/pepxml
    api/tandem
    api/mzid

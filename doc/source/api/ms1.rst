@@ -1,4 +1,4 @@
-.. automodule:: pyteomics.mgf
+.. automodule:: pyteomics.ms1
 
     .. autofunction:: chain
     .. py:function :: chain.from_iterable(files, **kwargs)
@@ -10,4 +10,3 @@
         ----------
         files : iterable
             Iterable of file names or file objects.
-

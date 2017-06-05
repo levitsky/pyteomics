@@ -1,3 +1,52 @@
+"""
+ms1 - read and write MS/MS data in MS1 format
+=============================================
+
+Summary
+-------
+
+`MS1 <http://dx.doi.org/10.1002/rcm.1603>`_ is a simple
+human-readable format for MS1 data. It allows storing MS1 peak lists and
+exprimental parameters.
+
+This module provides minimalistic infrastructure for access to data stored in
+MS1 files. The most important function is :py:func:`read`, which
+reads spectra and related information as saves them into human-readable
+:py:class:`dicts`.
+Also, common parameters can be read from MS1 file header with
+:py:func:`read_header` function.
+
+Functions
+---------
+
+  :py:func:`read` - iterate through spectra in MS1 file. Data from a
+  single spectrum are converted to a human-readable dict.
+
+  :py:func:`chain` - read multiple files at once.
+
+  :py:func:`chain.from_iterable` - read multiple files at once, using an
+  iterable of files.
+
+  :py:func:`read_header` - get a dict with common parameters for all spectra
+  from the beginning of MS1 file.
+
+-------------------------------------------------------------------------------
+"""
+
+#   Copyright 2012 Anton Goloborodko, Lev Levitsky
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 from . import auxiliary as aux
 try:
     import numpy as np
@@ -10,7 +59,7 @@ def read(source=None, use_header=False, convert_arrays=2, read_charges=True, dty
     """Read an MS1 file and return entries iteratively.
 
     Read the specified MS1 file, **yield** spectra one by one.
-    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
+    Each 'spectrum' is a :py:class:`dict` with three keys: 'm/z array',
     'intensity array', and 'params'. 'm/z array' and
     'intensity array' store :py:class:`numpy.ndarray`'s of floats,
     and 'params' stores a :py:class:`dict` of parameters.
@@ -19,7 +68,7 @@ def read(source=None, use_header=False, convert_arrays=2, read_charges=True, dty
     ----------
 
     source : str or file or None, optional
-        A file object (or file name) with data in MGF format. Default is
+        A file object (or file name) with data in MS1 format. Default is
         :py:const:`None`, which means read standard input.
 
     use_header : bool, optional
@@ -115,3 +164,5 @@ def read_header(source):
             val = l[2].strip()
             header[key] = val
         return header
+
+chain = aux._make_chain(read, 'read')
