@@ -99,6 +99,14 @@ class QvalueTest(unittest.TestCase):
         q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1, full_output=True)
         self._run_check(q, 1)
 
+    def test_qvalues_empty_dataframe(self):
+        dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
+        psms = pd.DataFrame(np.array([], dtype=dtype))
+        q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1)
+        self.assertEqual(q.shape[0], 0)
+        q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1, full_output=True)
+        self.assertEqual(q.shape[0], 0)
+
     def test_qvalues_pep_from_dataframe(self):
         dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms = pd.DataFrame(np.array(list(self.psms), dtype=dtype))
