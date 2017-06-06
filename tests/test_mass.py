@@ -142,31 +142,31 @@ class MassTest(unittest.TestCase):
         # Calculate mass by a formula.
         self.assertEqual(
             mass.calculate_mass(formula='ABCDE', mass_data=self.mass_data),
-            sum([self.mass_data[atom][0][0] for atom in 'ABCDE']))
+            sum(self.mass_data[atom][0][0] for atom in 'ABCDE'))
 
         # Calculate mass by a sequence.
         self.assertEqual(
             mass.calculate_mass(sequence='XYZ',
                                 aa_comp=self.aa_comp,
                                 mass_data=self.mass_data),
-            sum([self.mass_data[atom][0][0] for atom in 'ABCDE']))
+            sum(self.mass_data[atom][0][0] for atom in 'ABCDE'))
 
         # Calculate mass by a parsed sequence.
         self.assertEqual(
             mass.calculate_mass(parsed_sequence=['H-','X','Y','Z','-OH'],
                                 aa_comp=self.aa_comp,
                                 mass_data=self.mass_data),
-            sum([self.mass_data[atom][0][0] for atom in 'ABCDE']))
+            sum(self.mass_data[atom][0][0] for atom in 'ABCDE'))
 
         # Calculate average mass by a formula.
         self.assertEqual(
             mass.calculate_mass(formula='ABCDE',
                                 average=True,
                                 mass_data=self.mass_data),
-            sum([self.mass_data[atom][isotope][0]
+            sum(self.mass_data[atom][isotope][0]
                  * self.mass_data[atom][isotope][1]
                  for atom in 'ABCDE'
-                 for isotope in self.mass_data[atom] if isotope != 0]))
+                 for isotope in self.mass_data[atom] if isotope != 0))
 
         # Calculate m/z of an ion.
         for charge in [1,2,3]:
