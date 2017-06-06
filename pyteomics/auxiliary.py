@@ -677,15 +677,22 @@ def _qvalues_df(psms, keyf, isdecoy, **kwargs):
     peps = kwargs.get('pep')
     decoy_or_pep_label = _decoy_or_pep_label(**kwargs)
     q_label = kwargs.setdefault('q_label', 'q')
+    score_label = kwargs.setdefault('score_label', 'score')
     if callable(keyf):
         keyf = psms.apply(keyf, axis=1)
     if callable(isdecoy):
         isdecoy = psms.apply(isdecoy, axis=1)
     if not isinstance(keyf, basestring):
-        psms[kwargs.setdefault('score_label', 'score')] = keyf
+        if psms.shape[0]:
+            psms[score_label] = keyf
+        else:
+            psms[score_label] = []
         keyf = kwargs['score_label']
     if not isinstance(isdecoy, basestring):
-        psms[decoy_or_pep_label] = isdecoy
+        if psms.shape[0]:
+            psms[decoy_or_pep_label] = isdecoy
+        else:
+            psms[decoy_or_pep_label] = []
         isdecoy = decoy_or_pep_label
     reverse = kwargs.get('reverse', False)
     psms.sort_values([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
