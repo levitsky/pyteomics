@@ -123,12 +123,19 @@ def _parse_isotope_string(label):
     isotope_num = int(num) if num else 0
     return element_name, isotope_num
 
-# Initialize std_aa_comp before the Composition class
+# Initialize std_aa_comp and std_ion_comp before the Composition class
 # description, fill it later.
 std_aa_comp = {}
 """A dictionary with elemental compositions of the twenty standard
 amino acid residues, selenocysteine, pyrrolysine,
 and standard H- and -OH terminal groups.
+"""
+
+std_ion_comp = {}
+"""A dict with relative elemental compositions of the standard peptide
+fragment ions. An elemental composition of a fragment ion is calculated as a
+difference between the total elemental composition of an ion
+and the sum of elemental compositions of its constituting amino acid residues.
 """
 
 _isotope_string = r'^([A-Z][a-z+]*)(?:\[(\d+)\])?$'
@@ -262,11 +269,19 @@ class Composition(BasicComposition):
         mass_data : dict, optional
             A dict with the masses of chemical elements (the default
             value is :py:data:`nist_mass`). It is used for formulae parsing only.
+        charge : int, optional
+            If not 0 then additional protons are added to the composition.
+        ion_comp : dict, optional
+            A dict with the relative elemental compositions of peptide ion
+            fragments (default is :py:data:`std_ion_comp`).
+        ion_type : str, optional
+            If specified, then the polypeptide is considered to be in the form
+            of the corresponding ion. Do not forget to specify the charge state!
         """
         defaultdict.__init__(self, int)
 
-        aa_comp=kwargs.get('aa_comp', std_aa_comp)
-        mass_data=kwargs.get('mass_data', nist_mass)
+        aa_comp = kwargs.get('aa_comp', std_aa_comp)
+        mass_data = kwargs.get('mass_data', nist_mass)
 
         kw_sources = {'formula', 'sequence', 'parsed_sequence',
                 'split_sequence'}
@@ -307,6 +322,20 @@ class Composition(BasicComposition):
         else:
             self._from_dict(kwargs)
 
+        ion_comp = kwargs.get('ion_comp', std_ion_comp)
+        if 'ion_type' in kwargs:
+            self += ion_comp[kwargs['ion_type']]
+
+        # Get charge
+        charge = self['H+']
+        if 'charge' in kwargs:
+            if charge:
+                raise PyteomicsError(
+                    'Charge is specified both by the number of protons and '
+                    '`charge` in kwargs')
+            charge = kwargs['charge']
+            self['H+'] = charge
+
     def mass(self, **kwargs):
         """Calculate the mass or *m/z* of a :py:class:`Composition`.
 
@@ -334,23 +363,10 @@ class Composition(BasicComposition):
         -------
         mass : float
         """
-        composition = self.copy()
+        composition = self
         mass_data = kwargs.get('mass_data', nist_mass)
-        ion_comp = kwargs.get('ion_comp', std_ion_comp)
-        if 'ion_type' in kwargs:
-            composition += ion_comp[kwargs['ion_type']]
-
-        # Get charge.
-        charge = composition['H+']
-        if 'charge' in kwargs:
-            if charge:
-                raise PyteomicsError(
-                    'Charge is specified both by the number of protons and '
-                    '`charge` in kwargs')
-            charge = kwargs['charge']
-            composition['H+'] = charge
-
-        # Calculate mass.
+        
+        # Calculate mass
         mass = 0.0
         average = kwargs.get('average', False)
         for isotope_string, amount in composition.items():
@@ -364,8 +380,11 @@ class Composition(BasicComposition):
             else:
                 mass += (amount * mass_data[element_name][isotope_num][0])
 
-        # Calculate m/z if required.
+        # Calculate m/z if required
+        charge = kwargs.get('charge', composition['H+'])
         if charge:
+            if not composition['H+']:
+                mass += mass_data['H+'][0][0] * charge
             mass /= charge
         return mass
 
@@ -396,7 +415,7 @@ std_aa_comp.update({
     '-OH': Composition({'O': 1, 'H': 1}),
     })
 
-std_ion_comp = {
+std_ion_comp.update({
     'M':        Composition(formula=''),
     'a':        Composition(formula='H-2O-1' + 'C-1O-1'),
     'a-H2O':    Composition(formula='H-2O-1' + 'C-1O-1' + 'H-2O-1'),
@@ -416,12 +435,8 @@ std_ion_comp = {
     'z':        Composition(formula='H-2O-1' + 'ON-1H-1'),
     'z-H2O':    Composition(formula='H-2O-1' + 'ON-1H-1' + 'H-2O-1'),
     'z-NH3':    Composition(formula='H-2O-1' + 'ON-1H-1' + 'N-1H-3'),
-    }
-"""A dict with relative elemental compositions of the standard peptide
-fragment ions. An elemental composition of a fragment ion is calculated as a
-difference between the total elemental composition of an ion
-and the sum of elemental compositions of its constituting amino acid residues.
-"""
+    })
+
 
 def calculate_mass(*args, **kwargs):
     """Calculates the monoisotopic mass of a polypeptide defined by a

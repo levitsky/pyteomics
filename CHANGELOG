@@ -3,7 +3,10 @@
 
  - New module :py:mod:`pyteomics.ms1` for parsing of MS1 files.
 
- - Add :py:func:`pyteomics.mzid.DataFrame` and :py:func:`pyteomics.mzid.filter_df` functions for convenience.
+ - :py:class:`pyteomics.mass.mass.Composition` constructor now accepts `ion_type` and `charge`
+   parameters.
+
+ - New functions :py:func:`pyteomics.mzid.DataFrame` and :py:func:`pyteomics.mzid.filter_df`.
    Their behavior may be refined later on.
 
  - Changes in behavior of :py:func:`pyteomics.auxiliary.filter` and :py:func:`pyteomics.auxiliary.qvalues`:
