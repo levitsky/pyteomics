@@ -695,18 +695,28 @@ def _qvalues_df(psms, keyf, isdecoy, **kwargs):
             psms[decoy_or_pep_label] = []
         isdecoy = decoy_or_pep_label
     reverse = kwargs.get('reverse', False)
+
+    if not full: # create fields early
+        if peps is None:
+            fields = [(keyf, np.float64), (isdecoy, np.bool_), (q_label, np.float64)]
+        else:
+            fields = [(isdecoy, np.float64), (q_label, np.float64)]
+        dtype = np.dtype(fields)
+
     psms.sort_values([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
+    
+    if not psms.shape[0]:
+        if full:
+            psms[q_label] = []
+            return psms
+        else:
+            return np.array([], dtype=dtype)
 
     q = _calculate_qvalues(psms[keyf].values, psms[isdecoy].values, peps is not None, **kwargs)
     if remove_decoy:
         q = q[~psms[isdecoy].values]
         psms = psms[~psms[isdecoy]].copy()
     if not full:
-        if peps is None:
-            fields = [(keyf, np.float64), (isdecoy, np.bool_), (q_label, np.float64)]
-        else:
-            fields = [(isdecoy, np.float64), (q_label, np.float64)]
-        dtype = np.dtype(fields)
         psms_ = np.empty_like(q, dtype=dtype)
         if peps is None:
             psms_[keyf] = psms[keyf]
