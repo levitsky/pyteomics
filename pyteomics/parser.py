@@ -40,6 +40,8 @@ Operations on polypeptide sequences
   :py:func:`cleave` - cleave a polypeptide using a given rule of
   enzymatic digestion.
 
+  :py:func:`num_sites` - count the number of cleavage sites in a sequence.
+
   :py:func:`isoforms` - generate all unique modified peptide sequences
   given the initial sequence and modifications.
 
