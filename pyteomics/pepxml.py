@@ -356,26 +356,27 @@ def DataFrame(*args, **kwargs):
             for k, v in item.items():
                 if isinstance(v, (str, int, float)):
                     info[k] = v
-            sh = item['search_hit'][0]
-            proteins = sh.pop('proteins')
-            prot_dict = {}
-            for p in proteins:
-                for k in p:
-                    prot_dict[k] = []
-            for p in proteins:
-                for k, v in prot_dict.items():
-                    v.append(p.get(k))
-            if sep is None:
-                info.update(prot_dict)
-            else:
-                for k, v in prot_dict.items():
-                    info[k] = sep.join(str(val) if val is not None else '' for val in v)
-            info.update(sh.pop('search_score'))
-            mods = sh.pop('modifications', [])
-            info['modifications'] = ','.join('{0[mass]:.3f}@{0[position]}'.format(x) for x in mods)
-            for k, v in sh.items():
-                if isinstance(v, (str, int, float)):
-                    info[k] = v
+            if 'search_hit' in item:
+                sh = item['search_hit'][0]
+                proteins = sh.pop('proteins')
+                prot_dict = {}
+                for p in proteins:
+                    for k in p:
+                        prot_dict[k] = []
+                for p in proteins:
+                    for k, v in prot_dict.items():
+                        v.append(p.get(k))
+                if sep is None:
+                    info.update(prot_dict)
+                else:
+                    for k, v in prot_dict.items():
+                        info[k] = sep.join(str(val) if val is not None else '' for val in v)
+                info.update(sh.pop('search_score'))
+                mods = sh.pop('modifications', [])
+                info['modifications'] = ','.join('{0[mass]:.3f}@{0[position]}'.format(x) for x in mods)
+                for k, v in sh.items():
+                    if isinstance(v, (str, int, float)):
+                        info[k] = v
             data.append(info)
     return pd.DataFrame(data)
 
