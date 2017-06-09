@@ -4,7 +4,7 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import tempfile
 import unittest
-from pyteomics.mgf import *
+from pyteomics.mgf import read, write, read_header
 import data
 
 class MGFTest(unittest.TestCase):
