@@ -99,8 +99,20 @@ def read(source=None, use_header=False, convert_arrays=2, read_charges=True, dty
     masses = []
     intensities = []
     if use_header: params.update(header)
+
+    def make_out():
+        out = {'params': params}
+        if convert_arrays:
+            data = {'m/z array': masses, 'intensity array': intensities}
+            for key, values in data.items():
+                out[key] = np.array(values, dtype=dtype_dict.get(key))
+        else:
+            out['m/z array'] = masses
+            out['intensity array'] = intensities
+        return out
+
     for line in source:
-        sline = line.strip().split(maxsplit=2)
+        sline = line.strip().split(None, 2)
         if not reading_spectrum:
             if sline[0] == 'S':
                 reading_spectrum = True
@@ -110,16 +122,7 @@ def read(source=None, use_header=False, convert_arrays=2, read_charges=True, dty
             if not sline:
                 pass
             elif sline[0] == 'S':
-                out = {'params': params}
-                if convert_arrays:
-                    data = {'m/z array': masses, 'intensity array': intensities}
-                    for key, values in data.items():
-                        out[key] = np.array(values, dtype=dtype_dict.get(key))
-                else:
-                    out['m/z array'] = masses
-                    out['intensity array'] = intensities
-                yield out
-                del out
+                yield make_out()
                 params = dict(header) if use_header else {}
                 masses = []
                 intensities = []
@@ -136,6 +139,8 @@ def read(source=None, use_header=False, convert_arrays=2, read_charges=True, dty
                              (source, line))
                     except IndexError:
                         pass
+
+    yield make_out()
 
 @aux._keepstate
 def read_header(source):
@@ -157,7 +162,7 @@ def read_header(source):
     with aux._file_obj(source, 'r') as source:
         header = {}
         for line in source:
-            l = line.split(maxsplit=2)
+            l = line.split(None, 2)
             if l[0] != 'H':
                 break
             key = l[1]
