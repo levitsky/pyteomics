@@ -135,8 +135,8 @@ def read(source=None, use_header=False, convert_arrays=2, read_charges=True, dty
                         intensities.append(float(sline[1]))       # exceptions...\
                     except ValueError:
                         raise aux.PyteomicsError(
-                             'Error when parsing %s. Line:\n%s' %
-                             (source, line))
+                             'Error when parsing %s. Line: %s' %
+                             (source.name, line))
                     except IndexError:
                         pass
 
@@ -162,9 +162,11 @@ def read_header(source):
     with aux._file_obj(source, 'r') as source:
         header = {}
         for line in source:
-            l = line.split(None, 2)
-            if l[0] != 'H':
+            if line[0] != 'H':
                 break
+            l = line.split('\t', 2)
+            if len(l) < 3:
+                l = line.split(None, 2)
             key = l[1]
             val = l[2].strip()
             header[key] = val
