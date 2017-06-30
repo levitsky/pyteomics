@@ -74,7 +74,7 @@ def read(source=None, use_header=False, convert_arrays=2, read_charges=True, dty
     use_header : bool, optional
         Add the info from file header to each dict. Spectrum-specific parameters
         override those from the header in case of conflict.
-        Default is :py:const:`True`.
+        Default is :py:const:`False`.
 
     convert_arrays : bool, optional
         If :py:const:`False`, m/z and intensities will be returned as regular lists.
