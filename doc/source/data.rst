@@ -159,6 +159,17 @@ returned by :py:func:`read`, and the output path.
     1675.3 79.0
     END IONS
 
+MS1
+---
+
+`MS1 <http://dx.doi.org/10.1002/rcm.1603>`_ is a simple
+human-readable format for MS1 data. It allows storing MS1 peak lists and
+exprimental parameters. Just like MS1 format is quite similar to MGF,
+the corresponding module (:py:mod:`pyteomics.ms1`) provides the same functions
+with very similar signatures for reading headers and spectra from files.
+
+Writing is not supported at this time.
+
 FASTA
 -----
 
@@ -554,7 +565,7 @@ Element IDs and references
 
 In *mzIdentML*, some elements contain references to other elements in the same
 file. The references are simply XML attributes whose name ends with ``_ref`` and
-the value is an ID, identical to value of the ``id`` attribute of a certain
+the value is an ID, identical to the value of the ``id`` attribute of a certain
 element.
 
 The parser can retrieve information from these references on the fly, which can
@@ -598,12 +609,12 @@ the :py:meth:`pyteomics.mzid.MzIdentML.get_by_id` method. Alternatively, the
 FeatureXML
 ----------
 
-:py:mod:`pyteomics.featurexml` implements a simple parser for **.featureXML** files
+:py:mod:`pyteomics.openms.featurexml` implements a simple parser for **.featureXML** files
 used in the `OpenMS <http://open-ms.sourceforge.net/about/>`_ framework. The usage
 is identical to other XML parsing modules. Since **featureXML** has feature IDs,
 :py:class:`FeatureXML` objects also support direct indexing as well as iteration::
 
-    >>> from pyteomics import featurexml
+    >>> from pyteomics.openms import featurexml
 
     >>> # function style, iteration
     ... with featurexml.read('tests/test.featureXML') as f:
@@ -619,8 +630,29 @@ is identical to other XML parsing modules. Since **featureXML** has feature IDs,
     0.945634
     >>> f.close()
 
-As always, :py:func:`pyteomics.featurexml.read` and :py:class:`pyteomics.featurexml.FeatureXML` are interchangeable.
+As always, :py:func:`pyteomics.openms.featurexml.read`
+and :py:class:`pyteomics.openms.featurexml.FeatureXML` are interchangeable.
 
+TrafoXML
+--------
+
+**.trafoXML** is another OpenMS format based on XML. It describes a
+tranformation produced by an RT alignment algorithm. The file basically contains a series
+of `(from; to)` pairs corresponding to original and transformed retention times:
+
+   >>> from pyteomics.openms import trafoxml
+   >>> from_rt, to_rt = [], []
+   >>> with trafoxml.read('test/test.trafoXML') as f:
+   ...    for pair in f:
+   ...        from_rt.append(pair['from'])
+   ...        to_rt.append(pair['to'])
+
+   >>> # plot the transformation
+   >>> import pylab
+   >>> pylab.plot(from_rt, to_rt)
+
+As always, :py:func:`pyteomics.openms.trafoxml.read`
+and :py:class:`pyteomics.openms.trafoxml.TrafoXML` are interchangeable.
 
 FDR estimation and filtering
 ============================
@@ -684,5 +716,5 @@ stored as CSV files (see :ref:`example-3` for more info).
 
 Generally, PSMs can be provided as iterators, lists, arrays, and :py:class:`DataFrames`,
 and `key` and `is_decoy` parameters to :py:func:`!filter` can be functions, strings,
-lists, arrays, or iterators. If a string is given, the PSMs need to be in a structured
-array or a :py:class:`DataFrame`.
+lists, arrays, or iterators. If a string is given, it is used as a key in a structured
+array, :py:class:`DataFrame` or an iterable of :py:class:`dicts`.
