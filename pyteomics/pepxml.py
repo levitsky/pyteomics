@@ -392,6 +392,7 @@ def filter_df(*args, **kwargs):
         Default is 'expect'.
     is_decoy : str / iterable / callable, optional
         Default is to check if all strings in the "protein" column start with `'DECOY_'`
+    
     *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
 
     Returns
@@ -402,7 +403,10 @@ def filter_df(*args, **kwargs):
     sep = kwargs.get('sep')
     kwargs.setdefault('key', 'expect')
     if all(isinstance(arg, pd.DataFrame) for arg in args):
-        df = pd.concat(args)
+        if len(args) > 1:
+            df = pd.concat(args)
+        else:
+            df = args[0]
     else:
         read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep'] if k in kwargs}
         df = DataFrame(*args, **read_kw)
