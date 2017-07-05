@@ -29,7 +29,7 @@ This module requres :py:mod:`lxml` and :py:mod:`numpy`.
 
 import re
 import warnings
-warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
+warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 import socket
 from functools import wraps
 from traceback import format_exc
