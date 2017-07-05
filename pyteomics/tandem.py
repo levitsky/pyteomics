@@ -323,7 +323,10 @@ def filter_df(*args, **kwargs):
     sep = kwargs.get('sep')
     kwargs.setdefault('key', 'expect')
     if all(isinstance(arg, pd.DataFrame) for arg in args):
-        df = pd.concat(args)
+        if len(args) > 1:
+            df = pd.concat(args)
+        else:
+            df = args[0]
     else:
         read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep'] if k in kwargs}
         df = DataFrame(*args, **read_kw)
