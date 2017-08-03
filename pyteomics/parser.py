@@ -508,7 +508,8 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None):
             will not work as expected.
 
     rule : str or compiled regex
-        A regular expression describing the site of cleavage. It is recommended
+        A `regular expression <https://docs.python.org/library/re.html#regular-expression-syntax>`_
+        describing the site of cleavage. It is recommended
         to design the regex so that it matches only the residue whose C-terminal
         bond is to be cleaved. All additional requirements should be specified
         using `lookaround assertions
@@ -519,7 +520,7 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None):
     min_length : int or None, optional
         Minimum peptide length. Defaults to :py:const:`None`.
 
-        ..note ::
+        .. note ::
             This checks for string length, which is only correct for one-letter
             notation and not for full *modX*. Use :py:func:`length` manually if
             you know what you are doing and apply :py:func:`cleave` to *modX*
