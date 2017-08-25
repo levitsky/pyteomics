@@ -46,7 +46,7 @@ class MzmlTest(unittest.TestCase):
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
             self.assertTrue(isinstance(inst._offset_index, xml.FlatTagSpecificXMLByteIndex))
             self.assertTrue(not isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
-        inst._source.close()
+        # inst._source.close()
         self.assertTrue(inst._source.closed)
         MzML.prebuild_byte_offset_file(work_path)
         with MzML(work_path, use_index=True) as inst:
@@ -54,7 +54,7 @@ class MzmlTest(unittest.TestCase):
             self.assertTrue(offsets_exist)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
             self.assertTrue(isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
-        inst._source.close()
+        # inst._source.close()
         self.assertTrue(inst._source.closed)
         os.remove(inst._byte_offset_filename)
         with MzML(work_path, use_index=True) as inst:
@@ -62,7 +62,7 @@ class MzmlTest(unittest.TestCase):
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
             self.assertTrue(isinstance(inst._offset_index, xml.FlatTagSpecificXMLByteIndex))
             self.assertTrue(not isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
-        inst._source.close()
+        # inst._source.close()
         self.assertTrue(inst._source.closed)
         shutil.rmtree(test_dir, True)
 
