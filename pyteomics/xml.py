@@ -1075,8 +1075,8 @@ class IndexSavingXML(IndexedXML):
         path : str
             The path to the file to parse
         """
-        inst = cls(path, use_index=True)
-        inst._write_byte_offsets()
+        with cls(path, use_index=True) as inst:
+            inst._write_byte_offsets()
 
 class ArrayConversionMixin(object):
     _dtype_dict = {}
