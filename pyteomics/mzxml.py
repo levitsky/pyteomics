@@ -171,7 +171,7 @@ class IteratorQueue(object):
             yield item
 
 
-class MzXML(xml.ArrayConversionMixin, xml.IndexedXML):
+class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
     """Parser class for mzXML files."""
     _root_element = 'mzXML'
     _default_iter_tag = 'scan'
