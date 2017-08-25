@@ -180,6 +180,10 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
     _default_version = None
     _default_schema = xml._mzxml_schema_defaults
 
+    def __init__(self, *args, **kwargs):
+        self.decode_binary = kwargs.pop('decode_binary', True)
+        xml.IndexedXML.__init__(self, *args, **kwargs)
+
     def _get_info_smart(self, element, **kw):
         name = xml._local_name(element)
 
@@ -196,15 +200,23 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
                                   **kwargs)
         if 'num' in info and isinstance(info, dict):
             info['id'] = info['num']
-        if 'peaks' in info  and isinstance(info, dict):
+        if 'peaks' in info and isinstance(info, dict):
             if not isinstance(info['peaks'], (dict, list)):
-                peak_data = _decode_peaks(info, info.pop('peaks'))
-                for k in self._array_keys:
-                    info[k] = self._convert_array(k, peak_data[k])
+                if not self.decode_binary:
+                    for k in self._array_keys:
+                        info[k] = None
+                else:
+                    peak_data = _decode_peaks(info, info.pop('peaks'))
+                    for k in self._array_keys:
+                        info[k] = self._convert_array(k, peak_data[k])
             else:
-                peak_data = info.pop('peaks')[0]
-                for k in self._array_keys:
-                    info[k] = self._convert_array(k, peak_data.get(k, np.array([])))
+                if not self.decode_binary:
+                    for k in self._array_keys:
+                        info[k] = None
+                else:
+                    peak_data = info.pop('peaks')[0]
+                    for k in self._array_keys:
+                        info[k] = self._convert_array(k, peak_data.get(k, np.array([])))
         return info
 
     def iterfind(self, path, **kwargs):

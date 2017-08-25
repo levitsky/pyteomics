@@ -99,6 +99,10 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
     _structures_to_flatten = {'binaryDataArrayList'}
     _indexed_tags = {'spectrum', 'chromatogram'}
 
+    def __init__(self, *args, **kwargs):
+        self.decode_binary = kwargs.pop('decode_binary', True)
+        xml.IndexedXML.__init__(self, *args, **kwargs)
+
     def _detect_array_name(self, info):
         """Determine what the appropriate name for this
         array is by inspecting the available param-based
@@ -213,6 +217,10 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         dict
             The processed and flattened data array and metadata
         """
+        if not self.decode_binary:
+            name = self._detect_array_name(info)
+            info[name] = None
+            return info
         dtype = self._determine_array_dtype(info)
         compressed = self._determine_compression(info)
 
