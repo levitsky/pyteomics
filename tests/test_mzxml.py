@@ -1,3 +1,4 @@
+import os
 from os import path
 import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
@@ -5,6 +6,8 @@ from itertools import product
 import unittest
 from pyteomics.mzxml import *
 from data import mzxml_spectra
+import tempfile
+import shutil
 import numpy as np
 
 class MzXMLTest(unittest.TestCase):
@@ -18,6 +21,37 @@ class MzXMLTest(unittest.TestCase):
                 with func(self.path, read_schema=rs, iterative=it, use_index=ui) as r:
                     # http://stackoverflow.com/q/14246983/1258041
                     self.assertEqual(mzxml_spectra, list(r))
+
+    def test_prebuild_index(self):
+        test_dir = tempfile.mkdtemp()
+        work_path = path.join(test_dir, self.path)
+        with open(work_path, 'w') as dest, open(self.path) as source:
+            dest.write(source.read())
+        assert dest.closed
+        with MzXML(work_path, use_index=True) as inst:
+            offsets_exist = path.exists(inst._byte_offset_filename)
+            self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
+            self.assertTrue(isinstance(inst._offset_index, xml.FlatTagSpecificXMLByteIndex))
+            self.assertTrue(not isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
+        inst._source.close()
+        self.assertTrue(inst._source.closed)
+        MzXML.prebuild_byte_offset_file(work_path)
+        with MzXML(work_path, use_index=True) as inst:
+            offsets_exist = path.exists(inst._byte_offset_filename)
+            self.assertTrue(offsets_exist)
+            self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
+            self.assertTrue(isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
+        inst._source.close()
+        self.assertTrue(inst._source.closed)
+        os.remove(inst._byte_offset_filename)
+        with MzXML(work_path, use_index=True) as inst:
+            offsets_exist = path.exists(inst._byte_offset_filename)
+            self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
+            self.assertTrue(isinstance(inst._offset_index, xml.FlatTagSpecificXMLByteIndex))
+            self.assertTrue(not isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
+        inst._source.close()
+        self.assertTrue(inst._source.closed)
+        shutil.rmtree(test_dir, True)
 
     def test_coerce_duration_type(self):
         with MzXML(self.path) as handle:

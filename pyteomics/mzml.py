@@ -89,7 +89,7 @@ STANDARD_ARRAYS = set([
 ])
 
 
-class MzML(xml.ArrayConversionMixin, xml.IndexedXML):
+class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
     """Parser class for mzML files."""
     file_format = 'mzML'
     _root_element = 'mzML'
