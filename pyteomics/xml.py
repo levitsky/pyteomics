@@ -1046,7 +1046,7 @@ class IndexSavingXML(IndexedXML):
             index = PrebuiltOffsetIndex(self._load_byte_index_from_file(f))
             self._offset_index = index
 
-    def _write_byte_offsets(self):
+    def write_byte_offsets(self):
         """Write the byte offsets in :attr:`_offset_index` to the file
         at :attr:`_byte_offset_filename`
         """
@@ -1076,7 +1076,7 @@ class IndexSavingXML(IndexedXML):
             The path to the file to parse
         """
         with cls(path, use_index=True) as inst:
-            inst._write_byte_offsets()
+            inst.write_byte_offsets()
 
 class ArrayConversionMixin(object):
     _dtype_dict = {}
