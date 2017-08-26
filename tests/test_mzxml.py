@@ -22,6 +22,17 @@ class MzXMLTest(unittest.TestCase):
                     # http://stackoverflow.com/q/14246983/1258041
                     self.assertEqual(mzxml_spectra, list(r))
 
+    def test_decoding(self):
+        with MzXML(self.path, decode_binary=True) as reader:
+            spectrum = next(reader)
+            self.assertIsNotNone(spectrum['m/z array'])
+        with MzXML(self.path) as reader:
+            spectrum = next(reader)
+            self.assertIsNotNone(spectrum['m/z array'])
+        with MzXML(self.path, decode_binary=False) as reader:
+            spectrum = next(reader)
+            self.assertIsNone(spectrum['m/z array'])
+
     def test_prebuild_index(self):
         test_dir = tempfile.mkdtemp()
         work_path = path.join(test_dir, self.path)
@@ -33,7 +44,6 @@ class MzXMLTest(unittest.TestCase):
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
             self.assertTrue(isinstance(inst._offset_index, xml.FlatTagSpecificXMLByteIndex))
             self.assertTrue(not isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
-        # inst._source.close()
         self.assertTrue(inst._source.closed)
         MzXML.prebuild_byte_offset_file(work_path)
         with MzXML(work_path, use_index=True) as inst:
@@ -41,7 +51,6 @@ class MzXMLTest(unittest.TestCase):
             self.assertTrue(offsets_exist)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
             self.assertTrue(isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
-        # inst._source.close()
         self.assertTrue(inst._source.closed)
         os.remove(inst._byte_offset_filename)
         with MzXML(work_path, use_index=True) as inst:
@@ -49,7 +58,6 @@ class MzXMLTest(unittest.TestCase):
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
             self.assertTrue(isinstance(inst._offset_index, xml.FlatTagSpecificXMLByteIndex))
             self.assertTrue(not isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
-        # inst._source.close()
         self.assertTrue(inst._source.closed)
         shutil.rmtree(test_dir, True)
 
