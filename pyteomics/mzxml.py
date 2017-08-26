@@ -91,52 +91,6 @@ def _decode_peaks(info, peaks_data):
     return data
 
 
-class TreeIterator(object):
-    def __init__(self, iterator):
-        self.tree = defaultdict(list)
-        self.scan_store = dict()
-        self.current_id = None
-        self.producer = self.consume(iterator)
-
-    def __setitem__(self, key, value):
-        self.tree[key] = value
-
-    def __getitem__(self, key):
-        return self.tree[key]
-
-    def store_scan(self, scan):
-        self.scan_store[scan['num']] = scan
-
-    def yield_scan(self, num):
-        return self.scan_store.pop(num)
-
-    def __iter__(self):
-        return self.producer
-
-    def consume(self, iterator):
-        top_scan = None
-        for scan in iterator:
-            if top_scan is None:
-                if scan['msLevel'] != 1:
-                    self[scan['precursorMz'][0]['precursorScanNum']].append(scan['num'])
-                else:
-                    top_scan = scan['num']
-                self.store_scan(scan)
-            else:
-                if scan['msLevel'] != 1:
-                    self[scan['precursorMz'][0]['precursorScanNum']].append(scan['num'])
-                    self.store_scan(scan)
-                else:
-                    self.store_scan(scan)
-                    yield self.yield_scan(top_scan)
-                    spooler = deque(self[top_scan])
-                    while spooler:
-                        next_scan_num = spooler.popleft()
-                        yield self.yield_scan(next_scan_num)
-                        spooler.extendleft(self[next_scan_num])
-                    top_scan = scan['num']
-
-
 class IteratorQueue(object):
     def __init__(self, iterator):
         q = list()
@@ -182,7 +136,8 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
 
     def __init__(self, *args, **kwargs):
         self.decode_binary = kwargs.pop('decode_binary', True)
-        xml.IndexedXML.__init__(self, *args, **kwargs)
+        xml.IndexSavingXML.__init__(self, *args, **kwargs)
+        xml.ArrayConversionMixin.__init__(self, *args, **kwargs)
 
     def _get_info_smart(self, element, **kw):
         name = xml._local_name(element)
@@ -203,6 +158,7 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         if 'peaks' in info and isinstance(info, dict):
             if not isinstance(info['peaks'], (dict, list)):
                 if not self.decode_binary:
+                    info.pop('peaks')
                     for k in self._array_keys:
                         info[k] = None
                 else:
@@ -211,6 +167,7 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
                         info[k] = self._convert_array(k, peak_data[k])
             else:
                 if not self.decode_binary:
+                    info.pop('peaks')
                     for k in self._array_keys:
                         info[k] = None
                 else:

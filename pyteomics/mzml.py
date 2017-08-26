@@ -101,7 +101,8 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
 
     def __init__(self, *args, **kwargs):
         self.decode_binary = kwargs.pop('decode_binary', True)
-        xml.IndexedXML.__init__(self, *args, **kwargs)
+        xml.IndexSavingXML.__init__(self, *args, **kwargs)
+        xml.ArrayConversionMixin.__init__(self, *args, **kwargs)
 
     def _detect_array_name(self, info):
         """Determine what the appropriate name for this
@@ -218,6 +219,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
             The processed and flattened data array and metadata
         """
         if not self.decode_binary:
+            info.pop('binary')
             name = self._detect_array_name(info)
             info[name] = None
             return info
