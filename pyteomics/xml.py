@@ -142,7 +142,7 @@ class XML(FileReader):
     def _get_info_smart(self, element, **kwargs):
         raise NotImplementedError
 
-    def __init__(self, source, read_schema=True,
+    def __init__(self, source, read_schema=False,
             iterative=True, build_id_cache=False, **kwargs):
         """Create an XML parser object.
 
@@ -153,7 +153,7 @@ class XML(FileReader):
         read_schema : bool, optional
             Defines whether schema file referenced in the file header
             should be used to extract information about value conversion.
-            Default is :py:const:`True`.
+            Default is :py:const:`False`.
         iterative : bool, optional
             Defines whether an :py:class:`ElementTree` object should be
             constructed and stored on the instance or if iterative parsing
@@ -871,7 +871,7 @@ class IndexedXML(XML):
         read_schema : bool, optional
             Defines whether schema file referenced in the file header
             should be used to extract information about value conversion.
-            Default is :py:const:`True`.
+            Default is :py:const:`False`.
         iterative : bool, optional
             Defines whether an :py:class:`ElementTree` object should be
             constructed and stored on the instance or if iterative parsing

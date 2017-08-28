@@ -186,7 +186,7 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
                 yield item
 
 
-def read(source, read_schema=True, iterative=True, use_index=False, dtype=None):
+def read(source, read_schema=False, iterative=True, use_index=False, dtype=None):
     """Parse `source` and iterate through spectra.
 
     Parameters
@@ -196,8 +196,8 @@ def read(source, read_schema=True, iterative=True, use_index=False, dtype=None):
 
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
-        mentioned in the mzML header (default). Otherwise, use default
-        parameters. Disable this to avoid waiting on slow network connections or
+        mentioned in the mzML header. Otherwise, use default
+        parameters. Not recommended without Internet connection or
         if you don't like to get the related warnings.
 
     iterative : bool, optional
@@ -208,6 +208,11 @@ def read(source, read_schema=True, iterative=True, use_index=False, dtype=None):
     use_index : bool, optional
         Defines whether an index of byte offsets needs to be created for
         spectrum elements. Default is :py:const:`False`.
+
+    decode_binary : bool, optional
+        Defines whether binary data should be decoded and included in the output
+        (under "m/z array", "intensity array", etc.).
+        Default is :py:const:`True`.
 
     Returns
     -------
@@ -258,6 +263,11 @@ def iterfind(source, path, **kwargs):
         mentioned in the mzIdentML header (default). Otherwise, use default
         parameters. Disable this to avoid waiting on slow network connections or
         if you don't like to get the related warnings.
+
+    decode_binary : bool, optional
+        Defines whether binary data should be decoded and included in the output
+        (under "m/z array", "intensity array", etc.).
+        Default is :py:const:`True`.
 
     Returns
     -------
