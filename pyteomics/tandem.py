@@ -210,12 +210,6 @@ def iterfind(source, path, **kwargs):
         highly recommended to disable iterative parsing if possible.
         Default value is :py:const:`True`.
 
-    read_schema : bool, optional
-        If :py:const:`True`, attempt to extract information from the XML schema
-        mentioned in the mzIdentML header (default). Otherwise, use default
-        parameters. Disable this to avoid waiting on slow network connections or
-        if you don't like to get the related warnings.
-
     Returns
     -------
     out : iterator

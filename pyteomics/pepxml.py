@@ -193,7 +193,7 @@ class PepXML(xml.XML):
             info['search_hit'].sort(key=lambda x: x['hit_rank'])
         return info
 
-def read(source, read_schema=True, iterative=True, **kwargs):
+def read(source, read_schema=False, iterative=True, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
 
     Parameters
@@ -203,8 +203,8 @@ def read(source, read_schema=True, iterative=True, **kwargs):
 
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
-        mentioned in the pepXML header (default). Otherwise, use default
-        parameters. Disable this to avoid waiting on slow network connections or
+        mentioned in the pepXML header. Otherwise, use default parameters.
+        Not recommended without Internet connection or
         if you don't like to get the related warnings.
 
     iterative : bool, optional
@@ -256,8 +256,8 @@ def iterfind(source, path, **kwargs):
 
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
-        mentioned in the mzIdentML header (default). Otherwise, use default
-        parameters. Disable this to avoid waiting on slow network connections or
+        mentioned in the mzIdentML header. Otherwise, use default parameters.
+        Not recommended without Internet connection or
         if you don't like to get the related warnings.
 
     Returns

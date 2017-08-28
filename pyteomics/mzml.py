@@ -117,7 +117,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
 
         Returns
         -------
-        str
+        out : str
             The name for this array entry
         """
         # If this is a non-standard array, we hope the userParams
@@ -162,7 +162,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         # arrays before falling back to just guessing.
         else:
             import warnings
-            warnings.warn("Multiple options for naming binary array: %r" % (candidates))
+            warnings.warn("Multiple options for naming binary array: %r" % candidates)
             standard_options = set(candidates) & STANDARD_ARRAYS
             if standard_options:
                 return max(standard_options, key=len)
@@ -215,7 +215,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
 
         Returns
         -------
-        dict
+        out : dict
             The processed and flattened data array and metadata
         """
         if not self.decode_binary:
@@ -263,7 +263,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
                 info[k] = int(info[k])
         return info
 
-def read(source, read_schema=True, iterative=True, use_index=False, dtype=None):
+def read(source, read_schema=False, iterative=True, use_index=False, dtype=None):
     """Parse `source` and iterate through spectra.
 
     Parameters
@@ -273,8 +273,8 @@ def read(source, read_schema=True, iterative=True, use_index=False, dtype=None):
 
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
-        mentioned in the mzML header (default). Otherwise, use default
-        parameters. Disable this to avoid waiting on slow network connections or
+        mentioned in the mzML header. Otherwise, use default parameters.
+        Not recommended without Internet connection or
         if you don't like to get the related warnings.
 
     iterative : bool, optional
@@ -289,6 +289,11 @@ def read(source, read_schema=True, iterative=True, use_index=False, dtype=None):
     dtype : type or dict, optional
         dtype to convert arrays to, one for both m/z and intensity arrays or one for each key.
         If :py:class:`dict`, keys should be 'm/z array' and 'intensity array'.
+
+    decode_binary : bool, optional
+        Defines whether binary data should be decoded and included in the output
+        (under "m/z array", "intensity array", etc.).
+        Default is :py:const:`True`.
 
     Returns
     -------
@@ -335,9 +340,14 @@ def iterfind(source, path, **kwargs):
 
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
-        mentioned in the mzIdentML header (default). Otherwise, use default
-        parameters. Disable this to avoid waiting on slow network connections or
+        mentioned in the mzIdentML header. Otherwise, use default
+        parameters. Not recommended without Internet connection or
         if you don't like to get the related warnings.
+
+    decode_binary : bool, optional
+        Defines whether binary data should be decoded and included in the output
+        (under "m/z array", "intensity array", etc.).
+        Default is :py:const:`True`.
 
     Returns
     -------
