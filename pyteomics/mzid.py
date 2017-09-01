@@ -100,7 +100,7 @@ warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
 from . import auxiliary as aux
 from . import xml
 
-class MzIdentML(xml.IndexedXML):
+class MzIdentML(xml.IndexSavingXML):
     """Parser class for MzIdentML files."""
     file_format = 'mzIdentML'
     _root_element = 'MzIdentML'
