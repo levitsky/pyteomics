@@ -1,3 +1,17 @@
+3.4.3
+-----
+
+ - Change the default value for `read_schema` to :py:const:`False` in
+   XML parsing modules.
+
+ - Add optional `decode_binary` argument in
+   :py:class:`pyteomics.mzml.MzML` and :py:class:`pyteomics.mzxml.MzXML`.
+
+ - Add method :py:meth:`write_byte_offsets` in :py:class:`pyteomics.mzml.MzML`,
+   :py:class:`pyteomics.mzxml.MzXML` and :py:class:`pyteomics.mzid.MzIdentML`.
+
+ - Minor fixes.
+
 3.4.2
 -----
 

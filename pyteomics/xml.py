@@ -179,6 +179,7 @@ class XML(FileReader):
             self._id_dict = None
 
         self.version_info = self._get_version_info()
+        self._read_schema = read_schema
         self.schema_info = self._get_schema_info(read_schema)
 
         self._converters_items = self._converters.items()
@@ -351,10 +352,16 @@ class XML(FileReader):
                     return stext
 
         # convert types
-        for k, v in info.items():
-            for t, a in self._converters_items:
-                if t in schema_info and (name, k) in schema_info[t]:
-                    info[k] = a(v)
+        try:
+            for k, v in info.items():
+                for t, a in self._converters_items:
+                    if t in schema_info and (name, k) in schema_info[t]:
+                        info[k] = a(v)
+        except ValueError as e:
+            message = 'Error when converting types: {}'.format(e.args)
+            if not self._read_schema:
+                message += '\nTry reading the file with read_schema=True'
+            raise PyteomicsError(message)
 
         # resolve refs
         if kwargs.get('retrieve_refs'):
