@@ -114,62 +114,61 @@ def read(source=None, use_header=True, convert_arrays=2, read_charges=True, dtyp
         raise aux.PyteomicsError('numpy is required for array conversion')
     dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in _array_keys}
     header = read_header(source)
-    reading_spectrum = False
-    params = {}
+
+    for line in source:
+        sline = line.strip()
+        if sline == 'BEGIN IONS':
+            spectrum = _read_spectrum(source, header if use_header else {}, convert_arrays, read_charges, dtype_dict)
+            yield spectrum
+            # otherwise we are not interested; do nothing, just move along
+            
+
+def _read_spectrum(source, header, convert_arrays, read_charges, dtype_dict):
     masses = []
     intensities = []
     charges = []
-    if use_header: params.update(header)
+    params = header.copy()
+
     for line in source:
         sline = line.strip()
-        if not reading_spectrum:
-            if sline == 'BEGIN IONS':
-                reading_spectrum = True
-            # otherwise we are not interested; do nothing, just move along
+        if not sline or sline[0] in _comments:
+            pass
+        elif sline == 'END IONS':
+            if 'pepmass' in params:
+                try:
+                    pepmass = tuple(map(float, params['pepmass'].split()))
+                except ValueError:
+                    raise aux.PyteomicsError('MGF format error: cannot parse '
+                            'PEPMASS = {}'.format(params['pepmass']))
+                else:
+                    params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
+            if isinstance(params.get('charge'), str):
+                params['charge'] = aux._parse_charge(params['charge'], True)
+            out = {'params': params}
+            data = {'m/z array': masses, 'intensity array': intensities}
+            if read_charges:
+                data['charge array'] = charges
+            for key, values in data.items():
+                out[key] = _array_converters[key][convert_arrays](values, dtype=dtype_dict.get(key))
+            return out
+            
         else:
-            if not sline or sline[0] in _comments:
-                pass
-            elif sline == 'END IONS':
-                reading_spectrum = False
-                if 'pepmass' in params:
-                    try:
-                        pepmass = tuple(map(float, params['pepmass'].split()))
-                    except ValueError:
-                        raise aux.PyteomicsError('MGF format error: cannot parse '
-                                'PEPMASS = {}'.format(params['pepmass']))
-                    else:
-                        params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
-                if isinstance(params.get('charge'), str):
-                    params['charge'] = aux._parse_charge(params['charge'], True)
-                out = {'params': params}
-                data = {'m/z array': masses, 'intensity array': intensities}
-                if read_charges:
-                    data['charge array'] = charges
-                for key, values in data.items():
-                    out[key] = _array_converters[key][convert_arrays](values, dtype=dtype_dict.get(key))
-                yield out
-                del out
-                params = dict(header) if use_header else {}
-                masses = []
-                intensities = []
-                charges = []
-            else:
-                if '=' in sline: # spectrum-specific parameters!
-                    l = sline.split('=', 1)
-                    params[l[0].lower()] = l[1].strip()
-                else: # this must be a peak list
-                    l = sline.split()
-                    try:
-                        masses.append(float(l[0]))            # this may cause
-                        intensities.append(float(l[1]))       # exceptions...\
-                        if read_charges:
-                            charges.append(aux._parse_charge(l[2]) if len(l) > 2 else 0)
-                    except ValueError:
-                        raise aux.PyteomicsError(
-                             'Error when parsing %s. Line:\n%s' %
-                             (source, line))
-                    except IndexError:
-                        pass
+            if '=' in sline: # spectrum-specific parameters!
+                l = sline.split('=', 1)
+                params[l[0].lower()] = l[1].strip()
+            else: # this must be a peak list
+                l = sline.split()
+                try:
+                    masses.append(float(l[0]))            # this may cause
+                    intensities.append(float(l[1]))       # exceptions...\
+                    if read_charges:
+                        charges.append(aux._parse_charge(l[2]) if len(l) > 2 else 0)
+                except ValueError:
+                    raise aux.PyteomicsError(
+                         'Error when parsing %s. Line:\n%s' %
+                         (source, line))
+                except IndexError:
+                    pass
 
 @aux._keepstate
 def read_header(source):
