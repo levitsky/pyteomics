@@ -10,6 +10,8 @@
  - Add method :py:meth:`write_byte_offsets` in :py:class:`pyteomics.mzml.MzML`,
    :py:class:`pyteomics.mzxml.MzXML` and :py:class:`pyteomics.mzid.MzIdentML`.
 
+ - Add function :py:func:`pyteomics.mgf.get_spectrum`.
+
  - Minor fixes.
 
 3.4.2
