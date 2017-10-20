@@ -330,6 +330,11 @@ class XML(FileReader):
                 if cname in {'cvParam', 'userParam', 'UserParam'}:
                     newinfo = self._handle_param(child, **kwargs)
                     if not ('name' in info and 'name' in newinfo):
+                        for key in set(info) & set(newinfo):
+                            if isinstance(info[key], list):
+                                info[key].append(newinfo.pop(key))
+                            else:
+                                info[key] = [info[key], newinfo.pop(key)]
                         info.update(newinfo)
                     else:
                         if not isinstance(info['name'], list):
