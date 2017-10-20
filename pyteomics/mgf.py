@@ -23,6 +23,8 @@ Functions
   :py:func:`read` - iterate through spectra in MGF file. Data from a
   single spectrum are converted to a human-readable dict.
 
+  :py:func:`get_spectrum` - read a single spectrum with given title from a file.
+
   :py:func:`chain` - read multiple files at once.
 
   :py:func:`chain.from_iterable` - read multiple files at once, using an
@@ -122,8 +124,56 @@ def read(source=None, use_header=True, convert_arrays=2, read_charges=True, dtyp
             yield spectrum
             # otherwise we are not interested; do nothing, just move along
             
+def get_spectrum(source, title, use_header=True, convert_arrays=2, read_charges=True, dtype=None):
+    """Read one spectrum (with given `title`) from `source`.
+
+    See :py:func:`read` for explanation of parameters affecting the output.
+
+    .. note :: Only the key-value pairs after the "TITLE =" line will be included in the output.
+
+    Parameters
+    ----------
+
+    source : str or file or None
+        File to read from.
+    title : str
+        Spectrum title.
+
+    The rest of the arguments are the same as for :py:func:`read`.
+
+    Returns
+    -------
+    out : dict or None
+        A dict with the spectrum, if it is found, and None otherwise.
+
+    """
+    with aux._file_obj(source, 'r') as source:
+        if convert_arrays and np is None:
+            raise aux.PyteomicsError('numpy is required for array conversion')
+        dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in _array_keys}
+        header = read_header(source)
+        for line in source:
+            sline = line.strip()
+            if sline[:5] == 'TITLE' and sline.split('=', 1)[1].strip() == title:
+                spectrum = _read_spectrum(source, header if use_header else {}, convert_arrays, read_charges, dtype_dict)
+                spectrum['params']['title'] = title
+                return spectrum
 
 def _read_spectrum(source, header, convert_arrays, read_charges, dtype_dict):
+    """Read a single spectrum from ``source``.
+
+    Parameters
+    ----------
+    source : file
+    header : dict
+    convert_arrays : bool
+    read_charges : bool
+    dtype_dict : dict
+
+    Returns
+    -------
+    out : dict
+    """
     masses = []
     intensities = []
     charges = []
