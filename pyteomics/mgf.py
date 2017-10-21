@@ -66,6 +66,25 @@ except ImportError:
 import itertools as it
 
 class MGF(aux.FileReader):
+    """
+    A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
+    parsing. Specific spectra can be accessed by title using the indexing syntax.
+
+    :py:class:`MGF` object behaves as an iterator, **yielding** spectra one by one.
+    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
+    'intensity array', 'charge array' and 'params'. 'm/z array' and
+    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
+    'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
+    and 'params' stores a :py:class:`dict` of parameters (keys and values are
+    :py:class:`str`, keys corresponding to MGF, lowercased).
+
+    Attributes
+    ----------
+
+    header : dict
+        The file header.
+    
+    """
     _comments = set('#;!/')
     _array = (lambda x, dtype: np.array(x, dtype=dtype)) if np is not None else None
     _ma = (lambda x, dtype: np.ma.masked_equal(np.array(x, dtype=dtype), 0)) if np is not None else None
@@ -78,6 +97,36 @@ class MGF(aux.FileReader):
     _array_keys = ['m/z array', 'intensity array', 'charge array']
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding=None):
+        """Create an MGF file object.
+
+        Parameters
+        ----------
+
+        source : str or file or None, optional
+            A file object (or file name) with data in MGF format. Default is
+            :py:const:`None`, which means read standard input.
+
+        use_header : bool, optional
+            Add the info from file header to each dict. Spectrum-specific parameters
+            override those from the header in case of conflict.
+            Default is :py:const:`True`.
+
+        convert_arrays : one of {0, 1, 2}, optional
+            If `0`, m/z, intensities and (possibly) charges will be returned as regular lists.
+            If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
+            If `2`, charges will be reported as a masked array (default).
+            The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
+
+        read_charges : bool, optional
+            If `True` (default), fragment charges are reported. Disabling it improves performance.
+
+        dtype : type or str or dict, optional
+            dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
+            Keys should be 'm/z array', 'intensity array' and/or 'charge array'.
+
+        encoding : str, optional
+            Encoding to read the files in. Default is UTF-8.
+        """
         super(MGF, self).__init__(source, 'r', self._read, False, (), {}, encoding)
         self._use_header = use_header
         self._convert_arrays = convert_arrays
@@ -188,41 +237,7 @@ class MGF(aux.FileReader):
 def read(*args, **kwargs):
     """Read an MGF file and return entries iteratively.
 
-    Read the specified MGF file, **yield** spectra one by one.
-    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
-    'intensity array', 'charge array' and 'params'. 'm/z array' and
-    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
-    'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
-    and 'params' stores a :py:class:`dict` of parameters (keys and values are
-    :py:class:`str`, keys corresponding to MGF, lowercased).
-
-    Parameters
-    ----------
-
-    source : str or file or None, optional
-        A file object (or file name) with data in MGF format. Default is
-        :py:const:`None`, which means read standard input.
-
-    use_header : bool, optional
-        Add the info from file header to each dict. Spectrum-specific parameters
-        override those from the header in case of conflict.
-        Default is :py:const:`True`.
-
-    convert_arrays : one of {0, 1, 2}, optional
-        If `0`, m/z, intensities and (possibly) charges will be returned as regular lists.
-        If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
-        If `2`, charges will be reported as a masked array (default).
-        The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
-
-    read_charges : bool, optional
-        If `True` (default), fragment charges are reported. Disabling it improves performance.
-
-    dtype : type or str or dict, optional
-        dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
-        Keys should be 'm/z array', 'intensity array' and/or 'charge array'.
-
-    encoding : str, optional
-        Encoding to read the files in. Default is UTF-8.
+    .. note:: This is an alias to :py:class:`MGF`.
 
     Returns
     -------
@@ -289,6 +304,7 @@ def read_header(source):
         if 'charge' in header:
             header['charge'] = aux._parse_charge(header['charge'], True)
         return header
+
 
 _default_key_order = ['title', 'pepmass', 'rtinseconds', 'charge']
 
@@ -426,8 +442,7 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
                     m, i,
                     (c if c not in nones else '')))
         except KeyError:
-            raise aux.PyteomicsError("'m/z array' and 'intensity array'"
-                    " must be present in all spectra.")
+            raise aux.PyteomicsError("'m/z array' and 'intensity array' must be present in all spectra.")
         output.write('END IONS\n\n')
     return output
 

@@ -14,8 +14,7 @@ class MGFTest(unittest.TestCase):
         self.header = read_header(self.path)
         self.spectra = list(read(self.path))
         self.tmpfile = tempfile.TemporaryFile(mode='r+')
-        write(header=self.header, spectra=self.spectra,
-                output=self.tmpfile)
+        write(header=self.header, spectra=self.spectra, output=self.tmpfile)
         self.tmpfile.seek(0)
         self.header2 = read_header(self.tmpfile)
         self.tmpfile.seek(0)
