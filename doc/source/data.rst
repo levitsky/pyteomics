@@ -114,6 +114,61 @@ also returns a :py:class:`dict`.
     mods
     mass
 
+Class-based interface
+.....................
+
+Since version 3.4.3, MGF parsing functionality is encapsulated in a class:
+:py:class:`pyteomics.mgf.MGF`. This class can be used for:
+
+ - sequential parsing of the file (the same as :py:func:`read`)::
+
+ .. code-block:: python
+
+    >>> with mgf.MGF('tests/test.mgf') as reader:
+    ..:     for spectrum in reader:
+    ..:         ...
+
+ - accessing the file header (the same as :py:func:`read_header`)::
+
+ .. code-block:: python
+
+    >>> f = mgf.MGF('tests/test.mgf')
+    >>> f.header
+    {'charge': [2, 3],
+     'com': 'Based on http://www.matrixscience.com/help/data_file_help.html',
+     'it_mods': 'Oxidation (M)',
+     'itol': '1',
+     'itolu': 'Da',
+     'mass': 'Monoisotopic',
+     'mods': 'Carbamidomethyl (C)',
+     'useremail': 'leu@altered-state.edu',
+     'username': 'Lou Scene'}
+
+ - direct access to spectra by title (the same as :py:func:`get_spectrum`)::
+
+ .. code-block:: python
+
+    >>> f = mgf.MGF('tests/test.mgf')
+    >>> f['Spectrum 2']
+    {'charge array': masked_array(data = [3 2 1 1 1 1],
+                  mask = False,
+            fill_value = 0),
+     'intensity array': array([  237.,   128.,   108.,  1007.,   974.,    79.]),
+     'm/z array': array([  345.1,   370.2,   460.2,  1673.3,  1674. ,  1675.3]),
+     'params': {'charge': [2, 3],
+      'com': 'Based on http://www.matrixscience.com/help/data_file_help.html',
+      'it_mods': 'Oxidation (M)',
+      'itol': '1',
+      'itolu': 'Da',
+      'mass': 'Monoisotopic',
+      'mods': 'Carbamidomethyl (C)',
+      'pepmass': (1084.9, 1234.0),
+      'rtinseconds': '25',
+      'scans': '3',
+      'title': 'Spectrum 2',
+      'useremail': 'leu@altered-state.edu',
+      'username': 'Lou Scene'}}
+
 Writing
 .......
 
