@@ -17,6 +17,12 @@ Also, common parameters can be read from MGF file header with
 :py:func:`read_header` function. :py:func:`write` allows creation of MGF
 files.
 
+Classes
+-------
+
+  :py:class:`MGF` - a class representing an MGF file. Use it to read spectra
+  from a file consecutively or by title.
+
 Functions
 ---------
 
@@ -59,19 +65,127 @@ except ImportError:
     np = None
 import itertools as it
 
-_comments = set('#;!/')
-_array = (lambda x, dtype: np.array(x, dtype=dtype)) if np is not None else None
-_ma = (lambda x, dtype: np.ma.masked_equal(np.array(x, dtype=dtype), 0)) if np is not None else None
-_identity = lambda x, **kw: x
-_array_converters = {
-    'm/z array': [_identity, _array, _array],
-    'intensity array': [_identity, _array, _array],
-    'charge array': [_identity, _array, _ma]
-}
-_array_keys = ['m/z array', 'intensity array', 'charge array']
+class MGF(aux.FileReader):
+    _comments = set('#;!/')
+    _array = (lambda x, dtype: np.array(x, dtype=dtype)) if np is not None else None
+    _ma = (lambda x, dtype: np.ma.masked_equal(np.array(x, dtype=dtype), 0)) if np is not None else None
+    _identity = lambda x, **kw: x
+    _array_converters = {
+        'm/z array': [_identity, _array, _array],
+        'intensity array': [_identity, _array, _array],
+        'charge array': [_identity, _array, _ma]
+    }
+    _array_keys = ['m/z array', 'intensity array', 'charge array']
 
-@aux._file_reader()
-def read(source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None):
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding=None):
+        super(MGF, self).__init__(source, 'r', self._read, False, (), {}, encoding)
+        self._use_header = use_header
+        self._convert_arrays = convert_arrays
+        if self._convert_arrays and np is None:
+            raise aux.PyteomicsError('numpy is required for array conversion')
+        self._read_charges = read_charges
+        self._dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in self._array_keys}
+        if self._use_header:
+            self._read_header()
+        else:
+            self._header = None
+
+    @property
+    def header(self):
+        if self._header is None:
+            self._read_header()
+        return self._header
+
+    @aux._keepstate_method
+    def _read_header(self):
+        header = {}
+        for line in self._source:
+            if line.strip() == 'BEGIN IONS':
+                break
+            l = line.split('=')
+            if len(l) == 2:
+                key = l[0].lower()
+                val = l[1].strip()
+                header[key] = val
+        if 'charge' in header:
+            header['charge'] = aux._parse_charge(header['charge'], True)
+        self._header = header
+
+    def _read(self, **kwargs):
+        for line in self._source:
+            sline = line.strip()
+            if sline == 'BEGIN IONS':
+                spectrum = self._read_spectrum()
+                yield spectrum
+                # otherwise we are not interested; do nothing, just move along
+
+    def _read_spectrum(self):
+        """Read a single spectrum from ``self._source``.
+
+        Returns
+        -------
+        out : dict
+        """
+        masses = []
+        intensities = []
+        charges = []
+        
+        params = self.header.copy() if self._use_header else {}
+
+        for line in self._source:
+            sline = line.strip()
+            if not sline or sline[0] in self._comments:
+                pass
+            elif sline == 'END IONS':
+                if 'pepmass' in params:
+                    try:
+                        pepmass = tuple(map(float, params['pepmass'].split()))
+                    except ValueError:
+                        raise aux.PyteomicsError('MGF format error: cannot parse '
+                                'PEPMASS = {}'.format(params['pepmass']))
+                    else:
+                        params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
+                if isinstance(params.get('charge'), str):
+                    params['charge'] = aux._parse_charge(params['charge'], True)
+                out = {'params': params}
+                data = {'m/z array': masses, 'intensity array': intensities}
+                if self._read_charges:
+                    data['charge array'] = charges
+                for key, values in data.items():
+                    out[key] = self._array_converters[key][self._convert_arrays](values, dtype=self._dtype_dict.get(key))
+                return out
+                
+            else:
+                if '=' in sline: # spectrum-specific parameters!
+                    l = sline.split('=', 1)
+                    params[l[0].lower()] = l[1].strip()
+                else: # this must be a peak list
+                    l = sline.split()
+                    try:
+                        masses.append(float(l[0]))
+                        intensities.append(float(l[1]))
+                        if self._read_charges:
+                            charges.append(aux._parse_charge(l[2]) if len(l) > 2 else 0)
+                    except ValueError:
+                        raise aux.PyteomicsError(
+                             'Error when parsing %s. Line:\n%s' % (getattr(self._source, 'name', 'MGF file'), line))
+                    except IndexError:
+                        pass
+
+    @aux._keepstate_method
+    def get_spectrum(self, title):
+        self.reset()
+        for line in self._source:
+            sline = line.strip()
+            if sline[:5] == 'TITLE' and sline.split('=', 1)[1].strip() == title:
+                spectrum = self._read_spectrum()
+                spectrum['params']['title'] = title
+                return spectrum
+
+    __getitem__ = get_spectrum
+
+            
+def read(*args, **kwargs):
     """Read an MGF file and return entries iteratively.
 
     Read the specified MGF file, **yield** spectra one by one.
@@ -107,23 +221,16 @@ def read(source=None, use_header=True, convert_arrays=2, read_charges=True, dtyp
         dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
         Keys should be 'm/z array', 'intensity array' and/or 'charge array'.
 
+    encoding : str, optional
+        Encoding to read the files in. Default is UTF-8.
+
     Returns
     -------
 
-    out : FileReader
+    out : MGF
     """
-    if convert_arrays and np is None:
-        raise aux.PyteomicsError('numpy is required for array conversion')
-    dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in _array_keys}
-    header = read_header(source)
+    return MGF(*args, **kwargs)
 
-    for line in source:
-        sline = line.strip()
-        if sline == 'BEGIN IONS':
-            spectrum = _read_spectrum(source, header if use_header else {}, convert_arrays, read_charges, dtype_dict)
-            yield spectrum
-            # otherwise we are not interested; do nothing, just move along
-            
 def get_spectrum(source, title, use_header=True, convert_arrays=2, read_charges=True, dtype=None):
     """Read one spectrum (with given `title`) from `source`.
 
@@ -147,78 +254,10 @@ def get_spectrum(source, title, use_header=True, convert_arrays=2, read_charges=
         A dict with the spectrum, if it is found, and None otherwise.
 
     """
-    with aux._file_obj(source, 'r') as source:
-        if convert_arrays and np is None:
-            raise aux.PyteomicsError('numpy is required for array conversion')
-        dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in _array_keys}
-        header = read_header(source)
-        for line in source:
-            sline = line.strip()
-            if sline[:5] == 'TITLE' and sline.split('=', 1)[1].strip() == title:
-                spectrum = _read_spectrum(source, header if use_header else {}, convert_arrays, read_charges, dtype_dict)
-                spectrum['params']['title'] = title
-                return spectrum
-
-def _read_spectrum(source, header, convert_arrays, read_charges, dtype_dict):
-    """Read a single spectrum from ``source``.
-
-    Parameters
-    ----------
-    source : file
-    header : dict
-    convert_arrays : bool
-    read_charges : bool
-    dtype_dict : dict
-
-    Returns
-    -------
-    out : dict
-    """
-    masses = []
-    intensities = []
-    charges = []
-    params = header.copy()
-
-    for line in source:
-        sline = line.strip()
-        if not sline or sline[0] in _comments:
-            pass
-        elif sline == 'END IONS':
-            if 'pepmass' in params:
-                try:
-                    pepmass = tuple(map(float, params['pepmass'].split()))
-                except ValueError:
-                    raise aux.PyteomicsError('MGF format error: cannot parse '
-                            'PEPMASS = {}'.format(params['pepmass']))
-                else:
-                    params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
-            if isinstance(params.get('charge'), str):
-                params['charge'] = aux._parse_charge(params['charge'], True)
-            out = {'params': params}
-            data = {'m/z array': masses, 'intensity array': intensities}
-            if read_charges:
-                data['charge array'] = charges
-            for key, values in data.items():
-                out[key] = _array_converters[key][convert_arrays](values, dtype=dtype_dict.get(key))
-            return out
-            
-        else:
-            if '=' in sline: # spectrum-specific parameters!
-                l = sline.split('=', 1)
-                params[l[0].lower()] = l[1].strip()
-            else: # this must be a peak list
-                l = sline.split()
-                try:
-                    masses.append(float(l[0]))            # this may cause
-                    intensities.append(float(l[1]))       # exceptions...\
-                    if read_charges:
-                        charges.append(aux._parse_charge(l[2]) if len(l) > 2 else 0)
-                except ValueError:
-                    raise aux.PyteomicsError(
-                         'Error when parsing %s. Line:\n%s' %
-                         (source, line))
-                except IndexError:
-                    pass
+    with MGF(source, use_header=use_header, convert_arrays=convert_arrays,
+            read_charges=read_charges, dtype=dtype) as f:
+        return f[title]
+        
 
 @aux._keepstate
 def read_header(source):
@@ -361,7 +400,7 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
         head_dict = {}
         for line in head_lines:
             if not line.strip() or any(
-                line.startswith(c) for c in _comments):
+                line.startswith(c) for c in MGF._comments):
                continue
             l = line.split('=')
             if len(l) == 2:

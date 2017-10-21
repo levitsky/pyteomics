@@ -42,6 +42,7 @@ from lxml import etree
 from collections import OrderedDict, defaultdict
 from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj
 from .auxiliary import unitint, unitfloat, unitstr
+from .auxiliary import _keepstate_method as _keepstate
 try: # Python 2.7
     from urllib2 import urlopen, URLError
 except ImportError: # Python 3.x
@@ -53,21 +54,6 @@ def _local_name(element):
     if element.tag and element.tag[0] == '{':
         return element.tag.rpartition('}')[2]
     return element.tag
-
-
-def _keepstate(func):
-    """Decorator for :py:class:`XML` methods to help keep the position
-    in the underlying file.
-    """
-    @wraps(func)
-    def wrapped(self, *args, **kwargs):
-        position = self.tell()
-        self.seek(0)
-        try:
-            return func(self, *args, **kwargs)
-        finally:
-            self.seek(position)
-    return wrapped
 
 
 class XMLValueConverter(object):

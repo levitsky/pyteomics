@@ -4,7 +4,7 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import tempfile
 import unittest
-from pyteomics.mgf import read, write, read_header
+from pyteomics.mgf import read, write, read_header, MGF
 import data
 
 class MGFTest(unittest.TestCase):
@@ -25,13 +25,14 @@ class MGFTest(unittest.TestCase):
         self.tmpfile.close()
 
     def test_read(self):
-        # http://stackoverflow.com/q/14246983/1258041
-        self.assertEqual(data.mgf_spectra_long, list(read(self.path)))
-        self.assertEqual(data.mgf_spectra_short, list(read(self.path, False)))
-        with read(self.path) as reader:
-            self.assertEqual(data.mgf_spectra_long, list(reader))
-        with read(self.path, False) as reader:
-            self.assertEqual(data.mgf_spectra_short, list(reader))
+        for func in [read, MGF]:
+            # http://stackoverflow.com/q/14246983/1258041
+            self.assertEqual(data.mgf_spectra_long, list(func(self.path)))
+            self.assertEqual(data.mgf_spectra_short, list(func(self.path, False)))
+            with func(self.path) as reader:
+                self.assertEqual(data.mgf_spectra_long, list(reader))
+            with func(self.path, False) as reader:
+                self.assertEqual(data.mgf_spectra_short, list(reader))
 
     def test_read_no_charges(self):
         with read(self.path, read_charges=False) as reader:

@@ -412,6 +412,20 @@ def _keepstate(func):
         return res
     return wrapped
 
+def _keepstate_method(func):
+    """Decorator for :py:class:`FileReader` methods to help keep the position
+    in the underlying file.
+    """
+    @wraps(func)
+    def wrapped(self, *args, **kwargs):
+        position = self.tell()
+        self.seek(0)
+        try:
+            return func(self, *args, **kwargs)
+        finally:
+            self.seek(position)
+    return wrapped
+
 class _file_obj(object):
     """Check if `f` is a file name and open the file in `mode`.
     A context manager."""
