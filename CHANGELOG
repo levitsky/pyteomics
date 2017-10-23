@@ -12,7 +12,8 @@
 
  - Add function :py:func:`pyteomics.mgf.get_spectrum`.
 
- - Add class :py:class:`pyteomics.mgf.MGF`.
+ - Add class :py:class:`pyteomics.mgf.MGF`. :py:func:`mgf.read` is now an alias to the class.
+   The class can be used for indexing using spectrum titles.
 
  - Minor fixes.
 
