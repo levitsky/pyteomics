@@ -313,16 +313,17 @@ The only required argument is the first one, indicating the source database. The
 second argument is the target file and defaults to system standard output.
 
 If you need to modify a single sequence, use the
-:py:func:`pyteomics.fasta.decoy_sequence` function. It supports two modes:
-``'reverse'`` and ``'random'``.
+:py:func:`pyteomics.fasta.decoy_sequence` function. It supports three modes:
+``'reverse'``, ``'shuffle'``, and ``'fused'`` (see :py:func:`pyteomics.fasta.reverse`,
+:py:func:`pyteomics.fasta.shuffle` and :py:func:`pyteomics.fasta.fused_decoy` for documentation).
 
 .. code-block:: python
 
     >>> fasta.decoy_sequence('PEPTIDE', 'reverse')
     'EDITPEP'
-    >>> fasta.decoy_sequence('PEPTIDE', 'random')
+    >>> fasta.decoy_sequence('PEPTIDE', 'shuffle')
     'TPPIDEE'
-    >>> fasta.decoy_sequence('PEPTIDE', 'random')
+    >>> fasta.decoy_sequence('PEPTIDE', 'shuffle')
     'PTIDEPE'
 
 

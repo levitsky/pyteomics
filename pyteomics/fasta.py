@@ -35,6 +35,8 @@ one of the other functions listed in this section or any other callable.
 
 Decoy database generation
 -------------------------
+  
+  :py:func:`write_decoy_db` - generate a decoy database and write it to a file.
 
   :py:func:`decoy_db` - generate entries for a decoy database from a given FASTA
   database.
@@ -44,10 +46,8 @@ Decoy database generation
   :py:func:`decoy_chain.from_iterable` - like :py:func:`decoy_chain`, but with
   an iterable of files.
 
-  :py:func:`write_decoy_db` - generate a decoy database and print it to a file.
-
 Auxiliary
-----------
+---------
 
   :py:data:`std_parsers` - a dictionary with parsers for known FASTA header
   formats.
