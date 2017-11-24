@@ -488,11 +488,11 @@ class IteratorContextManager(object):
         return self
 
     def __next__(self):
-        try:
+        # try:
             return next(self._reader)
-        except StopIteration:
-            self.__exit__(None, None, None)
-            raise
+        # except StopIteration:
+            # self.__exit__(None, None, None)
+            # raise
 
     next = __next__
 
