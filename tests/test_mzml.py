@@ -26,12 +26,21 @@ class MzmlTest(unittest.TestCase):
         with MzML(self.path, decode_binary=True) as reader:
             spectrum = next(reader)
             self.assertIsNotNone(spectrum['m/z array'])
+        validation = spectrum['m/z array']
         with MzML(self.path) as reader:
             spectrum = next(reader)
             self.assertIsNotNone(spectrum['m/z array'])
+            self.assertTrue(np.allclose(spectrum['m/z array'], validation))
         with MzML(self.path, decode_binary=False) as reader:
             spectrum = next(reader)
-            self.assertIsNone(spectrum['m/z array'])
+            record = spectrum['m/z array']
+            self.assertEqual(record.compression, "no compression")
+            self.assertEqual(record.dtype, "d")
+            array = record.decode()
+            self.assertTrue(np.allclose(validation, array))
+            record = spectrum['intensity array']
+            self.assertEqual(record.dtype, "f")
+            self.assertEqual(record.compression, "no compression")
 
     def test_read_dtype(self):
         dtypes = {'m/z array': np.float32, 'intensity array': np.int32}
