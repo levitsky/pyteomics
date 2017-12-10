@@ -26,12 +26,17 @@ class MzXMLTest(unittest.TestCase):
         with MzXML(self.path, decode_binary=True) as reader:
             spectrum = next(reader)
             self.assertIsNotNone(spectrum['m/z array'])
+        validation = spectrum['m/z array']
         with MzXML(self.path) as reader:
             spectrum = next(reader)
             self.assertIsNotNone(spectrum['m/z array'])
+            self.assertTrue(np.allclose(spectrum['m/z array'], validation))
         with MzXML(self.path, decode_binary=False) as reader:
             spectrum = next(reader)
-            self.assertIsNone(spectrum['m/z array'])
+            self.assertIsNotNone(spectrum['m/z array'])
+            record = spectrum['m/z array']
+            array_pair = record.decode()
+            self.assertTrue(np.allclose(array_pair['m/z array'], validation))
 
     def test_prebuild_index(self):
         test_dir = tempfile.mkdtemp()

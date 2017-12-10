@@ -71,7 +71,7 @@ import operator as op
 import sys
 from contextlib import contextmanager
 from bisect import bisect_right
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, namedtuple
 try:
     from collections import Container, Sized
 except ImportError:
@@ -429,7 +429,7 @@ def _keepstate_method(func):
 class _file_obj(object):
     """Check if `f` is a file name and open the file in `mode`.
     A context manager."""
-    
+
     def __init__(self, f, mode, encoding=None):
         if f is None:
             self.file = {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout
@@ -440,10 +440,10 @@ class _file_obj(object):
         else:
             self.file = f
         self.close_file = (self.file is not f)
-    
+
     def __enter__(self):
         return self
-    
+
     def __exit__(self, *args, **kwargs):
         if (not self.close_file) or hasattr(self, 'none'):
             return  # do nothing
@@ -455,10 +455,10 @@ class _file_obj(object):
             exit = getattr(self.file, 'close', None)
             if exit is not None:
                 exit()
-    
+
     def __getattr__(self, attr):
         return getattr(self.file, attr)
-    
+
     def __iter__(self):
         return iter(self.file)
 
@@ -646,7 +646,7 @@ def _calculate_qvalues(scores, isdecoy, peps=False, **kwargs):
     formula = kwargs.pop('formula', (2, 1)[bool(remove_decoy)])
     if formula not in {1, 2}:
         raise PyteomicsError('`formula` must be either 1 or 2')
-    
+
     # score_label = kwargs['score_label']
     cumsum = isdecoy.cumsum(dtype=np.float64)
     tfalse = cumsum.copy()
@@ -718,7 +718,7 @@ def _qvalues_df(psms, keyf, isdecoy, **kwargs):
         dtype = np.dtype(fields)
 
     psms.sort_values([keyf, isdecoy], ascending=[not reverse, True], inplace=True)
-    
+
     if not psms.shape[0]:
         if full:
             psms[q_label] = []
@@ -918,7 +918,7 @@ def _make_qvalues(read, is_decoy, key):
             keyf = peps
             if reverse:
                 raise PyteomicsError('reverse = True when using PEPs for sorting')
-        
+
         if not callable(keyf) and not isinstance(keyf, (Sized, Container)):
             keyf = np.array(list(keyf))
 
@@ -926,7 +926,7 @@ def _make_qvalues(read, is_decoy, key):
             isdecoy = kwargs.pop('is_decoy', is_decoy)
         else:
             isdecoy = peps
-        
+
         if not callable(isdecoy) and not isinstance(isdecoy, (Sized, Container)):
             isdecoy = np.array(list(isdecoy))
 
@@ -938,7 +938,7 @@ def _make_qvalues(read, is_decoy, key):
         full = kwargs.get('full_output', False)
         arr_flag = False
         psms = None
-        
+
         # time to check arg type
         if pd is not None and all(isinstance(arg, pd.DataFrame) for arg in args):
             psms = pd.concat(args)
@@ -1022,7 +1022,7 @@ def _make_qvalues(read, is_decoy, key):
             psms[q_label] = scores[q_label]
             return psms
         return scores
-    
+
     _fix_docstring(qvalues, is_decoy=is_decoy, key=key)
     if read is _iter:
         qvalues.__doc__ = qvalues.__doc__.replace("""positional args : file or str
@@ -1392,7 +1392,7 @@ def _make_fdr(is_decoy):
         if formula == 1:
             return float(tfalse) / (total - decoy) / ratio
         return (decoy + tfalse / ratio) / total
-    
+
     _fix_docstring(fdr, is_decoy=is_decoy)
     if is_decoy is None:
         fdr.__doc__ = fdr.__doc__.replace(""".. warning::
@@ -1434,6 +1434,45 @@ def _decode_base64_data_array(source, dtype, is_compressed):
         decoded_source = zlib.decompress(decoded_source)
     output = np.frombuffer(decoded_source, dtype=dtype)
     return output
+
+
+class BinaryDataArrayTransformer(object):
+    compression_type_map = {
+        'no compression': lambda x: x,
+        'zlib compression': zlib.decompress,
+    }
+
+    class binary_array_record(namedtuple("binary_array_record", ("data", "compression", "dtype", "source"))):
+        def decode(self):
+            return self.source._decode_record(self)
+
+    def _make_record(self, data, compression, dtype):
+        return self.binary_array_record(data, compression, dtype, self)
+
+    def _decode_record(self, record):
+        return self.decode_data_array(
+            record.data, record.compression, record.dtype)
+
+    def _base64_decode(self, source):
+        decoded_source = base64.b64decode(source.encode('ascii'))
+        return decoded_source
+
+    def _decompress(self, source, compression_type=None):
+        if compression_type is None:
+            return source
+        decompressor = self.compression_type_map.get(compression_type)
+        decompressed_source = decompressor(source)
+        return decompressed_source
+
+    def _transform_buffer(self, binary, dtype):
+        output = np.frombuffer(binary, dtype=dtype)
+        return output
+
+    def decode_data_array(self, source, compression_type=None, dtype=np.float64):
+        binary = self._base64_decode(source)
+        binary = self._decompress(binary, compression_type)
+        array = self._transform_buffer(binary, dtype)
+        return array
 
 
 class unitint(int):

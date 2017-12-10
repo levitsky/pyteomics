@@ -43,6 +43,7 @@ from collections import OrderedDict, defaultdict
 from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj
 from .auxiliary import unitint, unitfloat, unitstr
 from .auxiliary import _keepstate_method as _keepstate
+from .auxiliary import BinaryDataArrayTransformer
 try: # Python 2.7
     from urllib2 import urlopen, URLError
 except ImportError: # Python 3.x
@@ -1076,7 +1077,7 @@ class IndexSavingXML(IndexedXML):
         with cls(path, use_index=True) as inst:
             inst.write_byte_offsets()
 
-class ArrayConversionMixin(object):
+class ArrayConversionMixin(BinaryDataArrayTransformer):
     _dtype_dict = {}
     _array_keys = ['m/z array', 'intensity array']
 

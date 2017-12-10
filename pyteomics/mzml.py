@@ -67,6 +67,7 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 
 import numpy as np
 import re
+import warnings
 from . import xml, auxiliary as aux
 from .xml import etree
 
@@ -161,7 +162,6 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         # make a good choice here. We first prefer the standardized
         # arrays before falling back to just guessing.
         else:
-            import warnings
             warnings.warn("Multiple options for naming binary array: %r" % candidates)
             standard_options = set(candidates) & STANDARD_ARRAYS
             if standard_options:
@@ -188,21 +188,30 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         return dtype
 
     def _determine_compression(self, info):
-        compressed = True
-        if 'zlib compression' in info:
-            del info['zlib compression']
-        elif 'name' in info and 'zlib compression' in info['name']:
-            info['name'].remove('zlib compression')
+        known_compression_types = set(self.compression_type_map)
+        found_compression_types = known_compression_types & set(info)
+        if found_compression_types:
+            found_compression_types = tuple(found_compression_types)
+            if len(found_compression_types) == 1:
+                del info[found_compression_types[0]]
+                return found_compression_types[0]
+            else:
+                warnings.warn("Multiple options for binary array compression: %r" % (
+                    found_compression_types,))
+                return found_compression_types[0]
+        elif "name" in info:
+            found_compression_types = known_compression_types & set(info['name'])
+            if found_compression_types:
+                found_compression_types = tuple(found_compression_types)
+                if len(found_compression_types) == 1:
+                    del info['name'][found_compression_types[0]]
+                    return found_compression_types[0]
+                else:
+                    warnings.warn("Multiple options for binary array compression: %r" % (
+                        found_compression_types,))
+                    return found_compression_types[0]
         else:
-            compressed = False
-            info.pop('no compression', None)
-            try:
-                info['name'].remove('no compression')
-                if not info['name']:
-                    del info['name']
-            except (KeyError, TypeError):
-                pass
-        return compressed
+            return 'no compression'
 
     def _handle_binary(self, info, **kwargs):
         """Special handling when processing and flattening
@@ -218,21 +227,19 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         out : dict
             The processed and flattened data array and metadata
         """
-        if not self.decode_binary:
-            info.pop('binary')
-            name = self._detect_array_name(info)
-            info[name] = None
-            return info
         dtype = self._determine_array_dtype(info)
         compressed = self._determine_compression(info)
+        name = self._detect_array_name(info)
+        binary = info.pop('binary')
+        if not self.decode_binary:
+            info[name] = self._make_record(binary, compressed, dtype)
+            return info
 
-        b = info.pop('binary')
-        if b:
-            array = aux._decode_base64_data_array(b, dtype, compressed)
+        if binary:
+            array = self.decode_data_array(binary, compressed, dtype)
         else:
             array = np.array([], dtype=dtype)
 
-        name = self._detect_array_name(info)
         if name == 'binary':
             info[name] = self._convert_array(None, array)
         else:

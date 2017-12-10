@@ -156,25 +156,47 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         if 'num' in info and isinstance(info, dict):
             info['id'] = info['num']
         if 'peaks' in info and isinstance(info, dict):
-            if not isinstance(info['peaks'], (dict, list)):
-                if not self.decode_binary:
-                    info.pop('peaks')
-                    for k in self._array_keys:
-                        info[k] = None
-                else:
-                    peak_data = _decode_peaks(info, info.pop('peaks'))
-                    for k in self._array_keys:
-                        info[k] = self._convert_array(k, peak_data[k])
-            else:
-                if not self.decode_binary:
-                    info.pop('peaks')
-                    for k in self._array_keys:
-                        info[k] = None
-                else:
-                    peak_data = info.pop('peaks')[0]
-                    for k in self._array_keys:
-                        info[k] = self._convert_array(k, peak_data.get(k, np.array([])))
+            self._decode_peaks(info)
         return info
+
+    def _determine_compression(self, info):
+        if info.get('compressionType') == 'zlib':
+            return 'zlib compression'
+        return "no compression"
+
+    def _determine_dtype(self, info):
+        dt = np.float32 if info['precision'] == '32' else np.float64
+        endianess = ">" if info['byteOrder'] in ('network', "big") else "<"
+        dtype = np.dtype(
+            [('m/z array', dt), ('intensity array', dt)]).newbyteorder(endianess)
+        return dtype
+
+    def _decode_peaks(self, info):
+        # handle cases where peaks is the encoded binary data which must be
+        # unpacked
+        if not isinstance(info['peaks'], (dict, list)):
+            compression_type = self._determine_compression(info)
+            dtype = self._determine_dtype(info)
+            binary = info.pop('peaks')
+            if not self.decode_binary:
+                record = self._make_record(binary, compression_type, dtype)
+                for k in self._array_keys:
+                    info[k] = record
+            else:
+                peak_data = self.decode_data_array(binary, compression_type, dtype)
+                for k in self._array_keys:
+                    info[k] = self._convert_array(k, peak_data[k])
+        # otherwise we've already decoded the arrays and we're just passing
+        # them up the hierarchy
+        else:
+            if not self.decode_binary:
+                arrays = info.pop('peaks')[0]
+                for k in self._array_keys:
+                    info[k] = arrays[k]
+            else:
+                peak_data = info.pop('peaks')[0]
+                for k in self._array_keys:
+                    info[k] = self._convert_array(k, peak_data.get(k, np.array([])))
 
     def iterfind(self, path, **kwargs):
         if path == 'scan':
