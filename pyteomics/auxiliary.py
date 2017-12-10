@@ -1437,13 +1437,33 @@ def _decode_base64_data_array(source, dtype, is_compressed):
 
 
 class BinaryDataArrayTransformer(object):
+    """A base class that provides methods for reading
+    base64-encoded binary arrays.
+
+    Attributes
+    ----------
+    compression_type_map : dict
+        Maps compressor type name to decompression function
+    """
+
     compression_type_map = {
         'no compression': lambda x: x,
         'zlib compression': zlib.decompress,
     }
 
-    class binary_array_record(namedtuple("binary_array_record", ("data", "compression", "dtype", "source"))):
+    class binary_array_record(namedtuple(
+        "binary_array_record", ("data", "compression", "dtype", "source"))):
+        """Hold all of the information about a base64 encoded array needed to
+        decode the array.
+        """
+
         def decode(self):
+            """Decode :attr:`data` into a numerical array
+
+            Returns
+            -------
+            np.ndarray
+            """
             return self.source._decode_record(self)
 
     def _make_record(self, data, compression, dtype):
@@ -1469,6 +1489,25 @@ class BinaryDataArrayTransformer(object):
         return output
 
     def decode_data_array(self, source, compression_type=None, dtype=np.float64):
+        """Decode a base64-encoded, compressed bytestring into a numerical
+        array.
+
+        Parameters
+        ----------
+        source : bytes
+            A base64 string encoding a potentially compressed numerical
+            array.
+        compression_type : str, optional
+            The name of the compression method used before encoding the
+            array into base64.
+        dtype : type, optional
+            The data type to use to decode the binary array from the
+            decompressed bytes.
+
+        Returns
+        -------
+        np.ndarray
+        """
         binary = self._base64_decode(source)
         binary = self._decompress(binary, compression_type)
         array = self._transform_buffer(binary, dtype)
