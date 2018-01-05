@@ -31,7 +31,6 @@ import re
 import warnings
 warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 import socket
-from functools import wraps
 from traceback import format_exc
 import operator as op
 import ast
@@ -938,6 +937,9 @@ class IndexedXML(XML):
         ----------
         elem_id : str
             The id value of the entity to retrieve.
+        id_key : str, optional
+            The name of the XML attribute to use for lookup.
+            Defaults to :py:attr:`self._default_id_attr`.
 
         Returns
         -------

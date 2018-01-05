@@ -60,7 +60,6 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from collections import deque, defaultdict
 import heapq
 
 from . import xml, auxiliary as aux
@@ -133,6 +132,7 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
     _indexed_tag_keys = {'scan': 'num'}
     _default_version = None
     _default_schema = xml._mzxml_schema_defaults
+    _default_id_attr = 'num'
 
     def __init__(self, *args, **kwargs):
         self.decode_binary = kwargs.pop('decode_binary', True)
@@ -206,7 +206,6 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         else:
             for item in super(MzXML, self).iterfind(path, **kwargs):
                 yield item
-
 
 def read(source, read_schema=False, iterative=True, use_index=False, dtype=None):
     """Parse `source` and iterate through spectra.
