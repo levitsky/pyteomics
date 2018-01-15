@@ -1452,7 +1452,7 @@ class BinaryDataArrayTransformer(object):
     }
 
     class binary_array_record(namedtuple(
-        "binary_array_record", ("data", "compression", "dtype", "source"))):
+        "binary_array_record", ("data", "compression", "dtype", "source", "key"))):
         """Hold all of the information about a base64 encoded array needed to
         decode the array.
         """
@@ -1464,10 +1464,13 @@ class BinaryDataArrayTransformer(object):
             -------
             np.ndarray
             """
-            return self.source._decode_record(self)
+            if self.key is None:
+                return self.source._decode_record(self)
+            else:
+                return self.source._decode_record(self)[self.key]
 
-    def _make_record(self, data, compression, dtype):
-        return self.binary_array_record(data, compression, dtype, self)
+    def _make_record(self, data, compression, dtype, key=None):
+        return self.binary_array_record(data, compression, dtype, self, key)
 
     def _decode_record(self, record):
         return self.decode_data_array(
