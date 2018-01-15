@@ -179,8 +179,8 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
             dtype = self._determine_dtype(info)
             binary = info.pop('peaks')
             if not self.decode_binary:
-                record = self._make_record(binary, compression_type, dtype)
                 for k in self._array_keys:
+                    record = self._make_record(binary, compression_type, dtype, k)
                     info[k] = record
             else:
                 peak_data = self.decode_data_array(binary, compression_type, dtype)

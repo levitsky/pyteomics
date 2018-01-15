@@ -42,6 +42,11 @@ class MzmlTest(unittest.TestCase):
             self.assertEqual(record.dtype, "f")
             self.assertEqual(record.compression, "no compression")
 
+            spectrum = next(reader)
+            record = spectrum['intensity array']
+            self.assertEqual(record.compression, "zlib compression")
+            self.assertEqual(mzml_spectra[1]['intensity array'], record.decode())
+
     def test_read_dtype(self):
         dtypes = {'m/z array': np.float32, 'intensity array': np.int32}
         with read(self.path, dtype=dtypes) as f:

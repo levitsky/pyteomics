@@ -35,8 +35,8 @@ class MzXMLTest(unittest.TestCase):
             spectrum = next(reader)
             self.assertIsNotNone(spectrum['m/z array'])
             record = spectrum['m/z array']
-            array_pair = record.decode()
-            self.assertTrue(np.allclose(array_pair['m/z array'], validation))
+            array = record.decode()
+            self.assertTrue(np.allclose(array, validation))
 
     def test_prebuild_index(self):
         test_dir = tempfile.mkdtemp()
