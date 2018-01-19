@@ -232,7 +232,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         name = self._detect_array_name(info)
         binary = info.pop('binary')
         if not self.decode_binary:
-            info[name] = self._make_record(binary, compressed, dtype)
+            info[name] = self._make_record(binary, compressed, dtype, name)
             return info
 
         if binary:

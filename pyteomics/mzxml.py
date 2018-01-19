@@ -171,6 +171,10 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
             [('m/z array', dt), ('intensity array', dt)]).newbyteorder(endianess)
         return dtype
 
+    def _finalize_record_conversion(self, array, record):
+        key = record.key
+        return self._convert_array(key, array[key])
+
     def _decode_peaks(self, info):
         # handle cases where peaks is the encoded binary data which must be
         # unpacked
