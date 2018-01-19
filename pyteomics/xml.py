@@ -1099,6 +1099,11 @@ class ArrayConversionMixin(BinaryDataArrayTransformer):
             return array.astype(dtype)
         return array
 
+    def _finalize_record_conversion(self, array, record):
+        key = record.key
+        return self._convert_array(key, array)
+
+
 _trafoxml_schema_defaults = {'bools': set(),
      'charlists': set(),
      'floatlists': set(),
@@ -1442,4 +1447,3 @@ _pepxml_schema_defaults = {'ints':
             'search_summary', 'mod_aminoacid_mass', 'search_score', 'intensity',
             'analysis_timestamp', 'mixture_model', 'terminal_modification',
             'contributing_channel', 'inputfile'}}
-
