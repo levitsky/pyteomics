@@ -169,7 +169,7 @@ def write(entries, output=None):
 
     return output.file
 
-def reverse(sequence, keep_nterm=False):
+def reverse(sequence, keep_nterm=False, keep_cterm=False):
     """
     Create a decoy sequence by reversing the original one.
 
@@ -180,17 +180,22 @@ def reverse(sequence, keep_nterm=False):
     keep_nterm : bool, optional
         If :py:const:`True`, then the N-terminal residue will be kept.
         Default is :py:const:`False`.
+    keep_cterm : bool, optional
+        If :py:const:`True`, then the C-terminal residue will be kept.
+        Default is :py:const:`False`.
 
     Returns
     -------
     decoy_sequence : str
         The decoy sequence.
     """
-    if keep_nterm and sequence:
-        return sequence[0] + reverse(sequence[1:], False)
-    return sequence[::-1]
+    start = 1 if keep_nterm else 0
+    end = len(sequence)-1 if keep_cterm else len(sequence)
+    if start == end:
+        return sequence
+    return sequence[:start] + sequence[start:end][::-1] + sequence[end:]
 
-def shuffle(sequence, keep_nterm=False):
+def shuffle(sequence, keep_nterm=False, keep_cterm=False):
     """
     Create a decoy sequence by shuffling the original one.
 
@@ -201,14 +206,22 @@ def shuffle(sequence, keep_nterm=False):
     keep_nterm : bool, optional
         If :py:const:`True`, then the N-terminal residue will be kept.
         Default is :py:const:`False`.
+    keep_cterm : bool, optional
+        If :py:const:`True`, then the C-terminal residue will be kept.
+        Default is :py:const:`False`.
 
     Returns
     -------
     decoy_sequence : str
         The decoy sequence.
     """
-    if keep_nterm and sequence:
-        return sequence[0] + shuffle(sequence[1:], False)
+    start = 1 if keep_nterm else 0
+    end = len(sequence)-1 if keep_cterm else len(sequence)
+    if start == end:
+        return sequence
+    elif keep_cterm or keep_nterm:
+        return sequence[:start] + shuffle(sequence[start:end]) + sequence[end:]
+
     modified_sequence = list(sequence)
     random.shuffle(modified_sequence)
     return ''.join(modified_sequence)
