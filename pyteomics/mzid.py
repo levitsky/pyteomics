@@ -342,16 +342,25 @@ def DataFrame(*args, **kwargs):
                 if evref:
                     prot_descr, accessions, isd, starts, ends, lengths = [], [], [], [], [], []
                     for d in evref:
-                        prot_descr.append(d['protein description'])
-                        accessions.append(d['accession'])
+                        prot_descr.append(d.get('protein description'))
+                        accessions.append(d.get('accession'))
                         isd.append(d.get('isDecoy'))
-                        starts.append(d['start'])
-                        ends.append(d['end'])
-                        lengths.append(d['length'])
+                        starts.append(d.get('start'))
+                        ends.append(d.get('end'))
+                        lengths.append(d.get('length'))
                     isd = all(isd)
                     if sep is not None:
-                        prot_descr = sep.join(prot_descr)
-                        accessions = sep.join(accessions)
+                        if all(isinstance(prd, str) for prd in prot_descr):
+                            prot_descr = sep.join(prot_descr)
+                        
+                        if all(isinstance(acc, str) for acc in accessions):
+                            accessions = sep.join(accessions)
+
+                    if all(prd is None for prd in prot_descr):
+                        prot_descr = None
+                    if all(acc is None for acc in accessions):
+                        accessions = None
+
                     info.update((k, v) for k, v in evref[0].items() if isinstance(v, (str, int, float, list)))
                     info['protein description'] = prot_descr
                     info['accession'] = accessions
