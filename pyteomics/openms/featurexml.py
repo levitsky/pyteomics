@@ -37,13 +37,13 @@ This module requres :py:mod:`lxml`.
 --------------------------------------------------------------------------------
 """
 
-from .. import xml, auxiliary as aux
+from .. import xml, auxiliary as aux, _schema_defaults
 
 class FeatureXML(xml.IndexedXML):
     """Parser class for featureXML files."""
     file_format = 'featureXML'
     _root_element = 'featureMap'
-    _default_schema = xml._featurexml_schema_defaults
+    _default_schema = _schema_defaults._featurexml_schema_defaults
     _default_version = '1.6'
     _default_iter_tag = 'feature'
     _structures_to_flatten = {}

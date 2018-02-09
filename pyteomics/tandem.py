@@ -88,13 +88,13 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 
 import itertools as it
 import operator
-from . import xml, auxiliary as aux
+from . import xml, auxiliary as aux, _schema_defaults
 
 class TandemXML(xml.XML):
     """Parser class for TandemXML files."""
     file_format = "TandemXML"
     _root_element = "bioml"
-    _default_schema = xml._tandem_schema_defaults
+    _default_schema = _schema_defaults._tandem_schema_defaults
     _default_iter_tag = 'group[type="model"]'
     _structures_to_flatten = {'domain'}
 
