@@ -62,7 +62,7 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 
 import heapq
 
-from . import xml, auxiliary as aux
+from . import xml, auxiliary as aux, _schema_defaults
 import numpy as np
 
 
@@ -131,7 +131,7 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
     _indexed_tags = {'scan'}
     _indexed_tag_keys = {'scan': 'num'}
     _default_version = None
-    _default_schema = xml._mzxml_schema_defaults
+    _default_schema = _schema_defaults._mzxml_schema_defaults
     _default_id_attr = 'num'
 
     def __init__(self, *args, **kwargs):

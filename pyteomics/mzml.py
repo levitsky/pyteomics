@@ -68,7 +68,7 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 import numpy as np
 import re
 import warnings
-from . import xml, auxiliary as aux
+from . import xml, auxiliary as aux, _schema_defaults
 from .xml import etree
 
 NON_STANDARD_DATA_ARRAY = 'non-standard data array'
@@ -94,7 +94,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
     """Parser class for mzML files."""
     file_format = 'mzML'
     _root_element = 'mzML'
-    _default_schema = xml._mzml_schema_defaults
+    _default_schema = _schema_defaults._mzml_schema_defaults
     _default_version = '1.1.0'
     _default_iter_tag = 'spectrum'
     _structures_to_flatten = {'binaryDataArrayList'}

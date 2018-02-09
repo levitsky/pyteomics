@@ -98,13 +98,13 @@ This module requires :py:mod:`lxml`.
 import warnings
 warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
 from . import auxiliary as aux
-from . import xml
+from . import xml, _schema_defaults
 
 class MzIdentML(xml.IndexSavingXML):
     """Parser class for MzIdentML files."""
     file_format = 'mzIdentML'
     _root_element = 'MzIdentML'
-    _default_schema = xml._mzid_schema_defaults
+    _default_schema = _schema_defaults._mzid_schema_defaults
     _default_version = '1.1.0'
     _default_iter_tag = 'SpectrumIdentificationResult'
     _structures_to_flatten = {'Fragmentation'}

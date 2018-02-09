@@ -36,13 +36,13 @@ This module requres :py:mod:`lxml`.
 --------------------------------------------------------------------------------
 """
 
-from .. import xml, auxiliary as aux
+from .. import xml, auxiliary as aux, _schema_defaults
 
 class TrafoXML(xml.XML):
     """Parser class for trafoXML files."""
     file_format = 'trafoXML'
     _root_element = 'TrafoXML'
-    _default_schema = xml._trafoxml_schema_defaults
+    _default_schema = _schema_defaults._trafoxml_schema_defaults
     _default_version = '1.0'
     _default_iter_tag = 'Pair'
     _schema_location_param = 'noNamespaceSchemaLocation'
