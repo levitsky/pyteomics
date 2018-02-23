@@ -152,6 +152,7 @@ class Composition(BasicComposition):
     The main improvement over dict is that Composition objects allow
     adding and subtraction.
     """
+    _kw_sources = {'formula', 'sequence', 'parsed_sequence', 'split_sequence'}
 
     def _from_parsed_sequence(self, parsed_sequence, aa_comp):
         self.clear()
@@ -283,12 +284,11 @@ class Composition(BasicComposition):
         aa_comp = kwargs.get('aa_comp', std_aa_comp)
         mass_data = kwargs.get('mass_data', nist_mass)
 
-        kw_sources = {'formula', 'sequence', 'parsed_sequence',
-                'split_sequence'}
-        kw_given = kw_sources.intersection(kwargs)
+        
+        kw_given = self._kw_sources.intersection(kwargs)
         if len(kw_given) > 1:
             raise PyteomicsError('Only one of {} can be specified!\n'
-                    'Given: {}'.format(', '.join(kw_sources),
+                    'Given: {}'.format(', '.join(self._kw_sources),
                         ', '.join(kw_given)))
         elif kw_given:
             kwa = kw_given.pop()
@@ -685,6 +685,9 @@ def isotopologues(*args, **kwargs):
     elements_with_isotopes = kwargs.get('elements_with_isotopes')
     report_abundance = kwargs.get('report_abundance', False)
     composition = Composition(kwargs['composition']) if 'composition' in kwargs else Composition(*args, **kwargs)
+    other_kw = kwargs.copy()
+    for k in Composition._kw_sources:
+        other_kw.pop(k, None)
 
     dict_elem_isotopes = {}
     for element in composition:
@@ -702,10 +705,11 @@ def isotopologues(*args, **kwargs):
         for elementXn in combinations_with_replacement(list_isotopes, n):
             list_comb_element_n.append(elementXn)
         all_isotoplogues.append(list_comb_element_n)
+    
     for isotopologue in product(*all_isotoplogues):
-        ic = Composition(formula=''.join(atom for el in isotopologue for atom in el), **kwargs)
+        ic = Composition(formula=''.join(atom for el in isotopologue for atom in el), **other_kw)
         if report_abundance or overall_threshold > 0.0:
-            abundance = isotopic_composition_abundance(composition=ic, **kwargs)
+            abundance = isotopic_composition_abundance(composition=ic, **other_kw)
             if abundance > overall_threshold:
                 if report_abundance:
                     yield (ic, abundance)

@@ -38,26 +38,21 @@ class MassTest(unittest.TestCase):
             ''.join([random.choice('XYZ') for i in range(20)])
             for i in range(10)]
 
-        self.aa_comp = {'X':   mass.Composition({'A': 1},
-                                                mass_data=self.mass_data),
-                        'Y':   mass.Composition({'B': 1},
-                                                mass_data=self.mass_data),
-                        'Z':   mass.Composition({'C': 1},
-                                                mass_data=self.mass_data),
-                        'F':   mass.Composition({'F': 1},
-                                                mass_data=self.mass_data),
-                        'H-':  mass.Composition({'D': 1},
-                                                mass_data=self.mass_data),
-                        '-OH': mass.Composition({'E': 1},
-                                                mass_data=self.mass_data),
-                        }
+        self.aa_comp = {
+            'X':   mass.Composition({'A': 1}, mass_data=self.mass_data),
+            'Y':   mass.Composition({'B': 1}, mass_data=self.mass_data),
+            'Z':   mass.Composition({'C': 1}, mass_data=self.mass_data),
+            'F':   mass.Composition({'F': 1}, mass_data=self.mass_data),
+            'H-':  mass.Composition({'D': 1}, mass_data=self.mass_data),
+            '-OH': mass.Composition({'E': 1}, mass_data=self.mass_data),
+            }
 
-        self.ion_comp = {'M': mass.Composition({},
-                                               mass_data=self.mass_data),
-                         'a': mass.Composition({'A': -1},
-                                               mass_data=self.mass_data)}
-        self.mods = {'a': mass.Composition(A=1),
-                'b': mass.Composition(B=1)}
+        self.ion_comp = {
+            'M': mass.Composition({}, mass_data=self.mass_data),
+            'a': mass.Composition({'A': -1}, mass_data=self.mass_data)
+            }
+
+        self.mods = {'a': mass.Composition(A=1), 'b': mass.Composition(B=1)}
         self.d = {atom: 1 for atom in 'ABCDE'}
 
     def test_fast_mass(self):
@@ -233,7 +228,7 @@ class MassTest(unittest.TestCase):
             (0.3)**3 * (0.7)**7 * 120))
 
     def test_isotopic_composition_abundance(self):
-        for peplen in range(1,10):
+        for peplen in range(1, 10):
             self.assertAlmostEqual(
                 mass.isotopic_composition_abundance(formula='F[6]' * peplen,
                                                     mass_data=self.mass_data),
@@ -290,12 +285,25 @@ class MassTest(unittest.TestCase):
         peptide = 'XYF'
         states = [{'F[6]': 1, 'A': 1, 'B': 1, 'D': 1, 'E': 1}, {'F[7]': 1, 'A': 1, 'B': 1, 'D': 1, 'E': 1}]
         abundances = [0.7, 0.3]
-        for state in mass.isotopologues(peptide, elements_with_isotopes='F',
-                aa_comp=self.aa_comp, mass_data=self.mass_data):
-            i = states.index(state)
-            self.assertNotEqual(i, -1)
-            self.assertAlmostEqual(abundances[i], mass.isotopic_composition_abundance(state,
-                aa_comp=self.aa_comp, mass_data=self.mass_data))
+        kw_common = dict(elements_with_isotopes='F', aa_comp=self.aa_comp, mass_data=self.mass_data)
+        kwlist = [
+            {},
+            {'sequence': 'XYF'},
+            {'parsed_sequence': parser.parse('XYF', show_unmodified_termini=True)},
+            {'split_sequence': parser.parse('XYF', show_unmodified_termini=True, split=True)},
+            {'formula': 'ABDEF'},
+            {'composition': mass.Composition(sequence='XYF', aa_comp=self.aa_comp)}]
+        arglist = [(peptide,), (), (), (), (), ()]
+        for args, kw in zip(arglist, kwlist):
+            kwargs = kw_common.copy()
+            kwargs.update(kw)
+            isotopologues = mass.isotopologues(*args, **kwargs)
+            for state in isotopologues:
+                i = states.index(state)
+                self.assertNotEqual(i, -1)
+                self.assertAlmostEqual(abundances[i], mass.isotopic_composition_abundance(state,
+                    aa_comp=self.aa_comp, mass_data=self.mass_data))
+
 
     def test_isotopologues_with_abundances(self):
         peptide = 'XYF'
