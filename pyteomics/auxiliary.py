@@ -1563,6 +1563,95 @@ class unitstr(str):
         p.text(string)
 
 
+class cvstr(str):
+    '''A helper class to associate a controlled vocabullary accession
+    number with an otherwise plain :class:`str` object'''
+    def __new__(cls, value, accession=None, unit_accession=None):
+        inst = super(cvstr, cls).__new__(cls, value)
+        inst.accession = accession
+        inst.unit_accession = unit_accession
+        return inst
+
+
+class CVQueryEngine(object):
+    '''Traverse an arbitrarily nested dictionary looking
+    for keys which are :class:`cvstr` instances, or objects
+    with an attribute called ``accession``
+    '''
+
+    def _accession(self, key):
+        return getattr(key, 'accession', None)
+
+    def _query_dict(self, data, accession):
+        for key, value in data.items():
+            if self._accession(key) == accession:
+                return value
+            elif isinstance(value, dict):
+                inner = self._query_dict(value, accession)
+                if inner is not None:
+                    return inner
+            elif isinstance(value, (list, tuple)):
+                inner = self._query_sequence(value, accession)
+                if inner is not None:
+                    return inner
+
+    def _query_sequence(self, data, accession):
+        for value in data:
+            if isinstance(value, dict):
+                inner = self._query_dict(value, accession)
+                if inner is not None:
+                    return inner
+            elif isinstance(value, (list, tuple)):
+                inner = self._query_sequence(value, accession)
+                if inner is not None:
+                    return inner
+
+    def query(self, data, accession):
+        '''Search ``data`` for a key with the accession
+        number ``accession``. Returns :const:`None` if
+        not found.
+        '''
+        return self._query_dict(data, accession)
+
+    def _walk_dict(self, data, index):
+        for key, value in data.items():
+            accession = self._accession(key)
+            if accession:
+                index[accession] = value
+            elif isinstance(value, dict):
+                self._walk_dict(value, index)
+            elif isinstance(value, (list, tuple)):
+                self._walk_sequence(value, index)
+        return index
+
+    def _walk_sequence(self, data, index):
+        for value in data:
+            if isinstance(value, dict):
+                self._walk_dict(value, index)
+            elif isinstance(value, (list, tuple)):
+                self._walk_sequence(value, index)
+
+    def index(self, data):
+        '''Construct a flat :class:`dict` whose keys are the
+        accession numbers for all qualified keys in ``data``
+        and whose values are the mapped values from ``data``
+        '''
+        index = self._walk_dict(data, {})
+        return index
+
+    def __call__(self, data, accession=None):
+        '''If ``accession`` is :const:`None`, calls
+        :meth:`index` on ``data``, otherwise calls
+        :meth:`query` with ``data`` and ``accession``.
+        '''
+        if accession is None:
+            return self.index(data)
+        else:
+            return self.query(data, accession)
+
+cvquery = CVQueryEngine()
+
+
 ### Bulky constants for other modules are defined below.
 
 _nist_mass = {'Ac': {0: (227, 1.0),

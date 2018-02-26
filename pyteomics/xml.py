@@ -40,7 +40,7 @@ import numpy as np
 from lxml import etree
 from collections import OrderedDict, defaultdict
 from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj
-from .auxiliary import unitint, unitfloat, unitstr
+from .auxiliary import unitint, unitfloat, unitstr, cvstr
 from .auxiliary import _keepstate_method as _keepstate
 from .auxiliary import BinaryDataArrayTransformer
 
@@ -282,10 +282,12 @@ class XML(FileReader):
         types = {'int': unitint, 'float': unitfloat, 'string': unitstr}
         attribs = element.attrib
         unit_info = None
+        unit_accesssion = None
         if 'unitCvRef' in attribs or 'unitName' in attribs:
             unit_accesssion = attribs.get('unitAccession')
             unit_name = attribs.get("unitName", unit_accesssion)
             unit_info = unit_name
+        accession = attribs.get("accession")
         if 'value' in attribs:
             try:
                 if attribs.get('type') in types:
@@ -294,9 +296,9 @@ class XML(FileReader):
                     value = unitfloat(attribs['value'], unit_info)
             except ValueError:
                 value = unitstr(attribs['value'], unit_info)
-            return {attribs['name']: value}
+            return {cvstr(attribs['name'], accession, unit_accesssion): value}
         else:
-            return {'name': unitstr(attribs['name'], unit_info)}
+            return {'name': cvstr(attribs['name'], accession, unit_accesssion)}
 
     def _get_info(self, element, **kwargs):
         """Extract info from element's attributes, possibly recursive.
@@ -1103,4 +1105,3 @@ class ArrayConversionMixin(BinaryDataArrayTransformer):
     def _finalize_record_conversion(self, array, record):
         key = record.key
         return self._convert_array(key, array)
-
