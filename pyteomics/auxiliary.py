@@ -1611,6 +1611,8 @@ class CVQueryEngine(object):
         number ``accession``. Returns :const:`None` if
         not found.
         '''
+        if accession is None:
+            raise TypeError("`accession` cannot be None")
         return self._query_dict(data, accession)
 
     def _walk_dict(self, data, index):
