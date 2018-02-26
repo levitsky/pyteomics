@@ -97,5 +97,16 @@ class MzmlTest(unittest.TestCase):
                 self.assertEqual(scan_time.unit_info, 'minute')
                 self.assertEqual(scan_window_lower_limit.unit_info, 'm/z')
 
+    def test_cv_query(self):
+        with MzML(self.path) as handle:
+            scan = next(handle)
+            index = aux.cvquery(scan)
+            self.assertEqual(index['MS:1000511'], 1)
+            self.assertEqual(aux.cvquery(scan, "MS:1000511"), 1)
+
+            # test deep traversal
+            self.assertEqual(index['MS:1000016'], 0.004935)
+            self.assertEqual(aux.cvquery(scan, 'MS:1000016'), 0.004935)
+
 if __name__ == '__main__':
     unittest.main()
