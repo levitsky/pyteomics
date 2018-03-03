@@ -384,7 +384,8 @@ class PreIndexedMzML(MzML):
         index = {}
         self._source.seek(offset)
         try:
-            for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True):
+            for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True,
+                huge_tree=True):
                 if event == 'start':
                     if elem.tag == 'index':
                         index = {}
