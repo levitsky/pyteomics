@@ -121,6 +121,7 @@ class XML(FileReader):
     _structures_to_flatten = []
     _schema_location_param = 'schemaLocation'
     _default_id_attr = 'id'
+    _huge_tree = False
 
     # Configurable plugin logic
     _converters = XMLValueConverter.converters()
@@ -151,6 +152,12 @@ class XML(FileReader):
             should be built and stored on the instance. It is used in
             :py:meth:`XML.get_by_id`, e.g. when using
             :py:class:`pyteomics.mzid.MzIdentML` with ``retrieve_refs=True``.
+        huge_tree : bool, optional
+            This option is passed to the `lxml` parser and defines whether
+            security checks for XML tree depth and node size should be disabled.
+            Default is :py:const:`False`.
+            Enable this option for trusted files to avoid XMLSyntaxError exceptions
+            (e.g. `XMLSyntaxError: xmlSAX2Characters: huge text node`).
         """
 
         super(XML, self).__init__(source, 'rb', self.iterfind, False,
@@ -170,6 +177,7 @@ class XML(FileReader):
         self.schema_info = self._get_schema_info(read_schema)
 
         self._converters_items = self._converters.items()
+        self._huge_tree = kwargs.get('huge_tree', self._huge_tree)
 
     @_keepstate
     def _get_version_info(self):
@@ -182,7 +190,7 @@ class XML(FileReader):
             A (version, schema URL) tuple, both elements are strings or None.
         """
         for _, elem in etree.iterparse(
-                self._source, events=('start',), remove_comments=True, huge_tree=True):
+                self._source, events=('start',), remove_comments=True, huge_tree=self._huge_tree):
             if _local_name(elem) == self._root_element:
                 return (elem.attrib.get('version'),
                         elem.attrib.get(('{{{}}}'.format(elem.nsmap['xsi'])
@@ -427,7 +435,7 @@ class XML(FileReader):
             localname = nodes[0].lower()
             found = False
             for ev, elem in etree.iterparse(self, events=('start', 'end'),
-                    remove_comments=True, huge_tree=True):
+                    remove_comments=True, huge_tree=self._huge_tree):
                 name_lc = _local_name(elem).lower()
                 if ev == 'start':
                     if name_lc == localname or localname == '*':
@@ -458,7 +466,7 @@ class XML(FileReader):
         stack = 0
         id_dict = {}
         for event, elem in etree.iterparse(self._source, events=('start', 'end'),
-                remove_comments=True, huge_tree=True):
+                remove_comments=True, huge_tree=self._huge_tree):
             if event == 'start':
                 if 'id' in elem.attrib:
                     stack += 1
@@ -492,7 +500,7 @@ class XML(FileReader):
         if id_key is None:
             id_key = self._default_id_attr
         for event, elem in etree.iterparse(
-                self._source, events=('start', 'end'), remove_comments=True, huge_tree=True):
+                self._source, events=('start', 'end'), remove_comments=True, huge_tree=self._huge_tree):
             if event == 'start':
                 if elem.attrib.get(id_key) == elem_id:
                     found = True
