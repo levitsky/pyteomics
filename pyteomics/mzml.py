@@ -270,7 +270,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
                 info[k] = int(info[k])
         return info
 
-def read(source, read_schema=False, iterative=True, use_index=False, dtype=None):
+def read(source, read_schema=False, iterative=True, use_index=False, dtype=None, huge_tree=False):
     """Parse `source` and iterate through spectra.
 
     Parameters
@@ -302,6 +302,12 @@ def read(source, read_schema=False, iterative=True, use_index=False, dtype=None)
         (under "m/z array", "intensity array", etc.).
         Default is :py:const:`True`.
 
+    huge_tree : bool, optional
+        This option is passed to the `lxml` parser and defines whether
+        security checks for XML tree depth and node size should be disabled.
+        Default is :py:const:`False`.
+        Enable this option for trusted files to avoid XMLSyntaxError exception.
+
     Returns
     -------
     out : iterator
@@ -309,7 +315,7 @@ def read(source, read_schema=False, iterative=True, use_index=False, dtype=None)
     """
 
     return MzML(source, read_schema=read_schema, iterative=iterative,
-        use_index=use_index, dtype=dtype)
+        use_index=use_index, dtype=dtype, huge_tree=huge_tree)
 
 def iterfind(source, path, **kwargs):
     """Parse `source` and yield info on elements with specified local
@@ -384,8 +390,7 @@ class PreIndexedMzML(MzML):
         index = {}
         self._source.seek(offset)
         try:
-            for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True,
-                huge_tree=True):
+            for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True):
                 if event == 'start':
                     if elem.tag == 'index':
                         index = {}
