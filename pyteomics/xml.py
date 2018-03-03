@@ -182,7 +182,7 @@ class XML(FileReader):
             A (version, schema URL) tuple, both elements are strings or None.
         """
         for _, elem in etree.iterparse(
-                self._source, events=('start',), remove_comments=True):
+                self._source, events=('start',), remove_comments=True, huge_tree=True):
             if _local_name(elem) == self._root_element:
                 return (elem.attrib.get('version'),
                         elem.attrib.get(('{{{}}}'.format(elem.nsmap['xsi'])
@@ -458,7 +458,7 @@ class XML(FileReader):
         stack = 0
         id_dict = {}
         for event, elem in etree.iterparse(self._source, events=('start', 'end'),
-                remove_comments=True):
+                remove_comments=True, huge_tree=True):
             if event == 'start':
                 if 'id' in elem.attrib:
                     stack += 1
@@ -492,7 +492,7 @@ class XML(FileReader):
         if id_key is None:
             id_key = self._default_id_attr
         for event, elem in etree.iterparse(
-                self._source, events=('start', 'end'), remove_comments=True):
+                self._source, events=('start', 'end'), remove_comments=True, huge_tree=True):
             if event == 'start':
                 if elem.attrib.get(id_key) == elem_id:
                     found = True
