@@ -152,7 +152,7 @@ class Composition(BasicComposition):
     The main improvement over dict is that Composition objects allow
     adding and subtraction.
     """
-    _kw_sources = {'formula', 'sequence', 'parsed_sequence', 'split_sequence'}
+    _kw_sources = {'formula', 'sequence', 'parsed_sequence', 'split_sequence', 'composition'}
 
     def _from_parsed_sequence(self, parsed_sequence, aa_comp):
         self.clear()
@@ -171,7 +171,7 @@ class Composition(BasicComposition):
                 except (PyteomicsError, KeyError):
                     raise PyteomicsError(
                             'No information for %s in `aa_comp`' % aa)
-        self._from_dict(comp)
+        self._from_composition(comp)
 
     def _from_split_sequence(self, split_sequence, aa_comp):
         self.clear()
@@ -190,9 +190,8 @@ class Composition(BasicComposition):
                         i = j
                         break
                 if j == 0:
-                    raise PyteomicsError("Invalid group starting from "
-                            "position %d: %s" % (i+1, group))
-        self._from_dict(comp)
+                    raise PyteomicsError("Invalid group starting from position %d: %s" % (i+1, group))
+        self._from_composition(comp)
 
     def _from_sequence(self, sequence, aa_comp):
         parsed_sequence = parser.parse(
@@ -210,14 +209,13 @@ class Composition(BasicComposition):
             self[_make_isotope_string(elem, int(isotope) if isotope else 0)
                     ] += int(number) if number else 1
 
-    def _from_dict(self, comp):
+    def _from_composition(self, comp):
         for isotope_string, num_atoms in comp.items():
             element_name, isotope_num = _parse_isotope_string(
                 isotope_string)
 
             # Remove explicitly undefined isotopes (e.g. X[0]).
-            self[_make_isotope_string(element_name, isotope_num)] = (
-                        num_atoms)
+            self[_make_isotope_string(element_name, isotope_num)] = num_atoms
 
     def __init__(self, *args, **kwargs):
         """
@@ -298,7 +296,7 @@ class Composition(BasicComposition):
         # can't build from kwargs
         elif args:
             if isinstance(args[0], dict):
-                self._from_dict(args[0])
+                self._from_composition(args[0])
             elif isinstance(args[0], str):
                 try:
                     self._from_sequence(args[0], aa_comp)
@@ -312,15 +310,14 @@ class Composition(BasicComposition):
                                 'formula'.format(args[0]))
             else:
                 try:
-                    self._from_sequence(parser.tostring(args[0], True),
-                            aa_comp)
+                    self._from_sequence(parser.tostring(args[0], True), aa_comp)
                 except:
                     raise PyteomicsError('Could not create a Composition object'
                             ' from `{}`. A Composition object must be '
                             'specified by sequence, parsed or split sequence,'
                             ' formula or dict.'.format(args[0]))
         else:
-            self._from_dict(kwargs)
+            self._from_composition(kwargs)
 
         ion_comp = kwargs.get('ion_comp', std_ion_comp)
         if 'ion_type' in kwargs:
