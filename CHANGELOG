@@ -1,21 +1,39 @@
-3.4.3
------
+3.5
+---
 
- - Change the default value for `read_schema` to :py:const:`False` in
-   XML parsing modules.
+ - Preserve accession information on cvParam elements in mzML parser.
+   Dictionaries produced by the parser can now be queried by accession using
+   :py:func:`pyteomics.auxiliary.cvquery`.
+   (Contributed by J. Klein)
 
  - Add optional `decode_binary` argument in
    :py:class:`pyteomics.mzml.MzML` and :py:class:`pyteomics.mzxml.MzXML`.
+   When set to `False`, the parsers provide binary records suitable for decoding on demand.
+   (Contributed by J. Klein)
 
  - Add method :py:meth:`write_byte_offsets` in :py:class:`pyteomics.mzml.MzML`,
    :py:class:`pyteomics.mzxml.MzXML` and :py:class:`pyteomics.mzid.MzIdentML`.
+   Byte offsets can be loaded later to speed up random access.
+   (Contributed by J. Klein)
 
- - Add function :py:func:`pyteomics.mgf.get_spectrum`.
+ - Random access to MGF spectrum entries.
 
- - Add class :py:class:`pyteomics.mgf.MGF`. :py:func:`mgf.read` is now an alias to the class.
-   The class can be used for indexing using spectrum titles.
+   - Add function :py:func:`pyteomics.mgf.get_spectrum`.
 
- - Minor fixes.
+   - Add class :py:class:`pyteomics.mgf.MGF`. :py:func:`mgf.read` is now an alias to the class.
+     The class can be used for indexing using spectrum titles.
+   
+   This functionality will be changed in upcoming versions.
+
+ - New parameter `huge_tree` in XML parser constructors and :py:func:`read` functions.
+   It is passed to the underlying :py:mod:`lxml` calls. Default value is `False`.
+   Set to `True` to overcome errors such as: `XMLSyntaxError: xmlSAX2Characters: huge text node`.
+
+ - Change the default value for `read_schema` to :py:const:`False` in XML parsing modules.
+
+ - New parameter `keep_cterm` in decoy generation functions in :py:mod:`pyteomics.fasta`.
+
+ - Bugfixes.
 
 3.4.2
 -----

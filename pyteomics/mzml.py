@@ -306,7 +306,8 @@ def read(source, read_schema=False, iterative=True, use_index=False, dtype=None,
         This option is passed to the `lxml` parser and defines whether
         security checks for XML tree depth and node size should be disabled.
         Default is :py:const:`False`.
-        Enable this option for trusted files to avoid XMLSyntaxError exception.
+        Enable this option for trusted files to avoid XMLSyntaxError exceptions
+        (e.g. `XMLSyntaxError: xmlSAX2Characters: huge text node`).
 
     Returns
     -------
