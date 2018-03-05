@@ -22,7 +22,7 @@ def add_directive_header(self, sig):
 
 DataDocumenter.add_directive_header = add_directive_header
 
-sys.path.insert(0, os.path.abspath('exts'))
+#sys.path.insert(0, os.path.abspath('exts'))
 pyteomics_path = os.path.abspath('../../')
 sys.path.insert(0, pyteomics_path)
 
@@ -51,7 +51,7 @@ extensions = [
               'matplotlib.sphinxext.only_directives',
               'matplotlib.sphinxext.mathmpl',
               'numpydoc',
-              'googleanalytics'
+              'sphinxcontrib.googleanalytics'
              ]
 
 # Enable Google Analytics via a script from
