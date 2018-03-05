@@ -131,7 +131,7 @@ class XML(FileReader):
         raise NotImplementedError
 
     def __init__(self, source, read_schema=False,
-            iterative=True, build_id_cache=False, **kwargs):
+                 iterative=True, build_id_cache=False, **kwargs):
         """Create an XML parser object.
 
         Parameters
