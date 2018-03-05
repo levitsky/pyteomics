@@ -211,7 +211,7 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
             for item in super(MzXML, self).iterfind(path, **kwargs):
                 yield item
 
-def read(source, read_schema=False, iterative=True, use_index=False, dtype=None):
+def read(source, read_schema=False, iterative=True, use_index=False, dtype=None, huge_tree=False):
     """Parse `source` and iterate through spectra.
 
     Parameters
@@ -239,6 +239,13 @@ def read(source, read_schema=False, iterative=True, use_index=False, dtype=None)
         (under "m/z array", "intensity array", etc.).
         Default is :py:const:`True`.
 
+    huge_tree : bool, optional
+        This option is passed to the `lxml` parser and defines whether
+        security checks for XML tree depth and node size should be disabled.
+        Default is :py:const:`False`.
+        Enable this option for trusted files to avoid XMLSyntaxError exceptions
+        (e.g. `XMLSyntaxError: xmlSAX2Characters: huge text node`).
+
     Returns
     -------
     out : iterator
@@ -246,7 +253,7 @@ def read(source, read_schema=False, iterative=True, use_index=False, dtype=None)
     """
 
     return MzXML(source, read_schema=read_schema, iterative=iterative,
-        use_index=use_index, dtype=dtype)
+        use_index=use_index, dtype=dtype, huge_tree=huge_tree)
 
 
 def iterfind(source, path, **kwargs):
