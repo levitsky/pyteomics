@@ -44,6 +44,10 @@ Helpers
   `memoization <http://stackoverflow.com/a/1988826/1258041>`_
   `function decorator <http://stackoverflow.com/a/1594484/1258041>`_.
 
+  :py:func:`cvquery` - traverse an arbitrarily nested dictionary looking
+  for keys which are :py:class:`cvstr` instances, or objects
+  with an attribute called ``accession``.
+
 -------------------------------------------------------------------------------
 
 """
@@ -1576,7 +1580,7 @@ class cvstr(str):
 class CVQueryEngine(object):
     '''Traverse an arbitrarily nested dictionary looking
     for keys which are :class:`cvstr` instances, or objects
-    with an attribute called ``accession``
+    with an attribute called ``accession``.
     '''
 
     def _accession(self, key):
@@ -1636,7 +1640,7 @@ class CVQueryEngine(object):
     def index(self, data):
         '''Construct a flat :class:`dict` whose keys are the
         accession numbers for all qualified keys in ``data``
-        and whose values are the mapped values from ``data``
+        and whose values are the mapped values from ``data``.
         '''
         index = self._walk_dict(data, {})
         return index
