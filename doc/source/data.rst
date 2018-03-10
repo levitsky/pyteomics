@@ -404,6 +404,7 @@ but it uses byte offset information found at the end of the file.
 Unlike the rest of the functions and classes, :py:class:`pyteomics.mzml.PreIndexedMzML`
 does not have a counterpart in :py:mod:`pyteomics.mzxml`.
 
+
 pepXML
 ------
 
@@ -709,6 +710,32 @@ of `(from; to)` pairs corresponding to original and transformed retention times:
 
 As always, :py:func:`pyteomics.openms.trafoxml.read`
 and :py:class:`pyteomics.openms.trafoxml.TrafoXML` are interchangeable.
+
+Controlled Vocabularies
+=======================
+
+`Controlled Vocabularies <http://www.psidev.info/controlled-vocabularies>`_
+are the universal annotation system used in the PSI formats, including
+**mzML** and **mzIdentML**. :py:class:`pyteomics.mzml.MzML` and :py:class:`pyteomics.mzid.MzIdentML`
+retain the annotation information. It can be accessed using the helper function, :py:func:`pyteomics.auxiliary.cvquery`:
+
+    >>> from pyteomics import auxiliary as aux, mzid, mzml
+    >>> f = mzid.MzIdentML('tests/test.mzid')
+    >>> s = next(f)
+    >>> s
+    {'SpectrumIdentificationItem': [{'ProteinScape:SequestMetaScore': 7.59488518903425, 'calculatedMassToCharge': 1507.695, 'PeptideEvidenceRef': [{'peptideEvidence_ref': 'PE1_SEQ_spec1_pep1'}], 'chargeState': 1, 'passThreshold': True, 'peptide_ref': 'prot1_pep1', 'rank': 1, 'id': 'SEQ_spec1_pep1', 'ProteinScape:IntensityCoverage': 0.3919545603809718, 'experimentalMassToCharge': 1507.696}], 'spectrumID': 'databasekey=1', 'id': 'SEQ_spec1', 'spectraData_ref': 'LCMALDI_spectra'}
+    >>> aux.cvquery(s)
+    {'MS:1001506': 7.59488518903425, 'MS:1001505': 0.3919545603809718}
+    >>> f.close()
+
+    >>> f = mzml.MzML('tests/test.mzML')
+    >>> s = next(f)
+    >>> s
+    {'defaultArrayLength': 19914, 'intensity array': array([ 0.,  0.,  0., ...,  0.,  0.,  0.], dtype=float32), 'base peak m/z': 810.415283203125, 'highest observed m/z': 2000.0099466203771, 'index': 0, 'total ion current': 15245068.0, 'id': 'controllerType=0 controllerNumber=1 scan=1', 'count': 2, 'm/z array': array([  200.00018817,   200.00043034,   200.00067252, ...,  1999.96151259,
+            1999.98572931,  2000.00994662]), 'ms level': 1, 'base peak intensity': 1471973.875, 'lowest observed m/z': 200.00018816645022, 'MSn spectrum': '', 'positive scan': '', 'scanList': {'count': 1, 'scan': [{'preset scan configuration': 1.0, 'scanWindowList': {'count': 1, 'scanWindow': [{'scan window lower limit': 200.0, 'scan window upper limit': 2000.0}]}, 'instrumentConfigurationRef': 'IC1', 'filter string': 'FTMS + p ESI Full ms [200.00-2000.00]', 'scan start time': 0.004935, '[Thermo Trailer Extra]Monoisotopic M/Z:': 810.4152221679688}], 'no combination': ''}, 'profile spectrum': ''}
+    >>> aux.cvquery(s, 'MS:1000285')
+    15245068.0
+    >>> f.close()
 
 FDR estimation and filtering
 ============================
