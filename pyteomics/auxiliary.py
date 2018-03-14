@@ -1589,7 +1589,7 @@ class CVQueryEngine(object):
     def _query_dict(self, data, accession):
         for key, value in data.items():
             if self._accession(key) == accession:
-                if value != '':
+                if not isinstance(value, str) or value != '':
                     return value
                 else:
                     return key
