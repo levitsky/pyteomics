@@ -296,7 +296,8 @@ class XML(FileReader):
             unit_name = attribs.get("unitName", unit_accesssion)
             unit_info = unit_name
         accession = attribs.get("accession")
-        if 'value' in attribs:
+        if 'value' in attribs and (kwargs.get('skip_empty_cvparam_values', False) or
+            attribs['value'] != ''):
             try:
                 if attribs.get('type') in types:
                     value = types[attribs['type']](attribs['value'], unit_info)
@@ -317,7 +318,7 @@ class XML(FileReader):
             name = _local_name(element)
         schema_info = self.schema_info
         if name in {'cvParam', 'userParam'}:
-            return self._handle_param(element)
+            return self._handle_param(element, **kwargs)
 
         info = dict(element.attrib)
         # process subelements
@@ -903,7 +904,7 @@ class IndexedXML(XML):
         use_index = kwargs.get('use_index', True)
 
         if tags is not None:
-            self._indexed_tags = (tags)
+            self._indexed_tags = tags
         if tag_index_keys is not None:
             self._indexed_tag_keys = tag_index_keys
 
