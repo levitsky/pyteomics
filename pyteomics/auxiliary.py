@@ -1589,7 +1589,10 @@ class CVQueryEngine(object):
     def _query_dict(self, data, accession):
         for key, value in data.items():
             if self._accession(key) == accession:
-                return value
+                if value != '':
+                    return value
+                else:
+                    return key
             elif isinstance(value, dict):
                 inner = self._query_dict(value, accession)
                 if inner is not None:
@@ -1627,7 +1630,10 @@ class CVQueryEngine(object):
         for key, value in data.items():
             accession = self._accession(key)
             if accession:
-                index[accession] = value
+                if value != '':
+                    index[accession] = value
+                else:
+                    index[accession] = key
             elif isinstance(value, dict):
                 self._walk_dict(value, index)
             elif isinstance(value, (list, tuple)):
