@@ -1598,6 +1598,8 @@ class CVQueryEngine(object):
                 inner = self._query_sequence(value, accession)
                 if inner is not None:
                     return inner
+            elif self._accession(value) == accession:
+                return value
 
     def _query_sequence(self, data, accession):
         for value in data:
@@ -1609,6 +1611,8 @@ class CVQueryEngine(object):
                 inner = self._query_sequence(value, accession)
                 if inner is not None:
                     return inner
+            elif self._accession(value) == accession:
+                return value
 
     def query(self, data, accession):
         '''Search ``data`` for a key with the accession
@@ -1628,6 +1632,9 @@ class CVQueryEngine(object):
                 self._walk_dict(value, index)
             elif isinstance(value, (list, tuple)):
                 self._walk_sequence(value, index)
+            accession = self._accession(value)
+            if accession:
+                index[accession] = value
         return index
 
     def _walk_sequence(self, data, index):
@@ -1636,6 +1643,10 @@ class CVQueryEngine(object):
                 self._walk_dict(value, index)
             elif isinstance(value, (list, tuple)):
                 self._walk_sequence(value, index)
+            else:
+                accession = self._accession(value)
+                if accession:
+                    index[accession] = value
 
     def index(self, data):
         '''Construct a flat :class:`dict` whose keys are the
