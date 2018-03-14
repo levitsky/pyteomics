@@ -6,7 +6,8 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from itertools import product
 import unittest
-from pyteomics.mzml import *
+from pyteomics.mzml import MzML, PreIndexedMzML, read, chain
+from pyteomics import auxiliary as aux, xml
 from data import mzml_spectra
 import numpy as np
 
