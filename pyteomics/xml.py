@@ -1074,7 +1074,7 @@ class IndexSavingXML(IndexedXML):
         """
         try:
             self._read_byte_offsets()
-        except IOError:
+        except (IOError, AttributeError):
             super(IndexSavingXML, self)._build_index()
 
     @classmethod
