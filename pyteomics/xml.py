@@ -296,7 +296,7 @@ class XML(FileReader):
             unit_name = attribs.get("unitName", unit_accesssion)
             unit_info = unit_name
         accession = attribs.get("accession")
-        if 'value' in attribs and (kwargs.get('skip_empty_cvparam_values', False) or
+        if 'value' in attribs and (not kwargs.get('skip_empty_cvparam_values', False) or
             attribs['value'] != ''):
             try:
                 if attribs.get('type') in types:
