@@ -343,12 +343,17 @@ def DataFrame(*args, **kwargs):
         this delimiter. If `sep` is :py:const:`None`, they are kept as lists. Default is
         :py:const:`None`.
 
+    pd_kwargs : dict, optional
+        Keyword arguments passed to the :py:class:`pandas.DataFrame` constructor.
+
     Returns
     -------
     out : pandas.DataFrame
     """
     import pandas as pd
+    kwargs = kwargs.copy()
     sep = kwargs.pop('sep', None)
+    pd_kwargs = kwargs.pop('pd_kwargs', {})
     def gen_items():
         with chain(*args, **kwargs) as f:
             for item in f:
@@ -378,7 +383,7 @@ def DataFrame(*args, **kwargs):
                         if isinstance(v, (str, int, float)):
                             info[k] = v
                 yield info
-    return pd.DataFrame(gen_items())
+    return pd.DataFrame(gen_items(), **pd_kwargs)
 
 def filter_df(*args, **kwargs):
     """Read pepXML files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.
