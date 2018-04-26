@@ -81,9 +81,9 @@ class XMLValueConverter(object):
 
     @classmethod
     def str_to_bool(cls, s):
-        if s.lower() in {'true', '1'}:
+        if s.lower() in {'true', '1', 'y'}:
             return True
-        if s.lower() in {'false', '0'}:
+        if s.lower() in {'false', '0', 'n'}:
             return False
         raise PyteomicsError('Cannot convert string to bool: ' + s)
 
