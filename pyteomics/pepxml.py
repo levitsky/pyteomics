@@ -118,7 +118,7 @@ class PepXML(xml.XML):
         except KeyError:
             name = xml._local_name(element)
         rec = kwargs.pop('recursive', None)
-        if name == 'msms_pipeline_analysis':
+        if name == self._root_element:
             info = self._get_info(element, ename=name,
                     recursive=(rec if rec is not None else False),
                     **kwargs)
