@@ -7,7 +7,7 @@ class ProtXML(xml.XML):
     _default_schema = _schema_defaults._protxml_schema_defaults
     # _default_version = None
     _default_iter_tag = 'protein_group'
-    _structures_to_flatten = {'modification_info', 'annotation'}
+    _structures_to_flatten = {'annotation'}
     # attributes which contain unconverted values
     _convert_items = {'float':  {'pct_spectrum_ids'},
         'int': {'group_number', 'prot_length'},
@@ -40,6 +40,10 @@ class ProtXML(xml.XML):
         p = info.get('parameter')
         if isinstance(p, list) and len(p) == 1 and isinstance(p[0], dict):
             info.update(info.pop('parameter')[0])
+
+        if 'modification_info' in info:
+            # this is a list with one element
+            info.update(info.pop('modification_info')[0])
         return info
 
 def read(source, read_schema=False, iterative=True, **kwargs):
