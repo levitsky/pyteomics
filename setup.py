@@ -25,6 +25,12 @@ setup(
     author_email       = 'pyteomics@googlegroups.com',
     url                = 'http://hg.theorchromo.ru/pyteomics',
     packages           = ['pyteomics', 'pyteomics.mass', 'pyteomics.openms'],
+    project_urls       = {
+      'Documentation': 'http://pythonhosted.org/pyteomics/',
+      'Source Code'  : 'https://bitbucket.org/levitsky/pyteomics',
+      'Issue Tracker': 'http://bitbucket.org/levitsky/pyteomics/issues',
+      'Mailing List' : 'https://groups.google.com/group/pyteomics',
+    },
     namespace_packages = ['pyteomics'],
     extras_require     = {'XML': ['lxml', 'numpy'],
                           'FDR': ['numpy'],
