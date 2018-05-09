@@ -178,7 +178,10 @@ def _file_reader(_mode='r'):
         """
         @wraps(_func)
         def helper(*args, **kwargs):
-            return FileReader(args[0], _mode, _func, True, args[1:], kwargs, kwargs.pop('encoding', None))
+            if args:
+                return FileReader(args[0], _mode, _func, True, args[1:], kwargs, kwargs.pop('encoding', None))
+            source = kwargs.pop('source', None)
+            return FileReader(source, _mode, _func, True, (), kwargs, kwargs.pop('encoding', None))
         return helper
     return decorator
 
