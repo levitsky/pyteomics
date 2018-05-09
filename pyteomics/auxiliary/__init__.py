@@ -1,5 +1,5 @@
 try:
-    basestring
+    basestring = basestring
 except NameError:
     basestring = (str, bytes)
 
