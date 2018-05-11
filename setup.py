@@ -24,7 +24,7 @@ setup(
     author             = 'Anton Goloborodko & Lev Levitsky',
     author_email       = 'pyteomics@googlegroups.com',
     url                = 'http://hg.theorchromo.ru/pyteomics',
-    packages           = ['pyteomics', 'pyteomics.mass', 'pyteomics.openms'],
+    packages           = ['pyteomics', 'pyteomics.mass', 'pyteomics.openms', 'pyteomics.auxiliary'],
     project_urls       = {
       'Documentation': 'http://pythonhosted.org/pyteomics/',
       'Source Code'  : 'https://bitbucket.org/levitsky/pyteomics',
