@@ -122,6 +122,7 @@ class XML(FileReader):
     _schema_location_param = 'schemaLocation'
     _default_id_attr = 'id'
     _huge_tree = False
+    _skip_empty_cvparam_values = False
 
     # Configurable plugin logic
     _converters = XMLValueConverter.converters()
@@ -296,7 +297,7 @@ class XML(FileReader):
             unit_name = attribs.get("unitName", unit_accesssion)
             unit_info = unit_name
         accession = attribs.get("accession")
-        if 'value' in attribs and (not kwargs.get('skip_empty_cvparam_values', False) or
+        if 'value' in attribs and (not self._skip_empty_cvparam_values or
             attribs['value'] != ''):
             try:
                 if attribs.get('type') in types:
