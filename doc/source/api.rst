@@ -20,6 +20,7 @@ Contents:
    api/mgf
    api/ms1
    api/pepxml
+   api/protxml
    api/tandem
    api/mzid
    api/featurexml
