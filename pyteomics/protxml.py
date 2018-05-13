@@ -1,7 +1,81 @@
+"""
+protxml - parsing of ProteinProphet output files
+================================================
+
+Summary
+-------
+
+**protXML** is the output format of the `ProteinProphet software <http://proteinprophet.sourceforge.net/>`_.
+It contains information about identified proteins and their statistical significance.
+
+This module provides minimalistic infrastructure for access to data stored in
+protXML files. The central class is :py:class:`ProtXML`, which
+reads protein entries and related information and saves them into
+Python dicts.
+
+Data access
+-----------
+
+  :py:class:`ProtXML` - a class representing a single protXML file.
+  Other data access functions use this class internally.
+
+  :py:func:`read` - iterate through peptide-spectrum matches in a protXML
+  file. Calling the function is synonymous to instantiating the :py:class:`ProtXML` class.
+
+  :py:func:`chain` - read multiple files at once.
+
+  :py:func:`chain.from_iterable` - read multiple files at once, using an
+  iterable of files.
+
+  :py:func:`DataFrame` - read protXML files into a :py:class:`pandas.DataFrame`.
+
+Target-decoy approach
+---------------------
+
+  :py:func:`filter` - filter protein groups from a chain of protXML files to a specific FDR
+  using TDA.
+
+  :py:func:`filter.chain` - chain a series of filters applied independently to
+  several files.
+
+  :py:func:`filter.chain.from_iterable` - chain a series of filters applied
+  independently to an iterable of files.
+
+  :py:func:`filter_df` - filter protXML files and return a :py:class:`pandas.DataFrame`.
+
+  :py:func:`fdr` - estimate the false discovery rate of a PSM set using the
+  target-decoy approach.
+
+  :py:func:`qvalues` - get an array of scores and local FDR values for protein groups using the target-decoy approach.
+
+  :py:func:`is_decoy` - determine whether a protein group is decoy or not.
+
+Dependencies
+------------
+
+This module requres :py:mod:`lxml`.
+
+--------------------------------------------------------------------------------
+"""
+
+#   Copyright 2018 Lev Levitsky
+#
+#   Licensed under the Apache License, Version 2.0 (the "License");
+#   you may not use this file except in compliance with the License.
+#   You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in writing, software
+#   distributed under the License is distributed on an "AS IS" BASIS,
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+#   See the License for the specific language governing permissions and
+#   limitations under the License.
+
 from . import xml, auxiliary as aux, _schema_defaults
 
 class ProtXML(xml.XML):
-    """Parser class for pepXML files."""
+    """Parser class for protXML files."""
     file_format = 'protXML'
     _root_element = 'protein_summary'
     _default_schema = _schema_defaults._protxml_schema_defaults

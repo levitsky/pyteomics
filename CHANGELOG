@@ -25,6 +25,8 @@
    
    This functionality will be changed in upcoming versions.
 
+ - New module :py:mod:`pyteomics.protxml` for parsing of ProteinProphet output files.
+
  - New parameter `huge_tree` in XML parser constructors and :py:func:`read` functions.
    It is passed to the underlying :py:mod:`lxml` calls. Default value is `False`.
    Set to `True` to overcome errors such as: `XMLSyntaxError: xmlSAX2Characters: huge text node`.
