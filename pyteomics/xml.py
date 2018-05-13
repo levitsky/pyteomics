@@ -179,6 +179,7 @@ class XML(FileReader):
 
         self._converters_items = self._converters.items()
         self._huge_tree = kwargs.get('huge_tree', self._huge_tree)
+        self._skip_empty_cvparam_values = kwargs.get('skip_empty_cvparam_values', False)
 
     @_keepstate
     def _get_version_info(self):
