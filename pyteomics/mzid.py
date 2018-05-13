@@ -112,6 +112,43 @@ class MzIdentML(xml.IndexSavingXML):
         'PeptideEvidence', 'SpectrumIdentificationItem', 'SearchDatabase',
         'DBSequence', 'SpectraData', 'Peptide'}
 
+    def __init__(self, *args, **kwargs):
+        """Create an MzIdentML parser object.
+
+        Parameters
+        ----------
+        source : str or file
+            File name or file-like object corresponding to an XML file.
+        read_schema : bool, optional
+            Defines whether schema file referenced in the file header
+            should be used to extract information about value conversion.
+            Default is :py:const:`False`.
+        iterative : bool, optional
+            Defines whether an :py:class:`ElementTree` object should be
+            constructed and stored on the instance or if iterative parsing
+            should be used instead. Iterative parsing keeps the memory usage
+            low for large XML files. Default is :py:const:`True`.
+        use_index : bool, optional
+            Defines whether an index of byte offsets needs to be created for
+            elements listed in `indexed_tags`.
+            This is useful for random access to spectra in mzML or elements of mzIdentML files,
+            or for iterative parsing of mzIdentML with ``retrieve_refs=True``.
+            If :py:const:`True`, `build_id_cache` is ignored.
+            If :py:const:`False`, the object acts exactly like :py:class:`XML`.
+            Default is :py:const:`True`.
+        indexed_tags : container of bytes, optional
+            If `use_index` is :py:const:`True`, elements listed in this parameter
+            will be indexed. Empty set by default.
+        skip_empty_cvparam_values : bool, optional
+            .. warning :: This parameter affects the format of the produced dictionaries.
+            By default, when parsing cvParam elements, "value" attributes with empty values are not
+            treated differently from others. When this parameter is set to :py:const:`True`,
+            these empty values are flattened. You can enable this to obtain the same output structure
+            regardless of the presence of an empty "value". Default is :py:const:`False`.
+        """
+        self._skip_empty_cvparam_values = kwargs.get('skip_empty_cvparam_values', False)
+        super(MzIdentML, self).__init__(*args, **kwargs)
+
     def _get_info_smart(self, element, **kwargs):
         """Extract the info in a smart way depending on the element type"""
         name = xml._local_name(element)
