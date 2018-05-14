@@ -8,20 +8,24 @@ from itertools import product
 import unittest
 from pyteomics.mzml import MzML, PreIndexedMzML, read, chain
 from pyteomics import auxiliary as aux, xml
-from data import mzml_spectra
+from data import mzml_spectra, mzml_spectra_skip_empty_values
 import numpy as np
 
 class MzmlTest(unittest.TestCase):
     maxDiff = None
     path = 'test.mzML'
 
-    def testReadSpectrum(self):
+    def test_read(self):
         for rs, it, ui in product([True, False], repeat=3):
             for func in [MzML, read, chain,
                     lambda x, **kw: chain.from_iterable([x], **kw), PreIndexedMzML]:
                 with func(self.path, read_schema=rs, iterative=it, use_index=ui) as r:
                     # http://stackoverflow.com/q/14246983/1258041
                     self.assertEqual(mzml_spectra, list(r))
+
+    def test_read_skip_empty_values(self):
+        with MzML(self.path, skip_empty_cvparam_values=True) as r:
+            self.assertEqual(mzml_spectra_skip_empty_values, list(r))
 
     def test_decoding(self):
         with MzML(self.path, decode_binary=True) as reader:

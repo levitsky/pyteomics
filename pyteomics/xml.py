@@ -159,6 +159,14 @@ class XML(FileReader):
             Default is :py:const:`False`.
             Enable this option for trusted files to avoid XMLSyntaxError exceptions
             (e.g. `XMLSyntaxError: xmlSAX2Characters: huge text node`).
+        skip_empty_cvparam_values : bool, optional
+            .. warning ::
+                This parameter affects the format of the produced dictionaries.
+
+            By default, when parsing cvParam elements, "value" attributes with empty values are not
+            treated differently from others. When this parameter is set to :py:const:`True`,
+            these empty values are flattened. You can enable this to obtain the same output structure
+            regardless of the presence of an empty "value". Default is :py:const:`False`.
         """
 
         super(XML, self).__init__(source, 'rb', self.iterfind, False,
