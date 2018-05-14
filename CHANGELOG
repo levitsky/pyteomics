@@ -31,7 +31,15 @@
    It is passed to the underlying :py:mod:`lxml` calls. Default value is `False`.
    Set to `True` to overcome errors such as: `XMLSyntaxError: xmlSAX2Characters: huge text node`.
 
+ - New parameter `skip_empty_cvparam_values` in XML parser constructors.
+   It instructs the parser to treat the empty "value" attributes in cvParam elements as if they were not there.
+   This is helpful in cases when such empty "values" are present in one vendor's file and absent in another:
+   enabling the parameter will result in more unified output.
+   Default value is `False`.
+
  - Change the default value for `read_schema` to :py:const:`False` in XML parsing modules.
+
+ - Change the default value for `retrieve_refs` to :py:const:`True` in MzIdentML constructor.
 
  - New parameter `keep_cterm` in decoy generation functions in :py:mod:`pyteomics.fasta`.
 
