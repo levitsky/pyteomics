@@ -112,6 +112,10 @@ class MzIdentML(xml.IndexSavingXML):
         'PeptideEvidence', 'SpectrumIdentificationItem', 'SearchDatabase',
         'DBSequence', 'SpectraData', 'Peptide'}
 
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('retrieve_refs', True)
+        super(MzIdentML, self).__init__(*args, **kwargs)
+
     def _get_info_smart(self, element, **kwargs):
         """Extract the info in a smart way depending on the element type"""
         name = xml._local_name(element)
