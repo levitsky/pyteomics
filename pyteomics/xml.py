@@ -1106,7 +1106,7 @@ class ArrayConversionMixin(BinaryDataArrayTransformer):
     _array_keys = ['m/z array', 'intensity array']
 
     def __init__(self, *args, **kwargs):
-        self._dtype_dict.setdefault(None, None)
+        self._dtype_dict = {None: None}
         dtype = kwargs.pop('dtype', None)
         if isinstance(dtype, dict):
             self._dtype_dict.update(dtype)
