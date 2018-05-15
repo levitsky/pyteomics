@@ -18,7 +18,7 @@ def makeCA(arr):
         arr = np.array(arr)
     return ComparableArray(arr.shape, arr.dtype, arr)
 
-pepxml_spectra = [
+pepxml_results = [
             {'spectrum': 'pps_sl20060731_18mix_25ul_r1_1154456409.0100.0100.1',
              'end_scan': 100,
              'start_scan': 100,
