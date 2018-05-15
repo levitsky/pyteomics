@@ -3,8 +3,8 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from itertools import product
 import unittest
-from pyteomics.pepxml import *
-from data import pepxml_spectra
+from pyteomics.pepxml import PepXML, read, chain, filter
+from data import pepxml_results
 
 class PepxmlTest(unittest.TestCase):
     maxDiff = None
@@ -21,7 +21,7 @@ class PepxmlTest(unittest.TestCase):
                     lambda x, **kw: filter.chain(x, **PepxmlTest._kw),
                     lambda x, **kw: filter.chain.from_iterable([x], **PepxmlTest._kw)]:
                 with func('test.pep.xml', read_schema=rs, iterative=it) as r:
-                    self.assertEqual(list(r), pepxml_spectra)
+                    self.assertEqual(list(r), pepxml_results)
 
 if __name__ == '__main__':
     unittest.main()
