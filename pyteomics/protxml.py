@@ -43,12 +43,12 @@ Target-decoy approach
 
   :py:func:`filter_df` - filter protXML files and return a :py:class:`pandas.DataFrame`.
 
-  :py:func:`fdr` - estimate the false discovery rate of a PSM set using the
+  :py:func:`fdr` - estimate the false discovery rate of a set of protein groups using the
   target-decoy approach.
 
-  :py:func:`qvalues` - get an array of scores and local FDR values for protein groups using the target-decoy approach.
+  :py:func:`qvalues` - get an array of scores and *q* values for protein groups using the target-decoy approach.
 
-  :py:func:`is_decoy` - determine whether a protein group is decoy or not.
+  :py:func:`is_decoy` - determine whether a protein group is decoy or not. This function may not suit your use case.
 
 Dependencies
 ------------
@@ -152,7 +152,25 @@ def read(source, read_schema=False, iterative=True, **kwargs):
     return ProtXML(source, read_schema=read_schema, iterative=iterative)
 
 chain = aux._make_chain(read, 'read')
-is_decoy = lambda pg: all(p['protein_name'].startswith('DECOY_') for p in pg['protein'])
+def is_decoy(pg):
+    """Determine if a protein group should be considered decoy.
+
+    This function checks that all protein names in a group start with "DECOY_".
+    You may need to provide your own function for correct filtering and FDR estimation.
+
+    Parameters
+    ----------
+
+    pg : dict
+        A protein group dict produced by the :py:class:`ProtXML` parser.
+
+
+    Returns
+    -------
+
+    out : bool
+    """
+    return all(p['protein_name'].startswith('DECOY_') for p in pg['protein'])
 fdr = aux._make_fdr(is_decoy)
 _key = op.itemgetter('probability')
 qvalues = aux._make_qvalues(chain, is_decoy, _key)
