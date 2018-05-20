@@ -584,8 +584,8 @@
          </peptide>
       </protein>
 </protein_group>
-<protein_group group_number="2" probability="1.0000">
-      <protein protein_name="sp|Q13200|PSMD2_HUMAN" n_indistinguishable_proteins="1" probability="1.0000" percent_coverage="29.3" unique_stripped_peptides="AEIATEEFIPVTPIIEGFVIIR+AEIATEEFIPVTPIIEGFVIIRK+APVQPQQSPAAAPGGTDEKPSGK+AVPIAIAIISVSNPR+CAIGVFR+DKAPVQPQQSPAAAPGGTDEKPSGK+EIDIMEPK+EPIITIVK+EWQEIDDAEKVQREPIITIVK+FGGSGSQVDSAR+GTITICPYHSDR+INIIDTISK+IVGSQEEIASWGHEYVR+MIVTFDEEIRPIPVSVR+MNIASSFVNGFVNAAFGQDK+SGAIIACGIVNSGVR+TITGFQTHTTPVIIAHGER+VGQAVDVVGQAGKPK+VPDDIYKTHIENNR+VQREPIITIVK+YGEPTIR+YIYSSEDYIK" group_sibling_id="a" total_number_peptides="29" total_number_distinct_peptides="29" pct_spectrum_ids="0.093" raw_intensity="0.000" confidence="1.000">
+<protein_group group_number="2" probability="0.999">
+      <protein protein_name="DECOY_sp|Q13200|PSMD2_HUMAN" n_indistinguishable_proteins="1" probability="1.0000" percent_coverage="29.3" unique_stripped_peptides="AEIATEEFIPVTPIIEGFVIIR+AEIATEEFIPVTPIIEGFVIIRK+APVQPQQSPAAAPGGTDEKPSGK+AVPIAIAIISVSNPR+CAIGVFR+DKAPVQPQQSPAAAPGGTDEKPSGK+EIDIMEPK+EPIITIVK+EWQEIDDAEKVQREPIITIVK+FGGSGSQVDSAR+GTITICPYHSDR+INIIDTISK+IVGSQEEIASWGHEYVR+MIVTFDEEIRPIPVSVR+MNIASSFVNGFVNAAFGQDK+SGAIIACGIVNSGVR+TITGFQTHTTPVIIAHGER+VGQAVDVVGQAGKPK+VPDDIYKTHIENNR+VQREPIITIVK+YGEPTIR+YIYSSEDYIK" group_sibling_id="a" total_number_peptides="29" total_number_distinct_peptides="29" pct_spectrum_ids="0.093" raw_intensity="0.000" confidence="1.000">
          <parameter name="prot_length" value="908"/>
          <annotation protein_description="26S proteasome non-ATPase regulatory subunit 2 OS=Homo sapiens GN=PSMD2 PE=1 SV=3"/>
          <peptide peptide_sequence="AVPIAIAIISVSNPR" charge="2" initial_probability="0.9990" nsp_adjusted_probability="0.9997" fpkm_adjusted_probability="0.9997" peptide_group_designator="a" weight="1.00" is_nondegenerate_evidence="Y" n_enzymatic_termini="2" n_sibling_peptides="24.80" n_sibling_peptides_bin="8" n_instances="1" exp_tot_instances="1.00" is_contributing_evidence="Y" calc_neutral_pep_mass="1519.9086">
