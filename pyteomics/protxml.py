@@ -73,6 +73,7 @@ This module requres :py:mod:`lxml`.
 #   limitations under the License.
 
 from . import xml, auxiliary as aux, _schema_defaults
+import operator as op
 
 class ProtXML(xml.XML):
     """Parser class for protXML files."""
@@ -118,6 +119,9 @@ class ProtXML(xml.XML):
         if 'modification_info' in info:
             # this is a list with one element
             info.update(info.pop('modification_info')[0])
+
+        if 'unique_stripped_peptides' in info:
+            info['unique_stripped_peptides'] = info['unique_stripped_peptides'].split('+')
         return info
 
 def read(source, read_schema=False, iterative=True, **kwargs):
@@ -148,6 +152,12 @@ def read(source, read_schema=False, iterative=True, **kwargs):
     return ProtXML(source, read_schema=read_schema, iterative=iterative)
 
 chain = aux._make_chain(read, 'read')
+is_decoy = lambda pg: all(p['protein_name'].startswith('DECOY_') for p in pg['protein'])
+fdr = aux._make_fdr(is_decoy)
+_key = op.itemgetter('probability')
+qvalues = aux._make_qvalues(chain, is_decoy, _key)
+filter = aux._make_filter(chain, is_decoy, _key, qvalues)
+filter.chain = aux._make_chain(filter, 'filter', True)
 
 def DataFrame(*args, **kwargs):
     """Read protXML output files into a :py:class:`pandas.DataFrame`.
@@ -187,9 +197,7 @@ def DataFrame(*args, **kwargs):
                         out = dict(info)
                         out.update(prot)
                         if 'unique_stripped_peptides' in out:
-                            if sep is None:
-                                out['unique_stripped_peptides'] = out['unique_stripped_peptides'].split('+')
-                            else:
+                            if sep is not None:
                                 out['unique_stripped_peptides'] = sep.join(out['unique_stripped_peptides'].split('+'))
                         if 'indistinguishable_protein' in out:
                             if sep is None:
