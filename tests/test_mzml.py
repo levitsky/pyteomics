@@ -114,9 +114,9 @@ class MzmlTest(unittest.TestCase):
             derefed = list(reader.iterfind("instrumentConfiguration", retrieve_refs=True))
             reader.reset()
             raw = list(reader.iterfind("instrumentConfiguration", retrieve_refs=False))
-            assert raw[0].get("ref") == 'CommonInstrumentParams'
-            assert "ref" not in derefed[0]
-            assert derefed[0].get('instrument serial number') == 'SN06061F'
+            self.assertEqual(raw[0].get("ref"), 'CommonInstrumentParams')
+            self.assertNotIn("ref", derefed[0])
+            self.assertEqual(derefed[0].get('instrument serial number'), 'SN06061F')
 
 
 if __name__ == '__main__':
