@@ -397,6 +397,19 @@ class XML(FileReader):
         """Remove the saved :py:class:`ElementTree`."""
         self._tree = None
 
+    def _retrieve_refs(self, info, **kwargs):
+        """Retrieves and embeds the data for each attribute in `info` that
+        ends in _ref. Removes the id attribute from `info`"""
+        for k, v in dict(info).items():
+            if k.endswith('_ref'):
+                by_id = self.get_by_id(v, retrieve_refs=True)
+                if by_id is None:
+                    warnings.warn('Ignoring unresolved reference: ' + v)
+                else:
+                    info.update(by_id)
+                    del info[k]
+                    info.pop('id', None)
+
     @_keepstate
     def iterfind(self, path, **kwargs):
         """Parse the XML and yield info on elements with specified local
