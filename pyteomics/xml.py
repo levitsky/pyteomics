@@ -383,7 +383,11 @@ class XML(FileReader):
         # flatten the excessive nesting
         for k, v in dict(info).items():
             if k in self._structures_to_flatten:
-                info.update(v)
+                if isinstance(v, list):
+                    for vi in v:
+                        info.update(vi)
+                else:
+                    info.update(v)
                 del info[k]
 
         # another simplification
@@ -406,6 +410,17 @@ class XML(FileReader):
     def clear_tree(self):
         """Remove the saved :py:class:`ElementTree`."""
         self._tree = None
+
+    def _retrieve_refs(self, info, **kwargs):
+        """Retrieves and embeds the data for each attribute in `info` that
+        ends in _ref. Removes the id attribute from `info`.
+
+        This implementation is a stub and must be implemented for each specific
+        subclass. It is only called if :attr:`retrieve_refs` """
+        raise NotImplementedError(
+            ("_retrieve_refs is not implemented for {}. "
+             "Do not use `retrieve_refs=True`.").format(
+                self.__class__.__name__))
 
     @_keepstate
     def iterfind(self, path, **kwargs):
