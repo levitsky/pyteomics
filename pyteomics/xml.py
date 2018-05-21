@@ -400,15 +400,7 @@ class XML(FileReader):
     def _retrieve_refs(self, info, **kwargs):
         """Retrieves and embeds the data for each attribute in `info` that
         ends in _ref. Removes the id attribute from `info`"""
-        for k, v in dict(info).items():
-            if k.endswith('_ref'):
-                by_id = self.get_by_id(v, retrieve_refs=True)
-                if by_id is None:
-                    warnings.warn('Ignoring unresolved reference: ' + v)
-                else:
-                    info.update(by_id)
-                    del info[k]
-                    info.pop('id', None)
+        raise NotImplementedError()
 
     @_keepstate
     def iterfind(self, path, **kwargs):
