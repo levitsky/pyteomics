@@ -113,5 +113,15 @@ class MzmlTest(unittest.TestCase):
             self.assertEqual(index['MS:1000016'], 0.004935)
             self.assertEqual(aux.cvquery(scan, 'MS:1000016'), 0.004935)
 
+    def test_retrieve_refs(self):
+        with MzML(self.path) as reader:
+            derefed = list(reader.iterfind("instrumentConfiguration", retrieve_refs=True))
+            reader.reset()
+            raw = list(reader.iterfind("instrumentConfiguration", retrieve_refs=False))
+            self.assertEqual(raw[0].get("ref"), 'CommonInstrumentParams')
+            self.assertNotIn("ref", derefed[0])
+            self.assertEqual(derefed[0].get('instrument serial number'), 'SN06061F')
+
+
 if __name__ == '__main__':
     unittest.main()

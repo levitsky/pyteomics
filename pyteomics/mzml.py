@@ -97,7 +97,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
     _default_schema = _schema_defaults._mzml_schema_defaults
     _default_version = '1.1.0'
     _default_iter_tag = 'spectrum'
-    _structures_to_flatten = {'binaryDataArrayList'}
+    _structures_to_flatten = {'binaryDataArrayList', "referenceableParamGroupRef"}
     _indexed_tags = {'spectrum', 'chromatogram'}
 
     def __init__(self, *args, **kwargs):
@@ -270,6 +270,20 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
             if k in info:
                 info[k] = int(info[k])
         return info
+
+    def _retrieve_refs(self, info, **kwargs):
+        """Retrieves and embeds the data for each attribute in `info` that
+        ends in _ref. Removes the id attribute from `info`"""
+        for k, v in dict(info).items():
+            if k == 'ref':
+                by_id = self.get_by_id(v, retrieve_refs=True)
+                if by_id is None:
+                    warnings.warn('Ignoring unresolved reference: ' + v)
+                else:
+                    info.update(by_id)
+                    del info[k]
+                    info.pop('id', None)
+
 
 def read(source, read_schema=False, iterative=True, use_index=False, dtype=None, huge_tree=False):
     """Parse `source` and iterate through spectra.
