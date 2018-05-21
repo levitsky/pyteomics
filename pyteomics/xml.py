@@ -123,6 +123,7 @@ class XML(FileReader):
     _default_id_attr = 'id'
     _huge_tree = False
     _skip_empty_cvparam_values = False
+    _retrieve_refs_enabled = None # only some subclasses implement this
 
     # Configurable plugin logic
     _converters = XMLValueConverter.converters()
@@ -188,6 +189,7 @@ class XML(FileReader):
         self._converters_items = self._converters.items()
         self._huge_tree = kwargs.get('huge_tree', self._huge_tree)
         self._skip_empty_cvparam_values = kwargs.get('skip_empty_cvparam_values', False)
+        self._retrieve_refs_enabled = kwargs.get('retrieve_refs')
 
     @_keepstate
     def _get_version_info(self):
@@ -377,7 +379,7 @@ class XML(FileReader):
             raise PyteomicsError(message)
 
         # resolve refs
-        if kwargs.get('retrieve_refs'):
+        if kwargs.get('retrieve_refs', self._retrieve_refs_enabled):
             self._retrieve_refs(info, **kwargs)
 
         # flatten the excessive nesting
