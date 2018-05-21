@@ -270,6 +270,20 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
                 info[k] = int(info[k])
         return info
 
+    def _retrieve_refs(self, info, **kwargs):
+        """Retrieves and embeds the data for each attribute in `info` that
+        ends in _ref. Removes the id attribute from `info`"""
+        for k, v in dict(info).items():
+            if k.endswith('_ref') or k == 'ref':
+                by_id = self.get_by_id(v, retrieve_refs=True)
+                if by_id is None:
+                    warnings.warn('Ignoring unresolved reference: ' + v)
+                else:
+                    info.update(by_id)
+                    del info[k]
+                    info.pop('id', None)
+
+
 def read(source, read_schema=False, iterative=True, use_index=False, dtype=None, huge_tree=False):
     """Parse `source` and iterate through spectra.
 
