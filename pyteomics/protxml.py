@@ -152,10 +152,11 @@ def read(source, read_schema=False, iterative=True, **kwargs):
     return ProtXML(source, read_schema=read_schema, iterative=iterative)
 
 chain = aux._make_chain(read, 'read')
-def is_decoy(pg):
+
+def is_decoy(pg, prefix='DECOY_'):
     """Determine if a protein group should be considered decoy.
 
-    This function checks that all protein names in a group start with "DECOY_".
+    This function checks that all protein names in a group start with `prefix`.
     You may need to provide your own function for correct filtering and FDR estimation.
 
     Parameters
@@ -163,14 +164,17 @@ def is_decoy(pg):
 
     pg : dict
         A protein group dict produced by the :py:class:`ProtXML` parser.
-
+    prefix : str, optional
+        A prefix used to mark decoy proteins. Default is `'DECOY_'`.
 
     Returns
     -------
 
     out : bool
     """
-    return all(p['protein_name'].startswith('DECOY_') for p in pg['protein'])
+    return all(p['protein_name'].startswith(prefix) for p in pg['protein'])
+
+
 fdr = aux._make_fdr(is_decoy)
 _key = op.itemgetter('probability')
 qvalues = aux._make_qvalues(chain, is_decoy, _key)
@@ -179,6 +183,8 @@ filter.chain = aux._make_chain(filter, 'filter', True)
 
 def DataFrame(*args, **kwargs):
     """Read protXML output files into a :py:class:`pandas.DataFrame`.
+
+    .. note :: Rows in the DataFrame correspond to individual proteins, not protein groups.
 
     Requires :py:mod:`pandas`.
 
@@ -224,3 +230,41 @@ def DataFrame(*args, **kwargs):
                                 out['indistinguishable_protein'] = sep.join(p['protein_name'] for p in out['indistinguishable_protein'])
                         yield out
     return pd.DataFrame(gen_items(), **pd_kwargs)
+
+def filter_df(*args, **kwargs):
+    """Read protXML files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.
+    Positional arguments can be protXML files or DataFrames.
+
+    .. note :: Rows in the DataFrame correspond to individual proteins, not protein groups.
+
+    Requires :py:mod:`pandas`.
+
+    Parameters
+    ----------
+    key : str / iterable / callable, optional
+        Default is 'probability'.
+    is_decoy : str / iterable / callable, optional
+        Default is to check that "protein_name" starts with `'DECOY_'`.
+    reverse : bool, optional
+        Should be :py:const:`True` if higher score is better.
+        Default is :py:const:`True` (because the default key is 'probability').
+
+    *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+
+    Returns
+    -------
+    out : pandas.DataFrame
+    """
+    import pandas as pd
+    kwargs.setdefault('key', 'probability')
+    kwargs.setdefault('reverse', True)
+    if all(isinstance(arg, pd.DataFrame) for arg in args):
+        if len(args) > 1:
+            df = pd.concat(args)
+        else:
+            df = args[0]
+    else:
+        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep'] if k in kwargs}
+        df = DataFrame(*args, **read_kw)
+    kwargs.setdefault('is_decoy', df['protein_name'].str.startswith('DECOY_'))
+    return aux.filter(df, **kwargs)
