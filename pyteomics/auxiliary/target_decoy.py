@@ -261,9 +261,16 @@ def _make_qvalues(read, is_decoy, key):
 
         correction : int or float, keyword only, optional
             Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
-            Default is 0 (no correction); 1 accounts for the probability that a false
-            positive scores better than the first excluded decoy PSM; 2 also corrects
-            that probability for finite size of the sample. If a floating point number
+
+            0 (default): no correction;
+
+            1: enable "+1" correction. This accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM;
+
+            2: this also corrects that probability for finite size of the sample,
+            so the correction will be slightly less than "+1".
+
+            If a floating point number
             is given, then instead of the expectation value for the number of false PSMs,
             the confidence value is used. The value of `correction` is then interpreted as
             desired confidence level. E.g., if correction=0.95, then the calculated q-values
@@ -577,9 +584,16 @@ def _make_filter(read, is_decoy, key, qvalues):
 
         correction : int or float, keyword only, optional
             Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
-            Default is 0 (no correction); 1 accounts for the probability that a false
-            positive scores better than the first excluded decoy PSM; 2 also corrects
-            that probability for finite size of the sample. If a floating point number
+
+            0 (default): no correction;
+
+            1: enable "+1" correction. This accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM;
+
+            2: this also corrects that probability for finite size of the sample,
+            so the correction will be slightly less than "+1".
+
+            If a floating point number
             is given, then instead of the expectation value for the number of false PSMs,
             the confidence value is used. The value of `correction` is then interpreted as
             desired confidence level. E.g., if correction=0.95, then the calculated q-values
@@ -770,9 +784,16 @@ def _make_fdr(is_decoy):
 
         correction : int or float, optional
             Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
-            Default is 0 (no correction); 1 accounts for the probability that a false
-            positive scores better than the first excluded decoy PSM; 2 also corrects
-            that probability for finite size of the sample. If a floating point number
+
+            0 (default): no correction;
+
+            1: enable "+1" correction. This accounts for the probability that a false
+            positive scores better than the first excluded decoy PSM;
+
+            2: this also corrects that probability for finite size of the sample,
+            so the correction will be slightly less than "+1".
+
+            If a floating point number
             is given, then instead of the expectation value for the number of false PSMs,
             the confidence value is used. The value of `correction` is then interpreted as
             desired confidence level. E.g., if correction=0.95, then the calculated q-values
