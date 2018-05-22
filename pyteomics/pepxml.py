@@ -378,10 +378,19 @@ def DataFrame(*args, **kwargs):
                             info[k] = sep.join(str(val) if val is not None else '' for val in v)
                     info.update(sh.pop('search_score'))
                     mods = sh.pop('modifications', [])
-                    info['modifications'] = ','.join('{0[mass]:.3f}@{0[position]}'.format(x) for x in mods)
+                    formatted_mods = ['{0[mass]:.3f}@{0[position]}'.format(x) for x in mods]
+                    if sep is not None:
+                        info['modifications'] = sep.join(formatted_mods)
+                    else:
+                        info['modifications'] = formatted_mods
                     for k, v in sh.items():
                         if isinstance(v, (str, int, float)):
                             info[k] = v
+                    if 'analysis_result' in sh:
+                        ar = sh['analysis_result'][0]
+                        if ar['analysis'] == 'peptideprophet':
+                            info.update(ar['peptideprophet_result']['parameter'])
+                            info['probability'] = ar['peptideprophet_result']['probability']
                 yield info
     return pd.DataFrame(gen_items(), **pd_kwargs)
 
@@ -397,7 +406,7 @@ def filter_df(*args, **kwargs):
         Default is 'expect'.
     is_decoy : str / iterable / callable, optional
         Default is to check if all strings in the "protein" column start with `'DECOY_'`
-    
+
     *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
 
     Returns
