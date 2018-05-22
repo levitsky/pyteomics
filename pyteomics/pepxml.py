@@ -387,10 +387,13 @@ def DataFrame(*args, **kwargs):
                         if isinstance(v, (str, int, float)):
                             info[k] = v
                     if 'analysis_result' in sh:
-                        ar = sh['analysis_result'][0]
-                        if ar['analysis'] == 'peptideprophet':
-                            info.update(ar['peptideprophet_result']['parameter'])
-                            info['probability'] = ar['peptideprophet_result']['probability']
+                        for ar in sh['analysis_result']:
+                            if ar['analysis'] == 'peptideprophet':
+                                info.update(ar['peptideprophet_result']['parameter'])
+                                info['peptideprophet_probability'] = ar['peptideprophet_result']['probability']
+                            elif ar['analysis'] == 'interprophet':
+                                info.update(ar['interprophet_result']['parameter'])
+                                info['interprophet_probability'] = ar['interprophet_result']['probability']
                 yield info
     return pd.DataFrame(gen_items(), **pd_kwargs)
 
