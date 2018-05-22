@@ -22,10 +22,12 @@
 
    - Add class :py:class:`pyteomics.mgf.MGF`. :py:func:`mgf.read` is now an alias to the class.
      The class can be used for indexing using spectrum titles.
-   
+
    This functionality will be changed in upcoming versions.
 
  - New module :py:mod:`pyteomics.protxml` for parsing of ProteinProphet output files.
+
+ - Add PeptideProphet analysis information to the output of :py:func:`pyteomics.pepxml.DataFrame`.
 
  - New parameter `huge_tree` in XML parser constructors and :py:func:`read` functions.
    It is passed to the underlying :py:mod:`lxml` calls. Default value is `False`.
@@ -45,7 +47,7 @@
 
  - New parameter `keep_cterm` in decoy generation functions in :py:mod:`pyteomics.fasta`.
 
- - Bugfixes.
+  - Bugfixes.
 
 3.4.2
 -----
