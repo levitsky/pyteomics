@@ -41,6 +41,8 @@
 
  - Change the default value for `retrieve_refs` to :py:const:`True` in MzIdentML constructor.
 
+ - Implement `retrieve_refs` for :py:class:`pyteomics.mzml.MzML` (contributed by J. Klein).
+
  - New parameter `keep_cterm` in decoy generation functions in :py:mod:`pyteomics.fasta`.
 
  - Bugfixes.
