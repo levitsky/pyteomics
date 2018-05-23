@@ -4,17 +4,17 @@
  - Preserve accession information on cvParam elements in mzML parser.
    Dictionaries produced by the parser can now be queried by accession using
    :py:func:`pyteomics.auxiliary.cvquery`.
-   (Contributed by J. Klein)
+   *(Contributed by J. Klein)*
 
  - Add optional `decode_binary` argument in
    :py:class:`pyteomics.mzml.MzML` and :py:class:`pyteomics.mzxml.MzXML`.
    When set to `False`, the parsers provide binary records suitable for decoding on demand.
-   (Contributed by J. Klein)
+   *(Contributed by J. Klein)*
 
  - Add method :py:meth:`write_byte_offsets` in :py:class:`pyteomics.mzml.MzML`,
    :py:class:`pyteomics.mzxml.MzXML` and :py:class:`pyteomics.mzid.MzIdentML`.
    Byte offsets can be loaded later to speed up random access.
-   (Contributed by J. Klein)
+   *(Contributed by J. Klein)*
 
  - Random access to MGF spectrum entries.
 
@@ -43,11 +43,12 @@
 
  - Change the default value for `retrieve_refs` to :py:const:`True` in MzIdentML constructor.
 
- - Implement `retrieve_refs` for :py:class:`pyteomics.mzml.MzML` (contributed by J. Klein).
+ - Implement `retrieve_refs` for :py:class:`pyteomics.mzml.MzML`.
+   *(Contributed by J. Klein)*
 
  - New parameter `keep_cterm` in decoy generation functions in :py:mod:`pyteomics.fasta`.
 
-  - Bugfixes.
+ - Bugfixes.
 
 3.4.2
 -----

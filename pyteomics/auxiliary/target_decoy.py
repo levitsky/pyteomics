@@ -180,7 +180,7 @@ def _construct_dtype(*args, **kwargs):
     return dtype
 
 
-def _make_qvalues(read, is_decoy, key):
+def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
     """Create a function that reads PSMs from a file and calculates q-values
     for each value of `key`."""
 
@@ -346,7 +346,15 @@ def _make_qvalues(read, is_decoy, key):
             keyf = np.array(list(keyf))
 
         if peps is None:
-            isdecoy = kwargs.pop('is_decoy', is_decoy)
+            if 'is_decoy' not in kwargs:
+                if 'decoy_suffix' in kwargs:
+                    isdecoy = lambda x: is_decoy_suffix(x, kwargs['decoy_suffix'])
+                elif 'decoy_prefix' in kwargs:
+                    isdecoy = lambda x: is_decoy_prefix(x, kwargs['decoy_prefix'])
+                else:
+                    isdecoy = is_decoy_prefix
+            else:
+                isdecoy = kwargs['is_decoy']
         else:
             isdecoy = peps
 
@@ -449,7 +457,7 @@ def _make_qvalues(read, is_decoy, key):
             return psms
         return scores
 
-    _fix_docstring(qvalues, is_decoy=is_decoy, key=key)
+    _fix_docstring(qvalues, is_decoy=is_decoy_prefix, key=key)
     if read is _iter:
         qvalues.__doc__ = qvalues.__doc__.replace("""positional args : file or str
             Files to read PSMs from. All positional arguments are treated as
@@ -665,7 +673,7 @@ def _itercontext(x, **kw):
 
 
 _iter = _make_chain(_itercontext, 'iter')
-qvalues = _make_qvalues(_iter, None, None)
+qvalues = _make_qvalues(_iter, None, None, None)
 
 filter = _make_filter(_iter, None, None, qvalues)
 filter.chain = _make_chain(filter, 'filter', True)

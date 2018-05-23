@@ -301,7 +301,7 @@ def roc_curve(source):
 
 chain = aux._make_chain(read, 'read')
 
-def is_decoy(psm, prefix='DECOY_'):
+def _is_decoy_prefix(psm, prefix='DECOY_'):
     """Given a PSM dict, return :py:const:`True` if all protein names for
     the PSM start with ``prefix``, and :py:const:`False` otherwise. This
     function might not work for some pepXML flavours. Use the source to get the
@@ -319,12 +319,18 @@ def is_decoy(psm, prefix='DECOY_'):
     out : bool
     """
     return all(protein['protein'].startswith(prefix)
-            for protein in  psm['search_hit'][0]['proteins'])
+            for protein in psm['search_hit'][0]['proteins'])
+
+def _is_decoy_suffix(psm, suffix='DECOY_'):
+    return all(protein['protein'].endswith(suffix)
+            for protein in psm['search_hit'][0]['proteins'])
+
+is_decoy = _is_decoy_prefix
 
 fdr = aux._make_fdr(is_decoy)
 _key = lambda x: min(
     sh['search_score']['expect'] for sh in x['search_hit'])
-qvalues = aux._make_qvalues(chain, is_decoy, _key)
+qvalues = aux._make_qvalues(chain, _is_decoy_prefix, _is_decoy_suffix, _key)
 filter = aux._make_filter(chain, is_decoy, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter', True)
 
