@@ -321,17 +321,17 @@ def _is_decoy_prefix(psm, prefix='DECOY_'):
     return all(protein['protein'].startswith(prefix)
             for protein in psm['search_hit'][0]['proteins'])
 
-def _is_decoy_suffix(psm, suffix='DECOY_'):
+def _is_decoy_suffix(psm, suffix='_DECOY'):
     return all(protein['protein'].endswith(suffix)
             for protein in psm['search_hit'][0]['proteins'])
 
 is_decoy = _is_decoy_prefix
 
-fdr = aux._make_fdr(is_decoy)
+fdr = aux._make_fdr(_is_decoy_prefix, _is_decoy_suffix)
 _key = lambda x: min(
     sh['search_score']['expect'] for sh in x['search_hit'])
 qvalues = aux._make_qvalues(chain, _is_decoy_prefix, _is_decoy_suffix, _key)
-filter = aux._make_filter(chain, is_decoy, _key, qvalues)
+filter = aux._make_filter(chain, _is_decoy_prefix, _is_decoy_suffix, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter', True)
 
 def DataFrame(*args, **kwargs):
@@ -433,10 +433,19 @@ def filter_df(*args, **kwargs):
     else:
         read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep'] if k in kwargs}
         df = DataFrame(*args, **read_kw)
-    if sep is not None:
-        kwargs.setdefault('is_decoy',
-            df['protein'].str.split(';').apply(lambda s: all(x.startswith('DECOY') for x in s)))
-    else:
-        kwargs.setdefault('is_decoy',
-            df['protein'].apply(lambda s: all(x.startswith('DECOY') for x in s)))
+    if 'is_decoy' not in kwargs:
+        if sep is not None:
+            if 'decoy_suffix' in kwargs:
+                kwargs['is_decoy'] = df['protein'].str.split(';').apply(
+                    lambda s: all(x.endswith(kwargs['decoy_suffix']) for x in s))
+            else:
+                kwargs['is_decoy'] = df['protein'].str.split(';').apply(
+                    lambda s: all(x.startswith(kwargs.get('decoy_prefix', 'DECOY_')) for x in s))
+        else:
+            if 'decoy_suffix' in kwargs:
+                kwargs['is_decoy'] = df['protein'].apply(
+                    lambda s: all(x.endswith(kwargs['decoy_suffix']) for x in s))
+            else:
+                kwargs['is_decoy'] = df['protein'].apply(
+                    lambda s: all(x.startswith(kwargs.get('decoy_prefix', 'DECOY_')) for x in s))
     return aux.filter(df, **kwargs)

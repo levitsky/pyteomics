@@ -470,7 +470,7 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
     return qvalues
 
 
-def _make_filter(read, is_decoy, key, qvalues):
+def _make_filter(read, is_decoy_prefix, is_decoy_suffix, key, qvalues):
     """Create a function that reads PSMs from a file and filters them to
     the desired FDR level (estimated by TDA), returning the top PSMs
     sorted by `key`.
@@ -494,7 +494,15 @@ def _make_filter(read, is_decoy, key, qvalues):
             keyf = peps
         reverse = kwargs.pop('reverse', False)
         better = [op.lt, op.gt][bool(reverse)]
-        isdecoy = kwargs.pop('is_decoy', is_decoy)
+        if 'is_decoy' not in kwargs:
+            if 'decoy_suffix' in kwargs:
+                isdecoy = lambda x: is_decoy_suffix(x, kwargs['decoy_suffix'])
+            elif 'decoy_prefix' in kwargs:
+                isdecoy = lambda x: is_decoy_prefix(x, kwargs['decoy_prefix'])
+            else:
+                isdecoy = is_decoy_prefix
+        else:
+            isdecoy = kwargs['is_decoy']
         kwargs.pop('formula', None)
         decoy_or_pep_label = _decoy_or_pep_label(**kwargs)
         score_label = kwargs.setdefault('score_label', 'score')
@@ -652,7 +660,7 @@ def _make_filter(read, is_decoy, key, qvalues):
             return filter(*args, full_output=True, **kwargs)
         return IteratorContextManager(filter, *args, **kwargs)
 
-    _fix_docstring(_filter, is_decoy=is_decoy, key=key)
+    _fix_docstring(_filter, is_decoy=is_decoy_prefix, key=key)
     if read is _iter:
         _filter.__doc__ = _filter.__doc__.replace("""positional args : file or str
             Files to read PSMs from. All positional arguments are treated as
@@ -675,7 +683,7 @@ def _itercontext(x, **kw):
 _iter = _make_chain(_itercontext, 'iter')
 qvalues = _make_qvalues(_iter, None, None, None)
 
-filter = _make_filter(_iter, None, None, qvalues)
+filter = _make_filter(_iter, None, None, None, qvalues)
 filter.chain = _make_chain(filter, 'filter', True)
 
 try:
@@ -718,10 +726,10 @@ except ImportError:
             return math.log(math.factorial(n))
 
     def _expectation(*a, **k):
-        raise NotImplementedError()
+        raise NotImplementedError('NumPy required')
 
     def _confidence_value(*a, **k):
-        raise NotImplementedError()
+        raise NotImplementedError('NumPy required')
 
 
 def _log_pi_r(d, k, p=0.5):
@@ -732,8 +740,8 @@ def _log_pi(d, k, p=0.5):
     return _log_pi_r(d, k, p) + (d + 1) * math.log(1 - p)
 
 
-def _make_fdr(is_decoy):
-    def fdr(psms=None, formula=1, is_decoy=is_decoy, ratio=1, correction=0, pep=None):
+def _make_fdr(is_decoy_prefix, is_decoy_suffix):
+    def fdr(psms=None, formula=1, is_decoy=None, ratio=1, correction=0, pep=None, decoy_prefix='DECOY_', decoy_suffix=None):
         """Estimate FDR of a data set using TDA or given PEP values.
         Two formulas can be used. The first one (default) is:
 
@@ -827,6 +835,11 @@ def _make_fdr(is_decoy):
         total, decoy = 0, 0
         if pep is not None:
             is_decoy = pep
+        elif is_decoy is None:
+            if decoy_suffix is not None:
+                is_decoy = lambda x: is_decoy_suffix(x, decoy_suffix)
+            else:
+                is_decoy = lambda x: is_decoy_prefix(x, decoy_prefix)
         if isinstance(is_decoy, basestring):
             decoy = psms[is_decoy].sum()
             total = psms.shape[0]
@@ -858,12 +871,12 @@ def _make_fdr(is_decoy):
             return float(tfalse) / (total - decoy) / ratio
         return (decoy + tfalse / ratio) / total
 
-    _fix_docstring(fdr, is_decoy=is_decoy)
-    if is_decoy is None:
+    _fix_docstring(fdr, is_decoy=is_decoy_prefix)
+    if is_decoy_prefix is None:
         fdr.__doc__ = fdr.__doc__.replace(""".. warning::
                 The default function may not work
                 with your files, because format flavours are diverse.\n""", "")
     return fdr
 
 
-fdr = _make_fdr(None)
+fdr = _make_fdr(None, None)

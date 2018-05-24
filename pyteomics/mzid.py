@@ -306,7 +306,6 @@ def is_decoy(psm):
     return all(pe['isDecoy'] for sii in psm['SpectrumIdentificationItem']
             for pe in sii['PeptideEvidenceRef'])
 
-
 def DataFrame(*args, **kwargs):
     """Read MzIdentML files into a :py:class:`pandas.DataFrame`.
 
@@ -331,7 +330,7 @@ def DataFrame(*args, **kwargs):
     """
     import pandas as pd
     data = []
-    
+
     sep = kwargs.pop('sep', None)
     with chain(*args, **kwargs) as f:
         for item in f:
@@ -356,7 +355,7 @@ def DataFrame(*args, **kwargs):
                     if sep is not None:
                         if all(isinstance(prd, str) for prd in prot_descr):
                             prot_descr = sep.join(prot_descr)
-                        
+
                         if all(isinstance(acc, str) for acc in accessions):
                             accessions = sep.join(accessions)
 
@@ -406,9 +405,9 @@ def filter_df(*args, **kwargs):
         df = DataFrame(*args, **kwargs)
     return aux.filter(df, **kwargs)
 
-fdr = aux._make_fdr(is_decoy)
+fdr = aux._make_fdr(is_decoy, None)
 _key = lambda x: min(
     sii['mascot:expectation value'] for sii in x['SpectrumIdentificationItem'])
-qvalues = aux._make_qvalues(chain, is_decoy, _key)
-filter = aux._make_filter(chain, is_decoy, _key, qvalues)
+qvalues = aux._make_qvalues(chain, is_decoy, None, _key)
+filter = aux._make_filter(chain, is_decoy, None, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter', True)

@@ -218,9 +218,9 @@ def iterfind(source, path, **kwargs):
 
 chain = aux._make_chain(read, 'read')
 
-def is_decoy(psm, prefix='DECOY_'):
+def _is_decoy_prefix(psm, prefix='DECOY_'):
     """Given a PSM dict, return :py:const:`True` if all protein names for
-    the PSM start with ``prefix``, and :py:const:`False` otherwise.
+    the PSM start with `prefix`, and :py:const:`False` otherwise.
 
     Parameters
     ----------
@@ -235,10 +235,27 @@ def is_decoy(psm, prefix='DECOY_'):
     """
     return all(prot['label'].startswith(prefix) for prot in psm['protein'])
 
-qvalues = aux._make_qvalues(chain, is_decoy, operator.itemgetter('expect'))
-filter = aux._make_filter(chain, is_decoy, operator.itemgetter('expect'),
-        qvalues)
-fdr = aux._make_fdr(is_decoy)
+def _is_decoy_suffix(psm, suffix='_DECOY'):
+    """Given a PSM dict, return :py:const:`True` if all protein names for
+    the PSM end with `suffix`, and :py:const:`False` otherwise.
+
+    Parameters
+    ----------
+    psm : dict
+        A dict, as yielded by :py:func:`read`.
+    suffix : str, optional
+        A suffix used to mark decoy proteins. Default is `'_DECOY'`.
+
+    Returns
+    -------
+    out : bool
+    """
+    return all(prot['label'].endswith(suffix) for prot in psm['protein'])
+
+is_decoy = _is_decoy_prefix
+qvalues = aux._make_qvalues(chain, _is_decoy_prefix, _is_decoy_suffix, operator.itemgetter('expect'))
+filter = aux._make_filter(chain, _is_decoy_prefix, _is_decoy_suffix, operator.itemgetter('expect'), qvalues)
+fdr = aux._make_fdr(_is_decoy_prefix, _is_decoy_suffix)
 filter.chain = aux._make_chain(filter, 'filter', True)
 
 def DataFrame(*args, **kwargs):
@@ -272,7 +289,7 @@ def DataFrame(*args, **kwargs):
                 if isinstance(v, (str, int, float)):
                     info[k] = v
             protein = item['protein'][0]
-            
+
             for key in prot_keys:
                 vals = [prot.get(key) for prot in item['protein']]
                 if sep is not None:
@@ -324,10 +341,21 @@ def filter_df(*args, **kwargs):
     else:
         read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep'] if k in kwargs}
         df = DataFrame(*args, **read_kw)
-    if sep is not None:
-        kwargs.setdefault('is_decoy',
-            df['protein_label'].str.split(sep).apply(lambda s: all(x.startswith('DECOY') for x in s)))
-    else:
-        kwargs.setdefault('is_decoy',
-            df['protein_label'].apply(lambda s: all(x.startswith('DECOY') for x in s)))
+
+    if 'is_decoy' not in kwargs:
+        if sep is not None:
+            if 'decoy_suffix' in kwargs:
+                kwargs['is_decoy'] = df['protein_label'].str.split(sep).apply(
+                    lambda s: all(x.endtswith(kwargs['decoy_suffix']) for x in s))
+            else:
+                kwargs['is_decoy'] = df['protein_label'].str.split(sep).apply(
+                    lambda s: all(x.startswith(kwargs.get('decoy_prefix', 'DECOY_')) for x in s))
+        else:
+            if 'decoy_suffix' in kwargs:
+                kwargs['is_decoy'] = df['protein_label'].apply(
+                    lambda s: all(x.endswith(kwargs['decoy_suffix']) for x in s))
+            else:
+                kwargs['is_decoy'] = df['protein_label'].apply(
+                    lambda s: all(x.startswith(kwargs.get('decoy_prefix', 'DECOY_')) for x in s))
+
     return aux.filter(df, **kwargs)
