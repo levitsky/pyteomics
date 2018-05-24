@@ -153,7 +153,7 @@ def read(source, read_schema=False, iterative=True, **kwargs):
 
 chain = aux._make_chain(read, 'read')
 
-def is_decoy(pg, prefix='DECOY_'):
+def _is_decoy_prefix(pg, prefix='DECOY_'):
     """Determine if a protein group should be considered decoy.
 
     This function checks that all protein names in a group start with `prefix`.
@@ -174,11 +174,33 @@ def is_decoy(pg, prefix='DECOY_'):
     """
     return all(p['protein_name'].startswith(prefix) for p in pg['protein'])
 
+def _is_decoy_suffix(pg, suffix='_DECOY'):
+    """Determine if a protein group should be considered decoy.
 
-fdr = aux._make_fdr(is_decoy)
+    This function checks that all protein names in a group end with `suffix`.
+    You may need to provide your own function for correct filtering and FDR estimation.
+
+    Parameters
+    ----------
+
+    pg : dict
+        A protein group dict produced by the :py:class:`ProtXML` parser.
+    suffix : str, optional
+        A suffix used to mark decoy proteins. Default is `'_DECOY'`.
+
+    Returns
+    -------
+
+    out : bool
+    """
+    return all(p['protein_name'].endswith(suffix) for p in pg['protein'])
+
+is_decoy = _is_decoy_prefix
+
+fdr = aux._make_fdr(_is_decoy_prefix, _is_decoy_suffix)
 _key = op.itemgetter('probability')
-qvalues = aux._make_qvalues(chain, is_decoy, _key)
-filter = aux._make_filter(chain, is_decoy, _key, qvalues)
+qvalues = aux._make_qvalues(chain, _is_decoy_prefix, _is_decoy_suffix, _key)
+filter = aux._make_filter(chain, _is_decoy_prefix, _is_decoy_suffix, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter', True)
 
 def DataFrame(*args, **kwargs):
@@ -222,7 +244,7 @@ def DataFrame(*args, **kwargs):
                         out.update(prot)
                         if 'unique_stripped_peptides' in out:
                             if sep is not None:
-                                out['unique_stripped_peptides'] = sep.join(out['unique_stripped_peptides'].split('+'))
+                                out['unique_stripped_peptides'] = sep.join(out['unique_stripped_peptides'])
                         if 'indistinguishable_protein' in out:
                             if sep is None:
                                 out['indistinguishable_protein'] = [p['protein_name'] for p in out['indistinguishable_protein']]
@@ -266,5 +288,9 @@ def filter_df(*args, **kwargs):
     else:
         read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep'] if k in kwargs}
         df = DataFrame(*args, **read_kw)
-    kwargs.setdefault('is_decoy', df['protein_name'].str.startswith('DECOY_'))
+    if 'is_decoy' not in kwargs:
+        if 'decoy_suffix' in kwargs:
+            kwargs['is_decoy'] = df['protein_name'].str.endswith(kwargs['decoy_suffix'])
+        else:
+            kwargs['is_decoy'] = df['protein_name'].str.startswith(kwargs.get('decoy_prefix', 'DECOY_'))
     return aux.filter(df, **kwargs)
