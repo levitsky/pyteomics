@@ -48,6 +48,10 @@
 
  - New parameter `keep_cterm` in decoy generation functions in :py:mod:`pyteomics.fasta`.
 
+ - New parameters `decoy_prefix` and `decoy_suffix` in all format-specific FDR filtering functions.
+   If the standard :py:func:`is_decoy` function works for your files, you can use this parameters to
+   specify either the prefix or the suffix appended to the protein names in decoy entries.
+
  - Bugfixes.
 
 3.4.2

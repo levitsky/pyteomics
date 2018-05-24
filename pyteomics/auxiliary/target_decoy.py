@@ -225,6 +225,17 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
                 The default function may not work
                 with your files, because format flavours are diverse.
 
+        decoy_prefix : str, optional
+            If the default `is_decoy` function works for you, this parameter specifies which
+            protein name prefix to use to detect decoy matches. If you provide your own
+            `is_decoy`, or if you specify `decoy_suffix`, this parameter has no effect.
+            Default is `"DECOY_"`.
+
+        decoy_suffix : str, optional
+            If the default `is_decoy` function works for you, this parameter specifies which
+            protein name suffix to use to detect decoy matches. If you provide your own
+            `is_decoy`, this parameter has no effect. Mutually exclusive with `decoy_prefix`.
+
         pep : callable / array-like / iterable / str, keyword only, optional
             If callable, a function used to determine the posterior error probability (PEP).
             Should accept exactly one argument (PSM) and return a float.
@@ -463,9 +474,20 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
             Files to read PSMs from. All positional arguments are treated as
             files.""", """positional args : iterables
             Iterables to read PSMs from. All positional arguments are chained."""
-                                                  ).replace(""".. warning::
+                ).replace("""\n            .. warning::
                 The default function may not work
-                with your files, because format flavours are diverse.\n""", "")
+                with your files, because format flavours are diverse.
+
+        decoy_prefix : str, optional
+            If the default `is_decoy` function works for you, this parameter specifies which
+            protein name prefix to use to detect decoy matches. If you provide your own
+            `is_decoy`, or if you specify `decoy_suffix`, this parameter has no effect.
+            Default is `"DECOY_"`.
+
+        decoy_suffix : str, optional
+            If the default `is_decoy` function works for you, this parameter specifies which
+            protein name suffix to use to detect decoy matches. If you provide your own
+            `is_decoy`, this parameter has no effect. Mutually exclusive with `decoy_prefix`.\n""", "")
 
     return qvalues
 
@@ -576,6 +598,17 @@ def _make_filter(read, is_decoy_prefix, is_decoy_suffix, key, qvalues):
                 The default function may not work
                 with your files, because format flavours are diverse.
 
+        decoy_prefix : str, optional
+            If the default `is_decoy` function works for you, this parameter specifies which
+            protein name prefix to use to detect decoy matches. If you provide your own
+            `is_decoy`, or if you specify `decoy_suffix`, this parameter has no effect.
+            Default is `"DECOY_"`.
+
+        decoy_suffix : str, optional
+            If the default `is_decoy` function works for you, this parameter specifies which
+            protein name suffix to use to detect decoy matches. If you provide your own
+            `is_decoy`, this parameter has no effect. Mutually exclusive with `decoy_prefix`.
+
         remove_decoy : bool, keyword only, optional
             Defines whether decoy matches should be removed from the output.
             Default is :py:const:`True`.
@@ -665,10 +698,21 @@ def _make_filter(read, is_decoy_prefix, is_decoy_suffix, key, qvalues):
         _filter.__doc__ = _filter.__doc__.replace("""positional args : file or str
             Files to read PSMs from. All positional arguments are treated as
             files.""", """positional args : iterables
-            Iterables to read PSMs from. All positional arguments are chained."""
-                                                  ).replace(""".. warning::
+            Iterables to read PSMs from. All positional arguments are chained.""").replace(
+                """\n            .. warning::
                 The default function may not work
-                with your files, because format flavours are diverse.\n""", "")
+                with your files, because format flavours are diverse.
+
+        decoy_prefix : str, optional
+            If the default `is_decoy` function works for you, this parameter specifies which
+            protein name prefix to use to detect decoy matches. If you provide your own
+            `is_decoy`, or if you specify `decoy_suffix`, this parameter has no effect.
+            Default is `"DECOY_"`.
+
+        decoy_suffix : str, optional
+            If the default `is_decoy` function works for you, this parameter specifies which
+            protein name suffix to use to detect decoy matches. If you provide your own
+            `is_decoy`, this parameter has no effect. Mutually exclusive with `decoy_prefix`.\n""", "")
     return _filter
 
 
@@ -781,6 +825,17 @@ def _make_fdr(is_decoy_prefix, is_decoy_suffix):
                 The default function may not work
                 with your files, because format flavours are diverse.
 
+        decoy_prefix : str, optional
+            If the default `is_decoy` function works for you, this parameter specifies which
+            protein name prefix to use to detect decoy matches. If you provide your own
+            `is_decoy`, or if you specify `decoy_suffix`, this parameter has no effect.
+            Default is `"DECOY_"`.
+
+        decoy_suffix : str, optional
+            If the default `is_decoy` function works for you, this parameter specifies which
+            protein name suffix to use to detect decoy matches. If you provide your own
+            `is_decoy`, this parameter has no effect. Mutually exclusive with `decoy_prefix`.
+
         pep : callable, iterable, or str, optional
             If callable, a function used to determine the posterior error probability (PEP).
             Should accept exactly one argument (PSM) and return a float.
@@ -873,9 +928,21 @@ def _make_fdr(is_decoy_prefix, is_decoy_suffix):
 
     _fix_docstring(fdr, is_decoy=is_decoy_prefix)
     if is_decoy_prefix is None:
-        fdr.__doc__ = fdr.__doc__.replace(""".. warning::
+        fdr.__doc__ = fdr.__doc__.replace(
+            """\n            .. warning::
                 The default function may not work
-                with your files, because format flavours are diverse.\n""", "")
+                with your files, because format flavours are diverse.
+
+        decoy_prefix : str, optional
+            If the default `is_decoy` function works for you, this parameter specifies which
+            protein name prefix to use to detect decoy matches. If you provide your own
+            `is_decoy`, or if you specify `decoy_suffix`, this parameter has no effect.
+            Default is `"DECOY_"`.
+
+        decoy_suffix : str, optional
+            If the default `is_decoy` function works for you, this parameter specifies which
+            protein name suffix to use to detect decoy matches. If you provide your own
+            `is_decoy`, this parameter has no effect. Mutually exclusive with `decoy_prefix`.\n""", "")
     return fdr
 
 
