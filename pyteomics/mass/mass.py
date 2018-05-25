@@ -282,7 +282,7 @@ class Composition(BasicComposition):
         aa_comp = kwargs.get('aa_comp', std_aa_comp)
         mass_data = kwargs.get('mass_data', nist_mass)
 
-        
+
         kw_given = self._kw_sources.intersection(kwargs)
         if len(kw_given) > 1:
             raise PyteomicsError('Only one of {} can be specified!\n'
@@ -362,7 +362,7 @@ class Composition(BasicComposition):
         """
         composition = self
         mass_data = kwargs.get('mass_data', nist_mass)
-        
+
         # Calculate mass
         mass = 0.0
         average = kwargs.get('average', False)
@@ -414,6 +414,8 @@ std_aa_comp.update({
 
 std_ion_comp.update({
     'M':        Composition(formula=''),
+    'M-H2O':    Composition(formula='H-2O-1'),
+    'M-NH3':    Composition(formula='N-1H-3'),
     'a':        Composition(formula='H-2O-1' + 'C-1O-1'),
     'a-H2O':    Composition(formula='H-2O-1' + 'C-1O-1' + 'H-2O-1'),
     'a-NH3':    Composition(formula='H-2O-1' + 'C-1O-1' + 'N-1H-3'),
@@ -421,6 +423,10 @@ std_ion_comp.update({
     'b-H2O':    Composition(formula='H-2O-1' + 'H-2O-1'),
     'b-NH3':    Composition(formula='H-2O-1' + 'N-1H-3'),
     'c':        Composition(formula='H-2O-1' + 'NH3'),
+    'c-1':      Composition(formula='H-2O-1' + 'NH3' + 'H-1'),
+    'c-dot':    Composition(formula='H-2O-1' + 'NH3' + 'H1'),
+    'c+1':      Composition(formula='H-2O-1' + 'NH3' + 'H1'),
+    'c+2':      Composition(formula='H-2O-1' + 'NH3' + 'H2'),
     'c-H2O':    Composition(formula='H-2O-1' + 'NH3' + 'H-2O-1'),
     'c-NH3':    Composition(formula='H-2O-1'),
     'x':        Composition(formula='H-2O-1' + 'CO2'),
@@ -430,6 +436,10 @@ std_ion_comp.update({
     'y-H2O':    Composition(formula='H-2O-1'),
     'y-NH3':    Composition(formula='N-1H-3'),
     'z':        Composition(formula='H-2O-1' + 'ON-1H-1'),
+    'z-dot':    Composition(formula='H-2O-1' + 'ON-1'),
+    'z+1':      Composition(formula='H-2O-1' + 'ON-1H1'),
+    'z+2':      Composition(formula='H-2O-1' + 'ON-1H2'),
+    'z+3':      Composition(formula='H-2O-1' + 'ON-1H3'),
     'z-H2O':    Composition(formula='H-2O-1' + 'ON-1H-1' + 'H-2O-1'),
     'z-NH3':    Composition(formula='H-2O-1' + 'ON-1H-1' + 'N-1H-3'),
     })
@@ -702,7 +712,7 @@ def isotopologues(*args, **kwargs):
         for elementXn in combinations_with_replacement(list_isotopes, n):
             list_comb_element_n.append(elementXn)
         all_isotoplogues.append(list_comb_element_n)
-    
+
     for isotopologue in product(*all_isotoplogues):
         ic = Composition(formula=''.join(atom for el in isotopologue for atom in el), **other_kw)
         if report_abundance or overall_threshold > 0.0:
@@ -873,7 +883,7 @@ class Unimod():
     The list of all modifications can be retrieved via `mods` attribute.
     Methods for convenient searching are `by_title` and `by_name`.
     For more elaborate filtering, iterate manually over the list.
-    
+
     .. note::
         See :py:mod:`pyteomics.mass.unimod` for a new alternative class with
         more features.

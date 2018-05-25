@@ -52,6 +52,8 @@
    If the standard :py:func:`is_decoy` function works for your files, you can use these parameters to
    specify either the prefix or the suffix appended to the protein names in decoy entries.
 
+ - New ion types in :py:data:`pyteomics.mass.std_ion_comp`.
+
  - Bugfixes.
 
 3.4.2
