@@ -19,14 +19,14 @@ with open('README') as r, open('INSTALL') as i:
 setup(
     name               = 'pyteomics',
     version            = version,
-    description        = '''A framework for proteomics data analysis.''',
+    description        = 'A framework for proteomics data analysis.',
     long_description   = long_description,
     author             = 'Anton Goloborodko & Lev Levitsky',
     author_email       = 'pyteomics@googlegroups.com',
-    url                = 'http://pythonhosted.org/pyteomics',
+    url                = 'http://pyteomics.readthedocs.io',
     packages           = ['pyteomics', 'pyteomics.mass', 'pyteomics.openms', 'pyteomics.auxiliary'],
     project_urls       = {
-                          'Documentation': 'http://pythonhosted.org/pyteomics',
+                          'Documentation': 'http://pyteomics.readthedocs.io',
                           'Source Code'  : 'https://bitbucket.org/levitsky/pyteomics',
                           'Issue Tracker': 'http://bitbucket.org/levitsky/pyteomics/issues',
                           'Mailing List' : 'https://groups.google.com/group/pyteomics',
