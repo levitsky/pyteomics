@@ -3,7 +3,7 @@ Useful Links
 
 Pyteomics is hosted at the following sites:
 
-    - Python package @ Python Package Index: http://pypi.python.org/pypi/pyteomics
+    - Python package @ Python Package Index: https://pypi.org/project/pyteomics
     - project documentation @ Python.org:  http://pythonhosted.org/pyteomics
     - source code @ Bitbucket: http://hg.theorchromo.ru/pyteomics
     - mailing list @ Google: https://groups.google.com/group/pyteomics
@@ -13,9 +13,9 @@ Pyteomics Extensions
 
 Additional, third-party packages extending the Pyteomics functionality can be insalled separately:
 
-    - `pyteomics.pepxmltk <https://pypi.python.org/pypi/pyteomics.pepxmltk>`_ (pepXML file creation)
-    - `pyteomics.biolccc <https://pypi.python.org/pypi/pyteomics.biolccc>`_ (retention time prediction)
-    - `pyteomics.cythonize <https://pypi.python.org/pypi/pyteomics.cythonize>`_ (cythonized versions of :py:mod:`mass` and :py:mod:`!parser` modules)
+    - `pyteomics.pepxmltk <https://pypi.org/project/pyteomics-pepxmltk>`_ (pepXML file creation)
+    - `pyteomics.biolccc <https://pypi.org/project/pyteomics-biolccc>`_ (retention time prediction)
+    - `pyteomics.cythonize <https://pypi.org/project/pyteomics-cythonize>`_ (cythonized versions of :py:mod:`mass` and :py:mod:`!parser` modules)
 
 Feedback & Support
 ------------------
