@@ -41,6 +41,10 @@ class ProtXMLTest(unittest.TestCase):
         q = protxml.qvalues(self.path, **self._kw)
         self.assertEqual(list(q['q']), [0, 1])
 
+    def test_qvalues_prefix(self):
+        q = protxml.qvalues(self.path, decoy_prefix='DECO', **self._kw)
+        self.assertEqual(list(q['q']), [0, 1])
+
     def test_df(self):
         df = protxml.DataFrame(self.path)
         self.assertEqual(df.shape, (2, 15))
@@ -48,9 +52,19 @@ class ProtXMLTest(unittest.TestCase):
     def test_filter_df(self):
         kw = self._kw.copy()
         del kw['full_output']
-        kw['key'] = 'probability'
+        del kw['key']
         fdf = protxml.filter_df(self.path, **kw)
         self.assertEqual(fdf.shape, (2, 17))
+
+    def test_filter_df_suffix(self):
+        kw = self._kw.copy()
+        del kw['full_output']
+        del kw['key']
+        kw['remove_decoy'] = True
+        df = protxml.DataFrame(self.path)
+        df['protein_name'] = df.protein_name.str.replace(r'DECOY_(.*)', r'\1_SUF')
+        fdf = protxml.filter_df(df, decoy_suffix='_SUF', **kw)
+        self.assertEqual(fdf.shape, (1, 17))
 
 if __name__ == '__main__':
     unittest.main()
