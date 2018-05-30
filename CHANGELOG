@@ -1,3 +1,8 @@
+3.5.2
+-----
+
+ - Add parameter `semi` in :py:func:`pyteomics.parser.cleave`.
+
 3.5.1
 -----
 
