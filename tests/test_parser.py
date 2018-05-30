@@ -5,6 +5,7 @@ import unittest
 from pyteomics import parser
 from string import ascii_uppercase as uppercase
 import random
+
 class ParserTest(unittest.TestCase):
     def setUp(self):
         self.simple_sequences = [''.join(random.choice(uppercase) for i in range(
@@ -60,12 +61,19 @@ class ParserTest(unittest.TestCase):
                              sum(comp.values()))
 
     def test_cleave(self):
+        self.assertEqual(parser._cleave('PEPTIDEKS', parser.expasy_rules['trypsin']), ['PEPTIDEK', 'S'])
         for seq in self.simple_sequences:
             for elem in parser.cleave(
                     seq, parser.expasy_rules['trypsin'], int(random.uniform(1, 10))):
                 self.assertIn(elem, seq)
             self.assertTrue(any(elem == seq
                 for elem in parser.cleave(seq, parser.expasy_rules['trypsin'], len(seq))))
+
+    def test_cleave_semi(self):
+        self.assertEqual(parser._cleave('PEPTIDEKS', parser.expasy_rules['trypsin'], semi=True),
+            ['PEPTIDEK', 'P', 'PE', 'PEP', 'PEPT', 'PEPTI', 'PEPTID', 'EPTIDEK', 'PTIDEK', 'TIDEK', 'IDEK', 'DEK', 'EK', 'K', 'S'])
+        self.assertEqual(parser.cleave('PEPTIDEKS', parser.expasy_rules['trypsin'], semi=True),
+            {'PEPTIDEK', 'P', 'PE', 'PEP', 'PEPT', 'PEPTI', 'PEPTID', 'EPTIDEK', 'PTIDEK', 'TIDEK', 'IDEK', 'DEK', 'EK', 'K', 'S'})
 
     def test_cleave_min_length(self):
         for seq in self.simple_sequences:

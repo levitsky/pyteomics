@@ -494,7 +494,7 @@ def amino_acid_composition(sequence,
     return aa_dict
 
 @memoize()
-def cleave(sequence, rule, missed_cleavages=0, min_length=None):
+def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False):
     """Cleaves a polypeptide sequence using a given rule.
 
     Parameters
@@ -526,6 +526,10 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None):
             you know what you are doing and apply :py:func:`cleave` to *modX*
             sequences.
 
+    semi : bool, optional
+        Include products of semi-specific cleavage. Default is :py:const:`False`.
+        This effectively cuts every peptide at every position and adds results to the output.
+
     Returns
     -------
     out : set
@@ -540,9 +544,9 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None):
     True
 
     """
-    return set(_cleave(sequence, rule, missed_cleavages, min_length))
+    return set(_cleave(sequence, rule, missed_cleavages, min_length, semi))
 
-def _cleave(sequence, rule, missed_cleavages=0, min_length=None):
+def _cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False):
     """Like :py:func:`cleave`, but the result is a list. Refer to
     :py:func:`cleave` for explanation of parameters.
     """
@@ -550,6 +554,8 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None):
     ml = missed_cleavages+2
     trange = range(ml)
     cleavage_sites = deque([0], maxlen=ml)
+    if min_length is None:
+        min_length = 1
     cl = 1
     for i in it.chain([x.end() for x in re.finditer(rule, sequence)],
                    [None]):
@@ -558,9 +564,13 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None):
             cl += 1
         for j in trange[:cl-1]:
             seq = sequence[cleavage_sites[j]:cleavage_sites[-1]]
-            if seq:
-                if min_length is None or len(seq) >= min_length:
-                    peptides.append(seq)
+            if seq and len(seq) >= min_length:
+                peptides.append(seq)
+                if semi:
+                    for k in range(min_length, len(seq)-1):
+                        peptides.append(seq[:k])
+                    for k in range(1, len(seq)-min_length+1):
+                        peptides.append(seq[k:])
     return peptides
 
 def num_sites(sequence, rule, **kwargs):
