@@ -1,7 +1,3 @@
-.. image:: http://readthedocs.org/projects/pyteomics/badge/?version=latest
-    :target: http://pyteomics.readthedocs.io/en/latest/?badge=latest
-    :alt: Documentation Status
-
 .. image:: https://img.shields.io/pypi/v/pyteomics.svg
     :target: https://pypi.org/project/pyteomics/
     :alt: PyPI
