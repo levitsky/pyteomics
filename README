@@ -4,11 +4,15 @@
 
 .. image:: https://img.shields.io/readthedocs/pyteomics.svg
     :target: https://pyteomics.readthedocs.io/
-    :alt: Read the Docs
+    :alt: Read the Docs (latest)
 
 .. image:: https://img.shields.io/pypi/l/pyteomics.svg
     :target: https://www.apache.org/licenses/LICENSE-2.0
     :alt: Apache License
+
+.. image:: https://img.shields.io/aur/version/python-pyteomics.svg
+    :target: https://aur.archlinux.org/packages/python-pyteomics/
+    :alt: python-pyteomics on AUR
 
 .. image:: https://img.shields.io/badge/pyteomics-awesome-orange.svg
     :alt: Pyteomics is awesome
