@@ -3,10 +3,10 @@ Useful Links
 
 Pyteomics is hosted at the following sites:
 
-    - Python package @ Python Package Index: https://pypi.org/project/pyteomics
-    - project documentation @ Python.org:  http://pythonhosted.org/pyteomics
-    - source code @ Bitbucket: http://hg.theorchromo.ru/pyteomics
-    - mailing list @ Google: https://groups.google.com/group/pyteomics
+    - Python package @ Python Package Index: https://pypi.org/project/pyteomics/
+    - project documentation @ Read the Docs: https://pyteomics.readthedocs.io/
+    - source code @ Bitbucket: http://hg.theorchromo.ru/pyteomics/
+    - mailing list @ Google: https://groups.google.com/group/pyteomics/
 
 Pyteomics Extensions
 --------------------
