@@ -3,6 +3,11 @@
 
  - Add parameter `semi` in :py:func:`pyteomics.parser.cleave`.
 
+ - Add new parameter `encoding` in file writers.
+
+ - Add new parameters `write_charges` and `use_numpy` in :py:func:`pyteomics.mgf.write`.
+   Speed up the writing when :py:mod:`numpy` is available.
+
 3.5.1
 -----
 

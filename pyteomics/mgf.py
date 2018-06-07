@@ -83,7 +83,7 @@ class MGF(aux.FileReader):
 
     header : dict
         The file header.
-    
+
     """
     _comments = set('#;!/')
     _array = (lambda x, dtype: np.array(x, dtype=dtype)) if np is not None else None
@@ -178,7 +178,7 @@ class MGF(aux.FileReader):
         masses = []
         intensities = []
         charges = []
-        
+
         params = self.header.copy() if self._use_header else {}
 
         for line in self._source:
@@ -203,7 +203,7 @@ class MGF(aux.FileReader):
                 for key, values in data.items():
                     out[key] = self._array_converters[key][self._convert_arrays](values, dtype=self._dtype_dict.get(key))
                 return out
-                
+
             else:
                 if '=' in sline: # spectrum-specific parameters!
                     l = sline.split('=', 1)
@@ -233,7 +233,7 @@ class MGF(aux.FileReader):
 
     __getitem__ = get_spectrum
 
-            
+
 def read(*args, **kwargs):
     """Read an MGF file and return entries iteratively.
 
@@ -272,7 +272,7 @@ def get_spectrum(source, title, use_header=True, convert_arrays=2, read_charges=
     with MGF(source, use_header=use_header, convert_arrays=convert_arrays,
             read_charges=read_charges, dtype=dtype) as f:
         return f[title]
-        
+
 
 @aux._keepstate
 def read_header(source):
@@ -330,7 +330,8 @@ _default_value_formatters = {'pepmass': _pepmass_repr, 'charge': _charge_repr}
 
 @aux._file_writer()
 def write(spectra, output=None, header='', key_order=_default_key_order,
-    fragment_format='{} {} {}', param_formatters=_default_value_formatters):
+    fragment_format=None, write_charges=True, use_numpy=None,
+    param_formatters=_default_value_formatters):
     """
     Create a file in MGF format.
 
@@ -362,12 +363,22 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
         written 'as is'. In case of dict, the keys (must be strings) will be
         uppercased.
 
+    write_charges : bool, optional
+        If :py:const:`False`, fragment charges from 'charge array' will not be written.
+        Default is :py:const:`True`.
+
     fragment_format : str, optional
         Format string for m/z, intensity and charge of a fragment. Useful to set
-        the number of decimal places and/or suppress writing charges, e.g.:
-        ``fragment_format='{:.4f} {:.0f}'``. Default is ``'{} {} {}'``.
+        the number of decimal places, e.g.:
+        ``fragment_format='%.4f %.0f'``. Default is ``'{} {} {}'``.
 
         .. note::
+            The supported format syntax differs depending on other parameters.
+            If `use_numpy` is :py:const:`True` and :py:mod:`numpy` is available,
+            fragment peaks will be written using :py:func:`numpy.savetxt`. Then,
+            `fragment_format` must be recognized by that function.
+
+            Otherwise, plain Python string formatting is done.
             See `the docs
             <https://docs.python.org/library/string.html#format-specification-mini-language>`_
             for details on writing the format string.
@@ -387,9 +398,20 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
         two arguments (key and value) and return a string.
         Default is :py:data:`_default_value_formatters`.
 
+    use_numpy : bool, optional
+        Controls whether fragment peak arrays are written using :py:func:`numpy.savetxt`.
+        Using :py:func:`numpy.savetxt` is faster, but cannot handle sparse arrays of fragment charges.
+        You may want to disable this if you need to save spectra with 'charge arrays' with missing values.
+
+        If not specified, will be set to the opposite of `write_chrages`.
+        If :py:mod:`numpy` is not available, this parameter has no effect.
+
     file_mode : str, keyword only, optional
         If `output` is a file name, defines the mode the file will be opened in.
         Otherwise will be ignored. Default is 'a'.
+
+    encoding : str, keyword only, optional
+        Output file encoding (if `output` is specified by name).
 
     Returns
     -------
@@ -401,7 +423,17 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
 
     nones = (None, np.nan, np.ma.masked) if np is not None else (None,)
 
+    if fragment_format is None:
+        fragment_format = '{} {} {}'
+        np_format_2 = '%.5f %.1f'
+        np_format_3 = '%.5f %.1f %d'
+    else:
+        np_format_2 = np_format_3 = fragment_format
     format_str = fragment_format + '\n'
+
+    if use_numpy is None:
+        use_numpy = not write_charges
+
     if isinstance(header, dict):
         head_dict = header.copy()
         head_lines = [key_value_line(k, v) for k, v in header.items()]
@@ -435,12 +467,31 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
                     output.write(key_value_line(key, val))
 
         try:
-            for m, i, c in zip(spectrum['m/z array'],
-                    spectrum['intensity array'],
-                    spectrum.get('charge array', it.cycle((None,)))):
-                output.write(format_str.format(
-                    m, i,
-                    (c if c not in nones else '')))
+            success = True
+            if np is not None and use_numpy:
+                if not write_charges or 'charge array' not in spectrum:
+                    X = np.empty((len(spectrum['m/z array']), 2))
+                    X[:, 0] = spectrum['m/z array']
+                    X[:, 1] = spectrum['intensity array']
+                    np.savetxt(output, X, fmt=np_format_2)
+                elif isinstance(spectrum.get('charge array'), np.ndarray):
+                    X = np.empty((len(spectrum['m/z array']), 3))
+                    X[:, 0] = spectrum['m/z array']
+                    X[:, 1] = spectrum['intensity array']
+                    X[:, 2] = spectrum['charge array']
+                    np.savetxt(output, X, fmt=np_format_3)
+                else:
+                    success = False
+            else:
+                success = False
+
+            if not success:
+                for m, i, c in zip(spectrum['m/z array'],
+                        spectrum['intensity array'],
+                        spectrum.get('charge array', it.cycle((None,)))):
+                    output.write(format_str.format(
+                        m, i,
+                        (c if c not in nones else '')))
         except KeyError:
             raise aux.PyteomicsError("'m/z array' and 'intensity array' must be present in all spectra.")
         output.write('END IONS\n\n')
