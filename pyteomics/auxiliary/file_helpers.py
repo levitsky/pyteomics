@@ -4,7 +4,6 @@ import codecs
 from functools import wraps
 from contextlib import contextmanager
 
-
 try:
     basestring
 except NameError:
@@ -193,11 +192,12 @@ def _file_writer(_mode='a'):
         @wraps(_func)
         def helper(*args, **kwargs):
             m = kwargs.pop('file_mode', _mode)
+            enc = kwargs.pop('encoding', None)
             if len(args) > 1:
-                with _file_obj(args[1], m) as out:
+                with _file_obj(args[1], m, encoding=enc) as out:
                     return _func(args[0], out, *args[2:], **kwargs)
             else:
-                with _file_obj(kwargs.pop('output', None), m) as out:
+                with _file_obj(kwargs.pop('output', None), m, encoding=enc) as out:
                     return _func(*args, output=out, **kwargs)
         return helper
     return decorator
