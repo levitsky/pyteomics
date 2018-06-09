@@ -3,3 +3,4 @@ sqlalchemy
 numpydoc
 matplotlib
 hg+https://bitbucket.org/birkenfeld/sphinx-contrib#egg=googleanalytics&subdirectory=googleanalytics
+sphinx-sitemap

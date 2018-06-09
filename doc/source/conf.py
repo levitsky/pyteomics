@@ -51,9 +51,11 @@ extensions = [
               'matplotlib.sphinxext.only_directives',
               'matplotlib.sphinxext.mathmpl',
               'numpydoc',
-              'sphinxcontrib.googleanalytics'
+              'sphinxcontrib.googleanalytics',
+              'sphinx_sitemap',
              ]
 
+site_url = 'https://pyteomics.readthedocs.io/en/latest/'
 # Enable Google Analytics via a script from
 # http://pypi.python.org/pypi/sphinxcontrib-googleanalytics
 googleanalytics_enabled = True
