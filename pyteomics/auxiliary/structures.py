@@ -32,11 +32,10 @@ class Charge(int):
         try:
             return super(Charge, cls).__new__(cls, *args)
         except ValueError as e:
-            if isinstance(args[0], str):
+            if isinstance(args[0], basestring):
                 try:
                     num, sign = re.match(r'^(\d+)(\+|-)$', args[0]).groups()
-                    return super(Charge, cls).__new__(cls,
-                                                      sign + num, *args[1:], **kwargs)
+                    return super(Charge, cls).__new__(cls, sign + num, *args[1:], **kwargs)
                 except Exception:
                     pass
             raise PyteomicsError(*e.args)
@@ -52,9 +51,9 @@ class ChargeList(list):
     """
 
     def __init__(self, *args, **kwargs):
-        if args and isinstance(args[0], str):
-            self.extend(map(Charge,
-                            re.split(r'(?:,\s*)|(?:\s*and\s*)', args[0])))
+        if args and isinstance(args[0], basestring):
+            delim = r'(?:,\s*)|(?:\s*and\s*)'
+            self.extend(map(Charge, re.split(delim, args[0])))
         else:
             try:
                 super(ChargeList, self).__init__(

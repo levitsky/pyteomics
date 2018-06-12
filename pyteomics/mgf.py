@@ -65,26 +65,8 @@ except ImportError:
     np = None
 import itertools as it
 
-class MGF(aux.FileReader):
-    """
-    A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
-    parsing. Specific spectra can be accessed by title using the indexing syntax.
-
-    :py:class:`MGF` object behaves as an iterator, **yielding** spectra one by one.
-    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
-    'intensity array', 'charge array' and 'params'. 'm/z array' and
-    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
-    'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
-    and 'params' stores a :py:class:`dict` of parameters (keys and values are
-    :py:class:`str`, keys corresponding to MGF, lowercased).
-
-    Attributes
-    ----------
-
-    header : dict
-        The file header.
-
-    """
+class MGFBase():
+    """Abstract class representing an MGF file. Subclasses implement different approaches to parsing."""
     _comments = set('#;!/')
     _array = (lambda x, dtype: np.array(x, dtype=dtype)) if np is not None else None
     _ma = (lambda x, dtype: np.ma.masked_equal(np.array(x, dtype=dtype), 0)) if np is not None else None
@@ -96,7 +78,7 @@ class MGF(aux.FileReader):
     }
     _array_keys = ['m/z array', 'intensity array', 'charge array']
 
-    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding=None):
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding='utf-8'):
         """Create an MGF file object.
 
         Parameters
@@ -127,7 +109,7 @@ class MGF(aux.FileReader):
         encoding : str, optional
             Encoding to read the files in. Default is UTF-8.
         """
-        super(MGF, self).__init__(source, 'r', self._read, False, (), {}, encoding)
+
         self._use_header = use_header
         self._convert_arrays = convert_arrays
         if self._convert_arrays and np is None:
@@ -146,9 +128,9 @@ class MGF(aux.FileReader):
         return self._header
 
     @aux._keepstate_method
-    def _read_header(self):
+    def _read_header_lines(self, header_lines):
         header = {}
-        for line in self._source:
+        for line in header_lines:
             if line.strip() == 'BEGIN IONS':
                 break
             l = line.split('=')
@@ -160,29 +142,27 @@ class MGF(aux.FileReader):
             header['charge'] = aux._parse_charge(header['charge'], True)
         self._header = header
 
-    def _read(self, **kwargs):
-        for line in self._source:
-            sline = line.strip()
-            if sline == 'BEGIN IONS':
-                spectrum = self._read_spectrum()
-                yield spectrum
-                # otherwise we are not interested; do nothing, just move along
-
-    def _read_spectrum(self):
+    def _read_spectrum_lines(self, lines):
         """Read a single spectrum from ``self._source``.
 
         Returns
         -------
         out : dict
         """
+
         masses = []
         intensities = []
         charges = []
 
         params = self.header.copy() if self._use_header else {}
 
-        for line in self._source:
+        for i, line in enumerate(lines):
             sline = line.strip()
+            if sline == 'BEGIN IONS':
+                if i == 0:
+                    continue
+                else:
+                    raise aux.PyteomicsError('Error when parsing MGF: unexpected start of spectrum.')
             if not sline or sline[0] in self._comments:
                 pass
             elif sline == 'END IONS':
@@ -193,7 +173,7 @@ class MGF(aux.FileReader):
                         raise aux.PyteomicsError('MGF format error: cannot parse '
                                 'PEPMASS = {}'.format(params['pepmass']))
                     else:
-                        params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
+                        params['pepmass'] = pepmass + (None,) * (2-len(pepmass))
                 if isinstance(params.get('charge'), str):
                     params['charge'] = aux._parse_charge(params['charge'], True)
                 out = {'params': params}
@@ -221,18 +201,99 @@ class MGF(aux.FileReader):
                     except IndexError:
                         pass
 
+    def get_spectrum(self, title):
+        raise NotImplementedError
+
+    def __getitem__(self, key):
+        return self.get_spectrum(key)
+
+class IndexedMGF(aux.IndexedTextReader, MGFBase):
+    """
+    A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
+    parsing. Specific spectra can be accessed by title using the indexing syntax.
+
+    :py:class:`MGF` object behaves as an iterator, **yielding** spectra one by one.
+    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
+    'intensity array', 'charge array' and 'params'. 'm/z array' and
+    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
+    'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
+    and 'params' stores a :py:class:`dict` of parameters (keys and values are
+    :py:class:`str`, keys corresponding to MGF, lowercased).
+
+    Attributes
+    ----------
+
+    header : dict
+        The file header.
+
+    """
+
+    delimiter = 'BEGIN IONS'
+    label = u'TITLE=([^\n]+)\n'
+
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding='utf-8',
+        block_size=1000000):
+        aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding)
+        MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype, encoding)
+        if block_size is not None:
+            self.block_size = block_size
+
+
+    def _read_header(self):
+        first = next(v for v in self._offset_index.values())[0]
+        header_lines = self.read(first).decode(self.encoding).split('\n')
+        return self._read_header_lines(header_lines)
+
+
+    def _read(self, **kwargs):
+        for spec, offsets in self._offset_index.items():
+            spectrum = self._read_spectrum(*offsets)
+            yield spectrum
+
+    def _read_spectrum(self, start, end):
+        """Read a single spectrum from ``self._source``.
+
+        Returns
+        -------
+        out : dict
+        """
+
+        self._source.seek(start)
+        lines = self._source.read(end-start).decode(self.encoding).split('\n')
+        return self._read_spectrum_lines(lines)
+
     @aux._keepstate_method
     def get_spectrum(self, title):
-        self.reset()
+        if self._offset_index is not None and title in self._offset_index:
+            start, end = self._offset_index[title]
+            return self._read_spectrum(start, end)
+
+
+class MGF(aux.FileReader, MGFBase):
+
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding='utf-8'):
+        aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
+        MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype, encoding)
+
+    def _read_header(self):
+        return self._read_header_lines(self._source)
+
+    def _read_spectrum(self):
+        return self._read_spectrum_lines(self._source)
+
+    def _read(self):
+        for line in self._source:
+            if line.strip() == 'BEGIN IONS':
+                yield self._read_spectrum()
+
+    @aux._keepstate_method
+    def get_spectrum(self, title):
         for line in self._source:
             sline = line.strip()
             if sline[:5] == 'TITLE' and sline.split('=', 1)[1].strip() == title:
                 spectrum = self._read_spectrum()
                 spectrum['params']['title'] = title
                 return spectrum
-
-    __getitem__ = get_spectrum
-
 
 def read(*args, **kwargs):
     """Read an MGF file and return entries iteratively.

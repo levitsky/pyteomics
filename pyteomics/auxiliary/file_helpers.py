@@ -1,8 +1,9 @@
 import sys
 import codecs
-
+import re
 from functools import wraps
 from contextlib import contextmanager
+from collections import OrderedDict
 
 try:
     basestring
@@ -164,6 +165,92 @@ class FileReader(IteratorContextManager):
         if attr == '_source':
             raise AttributeError
         return getattr(self._source, attr)
+
+def remove_bom(bstr):
+    return bstr.replace(codecs.BOM_LE, b'').lstrip(b"\x00")
+
+class IndexedTextReader(FileReader):
+    """Abstract class for text file readers that keep an index of records for random access.
+    This requires reading the file in binary mode."""
+
+    delimiter = None
+    label = None
+    block_size = 1000000
+
+    def __init__(self, source, func, pass_file, args, kwargs, encoding='utf-8', block_size=None, use_index=True, delimiter=None, label=None):
+        # the underlying _file_obj gets None as encoding to avoid transparent decoding of StreamReader on read() calls
+        super(IndexedTextReader, self).__init__(source, 'rb', func, pass_file, args, kwargs, encoding=None)
+        self.encoding = encoding
+        if delimiter is not None:
+            self.delimiter = delimiter
+        if label is not None:
+            self.record_label = label
+        if block_size is not None:
+            self.block_size = block_size
+        if use_index:
+            self._offset_index = self.build_byte_index()
+        else:
+            self._offset_index = None
+
+    def _chunk_iterator(self):
+        fh = self._source.file
+        delim = remove_bom(self.delimiter.encode(self.encoding))
+        pattern = re.compile(delim)
+        buff = fh.read(self.block_size)
+        parts = pattern.split(buff)
+        started_with_delim = buff.startswith(delim)
+        tail = parts[-1]
+        front = parts[:-1]
+        i = 0
+        for part in front:
+            i += 1
+            if part == b"":
+                continue
+            if i == 1:
+                if started_with_delim:
+                    yield delim + part
+                else:
+                    yield part
+            else:
+                yield delim + part
+        running = True
+        while running:
+            buff = fh.read(self.block_size)
+            if len(buff) == 0:
+                running = False
+                buff = tail
+            else:
+                buff = tail + buff
+            parts = pattern.split(buff)
+            tail = parts[-1]
+            front = parts[:-1]
+            for part in front:
+                yield delim + part
+        yield delim + tail
+
+    def _generate_offsets(self):
+        i = 0
+        pattern = re.compile(remove_bom(self.label.encode(self.encoding)))
+        for chunk in self._chunk_iterator():
+            match = pattern.search(chunk)
+            if match:
+                label = match.group(1)
+                yield i, label.decode(self.encoding), match
+            i += len(chunk)
+        yield i, None, None
+
+    def build_byte_index(self):
+        index = OrderedDict()
+        g = self._generate_offsets()
+        last_offset = 0
+        last_label = None
+        for offset, label, keyline in g:
+            if last_label is not None:
+                index[last_label] = (last_offset, offset)
+            last_label = label
+            last_offset = offset
+        assert last_label is None
+        return index
 
 
 def _file_reader(_mode='r'):
