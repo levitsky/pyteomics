@@ -3,6 +3,7 @@ import shutil
 from os import path
 import tempfile
 import pyteomics
+from io import BytesIO
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from itertools import product
 import unittest
@@ -121,6 +122,17 @@ class MzmlTest(unittest.TestCase):
             self.assertEqual(raw[0].get("ref"), 'CommonInstrumentParams')
             self.assertNotIn("ref", derefed[0])
             self.assertEqual(derefed[0].get('instrument serial number'), 'SN06061F')
+
+    def test_in_memory_buffer(self):
+        with open(self.path, 'rb') as fh:
+            data_buffer = BytesIO(fh.read())
+        with MzML(data_buffer) as reader:
+            spectrum = next(reader)
+            self.assertEqual(spectrum['id'], 'controllerType=0 controllerNumber=1 scan=1')
+        data_buffer.seek(0)
+        with MzML(data_buffer, use_index=True) as reader:
+            spectrum = next(reader)
+            self.assertEqual(spectrum['id'], 'controllerType=0 controllerNumber=1 scan=1')
 
 
 if __name__ == '__main__':

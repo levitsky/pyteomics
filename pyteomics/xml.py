@@ -1063,7 +1063,10 @@ class IndexSavingXML(IndexedXML):
 
     @property
     def _byte_offset_filename(self):
-        path = self._source.name
+        try:
+            path = self._source.name
+        except AttributeError:
+            return None
         byte_offset_filename = os.path.splitext(path)[0] + '-byte-offsets.json'
         return byte_offset_filename
 
@@ -1076,6 +1079,8 @@ class IndexSavingXML(IndexedXML):
             Whether the file exists
         """
         path = self._byte_offset_filename
+        if path is None:
+            return False
         return os.path.exists(path)
 
     def _read_byte_offsets(self):
@@ -1102,7 +1107,7 @@ class IndexSavingXML(IndexedXML):
         """
         try:
             self._read_byte_offsets()
-        except (IOError, AttributeError):
+        except (IOError, AttributeError, TypeError):
             super(IndexSavingXML, self)._build_index()
 
     @classmethod
