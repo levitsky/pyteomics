@@ -78,7 +78,7 @@ class MGFBase():
     }
     _array_keys = ['m/z array', 'intensity array', 'charge array']
 
-    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding='utf-8'):
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None):
         """Create an MGF file object.
 
         Parameters
@@ -105,9 +105,6 @@ class MGFBase():
         dtype : type or str or dict, optional
             dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
             Keys should be 'm/z array', 'intensity array' and/or 'charge array'.
-
-        encoding : str, optional
-            Encoding to read the files in. Default is UTF-8.
         """
 
         self._use_header = use_header
@@ -234,7 +231,7 @@ class IndexedMGF(aux.IndexedTextReader, MGFBase):
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding='utf-8',
         block_size=1000000):
         aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding)
-        MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype, encoding)
+        MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype)
         if block_size is not None:
             self.block_size = block_size
 
@@ -271,9 +268,9 @@ class IndexedMGF(aux.IndexedTextReader, MGFBase):
 
 class MGF(aux.FileReader, MGFBase):
 
-    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding='utf-8'):
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding=None):
         aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
-        MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype, encoding)
+        MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype)
 
     def _read_header(self):
         return self._read_header_lines(self._source)
