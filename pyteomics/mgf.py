@@ -230,17 +230,13 @@ class IndexedMGF(aux.IndexedTextReader, MGFBase):
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding='utf-8',
         block_size=1000000):
-        aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding)
+        aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding, block_size)
         MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype)
-        if block_size is not None:
-            self.block_size = block_size
-
 
     def _read_header(self):
         first = next(v for v in self._offset_index.values())[0]
         header_lines = self.read(first).decode(self.encoding).split('\n')
         return self._read_header_lines(header_lines)
-
 
     def _read(self, **kwargs):
         for spec, offsets in self._offset_index.items():
@@ -304,7 +300,7 @@ def read(*args, **kwargs):
     """
     return MGF(*args, **kwargs)
 
-def get_spectrum(source, title, use_header=True, convert_arrays=2, read_charges=True, dtype=None):
+def get_spectrum(source, title, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding='utf-8'):
     """Read one spectrum (with given `title`) from `source`.
 
     See :py:func:`read` for explanation of parameters affecting the output.
@@ -327,8 +323,8 @@ def get_spectrum(source, title, use_header=True, convert_arrays=2, read_charges=
         A dict with the spectrum, if it is found, and None otherwise.
 
     """
-    with MGF(source, use_header=use_header, convert_arrays=convert_arrays,
-            read_charges=read_charges, dtype=dtype) as f:
+    with IndexedMGF(source, use_header=use_header, convert_arrays=convert_arrays,
+            read_charges=read_charges, dtype=dtype, encoding=encoding) as f:
         return f[title]
 
 

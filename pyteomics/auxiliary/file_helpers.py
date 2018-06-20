@@ -184,7 +184,7 @@ class IndexedTextReader(FileReader):
         if delimiter is not None:
             self.delimiter = delimiter
         if label is not None:
-            self.record_label = label
+            self.label = label
         if block_size is not None:
             self.block_size = block_size
         if use_index:
@@ -251,6 +251,11 @@ class IndexedTextReader(FileReader):
             last_offset = offset
         assert last_label is None
         return index
+
+    @classmethod
+    def scan(cls, source, delimiter_text, label_text, encoding='utf-8'):
+        inst = cls(source, lambda: None, None, (), {}, encoding, delimiter=delimiter_text, label=label_text, use_index=False)
+        return inst.build_byte_index()
 
 
 def _file_reader(_mode='r'):
