@@ -64,6 +64,7 @@ try:
 except ImportError:
     np = None
 import itertools as it
+import sys
 
 class MGFBase():
     """Abstract class representing an MGF file. Subclasses implement different approaches to parsing."""
@@ -77,6 +78,8 @@ class MGFBase():
         'charge array': [_identity, _array, _ma]
     }
     _array_keys = ['m/z array', 'intensity array', 'charge array']
+    _array_keys_unicode = [u'm/z array', u'intensity array', u'charge array']
+    encoding = None
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None):
         """Create an MGF file object.
@@ -124,7 +127,6 @@ class MGFBase():
             self._read_header()
         return self._header
 
-    @aux._keepstate_method
     def _read_header_lines(self, header_lines):
         header = {}
         for line in header_lines:
@@ -171,7 +173,7 @@ class MGFBase():
                                 'PEPMASS = {}'.format(params['pepmass']))
                     else:
                         params['pepmass'] = pepmass + (None,) * (2-len(pepmass))
-                if isinstance(params.get('charge'), str):
+                if isinstance(params.get('charge'), aux.basestring):
                     params['charge'] = aux._parse_charge(params['charge'], True)
                 out = {'params': params}
                 data = {'m/z array': masses, 'intensity array': intensities}
@@ -179,6 +181,10 @@ class MGFBase():
                     data['charge array'] = charges
                 for key, values in data.items():
                     out[key] = self._array_converters[key][self._convert_arrays](values, dtype=self._dtype_dict.get(key))
+                if self.encoding and sys.version_info.major == 2:
+                    for key, ukey in zip(self._array_keys + ['params'], self._array_keys_unicode + [u'params']):
+                        if key in out:
+                            out[ukey] = out.pop(key)
                 return out
 
             else:
@@ -233,6 +239,7 @@ class IndexedMGF(aux.IndexedTextReader, MGFBase):
         aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding, block_size)
         MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype)
 
+    @aux._keepstate_method
     def _read_header(self):
         first = next(v for v in self._offset_index.values())[0]
         header_lines = self.read(first).decode(self.encoding).split('\n')
@@ -267,7 +274,9 @@ class MGF(aux.FileReader, MGFBase):
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding=None):
         aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
         MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype)
+        self.encoding = encoding
 
+    @aux._keepstate_method
     def _read_header(self):
         return self._read_header_lines(self._source)
 
