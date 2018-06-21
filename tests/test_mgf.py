@@ -4,11 +4,12 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import tempfile
 import unittest
-from pyteomics.mgf import read, write, read_header, MGF
+from pyteomics.mgf import read, write, read_header, MGF, IndexedMGF
 import data
 
 class MGFTest(unittest.TestCase):
     maxDiff = None
+    _encoding = 'utf-8'
     def setUp(self):
         self.path = 'test.mgf'
         self.header = read_header(self.path)
@@ -32,6 +33,16 @@ class MGFTest(unittest.TestCase):
                 self.assertEqual(data.mgf_spectra_long, list(reader))
             with func(self.path, False) as reader:
                 self.assertEqual(data.mgf_spectra_short, list(reader))
+
+    def test_read_decoding(self):
+        for func in [read, MGF, IndexedMGF]:
+            self.assertEqual(data.mgf_spectra_long_decoded, list(func(self.path, encoding=self._encoding)))
+            self.assertEqual(data.mgf_spectra_short_decoded, list(func(self.path, False, encoding=self._encoding)))
+            with func(self.path, encoding=self._encoding) as reader:
+                self.assertEqual(data.mgf_spectra_long_decoded, list(reader))
+            with func(self.path, False, encoding=self._encoding) as reader:
+                self.assertEqual(data.mgf_spectra_short_decoded, list(reader))
+        self.assertEqual(data.mgf_spectra_long_decoded, list(func(self.path)))
 
     def test_read_no_charges(self):
         with read(self.path, read_charges=False) as reader:
