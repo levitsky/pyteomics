@@ -177,7 +177,7 @@ class IndexedTextReader(FileReader):
     label = None
     block_size = 1000000
 
-    def __init__(self, source, func, pass_file, args, kwargs, encoding='utf-8', block_size=None, use_index=True, delimiter=None, label=None):
+    def __init__(self, source, func, pass_file, args, kwargs, encoding='utf-8', block_size=None, delimiter=None, label=None):
         # the underlying _file_obj gets None as encoding to avoid transparent decoding of StreamReader on read() calls
         super(IndexedTextReader, self).__init__(source, 'rb', func, pass_file, args, kwargs, encoding=None)
         self.encoding = encoding
@@ -187,10 +187,7 @@ class IndexedTextReader(FileReader):
             self.label = label
         if block_size is not None:
             self.block_size = block_size
-        if use_index:
-            self._offset_index = self.build_byte_index()
-        else:
-            self._offset_index = None
+        self._offset_index = self.build_byte_index()
 
     def _chunk_iterator(self):
         fh = self._source.file
@@ -251,11 +248,6 @@ class IndexedTextReader(FileReader):
             last_offset = offset
         assert last_label is None
         return index
-
-    @classmethod
-    def scan(cls, source, delimiter_text, label_text, encoding='utf-8'):
-        inst = cls(source, lambda: None, None, (), {}, encoding, delimiter=delimiter_text, label=label_text, use_index=False)
-        return inst.build_byte_index()
 
 
 def _file_reader(_mode='r'):
