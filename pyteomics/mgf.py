@@ -27,6 +27,9 @@ Classes
   for fast random access by spectrum titles. Sequential iteration is also supported.
   Needs a seekable file opened in binary mode (or will open it if given a file name).
 
+  :py:class:`MGFBase` - abstract class, the common ancestor of the two classes above.
+  Can be used for type checking.
+
 Functions
 ---------
 
