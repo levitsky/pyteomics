@@ -8,6 +8,12 @@ dev
  - Add new parameters `write_charges` and `use_numpy` in :py:func:`pyteomics.mgf.write`.
    Speed up the writing when :py:mod:`numpy` is available.
 
+ - New class :py:class:`pyteomics.mgf.IndexedMGF` is now the recommended way to parse MGF files.
+   It supports fast access by spectrum titles by using an index of byte offsets.
+   The old, sequential parser is preserved under its name, :py:class:`pyteomics.mgf.MGF`.
+   The function :py:func:`pyteomics.mgf.read` now returns an instance of one of the two classes,
+   based on the `use_index` argument and the type of `source`.
+
 3.5.1
 -----
 
