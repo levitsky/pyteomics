@@ -108,10 +108,11 @@ class MGFTest(unittest.TestCase):
 
     def test_get_spectrum(self):
         key = 'Spectrum 2'
-        f = mgf.IndexedMGF(self.path)
-        self.assertEqual(f[key], data.mgf_spectra_long[1])
-        self.assertEqual(f.get_spectrum(key), data.mgf_spectra_long[1])
-        self.assertEqual(mgf.get_spectrum(self.path, key), data.mgf_spectra_long[1])
+        for klass in [mgf.MGF, mgf.IndexedMGF]:
+            f = klass(self.path)
+            self.assertEqual(data.mgf_spectra_long[1], f[key])
+            self.assertEqual(data.mgf_spectra_long[1], f.get_spectrum(key))
+        self.assertEqual(data.mgf_spectra_long[1], mgf.get_spectrum(self.path, key))
 
 if __name__ == "__main__":
     unittest.main()
