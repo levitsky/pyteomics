@@ -531,7 +531,7 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False,
         Include products of semi-specific cleavage. Default is :py:const:`False`.
         This effectively cuts every peptide at every position and adds results to the output.
 
-    exception : str, optional
+    exception : str or compiled RE or None, optional
         Exceptions to the cleavage rule. If specified, should be a regular expression.
         Cleavage sites matching `rule` will be checked against `exception` and omitted
         if they match.
@@ -599,6 +599,10 @@ def num_sites(sequence, rule, **kwargs):
         <http://www.regular-expressions.info/lookaround.html>`_.
     labels : list, optional
         A list of allowed labels for amino acids and terminal modifications.
+    exception : str or compiled RE or None, optional
+        Exceptions to the cleavage rule. If specified, should be a regular expression.
+        Cleavage sites matching `rule` will be checked against `exception` and omitted
+        if they match.
 
     Returns
     -------
