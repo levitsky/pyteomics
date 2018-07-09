@@ -1,7 +1,7 @@
 dev
 ---
 
- - Add parameter `semi` in :py:func:`pyteomics.parser.cleave`.
+ - Add parameters `semi` and `exception` in :py:func:`pyteomics.parser.cleave`.
 
  - Add new parameter `encoding` in file writers.
 
