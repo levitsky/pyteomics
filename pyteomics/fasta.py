@@ -144,11 +144,11 @@ class IndexedFASTA(aux.IndexedTextReader, FASTABase):
     delimiter = '>'
     label = r'^>(.*)'
 
-    def __init__(self, source, ignore_comments=False, encoding='utf-8', block_size=None,
+    def __init__(self, source, ignore_comments=False, parser=None, encoding='utf-8', block_size=None,
         delimiter=None, label=None, label_group=None):
         aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding,
             block_size, delimiter, label, label_group)
-        FASTABase.__init__(self, source, ignore_comments)
+        FASTABase.__init__(self, source, ignore_comments, parser)
 
     def _read_protein_lines(self, lines):
         description = []
