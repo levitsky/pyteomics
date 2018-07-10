@@ -176,9 +176,12 @@ class IndexedTextReader(FileReader):
     delimiter = None
     label = None
     block_size = 1000000
+    label_group = 1
 
-    def __init__(self, source, func, pass_file, args, kwargs, encoding='utf-8', block_size=None, delimiter=None, label=None):
-        # the underlying _file_obj gets None as encoding to avoid transparent decoding of StreamReader on read() calls
+    def __init__(self, source, func, pass_file, args, kwargs, encoding='utf-8', block_size=None,
+        delimiter=None, label=None, label_group=None):
+        # the underlying _file_obj gets None as encoding
+        # to avoid transparent decoding of StreamReader on read() calls
         super(IndexedTextReader, self).__init__(source, 'rb', func, pass_file, args, kwargs, encoding=None)
         self.encoding = encoding
         if delimiter is not None:
@@ -187,6 +190,8 @@ class IndexedTextReader(FileReader):
             self.label = label
         if block_size is not None:
             self.block_size = block_size
+        if label_group is not None:
+            self.label_group = label_group
         self._offset_index = self.build_byte_index()
 
     def _chunk_iterator(self):
@@ -230,7 +235,7 @@ class IndexedTextReader(FileReader):
         for chunk in self._chunk_iterator():
             match = pattern.search(chunk)
             if match:
-                label = match.group(1)
+                label = match.group(self.label_group)
                 yield i, label.decode(self.encoding), match
             i += len(chunk)
         yield i, None, None

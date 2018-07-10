@@ -90,32 +90,6 @@ class FASTABase():
     def _is_comment(self, line):
         return line[0] in self._comments
 
-    def _read_protein_lines(self, lines):
-        description = []
-        sequence = []
-
-        for string in lines:
-            stripped_string = string.strip()
-            if not stripped_string:
-                continue
-
-            is_comment = self._is_comment(stripped_string)
-            if is_comment:
-                if (not description) or (not self._ignore_comments):
-                    description.append(stripped_string[1:])
-            elif not description:
-                # we are not reading an entry from the beginning
-                continue
-            else:
-                sequence.append(stripped_string)
-
-        description = ' '.join(description)
-        sequence = ''.join(sequence)
-        # Drop the translation stop sign.
-        if sequence and sequence[-1] == '*':
-            sequence = sequence[:-1]
-        return Protein(self.parser(description), sequence)
-
     def get_entry(self, key):
         raise NotImplementedError
 
@@ -169,11 +143,35 @@ class FASTA(aux.FileReader, FASTABase):
 class IndexedFASTA(aux.IndexedTextReader, FASTABase):
     delimiter = '>'
     label = r'^>(.*)'
-    _comments = {'>'}
 
-    def __init__(self, source, ignore_comments=False, parser=None, encoding='utf-8', block_size=None):
-        aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding, block_size)
-        FASTABase.__init__(self, source, ignore_comments, parser)
+    def __init__(self, source, ignore_comments=False, encoding='utf-8', block_size=None,
+        delimiter=None, label=None, label_group=None):
+        aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding,
+            block_size, delimiter, label, label_group)
+        FASTABase.__init__(self, source, ignore_comments)
+
+    def _read_protein_lines(self, lines):
+        description = []
+        sequence = []
+
+        for string in lines:
+            stripped_string = string.strip()
+            if not stripped_string:
+                continue
+
+            is_comment = self._is_comment(stripped_string)
+            if is_comment:
+                if not description or not self._ignore_comments:
+                    description.append(stripped_string[1:])
+            else:
+                sequence.append(stripped_string)
+
+        description = ' '.join(description)
+        sequence = ''.join(sequence)
+        # Drop the translation stop sign.
+        if sequence and sequence[-1] == '*':
+            sequence = sequence[:-1]
+        return Protein(self.parser(description), sequence)
 
     def _entry_from_offsets(self, start, end):
         lines = self._read_lines_from_offsets(start, end)
@@ -512,7 +510,7 @@ def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
 # auxiliary functions for parsing of FASTA headers
 def _split_pairs(s):
     return dict(map(lambda x: x.strip(), x.split('='))
-            for x in re.split(' (?=\w+=)', s.strip()))
+            for x in re.split(r' (?=\w+=)', s.strip()))
 
 def _intify(d, keys):
     for k in keys:
@@ -520,10 +518,9 @@ def _intify(d, keys):
             d[k] = int(d[k])
 
 # definitions for custom parsers
+_uniprotkb_header = r'^(\w+)\|([-\w]+)\|(\w+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$'
 def _parse_uniprotkb(header):
-    db, ID, entry, name, pairs, _ = re.match(
-           r'^(\w+)\|([-\w]+)\|(\w+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$',
-           header).groups()
+    db, ID, entry, name, pairs, _ = re.match(_uniprotkb_header, header).groups()
     gid, taxon = entry.split('_')
     info = {'db': db, 'id': ID, 'entry': entry,
             'name': name, 'gene_id': gid, 'taxon': taxon}
@@ -531,29 +528,27 @@ def _parse_uniprotkb(header):
     _intify(info, ('PE', 'SV'))
     return info
 
+_uniref_header = r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$'
 def _parse_uniref(header):
     assert 'Tax' in header
-    ID, cluster, pairs, _ = re.match(
-            r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$',
-            header).groups()
+    ID, cluster, pairs, _ = re.match(_uniref_header, header).groups()
     info = {'id': ID, 'cluster': cluster}
     info.update(_split_pairs(pairs))
     gid, taxon = info['RepID'].split('_')
     type_, acc = ID.split('_')
-    info.update({'taxon': taxon, 'gene_id': gid,
-            'type': type_, 'accession': acc})
+    info.update({'taxon': taxon, 'gene_id': gid, 'type': type_, 'accession': acc})
     _intify(info, ('n',))
     return info
 
+_uniparc_header = r'(\S+)\s+status=(\w+)\s*$'
 def _parse_uniparc(header):
-    ID, status = re.match(r'(\S+)\s+status=(\w+)\s*$', header).groups()
+    ID, status = re.match(_uniparc_header, header).groups()
     return {'id': ID, 'status': status}
 
+_unimes_header = r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$'
 def _parse_unimes(header):
     assert 'OS=' in header and 'SV=' in header and 'PE=' not in header
-    ID, name, pairs, _ = re.match(
-            r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$',
-            header).groups()
+    ID, name, pairs, _ = re.match(_unimes_header, header).groups()
     info = {'id': ID, 'name': name}
     info.update(_split_pairs(pairs))
     _intify(info, ('SV',))
@@ -571,6 +566,9 @@ std_parsers = {'uniprotkb': _parse_uniprotkb, 'uniref': _parse_uniref,
 """A dictionary with parsers for known FASTA header formats. For now, supported
 formats are those described at
 `UniProt help page <http://www.uniprot.org/help/fasta-headers>`_."""
+
+_std_patterns = {'uniprotkb': _uniprotkb_header, 'uniref': _uniref_header,
+        'uniparc': _uniparc_header, 'unimes': _unimes_header}
 
 def parse(header, flavour='auto', parsers=None):
     """Parse the FASTA header and return a nice dictionary.
@@ -599,16 +597,16 @@ def parse(header, flavour='auto', parsers=None):
         flavour."""
 
     # accept strings with and without leading '>'
-    if header.startswith('>'):
+    if header and header[0] == '>':
         header = header[1:]
 
     # choose the format
     known = parsers or std_parsers
     if flavour.lower() == 'auto':
-        for fl, parser in known.items():
+        for parser in known.values():
             try:
                 return parser(header)
-            except:
+            except Exception:
                 pass
         raise aux.PyteomicsError('Unknown FASTA header format: ' + header)
     elif flavour.lower() in known:
