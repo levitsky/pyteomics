@@ -249,6 +249,10 @@ class IndexedTextReader(FileReader):
         assert last_label is None
         return index
 
+    def _read_lines_from_offsets(self, start, end):
+        self._source.seek(start)
+        lines = self._source.read(end-start).decode(self.encoding).split('\n')
+        return lines
 
 def _file_reader(_mode='r'):
     # a lot of the code below is borrowed from

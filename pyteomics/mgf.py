@@ -91,7 +91,7 @@ class MGFBase():
     encoding = None
 
 
-    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding=None):
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None):
         """Create an MGF file object, set MGF-specific parameters.
 
         Parameters
@@ -247,7 +247,7 @@ class IndexedMGF(aux.IndexedTextReader, MGFBase):
     """
 
     delimiter = 'BEGIN IONS'
-    label = u'TITLE=([^\n]+)\n'
+    label = 'TITLE=([^\n]+)\n'
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding='utf-8',
         block_size=1000000):
@@ -272,14 +272,12 @@ class IndexedMGF(aux.IndexedTextReader, MGFBase):
         -------
         out : dict
         """
-
-        self._source.seek(start)
-        lines = self._source.read(end-start).decode(self.encoding).split('\n')
+        lines = self._read_lines_from_offsets(start, end)
         return self._read_spectrum_lines(lines)
 
-    @aux._keepstate_method
+    # @aux._keepstate_method
     def get_spectrum(self, title):
-        if self._offset_index is not None and title in self._offset_index:
+        if title in self._offset_index:
             start, end = self._offset_index[title]
             return self._read_spectrum(start, end)
 

@@ -8,22 +8,37 @@ import random
 import string
 
 class FastaTest(unittest.TestCase):
+    maxDiff = None
     def setUp(self):
         self.fasta_file = 'test.fasta'
-        self.fasta_entries_short = list(fasta.read(self.fasta_file, ignore_comments=True))
-        self.fasta_entries_long = list(fasta.read(self.fasta_file))
+        self.fasta_entries_long = [
+            ('test sequence test sequence 2', 'TEST'),
+                          ('test sequence 3', 'TEST'),
+                          ('test sequence 4', 'TEST')
+        ]
+        self.fasta_entries_short = [
+            ('test sequence',   'TEST'),
+            ('test sequence 3', 'TEST'),
+            ('test sequence 4', 'TEST')
+        ]
 
     def test_simple_read_long_comments(self):
-        self.assertEqual(self.fasta_entries_long,
-                         [('test sequence test sequence 2', 'TEST'),
-                          ('test sequence 3', 'TEST'),
-                          ('test sequence 4', 'TEST')])
+        for reader in [fasta.read, fasta.FASTA]:
+            self.assertEqual(self.fasta_entries_long, list(reader(self.fasta_file)))
 
     def test_simple_read_short_comments(self):
-        self.assertEqual(self.fasta_entries_short,
-                         [('test sequence', 'TEST'),
-                          ('test sequence 3', 'TEST'),
-                          ('test sequence 4', 'TEST')])
+        for reader in [fasta.read, fasta.FASTA]:
+            self.assertEqual(self.fasta_entries_short,
+                list(reader(self.fasta_file, ignore_comments=True)))
+
+    def test_indexed_read(self):
+        self.assertEqual(self.fasta_entries_short[1:],
+            list(fasta.IndexedFASTA(self.fasta_file)))
+
+    def test_index_retrieve(self):
+        key = 'test sequence 4'
+        with fasta.IndexedFASTA(self.fasta_file) as ir:
+            self.assertEqual(self.fasta_entries_short[2], ir[key])
 
     def test_decoy_sequence_reverse(self):
         sequence = ''.join(random.choice(string.ascii_uppercase)
