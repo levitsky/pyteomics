@@ -35,7 +35,7 @@ one of the other functions listed in this section or any other callable.
 
 Decoy database generation
 -------------------------
-  
+
   :py:func:`write_decoy_db` - generate a decoy database and write it to a file.
 
   :py:func:`decoy_db` - generate entries for a decoy database from a given FASTA
@@ -76,6 +76,118 @@ import re
 from . import auxiliary as aux
 
 Protein = namedtuple('Protein', ('description', 'sequence'))
+
+class FASTABase():
+    parser = staticmethod(lambda x: x)
+    _ignore_comments = False
+    _comments = set('>;')
+
+    def __init__(self, source, ignore_comments=False, parser=None):
+        self._ignore_comments = ignore_comments
+        if parser is not None:
+            self.parser = parser
+
+    def _is_comment(self, line):
+        return line[0] in self._comments
+
+    def _read_protein_lines(self, lines):
+        description = []
+        sequence = []
+
+        for string in lines:
+            stripped_string = string.strip()
+            if not stripped_string:
+                continue
+
+            is_comment = self._is_comment(stripped_string)
+            if is_comment:
+                if (not description) or (not self._ignore_comments):
+                    description.append(stripped_string[1:])
+            elif not description:
+                # we are not reading an entry from the beginning
+                continue
+            else:
+                sequence.append(stripped_string)
+
+        description = ' '.join(description)
+        sequence = ''.join(sequence)
+        # Drop the translation stop sign.
+        if sequence and sequence[-1] == '*':
+            sequence = sequence[:-1]
+        return Protein(self.parser(description), sequence)
+
+    def get_entry(self, key):
+        raise NotImplementedError
+
+    def __getitem__(self, key):
+        return self.get_entry(key)
+
+
+class FASTA(aux.FileReader, FASTABase):
+    def __init__(self, source, ignore_comments=False, parser=None, encoding=None):
+        aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
+        FASTABase.__init__(self, source, ignore_comments, parser)
+        self.encoding = encoding
+
+    def _read(self):
+        accumulated_strings = []
+
+        # Iterate through '>' after the file is over to retrieve the last entry.
+        for string in itertools.chain(self._source, '>'):
+            stripped_string = string.strip()
+
+            # Skip empty lines.
+            if not stripped_string:
+                continue
+
+            is_comment = self._is_comment(stripped_string)
+            if is_comment:
+                # If it is a continuing comment
+                if len(accumulated_strings) == 1:
+                    if not self._ignore_comments:
+                        accumulated_strings[0] += (' ' + stripped_string[1:])
+                    else:
+                        continue
+
+                elif accumulated_strings:
+                    description = accumulated_strings[0]
+                    sequence = ''.join(accumulated_strings[1:])
+
+                    # Drop the translation stop sign.
+                    if sequence.endswith('*'):
+                        sequence = sequence[:-1]
+                    yield Protein(self.parser(description), sequence)
+                    accumulated_strings = [stripped_string[1:]]
+                else:
+                    # accumulated_strings is empty; we're probably reading
+                    # the very first line of the file
+                    accumulated_strings.append(stripped_string[1:])
+            else:
+                accumulated_strings.append(stripped_string)
+
+
+class IndexedFASTA(aux.IndexedTextReader, FASTABase):
+    delimiter = '>'
+    label = r'^>(.*)'
+    _comments = {'>'}
+
+    def __init__(self, source, ignore_comments=False, parser=None, encoding='utf-8', block_size=None):
+        aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding, block_size)
+        FASTABase.__init__(self, source, ignore_comments, parser)
+
+    def _entry_from_offsets(self, start, end):
+        lines = self._read_lines_from_offsets(start, end)
+        return self._read_protein_lines(lines)
+
+    def _read(self, **kwargs):
+        for key, offsets in self._offset_index.items():
+            yield self._entry_from_offsets(*offsets)
+
+    def get_entry(self, key):
+        offsets = self._offset_index.get(key)
+        if offsets is not None:
+            return self._entry_from_offsets(*offsets)
+
 
 @aux._file_reader()
 def read(source=None, ignore_comments=False, parser=None):
@@ -300,7 +412,7 @@ def decoy_sequence(sequence, mode='reverse', **kwargs):
 
 @aux._file_reader()
 def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
-        ignore_comments=False, parser=None, **kwargs):
+             ignore_comments=False, parser=None, **kwargs):
     """Iterate over sequences for a decoy database out of a given ``source``.
 
     Parameters
