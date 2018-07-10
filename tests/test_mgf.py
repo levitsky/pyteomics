@@ -36,13 +36,15 @@ class MGFTest(unittest.TestCase):
 
     def test_read_decoding(self):
         for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
-            self.assertEqual(data.mgf_spectra_long_decoded, list(func(self.path, encoding=self._encoding)))
-            self.assertEqual(data.mgf_spectra_short_decoded, list(func(self.path, False, encoding=self._encoding)))
+            self.assertEqual(data.mgf_spectra_long_decoded,
+                list(func(self.path, encoding=self._encoding)))
+            self.assertEqual(data.mgf_spectra_short_decoded,
+                list(func(self.path, False, encoding=self._encoding)))
             with func(self.path, encoding=self._encoding) as reader:
                 self.assertEqual(data.mgf_spectra_long_decoded, list(reader))
             with func(self.path, False, encoding=self._encoding) as reader:
                 self.assertEqual(data.mgf_spectra_short_decoded, list(reader))
-        self.assertEqual(data.mgf_spectra_long_decoded, list(func(self.path)))
+            self.assertEqual(data.mgf_spectra_long_decoded, list(func(self.path)))
 
     def test_read_no_charges(self):
         with mgf.read(self.path, read_charges=False) as reader:

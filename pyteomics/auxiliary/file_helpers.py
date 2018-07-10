@@ -192,9 +192,8 @@ class IndexedTextReader(FileReader):
     def _chunk_iterator(self):
         fh = self._source.file
         delim = remove_bom(self.delimiter.encode(self.encoding))
-        pattern = re.compile(delim)
         buff = fh.read(self.block_size)
-        parts = pattern.split(buff)
+        parts = buff.split(delim)
         started_with_delim = buff.startswith(delim)
         tail = parts[-1]
         front = parts[:-1]
@@ -218,7 +217,7 @@ class IndexedTextReader(FileReader):
                 buff = tail
             else:
                 buff = tail + buff
-            parts = pattern.split(buff)
+            parts = buff.split(delim)
             tail = parts[-1]
             front = parts[:-1]
             for part in front:
