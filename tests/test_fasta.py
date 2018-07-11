@@ -1,11 +1,11 @@
 from os import path
-import pyteomics
-pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import tempfile
 import unittest
-from pyteomics import fasta
 import random
 import string
+import pyteomics
+pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
+from pyteomics import fasta
 
 class FastaTest(unittest.TestCase):
     maxDiff = None
@@ -32,13 +32,19 @@ class FastaTest(unittest.TestCase):
                 list(reader(self.fasta_file, ignore_comments=True)))
 
     def test_indexed_read(self):
-        self.assertEqual(self.fasta_entries_short[1:],
-            list(fasta.IndexedFASTA(self.fasta_file)))
+        tlir = fasta.TwoLayerIndexedFASTA(self.fasta_file, r'>(.*)')
+        ir = fasta.IndexedFASTA(self.fasta_file)
+        for reader in [ir, tlir]:
+            self.assertEqual(self.fasta_entries_short[1:], list(reader))
 
     def test_index_retrieve(self):
         key = 'test sequence 4'
         with fasta.IndexedFASTA(self.fasta_file) as ir:
             self.assertEqual(self.fasta_entries_short[2], ir[key])
+
+    def test_two_layer_retrieve(self):
+        with fasta.TwoLayerIndexedFASTA(self.fasta_file, r'test sequence (.*)') as tlir:
+            self.assertEqual(self.fasta_entries_short[2], tlir['4'])
 
     def test_decoy_sequence_reverse(self):
         sequence = ''.join(random.choice(string.ascii_uppercase)

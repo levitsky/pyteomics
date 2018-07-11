@@ -13,6 +13,20 @@ dev
    The old, sequential parser is preserved under its name, :py:class:`pyteomics.mgf.MGF`.
    The function :py:func:`pyteomics.mgf.read` now returns an instance of one of the two classes,
    based on the `use_index` argument and the type of `source`.
+   The common ancestor class, :py:class:`pyteomics.mgf.MGFBase`, can be used for type checking.
+
+ - New FASTA parsing classes:
+
+   - :py:class:`pyteomics.fasta.FASTABase` - common ancestor, suitable for type checking;
+
+     - :py:class:`pyteomics.fasta.FASTA` - text-mode, sequential parser. Does
+     what the old :py:func:`fasta.read` was doing;
+
+     - :py:class:`pyteomics.fasta.IndexedFASTA` - binary-mode, indexing parser.
+     Supports direct indexing by header string;
+
+       - :py:class:`pyteomics.fasta.TwoLayerIndexedFASTA` - additionally supports
+       indexing by extracted header fields;
 
 3.5.1
 -----

@@ -9,6 +9,34 @@ for the most detailed information on the format.
 Data manipulation
 -----------------
 
+Classes
+.......
+
+Several classes of FASTA parsers are available. All of them have common features:
+
+ - context manager support;
+
+ - header parsing;
+
+ - direct iteration.
+
+Available classes:
+
+  :py:class:`pyteomics.fasta.FASTABase` - common ancestor, suitable for type checking.
+  Abstract class.
+
+  :py:class:`pyteomics.fasta.FASTA` - text-mode, sequential parser.
+  Good for iteration over database entries.
+
+  :py:class:`pyteomics.fasta.IndexedFASTA` - binary-mode, indexing parser.
+  Supports direct indexing by header string.
+
+  :py:class:`pyteomics.fasta.TwoLayerIndexedFASTA` - additionally supports
+  indexing by extracted header fields.
+
+Functions
+.........
+
   :py:func:`read` - iterate through entries in a FASTA database.
 
   :py:func:`chain` - read multiple files at once.
@@ -78,11 +106,14 @@ from . import auxiliary as aux
 Protein = namedtuple('Protein', ('description', 'sequence'))
 
 class FASTABase():
+    """Abstract base class for FASTA file parsers.
+    Can be used for type checking.
+    """
     parser = staticmethod(lambda x: x)
     _ignore_comments = False
     _comments = set('>;')
 
-    def __init__(self, source, ignore_comments=False, parser=None):
+    def __init__(self, ignore_comments=False, parser=None):
         self._ignore_comments = ignore_comments
         if parser is not None:
             self.parser = parser
@@ -98,9 +129,35 @@ class FASTABase():
 
 
 class FASTA(aux.FileReader, FASTABase):
+    """Text-mode, sequential FASTA parser.
+    Suitable for iteration over the file to obtain all entries in order.
+    """
     def __init__(self, source, ignore_comments=False, parser=None, encoding=None):
+        """Create a new FASTA parser object. Supports iteration,
+        yields `(description, sequence)` tuples. Supports `with` syntax.
+
+        Parameters
+        ----------
+
+        source : str or file-like
+            File to read. If file object, it must be opened in *text* mode.
+        ignore_comments : bool, optional
+            If :py:const:`True` then ignore the second and subsequent lines of description.
+            Default is :py:const:`False`, which concatenates multi-line descriptions into
+            a single string.
+        parser : function or None, optional
+            Defines whether the FASTA descriptions should be parsed. If it is a
+            function, that function will be given the description string, and
+            the returned value will be yielded together with the sequence.
+            The :py:data:`std_parsers` dict has parsers for several formats.
+            Hint: specify :py:func:`parse` as the parser to apply automatic
+            format recognition.
+            Default is :py:const:`None`, which means return the header "as is".
+        encoding : str or None, optional
+            File encoding (if it is given by name).
+        """
         aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
-        FASTABase.__init__(self, source, ignore_comments, parser)
+        FASTABase.__init__(self, ignore_comments, parser)
         self.encoding = encoding
 
     def _read(self):
@@ -128,7 +185,7 @@ class FASTA(aux.FileReader, FASTABase):
                     sequence = ''.join(accumulated_strings[1:])
 
                     # Drop the translation stop sign.
-                    if sequence.endswith('*'):
+                    if sequence and sequence[-1] == '*':
                         sequence = sequence[:-1]
                     yield Protein(self.parser(description), sequence)
                     accumulated_strings = [stripped_string[1:]]
@@ -139,16 +196,50 @@ class FASTA(aux.FileReader, FASTABase):
             else:
                 accumulated_strings.append(stripped_string)
 
+    def get_entry(self, key):
+        raise aux.PyteomicsError('Direct indexing is not supported. '
+            'Use IndexedFASTA and its subclasses')
+
 
 class IndexedFASTA(aux.IndexedTextReader, FASTABase):
+    """Indexed FASTA parser. Supports direct indexing by matched labels."""
     delimiter = '>'
     label = r'^>(.*)'
 
-    def __init__(self, source, ignore_comments=False, parser=None, encoding='utf-8', block_size=None,
-        delimiter=None, label=None, label_group=None):
-        aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding,
-            block_size, delimiter, label, label_group)
-        FASTABase.__init__(self, source, ignore_comments, parser)
+    def __init__(self, source, ignore_comments=False, parser=None, **kwargs):
+        """Create an indexed FASTA parser object.
+
+        Parameters
+        ----------
+        source : str or file-like
+            File to read. If file object, it must be opened in *binary* mode.
+        ignore_comments : bool, optional
+            If :py:const:`True` then ignore the second and subsequent lines of description.
+            Default is :py:const:`False`, which concatenates multi-line descriptions into
+            a single string.
+        parser : function or None, optional
+            Defines whether the FASTA descriptions should be parsed. If it is a
+            function, that function will be given the description string, and
+            the returned value will be yielded together with the sequence.
+            The :py:data:`std_parsers` dict has parsers for several formats.
+            Hint: specify :py:func:`parse` as the parser to apply automatic
+            format recognition.
+            Default is :py:const:`None`, which means return the header "as is".
+        encoding : str or None, optional, keyword only
+            File encoding. Default is UTF-8.
+        block_size : int or None, optional, keyword only
+            Number of bytes to consume at once.
+        delimiter : str or None, optional, keyword only
+            Overrides the FASTA record delimiter (default is ``'>'``).
+        label : str or None, optional, keyword only
+            Overrides the FASTA record label pattern. Default is ``r'^>(.*)'``.
+        label_group : int or str, optional, keyword only
+            Overrides the matched group used as key in the byte offset index.
+            This in combination with `label` can be used to extract fields from headers.
+            However, consider using :py:class:`TwoLayerIndexedFASTA` for this purpose.
+        """
+        aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, **kwargs)
+        FASTABase.__init__(self, ignore_comments, parser)
 
     def _read_protein_lines(self, lines):
         description = []
@@ -188,18 +279,50 @@ class IndexedFASTA(aux.IndexedTextReader, FASTABase):
 
 
 class TwoLayerIndexedFASTA(IndexedFASTA):
+    """Parser with two-layer index. Extracted groups are mapped to full headers (where possible),
+    full headers are mapped to byte offsets.
+
+    When indexed, they key is looked up in both indexes, allowing access by meaningful IDs
+    (like UniProt accession) and by full header string."""
     header_group = 1
     def __init__(self, source, header_pattern, header_group=None,
-        ignore_comments=False, parser=None, encoding='utf-8', block_size=None,
-        delimiter=None, label=None, label_group=None):
-        super(TwoLayerIndexedFASTA, self).__init__(source, ignore_comments, parser,
-            encoding, block_size, delimiter, label, label_group)
+        ignore_comments=False, parser=None, **kwargs):
+        """Open `source` and create a two-layer index for convenient random access
+        both by full header strings and extracted fields.
+
+        Parameters
+        ----------
+        source : str or file-like
+            File to read. If file object, it must be opened in *binary* mode.
+        header_pattern : str or RE
+            Pattern to match the header string. Must capture the group used
+            for the second index.
+        header_group : int or str or None, optional
+            Defines which group is used as key in the second-level index.
+            Default is 1.
+        ignore_comments : bool, optional
+            If :py:const:`True` then ignore the second and subsequent lines of description.
+            Default is :py:const:`False`, which concatenates multi-line descriptions into
+            a single string.
+        parser : function or None, optional
+            Defines whether the FASTA descriptions should be parsed. If it is a
+            function, that function will be given the description string, and
+            the returned value will be yielded together with the sequence.
+            The :py:data:`std_parsers` dict has parsers for several formats.
+            Hint: specify :py:func:`parse` as the parser to apply automatic
+            format recognition.
+            Default is :py:const:`None`, which means return the header "as is".
+
+        Other arguments : the same as for :py:class:`IndexedFASTA`.
+        """
+        super(TwoLayerIndexedFASTA, self).__init__(source, ignore_comments, parser, **kwargs)
         if header_group is not None:
             self.header_group = header_group
         self.header_pattern = header_pattern
         self.build_second_index()
 
     def build_second_index(self):
+        """Create the mapping from extracted field to whole header string."""
         index = {}
         for key in self._offset_index:
             match = re.match(self.header_pattern, key)
@@ -208,6 +331,7 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
         self._id2header = index
 
     def get_entry(self, key):
+        """Get the entry by value of header string or extracted field."""
         raw = super(TwoLayerIndexedFASTA, self).get_entry(key)
         if raw is not None:
             return raw
