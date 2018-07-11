@@ -187,6 +187,35 @@ class IndexedFASTA(aux.IndexedTextReader, FASTABase):
             return self._entry_from_offsets(*offsets)
 
 
+class TwoLayerIndexedFASTA(IndexedFASTA):
+    header_group = 1
+    def __init__(self, source, header_pattern, header_group=None,
+        ignore_comments=False, parser=None, encoding='utf-8', block_size=None,
+        delimiter=None, label=None, label_group=None):
+        super(TwoLayerIndexedFASTA, self).__init__(source, ignore_comments, parser,
+            encoding, block_size, delimiter, label, label_group)
+        if header_group is not None:
+            self.header_group = header_group
+        self.header_pattern = header_pattern
+        self.build_second_index()
+
+    def build_second_index(self):
+        index = {}
+        for key in self._offset_index:
+            match = re.match(self.header_pattern, key)
+            if match:
+                index[match.group(self.header_group)] = key
+        self._id2header = index
+
+    def get_entry(self, key):
+        raw = super(TwoLayerIndexedFASTA, self).get_entry(key)
+        if raw is not None:
+            return raw
+        header = self._id2header.get(key)
+        if header is not None:
+            return super(TwoLayerIndexedFASTA, self).get_entry(header)
+
+
 @aux._file_reader()
 def read(source=None, ignore_comments=False, parser=None):
     """Read a FASTA file and return entries iteratively.
