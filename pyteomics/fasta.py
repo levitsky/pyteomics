@@ -109,7 +109,7 @@ class FASTABase():
     """Abstract base class for FASTA file parsers.
     Can be used for type checking.
     """
-    parser = staticmethod(lambda x: x)
+    parser = None
     _ignore_comments = False
     _comments = set('>;')
 
@@ -187,7 +187,9 @@ class FASTA(aux.FileReader, FASTABase):
                     # Drop the translation stop sign.
                     if sequence and sequence[-1] == '*':
                         sequence = sequence[:-1]
-                    yield Protein(self.parser(description), sequence)
+                    if self.parser is not None:
+                        description = self.parser(description)
+                    yield Protein(description, sequence)
                     accumulated_strings = [stripped_string[1:]]
                 else:
                     # accumulated_strings is empty; we're probably reading
@@ -262,7 +264,9 @@ class IndexedFASTA(aux.IndexedTextReader, FASTABase):
         # Drop the translation stop sign.
         if sequence and sequence[-1] == '*':
             sequence = sequence[:-1]
-        return Protein(self.parser(description), sequence)
+        if self.parser is not None:
+            description = self.parser(description)
+        return Protein(description, sequence)
 
     def _entry_from_offsets(self, start, end):
         lines = self._read_lines_from_offsets(start, end)
@@ -285,7 +289,8 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
     When indexed, they key is looked up in both indexes, allowing access by meaningful IDs
     (like UniProt accession) and by full header string."""
     header_group = 1
-    def __init__(self, source, header_pattern, header_group=None,
+    header_pattern = None
+    def __init__(self, source, header_pattern=None, header_group=None,
         ignore_comments=False, parser=None, **kwargs):
         """Open `source` and create a two-layer index for convenient random access
         both by full header strings and extracted fields.
@@ -294,9 +299,9 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
         ----------
         source : str or file-like
             File to read. If file object, it must be opened in *binary* mode.
-        header_pattern : str or RE
+        header_pattern : str or RE or None, optional
             Pattern to match the header string. Must capture the group used
-            for the second index.
+            for the second index. If :py:const:`None` (default), second-level index is not created.
         header_group : int or str or None, optional
             Defines which group is used as key in the second-level index.
             Default is 1.
@@ -318,26 +323,32 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
         super(TwoLayerIndexedFASTA, self).__init__(source, ignore_comments, parser, **kwargs)
         if header_group is not None:
             self.header_group = header_group
-        self.header_pattern = header_pattern
+        if header_pattern is not None:
+            self.header_pattern = header_pattern
         self.build_second_index()
 
     def build_second_index(self):
         """Create the mapping from extracted field to whole header string."""
-        index = {}
-        for key in self._offset_index:
-            match = re.match(self.header_pattern, key)
-            if match:
-                index[match.group(self.header_group)] = key
-        self._id2header = index
+        if self.header_pattern is None:
+            self._id2header = None
+        else:
+            index = {}
+            for key in self._offset_index:
+                match = re.match(self.header_pattern, key)
+                if match:
+                    index[match.group(self.header_group)] = key
+            self._id2header = index
 
     def get_entry(self, key):
         """Get the entry by value of header string or extracted field."""
         raw = super(TwoLayerIndexedFASTA, self).get_entry(key)
         if raw is not None:
             return raw
-        header = self._id2header.get(key)
-        if header is not None:
-            return super(TwoLayerIndexedFASTA, self).get_entry(header)
+        if self._id2header:
+            header = self._id2header.get(key)
+            if header is not None:
+                return super(TwoLayerIndexedFASTA, self).get_entry(header)
+
 
 
 @aux._file_reader()

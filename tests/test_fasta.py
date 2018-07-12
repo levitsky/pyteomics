@@ -32,7 +32,7 @@ class FastaTest(unittest.TestCase):
                 list(reader(self.fasta_file, ignore_comments=True)))
 
     def test_indexed_read(self):
-        tlir = fasta.TwoLayerIndexedFASTA(self.fasta_file, r'>(.*)')
+        tlir = fasta.TwoLayerIndexedFASTA(self.fasta_file)
         ir = fasta.IndexedFASTA(self.fasta_file)
         for reader in [ir, tlir]:
             self.assertEqual(self.fasta_entries_short[1:], list(reader))
