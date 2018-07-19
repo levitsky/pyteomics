@@ -22,22 +22,29 @@ Several classes of FASTA parsers are available. All of them have common features
 
 Available classes:
 
-  :py:class:`pyteomics.fasta.FASTABase` - common ancestor, suitable for type checking.
+  :py:class:`FASTABase` - common ancestor, suitable for type checking.
   Abstract class.
 
-  :py:class:`pyteomics.fasta.FASTA` - text-mode, sequential parser.
+  :py:class:`FASTA` - text-mode, sequential parser.
   Good for iteration over database entries.
 
-  :py:class:`pyteomics.fasta.IndexedFASTA` - binary-mode, indexing parser.
+  :py:class:`IndexedFASTA` - binary-mode, indexing parser.
   Supports direct indexing by header string.
 
-  :py:class:`pyteomics.fasta.TwoLayerIndexedFASTA` - additionally supports
+  :py:class:`TwoLayerIndexedFASTA` - additionally supports
   indexing by extracted header fields.
+
+  :py:class:`UniProt` and :py:class:`IndexedUniProt`,
+  :py:class:`UniParc` and :py:class:`IndexedUniParc`,
+  :py:class:`UniMes` and :py:class:`IndexedUniMes`,
+  :py:class:`UniRef` and :py:class:`IndexedUniRef`,
+  :py:class:`SPD` and :py:class:`IndexedSPD` - format-specific parsers.
 
 Functions
 .........
 
-  :py:func:`read` - iterate through entries in a FASTA database.
+  :py:func:`read` - returns an instance of the appropriate reader class,
+  for sequential iteration or random access.
 
   :py:func:`chain` - read multiple files at once.
 
@@ -379,11 +386,28 @@ def _add_init(cls):
     """Add and __init__ method to a flavored parser class,
     which simply calls __init__ of its two bases."""
     flavor, typ = cls.__bases__
+    newdict = cls.__dict__.copy()
     def __init__(self, source, parse=True, **kwargs):
         typ.__init__(self, source, **kwargs)
         flavor.__init__(self, parse)
-    cls.__init__ = __init__
-    return cls
+
+    flavor_name = flavor.__name__[:-5]
+    type_name = "Text-mode" if typ is FASTA else "Indexed"
+    __init__.__doc__ = """Creates a :py:class:`{}` object.
+
+    Parameters
+    ----------
+    source : str or file
+        The file to read. If a file object, it needs to be in *{}* mode.
+    parse : bool, optional
+        Defines whether the descriptions should be parsed in the produced tuples.
+        Default is :py:const:`True`.
+    kwargs : passed to the :py:class:`{}` constructor.
+    """.format(cls.__name__, 'text' if typ is FASTA else 'binary', typ.__name__)
+    newdict['__init__'] = __init__
+    newdict['__doc__'] = """{} parser for {} FASTA files.""".format(type_name, flavor_name)
+
+    return type(cls.__name__, (flavor, typ), newdict)
 
 
 @_add_init
