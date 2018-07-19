@@ -38,7 +38,8 @@ Available classes:
   :py:class:`UniParc` and :py:class:`IndexedUniParc`,
   :py:class:`UniMes` and :py:class:`IndexedUniMes`,
   :py:class:`UniRef` and :py:class:`IndexedUniRef`,
-  :py:class:`SPD` and :py:class:`IndexedSPD` - format-specific parsers.
+  :py:class:`SPD` and :py:class:`IndexedSPD`,
+  :py:class:`NCBI` and :py:class:`IndexedNCBI` - format-specific parsers.
 
 Functions
 .........
@@ -503,6 +504,24 @@ class IndexedSPD(SPDMixin, TwoLayerIndexedFASTA):
     pass
 
 
+class NCBIMixin():
+    header_pattern = r'^(\S+)\s+(.*\S)\s+\[(.*)\]'
+
+    def parser(self, header):
+        ID, description, organism = re.match(self.header_pattern, header).groups()
+        return {'id': ID, 'description': description, 'taxon': organism}
+
+
+@_add_init
+class NCBI(NCBIMixin, FASTA):
+    pass
+
+
+@_add_init
+class IndexedNCBI(NCBIMixin, TwoLayerIndexedFASTA):
+    pass
+
+
 def read(source=None, use_index=False, flavor=None, **kwargs):
     """Parse a FASTA file. This function serves as a dispatcher between
     different parsers available in this module.
@@ -806,13 +825,15 @@ def _intify(d, keys):
 
 std_parsers = {'uniprot': (UniProt, IndexedUniProt), 'uniref': (UniRef, IndexedUniRef),
         'uniparc': (UniParc, IndexedUniParc), 'unimes': (UniMes, IndexedUniMes),
-        'spd': (SPD, IndexedSPD), None: (FASTA, IndexedFASTA)}
+        'spd': (SPD, IndexedSPD), 'ncbi': (NCBI, IndexedNCBI),
+        None: (FASTA, IndexedFASTA)}
 """A dictionary with parsers for known FASTA header formats. For now, supported
 formats are those described at
 `UniProt help page <http://www.uniprot.org/help/fasta-headers>`_."""
 
 _std_mixins = {'uniprot': UniProtMixin, 'uniref': UniRefMixin,
-        'uniparc': UniParcMixin, 'unimes': UniMesMixin, 'spd': SPDMixin}
+        'uniparc': UniParcMixin, 'unimes': UniMesMixin, 'spd': SPDMixin,
+        'ncbi': NCBIMixin}
 
 def parse(header, flavor='auto', parsers=None):
     """Parse the FASTA header and return a nice dictionary.

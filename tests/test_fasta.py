@@ -233,5 +233,12 @@ class FastaTest(unittest.TestCase):
                  'taxon': 'HUMAN'}
         self.assertEqual(fasta.parse(header), parsed)
 
+    def test_parser_ncbi(self):
+        header = '>NP_001351877.1 acylglycerol kinase, mitochondrial isoform 2 [Homo sapiens]'
+        parsed = {'description': 'acylglycerol kinase, mitochondrial isoform 2',
+                 'id': 'NP_001351877.1',
+                 'taxon': 'Homo sapiens'}
+        self.assertEqual(fasta.parse(header), parsed)
+
 if __name__ == '__main__':
     unittest.main()
