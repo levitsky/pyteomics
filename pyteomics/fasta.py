@@ -374,16 +374,25 @@ class UniProtMixin(FlavoredMixin):
         _intify(info, ('PE', 'SV'))
         return info
 
+
+def _add_init(cls):
+    """Add and __init__ method to a flavored parser class,
+    which simply calls __init__ of its two bases."""
+    flavor, typ = cls.__bases__
+    def __init__(self, source, parse=True, **kwargs):
+        typ.__init__(self, source, **kwargs)
+        flavor.__init__(self, parse)
+    cls.__init__ = __init__
+    return cls
+
+
+@_add_init
 class UniProt(UniProtMixin, FASTA):
-    def __init__(self, source, parse=True, **kwargs):
-        FASTA.__init__(self, source, **kwargs)
-        UniProtMixin.__init__(self, parse)
+    pass
 
-
+@_add_init
 class IndexedUniProt(UniProtMixin, TwoLayerIndexedFASTA):
-    def __init__(self, source, parse=True, **kwargs):
-        TwoLayerIndexedFASTA.__init__(self, source, **kwargs)
-        UniProtMixin.__init__(self, parse)
+    pass
 
 class UniRefMixin(FlavoredMixin):
     header_pattern = r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$'
@@ -400,16 +409,14 @@ class UniRefMixin(FlavoredMixin):
         return info
 
 
+@_add_init
 class UniRef(UniRefMixin, FASTA):
-    def __init__(self, source, parse=True, **kwargs):
-        FASTA.__init__(self, source, **kwargs)
-        UniRefMixin.__init__(self, parse)
+    pass
 
 
+@_add_init
 class IndexedUniRef(UniRefMixin, TwoLayerIndexedFASTA):
-    def __init__(self, source, parse=True, **kwargs):
-        TwoLayerIndexedFASTA.__init__(self, source, **kwargs)
-        UniRefMixin.__init__(self, parse)
+    pass
 
 
 class UniParcMixin(FlavoredMixin):
@@ -420,16 +427,14 @@ class UniParcMixin(FlavoredMixin):
         return {'id': ID, 'status': status}
 
 
+@_add_init
 class UniParc(UniParcMixin, FASTA):
-    def __init__(self, source, parse=True, **kwargs):
-        FASTA.__init__(self, source, **kwargs)
-        UniParcMixin.__init__(self, parse)
+    pass
 
 
+@_add_init
 class IndexedUniParc(UniParcMixin, TwoLayerIndexedFASTA):
-    def __init__(self, source, parse=True, **kwargs):
-        TwoLayerIndexedFASTA.__init__(self, source, **kwargs)
-        UniParcMixin.__init__(self, parse)
+    pass
 
 
 class UniMesMixin(FlavoredMixin):
@@ -444,16 +449,14 @@ class UniMesMixin(FlavoredMixin):
         return info
 
 
+@_add_init
 class UniMes(UniMesMixin, FASTA):
-    def __init__(self, source, parse=True, **kwargs):
-        FASTA.__init__(self, source, **kwargs)
-        UniMesMixin.__init__(self, parse)
+    pass
 
 
+@_add_init
 class IndexedUniMes(UniMesMixin, TwoLayerIndexedFASTA):
-    def __init__(self, source, parse=True, **kwargs):
-        TwoLayerIndexedFASTA.__init__(self, source, **kwargs)
-        UniMesMixin.__init__(self, parse)
+    pass
 
 
 class SPDMixin(FlavoredMixin):
@@ -466,16 +469,14 @@ class SPDMixin(FlavoredMixin):
                 'taxon': taxon, 'gene_id': gid}
 
 
+@_add_init
 class SPD(SPDMixin, FASTA):
-    def __init__(self, source, parse=True, **kwargs):
-        FASTA.__init__(self, source, **kwargs)
-        SPDMixin.__init__(self, parse)
+    pass
 
 
+@_add_init
 class IndexedSPD(SPDMixin, TwoLayerIndexedFASTA):
-    def __init__(self, source, parse=True, **kwargs):
-        TwoLayerIndexedFASTA.__init__(self, source, **kwargs)
-        SPDMixin.__init__(self, parse)
+    pass
 
 
 def read(source=None, use_index=False, flavor=None, **kwargs):
