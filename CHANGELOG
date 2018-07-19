@@ -27,6 +27,7 @@ dev
        - :py:class:`pyteomics.fasta.UniRef`;
        - :py:class:`pyteomics.fasta.UniMes`;
        - :py:class:`pyteomics.fasta.SPD`;
+       - :py:class:`pyteomics.fasta.NCBI`;
 
      - :py:class:`pyteomics.fasta.IndexedFASTA` - binary-mode, indexing parser.
        Supports direct indexing by header string;
@@ -39,6 +40,10 @@ dev
          - :py:class:`pyteomics.fasta.IndexedUniRef`;
          - :py:class:`pyteomics.fasta.IndexedUniMes`;
          - :py:class:`pyteomics.fasta.IndexedSPD`;
+         - :py:class:`pyteomics.fasta.IndexedNCBI`.
+
+   :py:func:`pyteomics.fasta.read` now returns an instance of one of these classes,
+   depending on the arguments `use_index` and `flavor`.
 
 3.5.1
 -----
