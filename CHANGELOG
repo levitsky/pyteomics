@@ -20,13 +20,25 @@ dev
    - :py:class:`pyteomics.fasta.FASTABase` - common ancestor, suitable for type checking;
 
      - :py:class:`pyteomics.fasta.FASTA` - text-mode, sequential parser. Does
-     what the old :py:func:`fasta.read` was doing;
+       what the old :py:func:`fasta.read` was doing;
+
+       - :py:class:`pyteomics.fasta.UniProt`;
+       - :py:class:`pyteomics.fasta.UniParc`;
+       - :py:class:`pyteomics.fasta.UniRef`;
+       - :py:class:`pyteomics.fasta.UniMes`;
+       - :py:class:`pyteomics.fasta.SPD`;
 
      - :py:class:`pyteomics.fasta.IndexedFASTA` - binary-mode, indexing parser.
-     Supports direct indexing by header string;
+       Supports direct indexing by header string;
 
        - :py:class:`pyteomics.fasta.TwoLayerIndexedFASTA` - additionally supports
-       indexing by extracted header fields;
+         indexing by extracted header fields;
+
+         - :py:class:`pyteomics.fasta.IndexedUniProt`;
+         - :py:class:`pyteomics.fasta.IndexedUniParc`;
+         - :py:class:`pyteomics.fasta.IndexedUniRef`;
+         - :py:class:`pyteomics.fasta.IndexedUniMes`;
+         - :py:class:`pyteomics.fasta.IndexedSPD`;
 
 3.5.1
 -----
