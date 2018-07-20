@@ -4,6 +4,8 @@ import re
 from functools import wraps
 from contextlib import contextmanager
 from collections import OrderedDict
+import warnings
+warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 
 try:
     basestring
@@ -348,3 +350,20 @@ def _make_chain(reader, readername, full_output=False):
     dispatch.from_iterable = dispatch_from_iterable
 
     return dispatch
+
+def _check_use_index(source, use_index, default):
+    if use_index is not None:
+        use_index = bool(use_index)
+    if 'b' not in getattr(source, 'mode', 'b'):
+        if use_index is True:
+            warnings.warn('use_index is True, but the file mode is not binary. '
+                'Setting use_index to False')
+        use_index = False
+    elif 'b' in getattr(source, 'mode', ''):
+        if use_index is False:
+            warnings.warn('use_index is False, but the file mode is binary. '
+                'Setting use_index to True')
+        use_index = True
+    if use_index is None:
+        use_index = default
+    return use_index

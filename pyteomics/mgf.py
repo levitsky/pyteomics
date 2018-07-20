@@ -9,13 +9,15 @@ Summary
 human-readable format for MS/MS data. It allows storing MS/MS peak lists and
 exprimental parameters.
 
-This module provides minimalistic infrastructure for access to data stored in
-MGF files. The most important function is :py:func:`read`, which
-reads spectra and related information as saves them into human-readable
-:py:class:`dicts`.
+This module provides classes and functions for access to data stored in
+MGF files.
+Parsing is done using :py:class:`MGF` and :py:class:`IndexedMGF` classes.
+The :py:func:`read` function can be used as an entry point.
+MGF spectra are converted to dictionaries. MS/MS data points are
+(optionally) represented as :py:mod:`numpy` arrays.
 Also, common parameters can be read from MGF file header with
-:py:func:`read_header` function. :py:func:`write` allows creation of MGF
-files.
+:py:func:`read_header` function.
+:py:func:`write` allows creation of MGF files.
 
 Classes
 -------
@@ -25,7 +27,7 @@ Classes
 
   :py:class:`IndexedMGF` - a binary-mode MGF parser. When created, builds a byte offset index
   for fast random access by spectrum titles. Sequential iteration is also supported.
-  Needs a seekable file opened in binary mode (or will open it if given a file name).
+  Needs a seekable file opened in binary mode (if created from existing file object).
 
   :py:class:`MGFBase` - abstract class, the common ancestor of the two classes above.
   Can be used for type checking.
@@ -65,15 +67,13 @@ Functions
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from . import auxiliary as aux
 try:
     import numpy as np
 except ImportError:
     np = None
 import itertools as it
 import sys
-import warnings
-warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
+from . import auxiliary as aux
 
 class MGFBase():
     """Abstract class representing an MGF file. Subclasses implement different approaches to parsing."""
@@ -261,7 +261,7 @@ class IndexedMGF(aux.IndexedTextReader, MGFBase):
         return self._read_header_lines(header_lines)
 
     def _read(self, **kwargs):
-        for spec, offsets in self._offset_index.items():
+        for _, offsets in self._offset_index.items():
             spectrum = self._read_spectrum(*offsets)
             yield spectrum
 
@@ -305,7 +305,8 @@ class MGF(aux.FileReader, MGFBase):
 
     """
 
-    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding=None):
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
+        dtype=None, encoding=None):
         aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
         MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype)
         self.encoding = encoding
@@ -389,13 +390,10 @@ def read(*args, **kwargs):
         source = args[0]
     else:
         source = kwargs.get('source')
-    use_index = kwargs.pop('use_index', True)
-    if 'b' in getattr(source, 'mode', 'b') and use_index:
-        tp = IndexedMGF
-    else:
-        if use_index:
-            warnings.warn('use_index is True, but the file mode is not binary. Setting use_index to False')
-        tp = MGF
+    use_index = kwargs.pop('use_index', None)
+    use_index = aux._check_use_index(source, use_index, True)
+    tp = IndexedMGF if use_index else MGF
+
     return tp(*args, **kwargs)
 
 

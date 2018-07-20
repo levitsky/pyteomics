@@ -111,6 +111,7 @@ from collections import namedtuple
 import re
 from . import auxiliary as aux
 
+
 Protein = namedtuple('Protein', ('description', 'sequence'))
 
 class FASTABase():
@@ -522,7 +523,7 @@ class IndexedNCBI(NCBIMixin, TwoLayerIndexedFASTA):
     pass
 
 
-def read(source=None, use_index=False, flavor=None, **kwargs):
+def read(source=None, use_index=None, flavor=None, **kwargs):
     """Parse a FASTA file. This function serves as a dispatcher between
     different parsers available in this module.
 
@@ -552,6 +553,7 @@ def read(source=None, use_index=False, flavor=None, **kwargs):
     except KeyError:
         raise aux.PyteomicsError('No parser for flavor: {}. Supported flavors: {}'.format(
             flavor, ', '.join(map(str, std_parsers))))
+    use_index = aux._check_use_index(source, use_index, False)
     return parser[use_index](source, **kwargs)
 
 
