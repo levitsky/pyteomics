@@ -494,7 +494,8 @@ def amino_acid_composition(sequence,
     return aa_dict
 
 @memoize()
-def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False):
+def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False,
+    exception=None):
     """Cleaves a polypeptide sequence using a given rule.
 
     Parameters
@@ -530,6 +531,11 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False):
         Include products of semi-specific cleavage. Default is :py:const:`False`.
         This effectively cuts every peptide at every position and adds results to the output.
 
+    exception : str or compiled RE or None, optional
+        Exceptions to the cleavage rule. If specified, should be a regular expression.
+        Cleavage sites matching `rule` will be checked against `exception` and omitted
+        if they match.
+
     Returns
     -------
     out : set
@@ -544,9 +550,9 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False):
     True
 
     """
-    return set(_cleave(sequence, rule, missed_cleavages, min_length, semi))
+    return set(_cleave(sequence, rule, missed_cleavages, min_length, semi, exception))
 
-def _cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False):
+def _cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False, exception=None):
     """Like :py:func:`cleave`, but the result is a list. Refer to
     :py:func:`cleave` for explanation of parameters.
     """
@@ -557,8 +563,12 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False):
     if min_length is None:
         min_length = 1
     cl = 1
+    if exception is not None:
+        exceptions = {x.end() for x in re.finditer(exception, sequence)}
     for i in it.chain([x.end() for x in re.finditer(rule, sequence)],
                    [None]):
+        if exception is not None and i in exceptions:
+            continue
         cleavage_sites.append(i)
         if cl < ml:
             cl += 1
@@ -589,6 +599,10 @@ def num_sites(sequence, rule, **kwargs):
         <http://www.regular-expressions.info/lookaround.html>`_.
     labels : list, optional
         A list of allowed labels for amino acids and terminal modifications.
+    exception : str or compiled RE or None, optional
+        Exceptions to the cleavage rule. If specified, should be a regular expression.
+        Cleavage sites matching `rule` will be checked against `exception` and omitted
+        if they match.
 
     Returns
     -------
@@ -635,7 +649,8 @@ expasy_rules = {
     'thermolysin':   r'[^DE](?=[AFILMV])',
     'thrombin':      r'((?<=G)R(?=G))|'
                      r'((?<=[AFGILTVM][AFGILTVWA]P)R(?=[^DE][^DE]))',
-    'trypsin':       r'([KR](?=[^P]))|((?<=W)K(?=P))|((?<=M)R(?=P))'
+    'trypsin':       r'([KR](?=[^P]))|((?<=W)K(?=P))|((?<=M)R(?=P))',
+    'trypsin_exception': r'((?<=[CD])K(?=D))|((?<=C)K(?=[HY]))|((?<=C)R(?=K))|((?<=R)R(?=[HR]))',
     }
 """
 This dict contains regular expressions for cleavage rules of the most
@@ -643,6 +658,16 @@ popular proteolytic enzymes. The rules were taken from the
 `PeptideCutter tool
 <http://ca.expasy.org/tools/peptidecutter/peptidecutter_enzymes.html>`_
 at Expasy.
+
+.. note::
+    'trypsin_exception' can be used as `exception` argument when calling
+    :py:func:`cleave` with 'trypsin' `rule`::
+
+        >>> parser.cleave('PEPTIDKDE', parser.expasy_rules['trypsin'])
+        {'DE', 'PEPTIDK'}
+        >>> parser.cleave('PEPTIDKDE', parser.expasy_rules['trypsin'], \
+exception=parser.expasy_rules['trypsin_exception'])
+        {'PEPTIDKDE'}
 """
 
 def isoforms(sequence, **kwargs):
