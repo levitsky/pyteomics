@@ -191,6 +191,28 @@ class XML(FileReader):
         self._skip_empty_cvparam_values = kwargs.get('skip_empty_cvparam_values', False)
         self._retrieve_refs_enabled = kwargs.get('retrieve_refs')
 
+    def __reduce_ex__(self, protocol):
+        return self.__class__, (
+            self._source_init, self._read_schema, self._tree is None,
+            # build_id_cache will be handled through __getstate__ due to
+            # incompatibility with IndexedXML
+        ), self.__getstate__()
+
+    def __getstate__(self):
+        state = super(XML, self).__getstate__()
+        state['_huge_tree'] = self._huge_tree
+        state['_skip_empty_cvparam_values'] = self._skip_empty_cvparam_values
+        state['_retrieve_refs_enabled'] = self._retrieve_refs_enabled
+        state['_id_dict'] = self._id_dict
+        return state
+
+    def __setstate__(self, state):
+        super(XML, self).__setstate__(state)
+        self._huge_tree = state['_huge_tree']
+        self._skip_empty_cvparam_values = state['_skip_empty_cvparam_values']
+        self._retrieve_refs_enabled = state['_retrieve_refs_enabled']
+        self._id_dict = state['_id_dict']
+
     @_keepstate
     def _get_version_info(self):
         """
@@ -813,6 +835,18 @@ class TagSpecificXMLByteIndex(object):
         self.offsets = defaultdict(ByteEncodingOrderedDict)
         self.build_index()
 
+    def __getstate__(self):
+        state = {}
+        state['indexed_tags'] = self.indexed_tags
+        state['indexed_tag_keys'] = self.indexed_tag_keys
+        state['offsets'] = self.offsets
+        return state
+
+    def __setstate__(self, state):
+        self.indexed_tags = state['indexed_tags']
+        self.indexed_tag_keys = state['indexed_tag_keys']
+        self.offsets = state['offsets']
+
     def __getitem__(self, key):
         return self.offsets[key]
 
@@ -948,6 +982,21 @@ class IndexedXML(XML):
         super(IndexedXML, self).__init__(*args, **kwargs)
         self._offset_index = ByteEncodingOrderedDict()
         self._build_index()
+
+    def __getstate__(self):
+        state = super(IndexedXML, self).__getstate__()
+        state['_indexed_tags'] = self._indexed_tags
+        state['_indexed_tag_keys'] = self._indexed_tag_keys
+        state['_use_index'] = self._use_index
+        state['_offset_index'] = self._offset_index
+        return state
+
+    def __setstate__(self, state):
+        super(IndexedXML, self).__setstate__(state)
+        self._indexed_tags = state['_indexed_tags']
+        self._indexed_tag_keys = state['_indexed_tag_keys']
+        self._use_index = state['_use_index']
+        self._offset_index = state['_offset_index']
 
     @_keepstate
     def _build_index(self):
@@ -1136,6 +1185,14 @@ class ArrayConversionMixin(BinaryDataArrayTransformer):
             self._dtype_dict = {k: dtype for k in self._array_keys}
             self._dtype_dict[None] = dtype
         super(ArrayConversionMixin, self).__init__(*args, **kwargs)
+
+    def __getstate__(self):
+        state = {}
+        state['_dtype_dict'] = self._dtype_dict
+        return state
+
+    def __setstate__(self, state):
+        self._dtype_dict = state['_dtype_dict']
 
     def _convert_array(self, k, array):
         dtype = self._dtype_dict.get(k)

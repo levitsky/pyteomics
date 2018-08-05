@@ -105,6 +105,17 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         xml.IndexSavingXML.__init__(self, *args, **kwargs)
         xml.ArrayConversionMixin.__init__(self, *args, **kwargs)
 
+    def __getstate__(self):
+        state = xml.IndexSavingXML.__getstate__(self)
+        state.update(xml.ArrayConversionMixin.__getstate__(self))
+        state['decode_binary'] = self.decode_binary
+        return state
+
+    def __setstate__(self, state):
+        xml.IndexSavingXML.__setstate__(self, state)
+        xml.ArrayConversionMixin.__setstate__(self, state)
+        self.decode_binary = state['decode_binary']
+
     def _detect_array_name(self, info):
         """Determine what the appropriate name for this
         array is by inspecting the available param-based
