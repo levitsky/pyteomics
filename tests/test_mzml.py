@@ -11,6 +11,8 @@ from pyteomics.mzml import MzML, PreIndexedMzML, read, chain
 from pyteomics import auxiliary as aux, xml
 from data import mzml_spectra, mzml_spectra_skip_empty_values
 import numpy as np
+import pickle
+
 
 class MzmlTest(unittest.TestCase):
     maxDiff = None
@@ -133,6 +135,13 @@ class MzmlTest(unittest.TestCase):
         with MzML(data_buffer, use_index=True) as reader:
             spectrum = next(reader)
             self.assertEqual(spectrum['id'], 'controllerType=0 controllerNumber=1 scan=1')
+
+    def test_picklable(self):
+        with MzML(self.path) as reader:
+            expected_data = next(reader)
+            spec = pickle.dumps(reader)
+        with pickle.loads(spec) as reader:
+            self.assertEqual(next(reader)['id'], expected_data['id'])
 
 
 if __name__ == '__main__':

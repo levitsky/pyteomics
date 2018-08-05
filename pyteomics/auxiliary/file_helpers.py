@@ -61,21 +61,29 @@ class _file_obj(object):
     A context manager."""
 
     def __init__(self, f, mode, encoding=None):
+        self._file_spec = None
+        self.mode = mode
         if f is None:
             self.file = {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout
                          }[mode[0]]
-            self.none = True
+            self._file_spec = None
         elif isinstance(f, basestring):
             self.file = codecs.open(f, mode, encoding)
+            self._file_spec = f
         else:
+            self._file_spec = f
             self.file = f
+        self.encoding = getattr(self.file, 'encoding', encoding)
         self.close_file = (self.file is not f)
 
     def __enter__(self):
         return self
 
+    def __reduce_ex__(self, protocol):
+        return self.__class__, (self._file_spec, self.mode, self.encoding)
+
     def __exit__(self, *args, **kwargs):
-        if (not self.close_file) or hasattr(self, 'none'):
+        if (not self.close_file) or self._file_spec is None:
             return  # do nothing
         # clean up
         exit = getattr(self.file, '__exit__', None)
@@ -101,6 +109,16 @@ class IteratorContextManager(object):
         self._kwargs = kwargs
         if type(self) == IteratorContextManager:
             self.reset()
+
+    def __getstate__(self):
+        state = {}
+        state['_iterator_args'] = self._args
+        state['_iterator_kwargs'] = self._kwargs
+        return state
+
+    def __setstate__(self, state):
+        self._args = state['_iterator_args']
+        self._kwargs = state['_iterator_kwargs']
 
     def reset(self):
         """Resets the iterator to its initial state."""
