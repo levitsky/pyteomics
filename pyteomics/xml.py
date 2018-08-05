@@ -194,8 +194,7 @@ class XML(FileReader):
     def __reduce_ex__(self, protocol):
         return self.__class__, (
             self._source_init, self._read_schema, self._tree is None,
-            # build_id_cache will be handled through __getstate__ due to
-            # incompatibility with IndexedXML
+            False,
         ), self.__getstate__()
 
     def __getstate__(self):
@@ -932,7 +931,7 @@ class IndexedXML(XML):
     _indexed_tags = set()
     _indexed_tag_keys = {}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, source, read_schema=False, iterative=True, build_id_cache=False, use_index=True,  *args, **kwargs):
         """Create an XML parser object.
 
         Parameters
@@ -962,7 +961,6 @@ class IndexedXML(XML):
         """
         tags = kwargs.get('indexed_tags')
         tag_index_keys = kwargs.get('indexed_tag_keys')
-        use_index = kwargs.get('use_index', True)
 
         if tags is not None:
             self._indexed_tags = tags
@@ -978,10 +976,15 @@ class IndexedXML(XML):
         }
 
         if use_index:
-            kwargs['build_id_cache'] = False
-        super(IndexedXML, self).__init__(*args, **kwargs)
+            build_id_cache = False
+        super(IndexedXML, self).__init__(source, read_schema, iterative, build_id_cache, *args, **kwargs)
         self._offset_index = ByteEncodingOrderedDict()
         self._build_index()
+
+    def __reduce_ex__(self, protocol):
+        reconstructor, args, state = XML.__reduce_ex__(self, protocol)
+        args = args + (False, )
+        return reconstructor, args, state
 
     def __getstate__(self):
         state = super(IndexedXML, self).__getstate__()
