@@ -15,7 +15,8 @@ from .constants import _nist_mass
 
 from .file_helpers import (
     _file_obj, _keepstate, _keepstate_method, IteratorContextManager,
-    FileReader, _file_reader, _file_writer, _make_chain)
+    FileReader, IndexedTextReader, _file_reader, _file_writer, _make_chain,
+    _check_use_index)
 
 from .math import (
     linear_regression, linear_regression_perpendicular,
