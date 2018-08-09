@@ -4,6 +4,8 @@ Bulky data structures for assertion in pyteomics test suites.
 
 import numpy as np
 from copy import deepcopy
+import sys
+from pyteomics.auxiliary import basestring
 
 # http://stackoverflow.com/q/14246983/1258041
 class ComparableArray(np.ndarray):
@@ -1377,6 +1379,32 @@ mgf_spectra_lists = deepcopy(mgf_spectra_long)
 for s in mgf_spectra_lists:
     for key in ['m/z array', 'intensity array', 'charge array']:
         s[key] = list(s[key])
+
+
+def decode_dict(d, encoding='utf-8'):
+    """Recursively decode all strings in a dict"""
+    out = {}
+    if isinstance(d, basestring):
+         return d.decode(encoding)
+    if not isinstance(d, dict):
+         return d
+    for k, v in d.items():
+        newk = k.decode(encoding)
+        if isinstance(v, basestring):
+            out[newk] = v.decode(encoding)
+        elif isinstance(v, dict):
+            out[newk] = decode_dict(v, encoding)
+        elif isinstance(v, list):
+            out[newk] = [decode_dict(i) for i in v]
+        else:
+            out[newk] = v
+    return out
+
+mgf_spectra_long_decoded = [decode_dict(s) for s in mgf_spectra_long
+    ] if sys.version_info.major == 2 else mgf_spectra_long
+
+mgf_spectra_short_decoded = [decode_dict(s) for s in mgf_spectra_short
+    ] if sys.version_info.major == 2 else mgf_spectra_short
 
 tandem_spectra = [{'act': '0',
   'expect': 1.5e-07,
