@@ -97,13 +97,15 @@ This module requires :py:mod:`lxml`.
 from lxml import etree
 from . import xml, auxiliary as aux, _schema_defaults
 
-class PepXML(xml.XML):
+class PepXML(xml.MultiProcessingXML):
     """Parser class for pepXML files."""
     file_format = 'pepXML'
     _root_element = 'msms_pipeline_analysis'
     _default_schema = _schema_defaults._pepxml_schema_defaults
     _default_version = '1.15'
     _default_iter_tag = 'spectrum_query'
+    _indexed_tags = {'spectrum_query'}
+    _indexed_tag_keys = {'spectrum_query': 'index'}
     _structures_to_flatten = {'search_score_summary', 'modification_info'}
     # attributes which contain unconverted values
     _convert_items = {'float':  {'calc_neutral_pep_mass', 'massdiff'},

@@ -444,6 +444,7 @@ try:
     _NPROC = mp.cpu_count()
 except NotImplementedError:
     _NPROC = 4
+_QUEUE_TIMEOUT = 4
 
 class TaskMappingMixin(object):
     def map(self, iterator=None, target=None, processes=-1, *args, **kwargs):
@@ -487,7 +488,7 @@ class TaskMappingMixin(object):
             worker.start()
         while True:
             try:
-                result = out_queue.get(True, 5)
+                result = out_queue.get(True, _QUEUE_TIMEOUT)
                 yield result
             except Empty:
                 if all(w.is_done() for w in workers):
