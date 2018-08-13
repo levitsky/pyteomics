@@ -782,10 +782,13 @@ class ByteCountingXMLScanner(_file_obj):
         """
         if lookup_id_key_mapping is None:
             lookup_id_key_mapping = {}
+        lookup_id_key_mapping = {ensure_bytes_single(key): ensure_bytes_single(value)
+            for key, value in lookup_id_key_mapping.items()}
 
         for name in self.indexed_tags:
-            lookup_id_key_mapping.setdefault(name, "id")
-            lookup_id_key_mapping[name] = ensure_bytes_single(lookup_id_key_mapping[name])
+            bname = ensure_bytes_single(name)
+            lookup_id_key_mapping.setdefault(bname, 'id')
+            lookup_id_key_mapping[bname] = ensure_bytes_single(lookup_id_key_mapping[bname])
 
         indices = defaultdict(dict)
         g = self._generate_offsets()
