@@ -1,10 +1,9 @@
 import os
 import shutil
-from os import path
 import tempfile
 import pyteomics
 from io import BytesIO
-pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
+pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
 from itertools import product
 import unittest
 from pyteomics.mzml import MzML, PreIndexedMzML, read, chain
@@ -12,7 +11,7 @@ from pyteomics import auxiliary as aux, xml
 from data import mzml_spectra, mzml_spectra_skip_empty_values
 import numpy as np
 import pickle
-
+import operator as op
 
 class MzmlTest(unittest.TestCase):
     maxDiff = None
@@ -20,11 +19,17 @@ class MzmlTest(unittest.TestCase):
 
     def test_read(self):
         for rs, it, ui in product([True, False], repeat=3):
+            if rs: continue # temporarily disable retrieval of schema
             for func in [MzML, read, chain,
                     lambda x, **kw: chain.from_iterable([x], **kw), PreIndexedMzML]:
                 with func(self.path, read_schema=rs, iterative=it, use_index=ui) as r:
                     # http://stackoverflow.com/q/14246983/1258041
                     self.assertEqual(mzml_spectra, list(r))
+
+    def test_mp_read(self):
+        key = op.itemgetter('index')
+        with MzML(self.path) as f:
+            self.assertEqual(sorted(mzml_spectra, key=key), sorted(list(f.map()), key=key))
 
     def test_read_skip_empty_values(self):
         with MzML(self.path, skip_empty_cvparam_values=True) as r:
@@ -70,26 +75,26 @@ class MzmlTest(unittest.TestCase):
 
     def test_prebuild_index(self):
         test_dir = tempfile.mkdtemp()
-        work_path = path.join(test_dir, self.path)
+        work_path = os.path.join(test_dir, self.path)
         with open(work_path, 'w') as dest, open(self.path) as source:
             dest.write(source.read())
         assert dest.closed
         with MzML(work_path, use_index=True) as inst:
-            offsets_exist = path.exists(inst._byte_offset_filename)
+            offsets_exist = os.path.exists(inst._byte_offset_filename)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
             self.assertTrue(isinstance(inst._offset_index, xml.FlatTagSpecificXMLByteIndex))
             self.assertTrue(not isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
         self.assertTrue(inst._source.closed)
         MzML.prebuild_byte_offset_file(work_path)
         with MzML(work_path, use_index=True) as inst:
-            offsets_exist = path.exists(inst._byte_offset_filename)
+            offsets_exist = os.path.exists(inst._byte_offset_filename)
             self.assertTrue(offsets_exist)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
             self.assertTrue(isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
         self.assertTrue(inst._source.closed)
         os.remove(inst._byte_offset_filename)
         with MzML(work_path, use_index=True) as inst:
-            offsets_exist = path.exists(inst._byte_offset_filename)
+            offsets_exist = os.path.exists(inst._byte_offset_filename)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
             self.assertTrue(isinstance(inst._offset_index, xml.FlatTagSpecificXMLByteIndex))
             self.assertTrue(not isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))

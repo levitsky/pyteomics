@@ -4,6 +4,8 @@ import re
 from functools import wraps
 from contextlib import contextmanager
 from collections import OrderedDict
+import multiprocessing as mp
+import threading
 import warnings
 warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 
@@ -22,6 +24,24 @@ try:
 except ImportError:
     np = None
 
+try:
+    import dill
+except ImportError:
+    dill = None
+    try:
+        import cPickle as pickle
+    except ImportError:
+        import pickle
+    serializer = pickle
+else:
+    serializer = dill
+
+try:
+    from queue import Empty
+except ImportError:
+    from Queue import Empty
+
+from . import PyteomicsError
 
 def _keepstate(func):
     """Decorator to help keep the position in open files passed as
@@ -290,7 +310,8 @@ def _file_reader(_mode='r'):
         @wraps(_func)
         def helper(*args, **kwargs):
             if args:
-                return FileReader(args[0], _mode, _func, True, args[1:], kwargs, kwargs.pop('encoding', None))
+                return FileReader(args[0], _mode, _func, True, args[1:], kwargs,
+                    kwargs.pop('encoding', None))
             source = kwargs.pop('source', None)
             return FileReader(source, _mode, _func, True, (), kwargs, kwargs.pop('encoding', None))
         return helper
@@ -321,8 +342,7 @@ def _make_chain(reader, readername, full_output=False):
         results = [reader(arg, **kwargs) for arg in args]
         if pd is not None and all(isinstance(a, pd.DataFrame) for a in args):
             return pd.concat(results)
-        else:
-            return np.concatenate(results)
+        return np.concatenate(results)
 
     def _iter(files, kwargs):
         for f in files:
@@ -350,8 +370,7 @@ def _make_chain(reader, readername, full_output=False):
     def dispatch_from_iterable(args, **kwargs):
         if kwargs.get('full_output', full_output):
             return concat_results(*args, **kwargs)
-        else:
-            return _chain(*args, **kwargs)
+        return _chain(*args, **kwargs)
 
     dispatch.__doc__ = """Chain :py:func:`{0}` for several files.
         Positional arguments should be file names or file objects.
@@ -385,3 +404,96 @@ def _check_use_index(source, use_index, default):
     if use_index is None:
         use_index = default
     return use_index
+
+
+class FileReadingProcess(mp.Process):
+    """Process that does a share of distributed work on entries read from file.
+    Reconstructs a reader object, parses an entries from given indexes,
+    optionally does additional processing, sends results back.
+
+    The reader class must support the :py:meth:`__getitem__` dict-like lookup.
+    """
+    def __init__(self, reader_spec, target_spec, qin, qout, done_flag, args_spec, kwargs_spec):
+        self.reader = serializer.loads(reader_spec)
+        fname = getattr(self.reader, 'name', self.reader.__class__.__name__)
+        target = serializer.loads(target_spec)
+        tname = getattr(target, '__name__', '<?>')
+        super(FileReadingProcess, self).__init__(target=target,
+            name='Process-{}-{}'.format(fname, tname),
+            args=serializer.loads(args_spec),
+            kwargs=serializer.loads(kwargs_spec))
+        self._qin = qin
+        self._qout = qout
+        # self._in_flag = in_flag
+        self._done_flag = done_flag
+
+    def run(self):
+        for key in iter(self._qin.get, None):
+            item = self.reader[key]
+            if self._target is not None:
+                result = self._target(item, *self._args, **self._kwargs)
+            else:
+                result = item
+            self._qout.put(result)
+        self._done_flag.set()
+
+    def is_done(self):
+        return self._done_flag.is_set()
+
+try:
+    _NPROC = mp.cpu_count()
+except NotImplementedError:
+    _NPROC = 4
+
+class TaskMappingMixin(object):
+    def map(self, iterator=None, target=None, processes=-1, *args, **kwargs):
+        if iterator is None:
+            iterator = self._default_iterator()
+        if processes < 1:
+            processes = _NPROC
+        serialized = []
+        for obj, objname in [(self, 'reader'),
+            (target, 'target'), (args, 'args'), (kwargs, 'kwargs')]:
+            try:
+                serialized.append(serializer.dumps(obj))
+            except serializer.PicklingError:
+                msg = 'Could not serialize {0} {1} with {2.__name__}.'.format(
+                    objname, obj, serializer)
+                if serializer is not dill:
+                    msg += ' Try installing `dill`.'
+                raise PyteomicsError(msg)
+        reader_spec, target_spec, args_spec, kwargs_spec = serialized
+
+        done_event = mp.Event()
+        in_queue = mp.Queue(10000)
+        out_queue = mp.Queue(1000)
+
+        workers = []
+        for _ in range(processes):
+            worker = FileReadingProcess(
+                reader_spec, target_spec, in_queue, out_queue, done_event, args_spec, kwargs_spec)
+            workers.append(worker)
+
+        def feeder():
+            for key in iterator:
+                in_queue.put(key)
+            for _ in range(processes):
+                in_queue.put(None)
+
+        feeder_thread = threading.Thread(target=feeder)
+        feeder_thread.daemon = True
+        feeder_thread.start()
+        for worker in workers:
+            worker.start()
+        while True:
+            try:
+                result = out_queue.get(True, 5)
+                yield result
+            except Empty:
+                if all(w.is_done() for w in workers):
+                    break
+                else:
+                    continue
+        feeder_thread.join()
+        for worker in workers:
+            worker.join()
