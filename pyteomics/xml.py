@@ -28,27 +28,29 @@ This module requres :py:mod:`lxml` and :py:mod:`numpy`.
 #   limitations under the License.
 
 import re
-import warnings
-warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 import socket
 from traceback import format_exc
 import operator as op
 import ast
 import os
 import json
-import numpy as np
-from lxml import etree
+import warnings
 from collections import OrderedDict, defaultdict
+from lxml import etree
+import numpy as np
+
 from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj
 from .auxiliary import unitint, unitfloat, unitstr, cvstr
 from .auxiliary import _keepstate_method as _keepstate
 from .auxiliary import BinaryDataArrayTransformer
+from .auxiliary import TaskMappingMixin
 
 try: # Python 2.7
     from urllib2 import urlopen, URLError
 except ImportError: # Python 3.x
     from urllib.request import urlopen, URLError
 
+warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 
 def _local_name(element):
     """Strip namespace from the XML element's name"""
@@ -725,7 +727,7 @@ class ByteCountingXMLScanner(_file_obj):
         running = True
         while running:
             buff = f.read(read_size)
-            if len(buff) == 0:
+            if not buff:
                 running = False
                 buff = tail
             else:
@@ -775,8 +777,8 @@ class ByteCountingXMLScanner(_file_obj):
 
         Returns
         -------
-        defaultdict(ByteEncodingOrderedDict)
-            Mapping from tag type to ByteEncodingOrderedDict from identifier to byte offset
+        defaultdict(dict)
+            Mapping from tag type to dict from identifier to byte offset
         """
         if lookup_id_key_mapping is None:
             lookup_id_key_mapping = {}
@@ -785,10 +787,11 @@ class ByteCountingXMLScanner(_file_obj):
             lookup_id_key_mapping.setdefault(name, "id")
             lookup_id_key_mapping[name] = ensure_bytes_single(lookup_id_key_mapping[name])
 
-        indices = defaultdict(ByteEncodingOrderedDict)
+        indices = defaultdict(dict)
         g = self._generate_offsets()
         for offset, offset_type, attrs in g:
-            indices[offset_type][attrs[lookup_id_key_mapping[offset_type]]] = offset
+            indices[offset_type.decode('utf-8')][
+                attrs[lookup_id_key_mapping[offset_type]].decode('utf-8')] = offset
         return indices
 
     @classmethod
@@ -831,7 +834,7 @@ class TagSpecificXMLByteIndex(object):
         self.indexed_tags = indexed_tags
         self.indexed_tag_keys = keys
         self.source = source
-        self.offsets = defaultdict(ByteEncodingOrderedDict)
+        self.offsets = defaultdict(dict)
         self.build_index()
 
     def __getstate__(self):
@@ -882,18 +885,12 @@ class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
 
     Attributes
     ----------
-    offsets : ByteEncodingOrderedDict
+    offsets : dict
         The mapping between ids and byte offsets.
     """
     def build_index(self):
         hierarchical_index = super(FlatTagSpecificXMLByteIndex, self).build_index()
-        flat_index = []
-
-        for tag_type in hierarchical_index.values():
-            flat_index.extend(tag_type.items())
-
-        flat_index.sort(key=lambda x: x[1])
-        self.offsets = ByteEncodingOrderedDict(flat_index)
+        self.offsets = _flatten_map(hierarchical_index)
         return self.offsets
 
     def __len__(self):
@@ -921,7 +918,7 @@ def _flatten_map(hierarchical_map):
         all_records.extend(records.items())
 
     all_records.sort(key=lambda x: x[1])
-    return ByteEncodingOrderedDict(all_records)
+    return OrderedDict(all_records)
 
 
 class IndexedXML(XML):
@@ -931,7 +928,8 @@ class IndexedXML(XML):
     _indexed_tags = set()
     _indexed_tag_keys = {}
 
-    def __init__(self, source, read_schema=False, iterative=True, build_id_cache=False, use_index=True,  *args, **kwargs):
+    def __init__(self, source, read_schema=False, iterative=True, build_id_cache=False,
+        use_index=True,  *args, **kwargs):
         """Create an XML parser object.
 
         Parameters
@@ -969,16 +967,16 @@ class IndexedXML(XML):
 
         self._use_index = use_index
 
-        self._indexed_tags = ensure_bytes(self._indexed_tags)
-        self._indexed_tag_keys = {
-            ensure_bytes_single(k): ensure_bytes_single(v)
-            for k, v in self._indexed_tag_keys.items()
-        }
+        # self._indexed_tags = ensure_bytes(self._indexed_tags)
+        # self._indexed_tag_keys = {
+        #     ensure_bytes_single(k): ensure_bytes_single(v)
+        #     for k, v in self._indexed_tag_keys.items()
+        # }
 
         if use_index:
             build_id_cache = False
         super(IndexedXML, self).__init__(source, read_schema, iterative, build_id_cache, *args, **kwargs)
-        self._offset_index = ByteEncodingOrderedDict()
+        self._offset_index = OrderedDict()
         self._build_index()
 
     def __reduce_ex__(self, protocol):
@@ -1050,13 +1048,29 @@ class IndexedXML(XML):
         return self.get_by_id(elem_id)
 
 
+class MultiProcessingXML(TaskMappingMixin, IndexedXML):
+    """XML reader that feeds indexes to external processes
+    for parallel parsing and analysis of XML entries."""
+
+    def _build_index(self):
+        super(MultiProcessingXML, self)._build_index()
+        self._hierarchical_offset_index = TagSpecificXMLByteIndex(
+            self._source, self._indexed_tags, self._indexed_tag_keys)
+
+    def map(self, target=None, processes=-1, tag=None, *args, **kwargs):
+        if tag is None:
+            tag = self._default_iter_tag
+        iterator = iter(self._hierarchical_offset_index[tag])
+        return super(MultiProcessingXML, self).map(iterator, target, processes, *args, **kwargs)
+
+
 def save_byte_index(index, fp):
     """Write the byte offset index to the provided
     file
 
     Parameters
     ----------
-    index : ByteEncodingOrderedDict
+    index : OrderedDict
         The byte offset index to be saved
     fp : file
         The file to write the index to
@@ -1067,7 +1081,7 @@ def save_byte_index(index, fp):
     """
     encoded_index = dict()
     for key, offset in index.items():
-        encoded_index[key.decode("utf8")] = offset
+        encoded_index[key] = offset
     json.dump(encoded_index, fp)
     return fp
 
@@ -1082,10 +1096,10 @@ def load_byte_index(fp):
 
     Returns
     -------
-    ByteEncodingOrderedDict
+    OrderedDict
     """
     data = json.load(fp)
-    index = ByteEncodingOrderedDict()
+    index = OrderedDict()
     for key, value in sorted(data.items(), key=lambda x: x[1]):
         index[key] = value
     return index
@@ -1097,7 +1111,7 @@ class PrebuiltOffsetIndex(FlatTagSpecificXMLByteIndex):
 
     Attributes
     ----------
-    offsets : ByteEncodingOrderedDict
+    offsets : OrderedDict
     """
 
     def __init__(self, offsets):
@@ -1174,6 +1188,7 @@ class IndexSavingXML(IndexedXML):
         """
         with cls(path, use_index=True) as inst:
             inst.write_byte_offsets()
+
 
 class ArrayConversionMixin(BinaryDataArrayTransformer):
     _dtype_dict = {}

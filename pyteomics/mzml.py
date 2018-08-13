@@ -65,9 +65,9 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import numpy as np
 import re
 import warnings
+import numpy as np
 from . import xml, auxiliary as aux, _schema_defaults
 from .xml import etree
 
@@ -90,14 +90,14 @@ STANDARD_ARRAYS = set([
 ])
 
 
-class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
+class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML, xml.MultiProcessingXML):
     """Parser class for mzML files."""
     file_format = 'mzML'
     _root_element = 'mzML'
     _default_schema = _schema_defaults._mzml_schema_defaults
     _default_version = '1.1.0'
     _default_iter_tag = 'spectrum'
-    _structures_to_flatten = {'binaryDataArrayList', "referenceableParamGroupRef"}
+    _structures_to_flatten = {'binaryDataArrayList', 'referenceableParamGroupRef'}
     _indexed_tags = {'spectrum', 'chromatogram'}
 
     def __init__(self, *args, **kwargs):
@@ -162,11 +162,10 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         # can report it as such. Otherwise fall back
         # to "binary". This fallback signals special
         # behavior elsewhere.
-        elif n_candidates == 0:
+        if n_candidates == 0:
             if is_non_standard:
                 return NON_STANDARD_DATA_ARRAY
-            else:
-                return "binary"
+            return "binary"
         # Multiple choices means we need to make a decision which could
         # mask data from the user. This should never happen but stay safe.
         # There are multiple options to choose from. There is no way to
@@ -177,8 +176,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
             standard_options = set(candidates) & STANDARD_ARRAYS
             if standard_options:
                 return max(standard_options, key=len)
-            else:
-                return max(candidates, key=len)
+            return max(candidates, key=len)
 
     def _determine_array_dtype(self, info):
         dtype = None
@@ -206,10 +204,9 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
             if len(found_compression_types) == 1:
                 del info[found_compression_types[0]]
                 return found_compression_types[0]
-            else:
-                warnings.warn("Multiple options for binary array compression: %r" % (
-                    found_compression_types,))
-                return found_compression_types[0]
+            warnings.warn("Multiple options for binary array compression: %r" % (
+                found_compression_types,))
+            return found_compression_types[0]
         elif "name" in info:
             found_compression_types = known_compression_types & set(info['name'])
             if found_compression_types:
@@ -263,7 +260,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         kwargs = dict(kw)
         rec = kwargs.pop('recursive', None)
         if name in {'indexedmzML', 'mzML'}:
-            info =  self._get_info(element,
+            info = self._get_info(element,
                     recursive=(rec if rec is not None else False),
                     **kwargs)
         else:
