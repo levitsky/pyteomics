@@ -247,12 +247,30 @@ class IndexedMGF(aux.IndexedTextReader, MGFBase):
     """
 
     delimiter = 'BEGIN IONS'
-    label = 'TITLE=([^\n]+)\n'
+    label = r'TITLE=([^\n]+)\n'
 
-    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding='utf-8',
-        block_size=1000000):
-        aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding, block_size)
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
+        dtype=None, encoding='utf-8', block_size=1000000, _skip_index=False):
+        aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding,
+            block_size, _skip_index=_skip_index)
         MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype)
+
+    def __reduce_ex__(self, protocol):
+        return (self.__class__,
+            (self._source_init, False, self._convert_arrays,
+                self._read_charges, self._dtype_dict, self.encoding, self.block_size, True),
+            self.__getstate__())
+
+    def __getstate__(self):
+        state = super(IndexedMGF, self).__getstate__()
+        state['use_header'] = self._use_header
+        state['header'] = self._header
+        return state
+
+    def __setstate__(self, state):
+        super(IndexedMGF, self).__setstate__(state)
+        self._use_header = state['use_header']
+        self._header = state['header']
 
     @aux._keepstate_method
     def _read_header(self):

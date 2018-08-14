@@ -1064,7 +1064,7 @@ class MultiProcessingXML(TaskMappingMixin, IndexedXML):
         if tag is None:
             tag = self._default_iter_tag
         iterator = iter(self._hierarchical_offset_index[tag])
-        return super(MultiProcessingXML, self).map(iterator, target, processes, *args, **kwargs)
+        return super(MultiProcessingXML, self).map(target, processes, iterator, *args, **kwargs)
 
 
 def save_byte_index(index, fp):

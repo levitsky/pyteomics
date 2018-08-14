@@ -219,7 +219,7 @@ class IndexedTextReader(FileReader):
     label_group = 1
 
     def __init__(self, source, func, pass_file, args, kwargs, encoding='utf-8', block_size=None,
-        delimiter=None, label=None, label_group=None):
+        delimiter=None, label=None, label_group=None, _skip_index=False):
         # the underlying _file_obj gets None as encoding
         # to avoid transparent decoding of StreamReader on read() calls
         super(IndexedTextReader, self).__init__(source, 'rb', func, pass_file, args, kwargs, encoding=None)
@@ -232,7 +232,18 @@ class IndexedTextReader(FileReader):
             self.block_size = block_size
         if label_group is not None:
             self.label_group = label_group
-        self._offset_index = self.build_byte_index()
+        self._offset_index = None
+        if not _skip_index:
+            self._offset_index = self.build_byte_index()
+
+    def __getstate__(self):
+        state = super(IndexedTextReader, self).__getstate__()
+        state['offset_index'] = self._offset_index
+        return state
+
+    def __setstate__(self, state):
+        super(IndexedTextReader, self).__setstate__(state)
+        self._offset_index = state['offset_index']
 
     def _chunk_iterator(self):
         fh = self._source.file
@@ -447,7 +458,7 @@ except NotImplementedError:
 _QUEUE_TIMEOUT = 4
 
 class TaskMappingMixin(object):
-    def map(self, iterator=None, target=None, processes=-1, *args, **kwargs):
+    def map(self, target=None, processes=-1, iterator=None, *args, **kwargs):
         if iterator is None:
             iterator = self._default_iterator()
         if processes < 1:
