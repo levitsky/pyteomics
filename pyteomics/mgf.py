@@ -224,7 +224,7 @@ class MGFBase():
         return self.get_spectrum(key)
 
 
-class IndexedMGF(aux.IndexedTextReader, MGFBase):
+class IndexedMGF(aux.TaskMappingMixin, aux.IndexedTextReader, MGFBase):
     """
     A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
     parsing. Specific spectra can be accessed by title using the indexing syntax in constant time.

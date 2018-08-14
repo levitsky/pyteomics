@@ -4,6 +4,7 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import tempfile
 import unittest
+import pickle
 from pyteomics import mgf
 import data
 
@@ -115,6 +116,17 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(data.mgf_spectra_long[1], f[key])
             self.assertEqual(data.mgf_spectra_long[1], f.get_spectrum(key))
         self.assertEqual(data.mgf_spectra_long[1], mgf.get_spectrum(self.path, key))
+
+    def test_indexedmgf_picklable(self):
+        with mgf.IndexedMGF(self.path) as reader:
+            spec = pickle.dumps(reader)
+        with pickle.loads(spec) as reader:
+            self.assertEqual(data.mgf_spectra_long[0], next(reader))
+
+    def test_map(self):
+        with mgf.IndexedMGF(self.path) as reader:
+            spectra = sorted(list(reader.map()), key=lambda s: s['params']['title'])
+        self.assertEqual(data.mgf_spectra_long, spectra)
 
 if __name__ == "__main__":
     unittest.main()

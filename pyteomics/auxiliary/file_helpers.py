@@ -509,3 +509,6 @@ class TaskMappingMixin(object):
         feeder_thread.join()
         for worker in workers:
             worker.join()
+
+    def _default_iterator(self):
+        return iter(self._offset_index.keys())
