@@ -432,14 +432,11 @@ class FileReadingProcess(mp.Process):
     The reader class must support the :py:meth:`__getitem__` dict-like lookup.
     """
     def __init__(self, reader_spec, target_spec, qin, qout, done_flag, args_spec, kwargs_spec):
-        self.reader = serializer.loads(reader_spec)
-        fname = getattr(self.reader, 'name', self.reader.__class__.__name__)
-        target = serializer.loads(target_spec)
-        tname = getattr(target, '__name__', '<?>')
-        super(FileReadingProcess, self).__init__(target=target,
-            name='Process-{}-{}'.format(fname, tname),
-            args=serializer.loads(args_spec),
-            kwargs=serializer.loads(kwargs_spec))
+        super(FileReadingProcess, self).__init__(name='pyteomics-map-worker')
+        self.reader_spec = reader_spec
+        self.target_spec = target_spec
+        self.args_spec = args_spec
+        self.kwargs_spec = kwargs_spec
         self._qin = qin
         self._qout = qout
         # self._in_flag = in_flag
@@ -447,10 +444,14 @@ class FileReadingProcess(mp.Process):
         self.daemon = True
 
     def run(self):
+        reader = serializer.loads(self.reader_spec)
+        target = serializer.loads(self.target_spec)
+        args = serializer.loads(self.args_spec)
+        kwargs = serializer.loads(self.kwargs_spec)
         for key in iter(self._qin.get, None):
-            item = self.reader[key]
-            if self._target is not None:
-                result = self._target(item, *self._args, **self._kwargs)
+            item = reader[key]
+            if target is not None:
+                result = target(item, *args, **kwargs)
             else:
                 result = item
             self._qout.put(result)
