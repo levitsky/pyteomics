@@ -45,6 +45,11 @@
    :py:func:`pyteomics.fasta.read` now returns an instance of one of these classes,
    depending on the arguments `use_index` and `flavor`.
 
+ - Multiprocessing support: all indexed XML and text file parsers now expose a :py:meth:`map` method.
+   This method can map a user-supplied function to each file entry in separate processes (or simply
+   parallelize the parsing itself).
+   The order of entries is not preserved in the output.
+
 3.5.1
 -----
 

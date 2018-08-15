@@ -212,7 +212,27 @@ class FASTA(aux.FileReader, FASTABase):
             'Use IndexedFASTA and its subclasses')
 
 
-class IndexedFASTA(aux.IndexedTextReader, FASTABase):
+def _reconstruct(cls, args, kwargs):
+    return cls(*args, **kwargs, _skip_index=True)
+
+def _picklable(cls):
+    def __init__(self, *args, **kwargs):
+        cls.__init__(self, *args, **kwargs)
+        self._init_args = args
+        self._init_kwargs = kwargs
+
+    def __reduce_ex__(self, protocol):
+        return (_reconstruct,
+            (self.__class__, self._init_args, self._init_kwargs),
+            self.__getstate__())
+
+    d = cls.__dict__.copy()
+    d['__init__'] = __init__
+    d['__reduce_ex__'] = __reduce_ex__
+    return type(cls.__name__, cls.__bases__, d)
+
+@_picklable
+class IndexedFASTA(aux.TaskMappingMixin, aux.IndexedTextReader, FASTABase):
     """Indexed FASTA parser. Supports direct indexing by matched labels."""
     delimiter = '>'
     label = r'^>(.*)'
@@ -252,6 +272,11 @@ class IndexedFASTA(aux.IndexedTextReader, FASTABase):
         aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, **kwargs)
         FASTABase.__init__(self, ignore_comments, parser)
 
+    def __reduce_ex__(self, protocol):
+        return (_reconstruct,
+            (self.__class__, self._init_args, self._init_kwargs),
+            self.__getstate__())
+
     def _read_protein_lines(self, lines):
         description = []
         sequence = []
@@ -290,7 +315,7 @@ class IndexedFASTA(aux.IndexedTextReader, FASTABase):
         if offsets is not None:
             return self._entry_from_offsets(*offsets)
 
-
+@_picklable
 class TwoLayerIndexedFASTA(IndexedFASTA):
     """Parser with two-layer index. Extracted groups are mapped to full headers (where possible),
     full headers are mapped to byte offsets.
@@ -334,7 +359,8 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
             self.header_group = header_group
         if header_pattern is not None:
             self.header_pattern = header_pattern
-        self.build_second_index()
+        if not kwargs.get('_skip_index', False):
+            self.build_second_index()
 
     def build_second_index(self):
         """Create the mapping from extracted field to whole header string."""
@@ -347,6 +373,15 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
                 if match:
                     index[match.group(self.header_group)] = key
             self._id2header = index
+
+    def __getstate__(self):
+        state = super(TwoLayerIndexedFASTA, self).__getstate__()
+        state['id2header'] = self._id2header
+        return state
+
+    def __setstate__(self, state):
+        super(TwoLayerIndexedFASTA, self).__setstate__(state)
+        self._id2header = state['id2header']
 
     def get_entry(self, key):
         """Get the entry by value of header string or extracted field."""
@@ -385,7 +420,7 @@ class UniProtMixin(FlavoredMixin):
 
 
 def _add_init(cls):
-    """Add and __init__ method to a flavored parser class,
+    """Add an __init__ method to a flavored parser class,
     which simply calls __init__ of its two bases."""
     flavor, typ = cls.__bases__
     newdict = cls.__dict__.copy()
@@ -416,6 +451,7 @@ def _add_init(cls):
 class UniProt(UniProtMixin, FASTA):
     pass
 
+@_picklable
 @_add_init
 class IndexedUniProt(UniProtMixin, TwoLayerIndexedFASTA):
     pass
@@ -440,6 +476,7 @@ class UniRef(UniRefMixin, FASTA):
     pass
 
 
+@_picklable
 @_add_init
 class IndexedUniRef(UniRefMixin, TwoLayerIndexedFASTA):
     pass
@@ -458,6 +495,7 @@ class UniParc(UniParcMixin, FASTA):
     pass
 
 
+@_picklable
 @_add_init
 class IndexedUniParc(UniParcMixin, TwoLayerIndexedFASTA):
     pass
@@ -480,6 +518,7 @@ class UniMes(UniMesMixin, FASTA):
     pass
 
 
+@_picklable
 @_add_init
 class IndexedUniMes(UniMesMixin, TwoLayerIndexedFASTA):
     pass
@@ -500,6 +539,7 @@ class SPD(SPDMixin, FASTA):
     pass
 
 
+@_picklable
 @_add_init
 class IndexedSPD(SPDMixin, TwoLayerIndexedFASTA):
     pass
@@ -518,6 +558,7 @@ class NCBI(NCBIMixin, FASTA):
     pass
 
 
+@_picklable
 @_add_init
 class IndexedNCBI(NCBIMixin, TwoLayerIndexedFASTA):
     pass

@@ -437,6 +437,7 @@ class FileReadingProcess(mp.Process):
         self._qout = qout
         # self._in_flag = in_flag
         self._done_flag = done_flag
+        self.daemon = True
 
     def run(self):
         for key in iter(self._qin.get, None):
