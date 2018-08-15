@@ -388,6 +388,9 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
             if header is not None:
                 return super(TwoLayerIndexedFASTA, self).get_entry(header)
 
+    def __contains__(self, key):
+        return super(TwoLayerIndexedFASTA, self).__contains__(key) or key in self._id2header
+
 
 class FlavoredMixin():
     """Parser aimed at a specific FASTA flavor.

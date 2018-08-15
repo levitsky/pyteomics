@@ -209,6 +209,7 @@ class FileReader(IteratorContextManager):
 def remove_bom(bstr):
     return bstr.replace(codecs.BOM_LE, b'').lstrip(b"\x00")
 
+
 class IndexedTextReader(FileReader):
     """Abstract class for text file readers that keep an index of records for random access.
     This requires reading the file in binary mode."""
@@ -235,6 +236,12 @@ class IndexedTextReader(FileReader):
         self._offset_index = None
         if not _skip_index:
             self._offset_index = self.build_byte_index()
+
+    def __len__(self):
+        return len(self._offset_index)
+
+    def __contains__(self, key):
+        return key in self._offset_index
 
     def __getstate__(self):
         state = super(IndexedTextReader, self).__getstate__()
