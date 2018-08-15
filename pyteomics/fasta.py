@@ -272,11 +272,6 @@ class IndexedFASTA(aux.TaskMappingMixin, aux.IndexedTextReader, FASTABase):
         aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, **kwargs)
         FASTABase.__init__(self, ignore_comments, parser)
 
-    def __reduce_ex__(self, protocol):
-        return (_reconstruct,
-            (self.__class__, self._init_args, self._init_kwargs),
-            self.__getstate__())
-
     def _read_protein_lines(self, lines):
         description = []
         sequence = []
