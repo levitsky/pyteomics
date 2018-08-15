@@ -1050,6 +1050,9 @@ class IndexedXML(XML):
     def __getitem__(self, elem_id):
         return self.get_by_id(elem_id)
 
+    def __contains__(self, key):
+        return key in self._offset_index
+
 
 class MultiProcessingXML(TaskMappingMixin, IndexedXML):
     """XML reader that feeds indexes to external processes
@@ -1065,6 +1068,9 @@ class MultiProcessingXML(TaskMappingMixin, IndexedXML):
             tag = self._default_iter_tag
         iterator = iter(self._hierarchical_offset_index[tag])
         return super(MultiProcessingXML, self).map(target, processes, iterator, *args, **kwargs)
+
+    def __len__(self):
+        return len(self._hierarchical_offset_index[self._default_iter_tag])
 
 
 def save_byte_index(index, fp):
