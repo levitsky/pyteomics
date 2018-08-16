@@ -105,7 +105,8 @@ class PepXML(xml.MultiProcessingXML):
     _default_version = '1.15'
     _default_iter_tag = 'spectrum_query'
     _indexed_tags = {'spectrum_query'}
-    _indexed_tag_keys = {'spectrum_query': 'index'}
+    _indexed_tag_keys = {'spectrum_query': 'spectrum'}
+    _default_id_attr = 'spectrum'
     _structures_to_flatten = {'search_score_summary', 'modification_info'}
     # attributes which contain unconverted values
     _convert_items = {'float':  {'calc_neutral_pep_mass', 'massdiff'},
@@ -133,7 +134,8 @@ class PepXML(xml.MultiProcessingXML):
             try:
                 return float(s)
             except ValueError:
-                if s.startswith('+-0'): return 0
+                if s.startswith('+-0'):
+                    return 0
                 return None
 
         converters = {'float': safe_float, 'int': int,
