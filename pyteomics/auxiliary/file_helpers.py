@@ -486,8 +486,8 @@ class TaskMappingMixin(object):
         reader_spec, target_spec, args_spec, kwargs_spec = serialized
 
         done_event = mp.Event()
-        in_queue = mp.Queue(10000)
-        out_queue = mp.Queue(1000)
+        in_queue = mp.Queue(int(1e7))
+        out_queue = mp.Queue(int(1e7))
 
         workers = []
         for _ in range(processes):
