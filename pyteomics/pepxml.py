@@ -109,8 +109,9 @@ class PepXML(xml.MultiProcessingXML):
     _default_id_attr = 'spectrum'
     _structures_to_flatten = {'search_score_summary', 'modification_info'}
     # attributes which contain unconverted values
-    _convert_items = {'float':  {'calc_neutral_pep_mass', 'massdiff'},
-        'int': {'start_scan', 'end_scan', 'index'},
+    _convert_items = {'float':  {'calc_neutral_pep_mass', 'massdiff',
+            'probability', 'variable', 'static'},
+        'int': {'start_scan', 'end_scan', 'index', 'num_matched_peptides'},
         'bool': {'is_rejected'},
         'floatarray': {'all_ntt_prob'}}.items()
 
