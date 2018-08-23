@@ -3,6 +3,7 @@ import tempfile
 import unittest
 import random
 import string
+import pickle
 import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics import fasta
@@ -45,6 +46,12 @@ class FastaTest(unittest.TestCase):
     def test_two_layer_retrieve(self):
         with fasta.TwoLayerIndexedFASTA(self.fasta_file, r'test sequence (.*)') as tlir:
             self.assertEqual(self.fasta_entries_short[2], tlir['4'])
+
+    def test_indexed_picklable(self):
+        reader = fasta.TwoLayerIndexedFASTA(self.fasta_file, r'test sequence (.*)', block_size=7777)
+        reader2 = pickle.loads(pickle.dumps(reader))
+        self.assertEqual(reader2.block_size, reader.block_size)
+        self.assertEqual(self.fasta_entries_short[2], reader2['4'])
 
     def test_decoy_sequence_reverse(self):
         sequence = ''.join(random.choice(string.ascii_uppercase)
