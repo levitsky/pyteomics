@@ -53,6 +53,12 @@ class FastaTest(unittest.TestCase):
         self.assertEqual(reader2.block_size, reader.block_size)
         self.assertEqual(self.fasta_entries_short[2], reader2['4'])
 
+    def test_mp_map(self):
+        with fasta.IndexedFASTA(self.fasta_file) as ir:
+            self.assertEqual(
+                sorted(self.fasta_entries_short[1:]),
+                sorted(list(ir.map())))
+
     def test_decoy_sequence_reverse(self):
         sequence = ''.join(random.choice(string.ascii_uppercase)
                              for i in range(random.randint(1, 50)))
