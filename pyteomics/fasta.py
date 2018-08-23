@@ -213,25 +213,10 @@ class FASTA(aux.FileReader, FASTABase):
 
 
 def _reconstruct(cls, args, kwargs):
-    return cls(*args, **kwargs, _skip_index=True)
+    kwargs['_skip_index'] = True
+    return cls(*args, **kwargs)
 
-def _picklable(cls):
-    def __init__(self, *args, **kwargs):
-        cls.__init__(self, *args, **kwargs)
-        self._init_args = args
-        self._init_kwargs = kwargs
 
-    def __reduce_ex__(self, protocol):
-        return (_reconstruct,
-            (self.__class__, self._init_args, self._init_kwargs),
-            self.__getstate__())
-
-    d = cls.__dict__.copy()
-    d['__init__'] = __init__
-    d['__reduce_ex__'] = __reduce_ex__
-    return type(cls.__name__, cls.__bases__, d)
-
-@_picklable
 class IndexedFASTA(aux.TaskMappingMixin, aux.IndexedTextReader, FASTABase):
     """Indexed FASTA parser. Supports direct indexing by matched labels."""
     delimiter = '>'
@@ -271,6 +256,13 @@ class IndexedFASTA(aux.TaskMappingMixin, aux.IndexedTextReader, FASTABase):
         """
         aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, **kwargs)
         FASTABase.__init__(self, ignore_comments, parser)
+        self._init_args = (source, ignore_comments, parser)
+        self._init_kwargs = kwargs
+
+    def __reduce_ex__(self, protocol):
+        return (_reconstruct,
+            (self.__class__, self._init_args, self._init_kwargs),
+            self.__getstate__())
 
     def _read_protein_lines(self, lines):
         description = []
@@ -310,12 +302,12 @@ class IndexedFASTA(aux.TaskMappingMixin, aux.IndexedTextReader, FASTABase):
         if offsets is not None:
             return self._entry_from_offsets(*offsets)
 
-@_picklable
+
 class TwoLayerIndexedFASTA(IndexedFASTA):
     """Parser with two-layer index. Extracted groups are mapped to full headers (where possible),
     full headers are mapped to byte offsets.
 
-    When indexed, they key is looked up in both indexes, allowing access by meaningful IDs
+    When indexed, the key is looked up in both indexes, allowing access by meaningful IDs
     (like UniProt accession) and by full header string."""
     header_group = 1
     header_pattern = None
@@ -356,6 +348,8 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
             self.header_pattern = header_pattern
         if not kwargs.get('_skip_index', False):
             self.build_second_index()
+        self._init_args = (source, header_pattern, header_group, ignore_comments, parser)
+        self._init_kwargs = kwargs
 
     def build_second_index(self):
         """Create the mapping from extracted field to whole header string."""
@@ -425,6 +419,8 @@ def _add_init(cls):
     def __init__(self, source, parse=True, **kwargs):
         typ.__init__(self, source, **kwargs)
         flavor.__init__(self, parse)
+        self._init_args = (source, parse)
+        self._init_kwargs = kwargs
 
     flavor_name = flavor.__name__[:-5]
     type_name = "Text-mode" if typ is FASTA else "Indexed"
@@ -449,7 +445,6 @@ def _add_init(cls):
 class UniProt(UniProtMixin, FASTA):
     pass
 
-@_picklable
 @_add_init
 class IndexedUniProt(UniProtMixin, TwoLayerIndexedFASTA):
     pass
@@ -474,7 +469,6 @@ class UniRef(UniRefMixin, FASTA):
     pass
 
 
-@_picklable
 @_add_init
 class IndexedUniRef(UniRefMixin, TwoLayerIndexedFASTA):
     pass
@@ -493,7 +487,6 @@ class UniParc(UniParcMixin, FASTA):
     pass
 
 
-@_picklable
 @_add_init
 class IndexedUniParc(UniParcMixin, TwoLayerIndexedFASTA):
     pass
@@ -516,7 +509,6 @@ class UniMes(UniMesMixin, FASTA):
     pass
 
 
-@_picklable
 @_add_init
 class IndexedUniMes(UniMesMixin, TwoLayerIndexedFASTA):
     pass
@@ -537,7 +529,6 @@ class SPD(SPDMixin, FASTA):
     pass
 
 
-@_picklable
 @_add_init
 class IndexedSPD(SPDMixin, TwoLayerIndexedFASTA):
     pass
@@ -556,7 +547,6 @@ class NCBI(NCBIMixin, FASTA):
     pass
 
 
-@_picklable
 @_add_init
 class IndexedNCBI(NCBIMixin, TwoLayerIndexedFASTA):
     pass
