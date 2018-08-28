@@ -639,10 +639,10 @@ expasy_rules = {
     'iodosobenzoic acid': r'W',
     'lysc':          r'K',
     'ntcb':          r'\w(?=C)',
-    'pepsin ph1.3':  r'((?<=[^HKR][^P])[^R](?=[FLWY][^P]))|'
-                     r'((?<=[^HKR][^P])[FLWY](?=\w[^P]))',
-    'pepsin ph2.0':  r'((?<=[^HKR][^P])[^R](?=[FL][^P]))|'
+    'pepsin ph1.3':  r'((?<=[^HKR][^P])[^R](?=[FL][^P]))|'
                      r'((?<=[^HKR][^P])[FL](?=\w[^P]))',
+    'pepsin ph2.0':  r'((?<=[^HKR][^P])[^R](?=[FLWY][^P]))|'
+                     r'((?<=[^HKR][^P])[FLWY](?=\w[^P]))',
     'proline endopeptidase': r'(?<=[HKR])P(?=[^P])',
     'proteinase k':  r'[AEFILTVWY]',
     'staphylococcal peptidase i': r'(?<=[^E])E',
