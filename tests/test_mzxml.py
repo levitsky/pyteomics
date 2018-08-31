@@ -47,22 +47,20 @@ class MzXMLTest(unittest.TestCase):
         with MzXML(work_path, use_index=True) as inst:
             offsets_exist = path.exists(inst._byte_offset_filename)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
-            self.assertTrue(isinstance(inst._offset_index, xml.FlatTagSpecificXMLByteIndex))
-            self.assertTrue(not isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
+            self.assertTrue(isinstance(inst._offset_index, xml.HierarchicalOffsetIndex))
         self.assertTrue(inst._source.closed)
         MzXML.prebuild_byte_offset_file(work_path)
         with MzXML(work_path, use_index=True) as inst:
             offsets_exist = path.exists(inst._byte_offset_filename)
             self.assertTrue(offsets_exist)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
-            self.assertTrue(isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
+            self.assertTrue(isinstance(inst._offset_index, xml.HierarchicalOffsetIndex))
         self.assertTrue(inst._source.closed)
         os.remove(inst._byte_offset_filename)
         with MzXML(work_path, use_index=True) as inst:
             offsets_exist = path.exists(inst._byte_offset_filename)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
-            self.assertTrue(isinstance(inst._offset_index, xml.FlatTagSpecificXMLByteIndex))
-            self.assertTrue(not isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
+            self.assertTrue(isinstance(inst._offset_index, xml.HierarchicalOffsetIndex))
         self.assertTrue(inst._source.closed)
         shutil.rmtree(test_dir, True)
 

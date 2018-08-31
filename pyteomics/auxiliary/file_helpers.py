@@ -467,7 +467,7 @@ except NotImplementedError:
 _QUEUE_TIMEOUT = 4
 
 class TaskMappingMixin(object):
-    def map(self, target=None, processes=-1, iterator=None, *args, **kwargs):
+    def map(self, target=None, processes=-1, iterator=None, queue_timeout=_QUEUE_TIMEOUT, *args, **kwargs):
         if iterator is None:
             iterator = self._default_iterator()
         if processes < 1:
@@ -508,7 +508,7 @@ class TaskMappingMixin(object):
             worker.start()
         while True:
             try:
-                result = out_queue.get(True, _QUEUE_TIMEOUT)
+                result = out_queue.get(True, queue_timeout)
                 yield result
             except Empty:
                 if all(w.is_done() for w in workers):
