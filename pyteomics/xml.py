@@ -790,7 +790,7 @@ class ByteCountingXMLScanner(_file_obj):
             lookup_id_key_mapping.setdefault(bname, 'id')
             lookup_id_key_mapping[bname] = ensure_bytes_single(lookup_id_key_mapping[bname])
 
-        indices = defaultdict(dict)
+        indices = HierarchicalOffsetIndex()
         g = self._generate_offsets()
         for offset, offset_type, attrs in g:
             indices[offset_type.decode('utf-8')][
@@ -801,6 +801,91 @@ class ByteCountingXMLScanner(_file_obj):
     def scan(cls, source, indexed_tags):
         inst = cls(source, indexed_tags)
         return inst.build_byte_index()
+
+
+class HierarchicalOffsetIndex(object):
+    schema_version = (1, 0, 0)
+
+    _schema_version_tag_key = "@pyteomics_schema_version"
+    _inner_type = OrderedDict
+
+    def __init__(self, base=None, schema_version=None):
+        if schema_version is None:
+            schema_version = self.schema_version
+        self.schema_version = schema_version
+        self.mapping = defaultdict(self._inner_type)
+        for key, value in (base or {}).items():
+            self.mapping[key] = self._inner_type(value)
+
+    def __getitem__(self, key):
+        return self.mapping[key]
+
+    def __setitem__(self, key, value):
+        self.mapping[key] = value
+
+    def __iter__(self):
+        return iter(self.mapping)
+
+    def __len__(self):
+        return sum(len(group) for key, group in self.items())
+
+    def __contains__(self, key):
+        return key in self.mapping
+
+    def find(self, key, element_type=None):
+        if element_type is None:
+            for element_type in self.keys():
+                try:
+                    return self.find(key, element_type)
+                except KeyError:
+                    continue
+            raise KeyError(key)
+        else:
+            return self[element_type][key]
+
+    def update(self, *args, **kwargs):
+        self.mapping.update(*args, **kwargs)
+
+    def pop(self, key, default=None):
+        return self.mapping.pop(key, default)
+
+    def keys(self):
+        return self.mapping.keys()
+
+    def values(self):
+        return self.mapping.values()
+
+    def items(self):
+        return self.mapping.items()
+
+    def save(self, fp):
+        encoded_index = dict()
+        keys = list(self.keys())
+        container = {
+            self._schema_version_tag_key: self.schema_version,
+            "keys": keys
+        }
+        for key, offset in self.items():
+            encoded_index[key] = offset
+        container['index'] = encoded_index
+        json.dump(container, fp)
+
+    @classmethod
+    def load(cls, fp):
+        container = json.load(fp)
+        version_tag = container.get(cls._schema_version_tag_key)
+        if version_tag is None:
+            # The legacy case, no special processing yet
+            inst = cls({}, None)
+            inst.schema_version = None
+            return inst
+        version_tag = tuple(version_tag)
+        index = container.get("index")
+        if version_tag < cls.schema_version:
+            # schema upgrade case, no special processing yet
+            return cls(index, version_tag)
+        # no need to upgrade
+        return cls(index, version_tag)
 
 
 class TagSpecificXMLByteIndex(object):
@@ -837,7 +922,7 @@ class TagSpecificXMLByteIndex(object):
         self.indexed_tags = indexed_tags
         self.indexed_tag_keys = keys
         self.source = source
-        self.offsets = defaultdict(dict)
+        self.offsets = HierarchicalOffsetIndex()
         self.build_index()
 
     def __getstate__(self):
@@ -880,6 +965,44 @@ class TagSpecificXMLByteIndex(object):
     def __len__(self):
         return sum(len(group) for key, group in self.items())
 
+    @classmethod
+    def build(cls, source, indexed_tags=None, keys=None):
+        indexer = cls(source, indexed_tags, keys)
+        return indexer.offsets
+
+
+class FlatOffsetIndex(HierarchicalOffsetIndex):
+    def __len__(self):
+        return len(self.mapping)
+
+    def find(self, key, element_type=None):
+        return self[element_type][key]
+
+    def save(self, fp):
+        encoded_index = dict()
+        container = {
+            self._schema_version_tag_key: self.schema_version,
+        }
+        for key, offset in self.items():
+            encoded_index[key] = offset
+        container['index'] = encoded_index
+        json.dump(container, fp)
+
+    @classmethod
+    def load(cls, fp):
+        container = json.load(fp)
+        version_tag = container.get(cls._schema_version_tag_key)
+        if version_tag is None:
+            # The legacy case, no special processing yet
+            return cls(container)
+        version_tag = tuple(version_tag)
+        index = container.get("index")
+        if version_tag < cls.schema_version:
+            # schema upgrade case, no special processing yet
+            return cls(index)
+        # no need to upgrade
+        return cls(index)
+
 
 class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
     """
@@ -893,7 +1016,7 @@ class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
     """
     def build_index(self):
         hierarchical_index = super(FlatTagSpecificXMLByteIndex, self).build_index()
-        self.offsets = _flatten_map(hierarchical_index)
+        self.offsets = FlatOffsetIndex(_flatten_map(hierarchical_index))
         return self.offsets
 
     def __len__(self):
@@ -932,7 +1055,7 @@ class IndexedXML(XML):
     _indexed_tag_keys = {}
 
     def __init__(self, source, read_schema=False, iterative=True, build_id_cache=False,
-        use_index=True,  *args, **kwargs):
+                 use_index=True, *args, **kwargs):
         """Create an XML parser object.
 
         Parameters
@@ -970,16 +1093,10 @@ class IndexedXML(XML):
 
         self._use_index = use_index
 
-        # self._indexed_tags = ensure_bytes(self._indexed_tags)
-        # self._indexed_tag_keys = {
-        #     ensure_bytes_single(k): ensure_bytes_single(v)
-        #     for k, v in self._indexed_tag_keys.items()
-        # }
-
         if use_index:
             build_id_cache = False
         super(IndexedXML, self).__init__(source, read_schema, iterative, build_id_cache, *args, **kwargs)
-        self._offset_index = OrderedDict()
+        self._offset_index = HierarchicalOffsetIndex()
         self._build_index()
 
     def __reduce_ex__(self, protocol):
@@ -1010,7 +1127,7 @@ class IndexedXML(XML):
         """
         if not self._indexed_tags or not self._use_index:
             return
-        self._offset_index = FlatTagSpecificXMLByteIndex(
+        self._offset_index = TagSpecificXMLByteIndex.build(
             self._source, self._indexed_tags, self._indexed_tag_keys)
 
     @_keepstate
@@ -1018,7 +1135,7 @@ class IndexedXML(XML):
         return self._find_by_id_no_reset(elem_id, id_key=id_key)
 
     @_keepstate
-    def get_by_id(self, elem_id, id_key=None, **kwargs):
+    def get_by_id(self, elem_id, id_key=None, element_type=None, **kwargs):
         """
         Retrieve the requested entity by its id. If the entity
         is a spectrum described in the offset index, it will be retrieved
@@ -1039,7 +1156,7 @@ class IndexedXML(XML):
         """
         try:
             index = self._offset_index
-            offset = index[elem_id]
+            offset = index.find(elem_id, element_type)
             self._source.seek(offset)
             elem = self._find_by_id_no_reset(elem_id, id_key=id_key)
         except (KeyError, etree.LxmlError):
@@ -1053,78 +1170,19 @@ class IndexedXML(XML):
     def __contains__(self, key):
         return key in self._offset_index
 
+    def __len__(self):
+        return len(self._offset_index[self._default_iter_tag])
 
-class MultiProcessingXML(TaskMappingMixin, IndexedXML):
+
+class MultiProcessingXML(IndexedXML, TaskMappingMixin):
     """XML reader that feeds indexes to external processes
     for parallel parsing and analysis of XML entries."""
-
-    def _build_index(self):
-        super(MultiProcessingXML, self)._build_index()
-        self._hierarchical_offset_index = TagSpecificXMLByteIndex(
-            self._source, self._indexed_tags, self._indexed_tag_keys)
 
     def map(self, target=None, processes=-1, tag=None, *args, **kwargs):
         if tag is None:
             tag = self._default_iter_tag
-        iterator = iter(self._hierarchical_offset_index[tag])
+        iterator = iter(self._offset_index[tag])
         return super(MultiProcessingXML, self).map(target, processes, iterator, *args, **kwargs)
-
-    def __len__(self):
-        return len(self._hierarchical_offset_index[self._default_iter_tag])
-
-
-def save_byte_index(index, fp):
-    """Write the byte offset index to the provided
-    file
-
-    Parameters
-    ----------
-    index : OrderedDict
-        The byte offset index to be saved
-    fp : file
-        The file to write the index to
-
-    Returns
-    -------
-    file
-    """
-    encoded_index = dict()
-    for key, offset in index.items():
-        encoded_index[key] = offset
-    json.dump(encoded_index, fp)
-    return fp
-
-
-def load_byte_index(fp):
-    """Read a byte offset index from a file
-
-    Parameters
-    ----------
-    fp : file
-        The file to read the index from
-
-    Returns
-    -------
-    OrderedDict
-    """
-    data = json.load(fp)
-    index = OrderedDict()
-    for key, value in sorted(data.items(), key=lambda x: x[1]):
-        index[key] = value
-    return index
-
-
-class PrebuiltOffsetIndex(FlatTagSpecificXMLByteIndex):
-    """An Offset Index class which just holds offsets
-    and performs no extra scanning effort.
-
-    Attributes
-    ----------
-    offsets : OrderedDict
-    """
-
-    def __init__(self, offsets):
-        self.offsets = offsets
 
 
 class IndexSavingXML(IndexedXML):
@@ -1132,9 +1190,6 @@ class IndexSavingXML(IndexedXML):
     adds facilities to read and write the byte offset
     index externally.
     """
-
-    _save_byte_index_to_file = staticmethod(save_byte_index)
-    _load_byte_index_from_file = staticmethod(load_byte_index)
 
     @property
     def _byte_offset_filename(self):
@@ -1163,7 +1218,9 @@ class IndexSavingXML(IndexedXML):
         and populate :attr:`_offset_index`
         """
         with open(self._byte_offset_filename, 'r') as f:
-            index = PrebuiltOffsetIndex(self._load_byte_index_from_file(f))
+            index = HierarchicalOffsetIndex.load(f)
+            if index.schema_version is None:
+                raise TypeError("Legacy Offset Index!")
             self._offset_index = index
 
     def write_byte_offsets(self):
@@ -1171,7 +1228,7 @@ class IndexSavingXML(IndexedXML):
         at :attr:`_byte_offset_filename`
         """
         with open(self._byte_offset_filename, 'w') as f:
-            self._save_byte_index_to_file(self._offset_index, f)
+            self._offset_index.save(f)
 
     @_keepstate
     def _build_index(self):
@@ -1214,11 +1271,12 @@ class ArrayConversionMixin(BinaryDataArrayTransformer):
         super(ArrayConversionMixin, self).__init__(*args, **kwargs)
 
     def __getstate__(self):
-        state = {}
+        state = super(ArrayConversionMixin, self).__getstate__()
         state['_dtype_dict'] = self._dtype_dict
         return state
 
     def __setstate__(self, state):
+        super(ArrayConversionMixin, self).__setstate__(state)
         self._dtype_dict = state['_dtype_dict']
 
     def _convert_array(self, k, array):

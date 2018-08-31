@@ -102,18 +102,15 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML, xml.MultiProcessingXML)
 
     def __init__(self, *args, **kwargs):
         self.decode_binary = kwargs.pop('decode_binary', True)
-        xml.IndexSavingXML.__init__(self, *args, **kwargs)
-        xml.ArrayConversionMixin.__init__(self, *args, **kwargs)
+        super(MzML, self).__init__(*args, **kwargs)
 
     def __getstate__(self):
-        state = xml.IndexSavingXML.__getstate__(self)
-        state.update(xml.ArrayConversionMixin.__getstate__(self))
+        state = super(MzML, self).__getstate__()
         state['decode_binary'] = self.decode_binary
         return state
 
     def __setstate__(self, state):
-        xml.IndexSavingXML.__setstate__(self, state)
-        xml.ArrayConversionMixin.__setstate__(self, state)
+        super(MzML, self).__setstate__(state)
         self.decode_binary = state['decode_binary']
 
     def _detect_array_name(self, info):
@@ -406,12 +403,12 @@ class PreIndexedMzML(MzML):
         Build up a `dict` of `dict` of offsets for elements. Calls :meth:`_find_index_list`
         and assigns the return value to :attr:`_offset_index`
         """
-        self._offset_index = xml._flatten_map(self._find_index_list())
+        self._offset_index = self._find_index_list()
 
     @xml._keepstate
     def _iterparse_index_list(self, offset):
-        index_map = {}
-        index = {}
+        index_map = xml.HierarchicalOffsetIndex()
+        index = index_map._inner_type()
         self._source.seek(offset)
         try:
             for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True):
@@ -455,7 +452,7 @@ class PreIndexedMzML(MzML):
         dict of str -> dict of str -> int
         """
         offsets = self._find_index_list_offset()
-        index_list = {}
+        index_list = xml.HierarchicalOffsetIndex()
         for offset in offsets:
             # Sometimes the offset is at the very beginning of the file,
             # due to a bug in an older version of ProteoWizard. If this crude
@@ -467,5 +464,5 @@ class PreIndexedMzML(MzML):
             # also emits invalid offsets which do not improve retrieval time.
             if offset < 1024:
                 continue
-            index_list.update(self._iterparse_index_list(offset))
+            index_list = self._iterparse_index_list(offset)
         return index_list
