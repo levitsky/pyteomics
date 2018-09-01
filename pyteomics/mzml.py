@@ -182,7 +182,9 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
 
     def _determine_array_dtype(self, info):
         dtype = None
-        types = {'32-bit float': 'f', '64-bit float': 'd'}
+        types = {'32-bit float': np.float32, '64-bit float': np.float64,
+                 '32-bit integer': np.int32, '64-bit integer': np.int64,
+                 'null-terminated ASCII string': np.uint8}
         for t, code in types.items():
             if t in info:
                 dtype = code
