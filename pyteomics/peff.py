@@ -1,6 +1,6 @@
 """
 peff - PSI Extended FASTA Format
-==========================================
+================================
 
 PEFF is a forth-coming standard from PSI-HUPO formalizing and extending the
 encoding of protein features and annotations for building search spaces for
@@ -108,7 +108,7 @@ class Header(Mapping):
 
 
 class IndexedPEFF(TwoLayerIndexedFASTA):
-    """Creates a :py:class:`PEFF` object.
+    """Creates an :py:class:`IndexedPEFF` object.
 
     Parameters
     ----------
