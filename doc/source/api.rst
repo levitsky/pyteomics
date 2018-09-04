@@ -15,6 +15,7 @@ Contents:
    api/achrom
    api/electrochem
    api/fasta
+   api/peff
    api/mzml
    api/mzxml
    api/mgf
