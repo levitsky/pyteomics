@@ -18,7 +18,7 @@ building on top of the :class:`~.TwoLayerIndexedFASTA` reader.
 
 Available classes:
 
-  :py:class:`PEFF` - Parse a PEFF format file in binary-mode, supporting
+  :py:class:`IndexedPEFF` - Parse a PEFF format file in binary-mode, supporting
   direct indexing by header string or by tag.
 
 """
@@ -107,7 +107,7 @@ class Header(Mapping):
         return list(base | keys)
 
 
-class PEFF(TwoLayerIndexedFASTA):
+class IndexedPEFF(TwoLayerIndexedFASTA):
     """Creates a :py:class:`PEFF` object.
 
     Parameters
@@ -152,7 +152,7 @@ class PEFF(TwoLayerIndexedFASTA):
                 '|'.join(map(str, self)), )
 
     def __init__(self, source, ignore_comments=False, **kwargs):
-        super(PEFF, self).__init__(
+        super(IndexedPEFF, self).__init__(
             source, ignore_comments=ignore_comments, parser=self.parser,
             header_pattern=self.header_pattern, **kwargs)
         self.header_blocks = []

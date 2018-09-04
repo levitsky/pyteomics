@@ -13,7 +13,7 @@ class PEFFTest(unittest.TestCase):
         self.peff_file = 'test.peff'
 
     def test_parse(self):
-        reader = peff.PEFF(self.peff_file)
+        reader = peff.IndexedPEFF(self.peff_file)
         self.assertEqual(reader.number_of_entries, 5)
         self.assertEqual(len(reader.header_blocks), 1)
 
