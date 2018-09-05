@@ -209,8 +209,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML, xml.MultiProcessingXML)
             if found_compression_types:
                 found_compression_types = tuple(found_compression_types)
                 if len(found_compression_types) == 1:
-                    if not self._skip_empty_cvparam_values:
-                        del info['name'][found_compression_types[0]]
+                    del info['name'][found_compression_types[0]]
                     return found_compression_types[0]
                 else:
                     warnings.warn("Multiple options for binary array compression: %r" % (
