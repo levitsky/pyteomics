@@ -8,47 +8,53 @@
  - Add new parameters `write_charges` and `use_numpy` in :py:func:`pyteomics.mgf.write`.
    Speed up the writing when :py:mod:`numpy` is available.
 
- - New class :py:class:`pyteomics.mgf.IndexedMGF` is now the recommended way to parse MGF files.
-   It supports fast access by spectrum titles by using an index of byte offsets.
-   The old, sequential parser is preserved under its name, :py:class:`pyteomics.mgf.MGF`.
-   The function :py:func:`pyteomics.mgf.read` now returns an instance of one of the two classes,
-   based on the `use_index` argument and the type of `source`.
-   The common ancestor class, :py:class:`pyteomics.mgf.MGFBase`, can be used for type checking.
+ - Indexing text parsers. This release introduces a family of parser classes for text files.
+   These parsers create byte offsets of indexed entries to allow random access by unique key.
 
- - New FASTA parsing classes:
+   - New class :py:class:`pyteomics.mgf.IndexedMGF` is now the recommended way to parse MGF files.
+     It supports fast access by spectrum titles by using an index of byte offsets.
+     The old, sequential parser is preserved under its name, :py:class:`pyteomics.mgf.MGF`.
+     The function :py:func:`pyteomics.mgf.read` now returns an instance of one of the two classes,
+     based on the `use_index` argument and the type of `source`.
+     The common ancestor class, :py:class:`pyteomics.mgf.MGFBase`, can be used for type checking.
 
-   - :py:class:`pyteomics.fasta.FASTABase` - common ancestor, suitable for type checking;
+   - New FASTA parsing classes:
 
-     - :py:class:`pyteomics.fasta.FASTA` - text-mode, sequential parser. Does
-       what the old :py:func:`fasta.read` was doing;
+     - :py:class:`pyteomics.fasta.FASTABase` - common ancestor, suitable for type checking;
 
-       - :py:class:`pyteomics.fasta.UniProt`;
-       - :py:class:`pyteomics.fasta.UniParc`;
-       - :py:class:`pyteomics.fasta.UniRef`;
-       - :py:class:`pyteomics.fasta.UniMes`;
-       - :py:class:`pyteomics.fasta.SPD`;
-       - :py:class:`pyteomics.fasta.NCBI`;
+       - :py:class:`pyteomics.fasta.FASTA` - text-mode, sequential parser. Does
+         what the old :py:func:`fasta.read` was doing;
 
-     - :py:class:`pyteomics.fasta.IndexedFASTA` - binary-mode, indexing parser.
-       Supports direct indexing by header string;
+         - :py:class:`pyteomics.fasta.UniProt`;
+         - :py:class:`pyteomics.fasta.UniParc`;
+         - :py:class:`pyteomics.fasta.UniRef`;
+         - :py:class:`pyteomics.fasta.UniMes`;
+         - :py:class:`pyteomics.fasta.SPD`;
+         - :py:class:`pyteomics.fasta.NCBI`;
 
-       - :py:class:`pyteomics.fasta.TwoLayerIndexedFASTA` - additionally supports
-         indexing by extracted header fields;
+       - :py:class:`pyteomics.fasta.IndexedFASTA` - binary-mode, indexing parser.
+         Supports direct indexing by header string;
 
-         - :py:class:`pyteomics.fasta.IndexedUniProt`;
-         - :py:class:`pyteomics.fasta.IndexedUniParc`;
-         - :py:class:`pyteomics.fasta.IndexedUniRef`;
-         - :py:class:`pyteomics.fasta.IndexedUniMes`;
-         - :py:class:`pyteomics.fasta.IndexedSPD`;
-         - :py:class:`pyteomics.fasta.IndexedNCBI`.
+         - :py:class:`pyteomics.fasta.TwoLayerIndexedFASTA` - additionally supports
+           indexing by extracted header fields;
 
-   :py:func:`pyteomics.fasta.read` now returns an instance of one of these classes,
-   depending on the arguments `use_index` and `flavor`.
+           - :py:class:`pyteomics.fasta.IndexedUniProt`;
+           - :py:class:`pyteomics.fasta.IndexedUniParc`;
+           - :py:class:`pyteomics.fasta.IndexedUniRef`;
+           - :py:class:`pyteomics.fasta.IndexedUniMes`;
+           - :py:class:`pyteomics.fasta.IndexedSPD`;
+           - :py:class:`pyteomics.fasta.IndexedNCBI`.
+
+     :py:func:`pyteomics.fasta.read` now returns an instance of one of these classes,
+     depending on the arguments `use_index` and `flavor`.
 
  - Multiprocessing support: all indexed XML and text file parsers now expose a :py:meth:`map` method.
    This method can map a user-supplied function to each file entry in separate processes (or simply
    parallelize the parsing itself).
    The order of entries is not preserved in the output.
+
+ - New module :py:mod:`pyteomics.peff` implements the :py:class:`IndexedPEFF` parser for protein databases
+   in the new PSI standard format, `PEFF <http://www.psidev.info/peff>`_.
 
 3.5.1
 -----
