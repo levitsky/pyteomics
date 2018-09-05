@@ -8,7 +8,7 @@ from itertools import product
 import unittest
 from pyteomics.mzml import MzML, PreIndexedMzML, read, chain
 from pyteomics import auxiliary as aux, xml
-from data import mzml_spectra, mzml_spectra_skip_empty_values
+from data import mzml_spectra
 import numpy as np
 import pickle
 import operator as op
@@ -30,10 +30,6 @@ class MzmlTest(unittest.TestCase):
         key = op.itemgetter('index')
         with MzML(self.path) as f:
             self.assertEqual(sorted(mzml_spectra, key=key), sorted(list(f.map()), key=key))
-
-    def test_read_skip_empty_values(self):
-        with MzML(self.path, skip_empty_cvparam_values=True) as r:
-            self.assertEqual(mzml_spectra_skip_empty_values, list(r))
 
     def test_decoding(self):
         with MzML(self.path, decode_binary=True) as reader:

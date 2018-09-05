@@ -124,7 +124,6 @@ class XML(FileReader):
     _schema_location_param = 'schemaLocation'
     _default_id_attr = 'id'
     _huge_tree = False
-    _skip_empty_cvparam_values = False
     _retrieve_refs_enabled = None # only some subclasses implement this
 
     # Configurable plugin logic
@@ -162,14 +161,6 @@ class XML(FileReader):
             Default is :py:const:`False`.
             Enable this option for trusted files to avoid XMLSyntaxError exceptions
             (e.g. `XMLSyntaxError: xmlSAX2Characters: huge text node`).
-        skip_empty_cvparam_values : bool, optional
-            .. warning ::
-                This parameter affects the format of the produced dictionaries.
-
-            By default, when parsing cvParam elements, "value" attributes with empty values are not
-            treated differently from others. When this parameter is set to :py:const:`True`,
-            these empty values are flattened. You can enable this to obtain the same output structure
-            regardless of the presence of an empty "value". Default is :py:const:`False`.
         """
 
         super(XML, self).__init__(source, 'rb', self.iterfind, False,
@@ -190,7 +181,6 @@ class XML(FileReader):
 
         self._converters_items = self._converters.items()
         self._huge_tree = kwargs.get('huge_tree', self._huge_tree)
-        self._skip_empty_cvparam_values = kwargs.get('skip_empty_cvparam_values', False)
         self._retrieve_refs_enabled = kwargs.get('retrieve_refs')
 
     def __reduce_ex__(self, protocol):
@@ -202,7 +192,6 @@ class XML(FileReader):
     def __getstate__(self):
         state = super(XML, self).__getstate__()
         state['_huge_tree'] = self._huge_tree
-        state['_skip_empty_cvparam_values'] = self._skip_empty_cvparam_values
         state['_retrieve_refs_enabled'] = self._retrieve_refs_enabled
         state['_id_dict'] = self._id_dict
         return state
@@ -210,7 +199,6 @@ class XML(FileReader):
     def __setstate__(self, state):
         super(XML, self).__setstate__(state)
         self._huge_tree = state['_huge_tree']
-        self._skip_empty_cvparam_values = state['_skip_empty_cvparam_values']
         self._retrieve_refs_enabled = state['_retrieve_refs_enabled']
         self._id_dict = state['_id_dict']
 
@@ -328,21 +316,18 @@ class XML(FileReader):
         unit_accesssion = None
         if 'unitCvRef' in attribs or 'unitName' in attribs:
             unit_accesssion = attribs.get('unitAccession')
-            unit_name = attribs.get("unitName", unit_accesssion)
+            unit_name = attribs.get('unitName', unit_accesssion)
             unit_info = unit_name
-        accession = attribs.get("accession")
-        if 'value' in attribs and (not self._skip_empty_cvparam_values or
-            attribs['value'] != ''):
-            try:
-                if attribs.get('type') in types:
-                    value = types[attribs['type']](attribs['value'], unit_info)
-                else:
-                    value = unitfloat(attribs['value'], unit_info)
-            except ValueError:
-                value = unitstr(attribs['value'], unit_info)
-            return {cvstr(attribs['name'], accession, unit_accesssion): value}
-        else:
-            return {'name': cvstr(attribs['name'], accession, unit_accesssion)}
+        accession = attribs.get('accession')
+        value = attribs.get('value', '')
+        try:
+            if attribs.get('type') in types:
+                value = types[attribs['type']](value, unit_info)
+            else:
+                value = unitfloat(value, unit_info)
+        except ValueError:
+            value = unitstr(value, unit_info)
+        return {cvstr(attribs['name'], accession, unit_accesssion): value}
 
     def _get_info(self, element, **kwargs):
         """Extract info from element's attributes, possibly recursive.

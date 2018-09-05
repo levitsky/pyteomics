@@ -56,6 +56,10 @@
  - New module :py:mod:`pyteomics.peff` implements the :py:class:`IndexedPEFF` parser for protein databases
    in the new PSI standard format, `PEFF <http://www.psidev.info/peff>`_.
 
+ - Removed parameter `skip_empty_cvparam_values` in XML parsers. In cvParam elements, missing "value"
+   attribute is now always equivalent to the case when it is equal to an empty string. This affects
+   the structure of items produced by MzML and MzIdentML parsers.
+
 3.5.1
 -----
 
