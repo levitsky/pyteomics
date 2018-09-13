@@ -241,7 +241,7 @@ class IndexedTextReader(FileReader):
     @property
     def index(self):
         return self._offset_index
-    
+
     def __len__(self):
         return len(self._offset_index)
 
@@ -364,22 +364,22 @@ class OffsetIndex(OrderedDict):
     '''
     def __init__(self, *args, **kwargs):
         OrderedDict.__init__(self, *args, **kwargs)
-    
+
     def find(self, key, *args, **kwargs):
         return self[key]
-    
+
     def from_index(self, index, include_value=False):
         '''Get an entry by its integer index in the ordered sequence
         of this mapping.
-        
+
         Parameters
         ----------
         index: int
             The index to retrieve
         include_value: bool
-            Whether to return both the key and the value or just the value.
+            Whether to return both the key and the value or just the key.
             Defaults to :const:`False`
-        
+
         Returns
         -------
         object:
@@ -396,7 +396,7 @@ class OffsetIndex(OrderedDict):
         template = "{self.__class__.__name__}({items})"
         return template.format(self=self, items=list(self.items()))
 
-    
+
 class HierarchicalOffsetIndex(object):
     schema_version = (1, 0, 0)
 
@@ -649,3 +649,35 @@ class TaskMappingMixin(object):
 
     def _default_iterator(self):
         return iter(self._offset_index.keys())
+
+
+class Chain(object):
+    def __init__(self, reader_type, full_output=False):
+        self.reader_type = reader_type
+        self.full_output = full_output
+
+    def dispatch(self, *args, **kwargs):
+        return self.dispatch_from_iterable(args, **kwargs)
+
+    def dispatch_from_iterable(self, args, **kwargs):
+        if kwargs.get('full_output', self.full_output):
+            return self.concat_results(*args, **kwargs)
+        return self.chain(*args, **kwargs)
+
+    def concat_results(self, *args, **kwargs):
+        results = [self.reader_type(arg, **kwargs) for arg in args]
+        if pd is not None and all(isinstance(a, pd.DataFrame) for a in args):
+            return pd.concat(results)
+        return np.concatenate(results)
+
+    def _iter(self, files, kwargs):
+        for f in files:
+            with self.reader_type(f, **kwargs) as r:
+                for item in r:
+                    yield item
+
+    def chain(self, *files, **kwargs):
+        return self._iter(files, kwargs)
+
+    def __call__(self, *args, **kwargs):
+        return self.dispatch(*args, **kwargs)
