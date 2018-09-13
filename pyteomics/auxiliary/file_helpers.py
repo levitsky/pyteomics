@@ -3,7 +3,8 @@ import codecs
 import re
 from functools import wraps
 from contextlib import contextmanager
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict
+import json
 import multiprocessing as mp
 import threading
 import warnings
@@ -237,6 +238,10 @@ class IndexedTextReader(FileReader):
         if not _skip_index:
             self._offset_index = self.build_byte_index()
 
+    @property
+    def index(self):
+        return self._offset_index
+    
     def __len__(self):
         return len(self._offset_index)
 
@@ -299,7 +304,7 @@ class IndexedTextReader(FileReader):
         yield i, None, None
 
     def build_byte_index(self):
-        index = OrderedDict()
+        index = OffsetIndex()
         g = self._generate_offsets()
         last_offset = 0
         last_label = None
@@ -352,6 +357,129 @@ def _file_writer(_mode='a'):
                     return _func(*args, output=out, **kwargs)
         return helper
     return decorator
+
+
+class OffsetIndex(OrderedDict):
+    '''An augmented OrderedDict that formally wraps getting items by index
+    '''
+    def __init__(self, *args, **kwargs):
+        OrderedDict.__init__(self, *args, **kwargs)
+    
+    def find(self, key, *args, **kwargs):
+        return self[key]
+    
+    def from_index(self, index, include_value=False):
+        '''Get an entry by its integer index in the ordered sequence
+        of this mapping.
+        
+        Parameters
+        ----------
+        index: int
+            The index to retrieve
+        include_value: bool
+            Whether to return both the key and the value or just the value.
+            Defaults to :const:`False`
+        
+        Returns
+        -------
+        object:
+            If ``include_value`` is :const:`True`, a tuple of (key, value) at ``index``
+            else just the key at ``index``
+        '''
+        items = tuple(self.items())
+        if include_value:
+            return items[index]
+        else:
+            return items[index][0]
+
+    def __repr__(self):
+        template = "{self.__class__.__name__}({items})"
+        return template.format(self=self, items=list(self.items()))
+
+    
+class HierarchicalOffsetIndex(object):
+    schema_version = (1, 0, 0)
+
+    _schema_version_tag_key = "@pyteomics_schema_version"
+    _inner_type = OffsetIndex
+
+    def __init__(self, base=None, schema_version=None):
+        if schema_version is None:
+            schema_version = self.schema_version
+        self.schema_version = schema_version
+        self.mapping = defaultdict(self._inner_type)
+        for key, value in (base or {}).items():
+            self.mapping[key] = self._inner_type(value)
+
+    def __getitem__(self, key):
+        return self.mapping[key]
+
+    def __setitem__(self, key, value):
+        self.mapping[key] = value
+
+    def __iter__(self):
+        return iter(self.mapping)
+
+    def __len__(self):
+        return sum(len(group) for key, group in self.items())
+
+    def __contains__(self, key):
+        return key in self.mapping
+
+    def find(self, key, element_type=None):
+        if element_type is None:
+            for element_type in self.keys():
+                try:
+                    return self.find(key, element_type)
+                except KeyError:
+                    continue
+            raise KeyError(key)
+        else:
+            return self[element_type][key]
+
+    def update(self, *args, **kwargs):
+        self.mapping.update(*args, **kwargs)
+
+    def pop(self, key, default=None):
+        return self.mapping.pop(key, default)
+
+    def keys(self):
+        return self.mapping.keys()
+
+    def values(self):
+        return self.mapping.values()
+
+    def items(self):
+        return self.mapping.items()
+
+    def save(self, fp):
+        encoded_index = dict()
+        keys = list(self.keys())
+        container = {
+            self._schema_version_tag_key: self.schema_version,
+            "keys": keys
+        }
+        for key, offset in self.items():
+            encoded_index[key] = offset
+        container['index'] = encoded_index
+        json.dump(container, fp)
+
+    @classmethod
+    def load(cls, fp):
+        container = json.load(fp)
+        version_tag = container.get(cls._schema_version_tag_key)
+        if version_tag is None:
+            # The legacy case, no special processing yet
+            inst = cls({}, None)
+            inst.schema_version = None
+            return inst
+        version_tag = tuple(version_tag)
+        index = container.get("index")
+        if version_tag < cls.schema_version:
+            # schema upgrade case, no special processing yet
+            return cls(index, version_tag)
+        # no need to upgrade
+        return cls(index, version_tag)
 
 
 def _make_chain(reader, readername, full_output=False):

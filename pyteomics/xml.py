@@ -39,7 +39,7 @@ from collections import OrderedDict, defaultdict
 from lxml import etree
 import numpy as np
 
-from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj
+from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj, OffsetIndex, HierarchicalOffsetIndex
 from .auxiliary import unitint, unitfloat, unitstr, cvstr
 from .auxiliary import _keepstate_method as _keepstate
 from .auxiliary import BinaryDataArrayTransformer
@@ -788,91 +788,6 @@ class ByteCountingXMLScanner(_file_obj):
         return inst.build_byte_index()
 
 
-class HierarchicalOffsetIndex(object):
-    schema_version = (1, 0, 0)
-
-    _schema_version_tag_key = "@pyteomics_schema_version"
-    _inner_type = OrderedDict
-
-    def __init__(self, base=None, schema_version=None):
-        if schema_version is None:
-            schema_version = self.schema_version
-        self.schema_version = schema_version
-        self.mapping = defaultdict(self._inner_type)
-        for key, value in (base or {}).items():
-            self.mapping[key] = self._inner_type(value)
-
-    def __getitem__(self, key):
-        return self.mapping[key]
-
-    def __setitem__(self, key, value):
-        self.mapping[key] = value
-
-    def __iter__(self):
-        return iter(self.mapping)
-
-    def __len__(self):
-        return sum(len(group) for key, group in self.items())
-
-    def __contains__(self, key):
-        return key in self.mapping
-
-    def find(self, key, element_type=None):
-        if element_type is None:
-            for element_type in self.keys():
-                try:
-                    return self.find(key, element_type)
-                except KeyError:
-                    continue
-            raise KeyError(key)
-        else:
-            return self[element_type][key]
-
-    def update(self, *args, **kwargs):
-        self.mapping.update(*args, **kwargs)
-
-    def pop(self, key, default=None):
-        return self.mapping.pop(key, default)
-
-    def keys(self):
-        return self.mapping.keys()
-
-    def values(self):
-        return self.mapping.values()
-
-    def items(self):
-        return self.mapping.items()
-
-    def save(self, fp):
-        encoded_index = dict()
-        keys = list(self.keys())
-        container = {
-            self._schema_version_tag_key: self.schema_version,
-            "keys": keys
-        }
-        for key, offset in self.items():
-            encoded_index[key] = offset
-        container['index'] = encoded_index
-        json.dump(container, fp)
-
-    @classmethod
-    def load(cls, fp):
-        container = json.load(fp)
-        version_tag = container.get(cls._schema_version_tag_key)
-        if version_tag is None:
-            # The legacy case, no special processing yet
-            inst = cls({}, None)
-            inst.schema_version = None
-            return inst
-        version_tag = tuple(version_tag)
-        index = container.get("index")
-        if version_tag < cls.schema_version:
-            # schema upgrade case, no special processing yet
-            return cls(index, version_tag)
-        # no need to upgrade
-        return cls(index, version_tag)
-
-
 class TagSpecificXMLByteIndex(object):
     """
     Encapsulates the construction and querying of a byte offset index
@@ -1083,6 +998,10 @@ class IndexedXML(XML):
         super(IndexedXML, self).__init__(source, read_schema, iterative, build_id_cache, *args, **kwargs)
         self._offset_index = HierarchicalOffsetIndex()
         self._build_index()
+    
+    @property
+    def index(self):
+        return self._offset_index
 
     def __reduce_ex__(self, protocol):
         reconstructor, args, state = XML.__reduce_ex__(self, protocol)
