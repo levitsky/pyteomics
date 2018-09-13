@@ -649,35 +649,3 @@ class TaskMappingMixin(object):
 
     def _default_iterator(self):
         return iter(self._offset_index.keys())
-
-
-class Chain(object):
-    def __init__(self, reader_type, full_output=False):
-        self.reader_type = reader_type
-        self.full_output = full_output
-
-    def dispatch(self, *args, **kwargs):
-        return self.dispatch_from_iterable(args, **kwargs)
-
-    def dispatch_from_iterable(self, args, **kwargs):
-        if kwargs.get('full_output', self.full_output):
-            return self.concat_results(*args, **kwargs)
-        return self.chain(*args, **kwargs)
-
-    def concat_results(self, *args, **kwargs):
-        results = [self.reader_type(arg, **kwargs) for arg in args]
-        if pd is not None and all(isinstance(a, pd.DataFrame) for a in args):
-            return pd.concat(results)
-        return np.concatenate(results)
-
-    def _iter(self, files, kwargs):
-        for f in files:
-            with self.reader_type(f, **kwargs) as r:
-                for item in r:
-                    yield item
-
-    def chain(self, *files, **kwargs):
-        return self._iter(files, kwargs)
-
-    def __call__(self, *args, **kwargs):
-        return self.dispatch(*args, **kwargs)
