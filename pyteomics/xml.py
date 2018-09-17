@@ -50,7 +50,7 @@ try: # Python 2.7
 except ImportError: # Python 3.x
     from urllib.request import urlopen, URLError
 
-warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
+# warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 
 def _local_name(element):
     """Strip namespace from the XML element's name"""
@@ -998,7 +998,7 @@ class IndexedXML(XML):
         super(IndexedXML, self).__init__(source, read_schema, iterative, build_id_cache, *args, **kwargs)
         self._offset_index = HierarchicalOffsetIndex()
         self._build_index()
-    
+
     @property
     def index(self):
         return self._offset_index
