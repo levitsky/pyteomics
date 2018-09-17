@@ -287,11 +287,16 @@ class CVQueryEngine(object):
             raise TypeError("`accession` cannot be None")
         return self._query_dict(data, accession)
 
+    def _is_empty(self, value):
+        if isinstance(value, basestring):
+            return value != ''
+        return False
+
     def _walk_dict(self, data, index):
         for key, value in data.items():
             accession = self._accession(key)
             if accession:
-                if value != '':
+                if not self._is_empty(value):
                     index[accession] = value
                 else:
                     index[accession] = key
