@@ -8,7 +8,7 @@ import json
 import multiprocessing as mp
 import threading
 import warnings
-warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
+# warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 
 try:
     basestring
@@ -364,6 +364,32 @@ class OffsetIndex(OrderedDict):
     '''
     def __init__(self, *args, **kwargs):
         OrderedDict.__init__(self, *args, **kwargs)
+        self._index_sequence = None
+
+    def _invalidate(self):
+        self._index_sequence = None
+
+    @property
+    def index_sequence(self):
+        """Keeps a cached copy of the :meth:`items` sequence
+        stored as a :class:`tuple` to avoid repeatedly copying
+        the sequence over many method calls.
+
+        Returns
+        -------
+        :class:`tuple`
+        """
+        if self._index_sequence is None:
+            self._index_sequence = tuple(self.items())
+        return self._index_sequence
+
+    def __setitem__(self, key, value):
+        self._invalidate()
+        return super(OffsetIndex, self).__setitem__(key, value)
+
+    def pop(self, *args, **kwargs):
+        self._invalidate()
+        return super(OffsetIndex, self).pop(*args, **kwargs)
 
     def find(self, key, *args, **kwargs):
         return self[key]
@@ -386,11 +412,32 @@ class OffsetIndex(OrderedDict):
             If ``include_value`` is :const:`True`, a tuple of (key, value) at ``index``
             else just the key at ``index``
         '''
-        items = tuple(self.items())
+        items = self.index_sequence
         if include_value:
             return items[index]
         else:
             return items[index][0]
+
+    def from_slice(self, spec, include_value=False):
+        '''Get a slice along index in the ordered sequence
+        of this mapping.
+
+        Parameters
+        ----------
+        spec: slice
+            The slice over the range of indices to retrieve
+        include_value: bool
+            Whether to return both the key and the value or just the key.
+            Defaults to :const:`False`
+
+        Returns
+        -------
+        list:
+            If ``include_value`` is :const:`True`, a tuple of (key, value) at ``index``
+            else just the key at ``index`` for each ``index`` in ``spec``
+        '''
+        items = self.index_sequence
+        return [(k, v) if include_value else k for k, v in items[spec]]
 
     def __repr__(self):
         template = "{self.__class__.__name__}({items})"
