@@ -113,7 +113,7 @@ class IndexedPEFF(TwoLayerIndexedFASTA):
     Parameters
     ----------
     source : str or file
-        The file to read. If a file object, it needs to be in *{}* mode.
+        The file to read. If a file object, it needs to be in *rb* mode.
     parse : bool, optional
         Defines whether the descriptions should be parsed in the produced tuples.
         Default is :py:const:`True`.
