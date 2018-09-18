@@ -35,11 +35,11 @@ import ast
 import os
 import json
 import warnings
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 from lxml import etree
 import numpy as np
 
-from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj, OffsetIndex, HierarchicalOffsetIndex
+from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj, HierarchicalOffsetIndex
 from .auxiliary import unitint, unitfloat, unitstr, cvstr
 from .auxiliary import _keepstate_method as _keepstate
 from .auxiliary import BinaryDataArrayTransformer
