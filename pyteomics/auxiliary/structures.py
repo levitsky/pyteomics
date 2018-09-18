@@ -289,7 +289,7 @@ class CVQueryEngine(object):
 
     def _is_empty(self, value):
         if isinstance(value, basestring):
-            return value != ''
+            return value == ''
         return False
 
     def _walk_dict(self, data, index):
