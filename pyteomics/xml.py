@@ -871,58 +871,6 @@ class TagSpecificXMLByteIndex(object):
         return indexer.offsets
 
 
-class FlatOffsetIndex(HierarchicalOffsetIndex):
-    def __len__(self):
-        return len(self.mapping)
-
-    def find(self, key, element_type=None):
-        return self[element_type][key]
-
-    def save(self, fp):
-        encoded_index = dict()
-        container = {
-            self._schema_version_tag_key: self.schema_version,
-        }
-        for key, offset in self.items():
-            encoded_index[key] = offset
-        container['index'] = encoded_index
-        json.dump(container, fp)
-
-    @classmethod
-    def load(cls, fp):
-        container = json.load(fp)
-        version_tag = container.get(cls._schema_version_tag_key)
-        if version_tag is None:
-            # The legacy case, no special processing yet
-            return cls(container)
-        version_tag = tuple(version_tag)
-        index = container.get("index")
-        if version_tag < cls.schema_version:
-            # schema upgrade case, no special processing yet
-            return cls(index)
-        # no need to upgrade
-        return cls(index)
-
-
-class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
-    """
-    An alternative interface on top of :py:class:`TagSpecificXMLByteIndex` that assumes
-    that identifiers across different tags are globally unique, as in MzIdentML.
-
-    Attributes
-    ----------
-    offsets : dict
-        The mapping between ids and byte offsets.
-    """
-    def build_index(self):
-        hierarchical_index = super(FlatTagSpecificXMLByteIndex, self).build_index()
-        self.offsets = FlatOffsetIndex(_flatten_map(hierarchical_index))
-        return self.offsets
-
-    def __len__(self):
-        return len(self.offsets)
-
-
 def ensure_bytes_single(string):
     if isinstance(string, bytes):
         return string
