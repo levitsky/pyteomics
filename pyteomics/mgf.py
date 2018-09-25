@@ -274,7 +274,10 @@ class IndexedMGF(aux.TaskMappingMixin, aux.IndexedTextReader, MGFBase):
 
     @aux._keepstate_method
     def _read_header(self):
-        first = next(v for v in self._offset_index.values())[0]
+        try:
+            first = next(v for v in self._offset_index.values())[0]
+        except StopIteration: # the index is empty, no spectra in file
+            first = -1
         header_lines = self.read(first).decode(self.encoding).split('\n')
         return self._read_header_lines(header_lines)
 
