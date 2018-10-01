@@ -42,6 +42,11 @@ try:
 except ImportError:
     from Queue import Empty
 
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
+
 from . import PyteomicsError
 
 def _keepstate(func):
@@ -211,7 +216,84 @@ def remove_bom(bstr):
     return bstr.replace(codecs.BOM_LE, b'').lstrip(b"\x00")
 
 
-class IndexedTextReader(FileReader):
+class IndexedReaderMixin():
+    """Common interface for :py:class:`IndexedTextReader` and :py:class:`IndexedXML`."""
+    @property
+    def index(self):
+        return self._offset_index
+
+    @property
+    def default_index(self):
+        return self._offset_index
+
+    def __len__(self):
+        return len(self._offset_index)
+
+    def __contains__(self, key):
+        return key in self._offset_index
+
+    def _item_from_offsets(self, offsets):
+        raise NotImplementedError
+
+    def get_by_id(self, elem_id):
+        index = self.default_index
+        if index is None:
+            raise PyteomicsError('Access by ID requires building an offset index.')
+        offsets = index[elem_id]
+        return self._item_from_offsets(offsets)
+
+    def get_by_ids(self, ids):
+        return [self.get_by_id(key) for key in ids]
+
+    def get_by_index(self, i):
+        try:
+            key = self.default_index.from_index(i, False)
+        except AttributeError:
+            raise PyteomicsError('Positional access requires building an offset index.')
+        return self.get_by_id(key)
+
+    def get_by_indexes(self, indexes):
+        return [self.get_by_index(i) for i in indexes]
+
+    def get_by_index_slice(self, s):
+        try:
+            keys = self.default_index.from_slice(s, False)
+        except AttributeError:
+            raise PyteomicsError('Positional access requires building an offset index.')
+        return self.get_by_ids(keys)
+
+    def get_by_key_slice(self, s):
+        keys = self.default_index.between(s.start, s.stop)
+        if s.step:
+            keys = keys[::s.step]
+        return self.get_by_ids(keys)
+
+    def __getitem__(self, key):
+        if isinstance(key, basestring):
+            return self.get_by_id(key)
+        if isinstance(key, int):
+            return self.get_by_index(key)
+        if isinstance(key, Sequence):
+            if not key:
+                return []
+            if isinstance(key[0], int):
+                return self.get_by_indexes(key)
+            if isinstance(key[0], basestring):
+                return self.get_by_ids(key)
+        if isinstance(key, slice):
+            for item in (key.start, key.stop, key.step):
+                if item is not None:
+                    break
+            if isinstance(item, int):
+                return self.get_by_index_slice(key)
+            if isinstance(item, basestring):
+                return self.get_by_key_slice(key)
+            if item is None:
+                return list(self)
+        raise PyteomicsError('Unsupported query key: {}'.format(key))
+
+
+class IndexedTextReader(IndexedReaderMixin, FileReader):
     """Abstract class for text file readers that keep an index of records for random access.
     This requires reading the file in binary mode."""
 
@@ -237,16 +319,6 @@ class IndexedTextReader(FileReader):
         self._offset_index = None
         if not _skip_index:
             self._offset_index = self.build_byte_index()
-
-    @property
-    def index(self):
-        return self._offset_index
-
-    def __len__(self):
-        return len(self._offset_index)
-
-    def __contains__(self, key):
-        return key in self._offset_index
 
     def __getstate__(self):
         state = super(IndexedTextReader, self).__getstate__()
@@ -320,6 +392,8 @@ class IndexedTextReader(FileReader):
         self._source.seek(start)
         lines = self._source.read(end-start).decode(self.encoding).split('\n')
         return lines
+
+
 
 def _file_reader(_mode='r'):
     # a lot of the code below is borrowed from
@@ -401,16 +475,16 @@ class OffsetIndex(OrderedDict):
         Parameters
         ----------
         index: int
-            The index to retrieve
+            The index to retrieve.
         include_value: bool
             Whether to return both the key and the value or just the key.
-            Defaults to :const:`False`
+            Defaults to :const:`False`.
 
         Returns
         -------
         object:
             If ``include_value`` is :const:`True`, a tuple of (key, value) at ``index``
-            else just the key at ``index``
+            else just the key at ``index``.
         '''
         items = self.index_sequence
         if include_value:
@@ -438,6 +512,31 @@ class OffsetIndex(OrderedDict):
         '''
         items = self.index_sequence
         return [(k, v) if include_value else k for k, v in items[spec]]
+
+    def between(self, start, stop, include_value=False):
+        keys = list(self)
+        if start is not None:
+            try:
+                start_index = keys.index(start)
+            except ValueError:
+                raise KeyError(start)
+        else:
+            start_index = 0
+        if stop is not None:
+            try:
+                stop_index = keys.index(stop)
+            except ValueError:
+                raise KeyError(stop)
+        else:
+            stop_index = len(keys) - 1
+        if start is None or stop is None:
+            pass # won't switch indices
+        else:
+            start_index, stop_index = min(start_index, stop_index), max(start_index, stop_index)
+
+        if include_value:
+            return [(k, self[k]) for k in keys[start_index:stop_index + 1]]
+        return keys[start_index:stop_index + 1]
 
     def __repr__(self):
         template = "{self.__class__.__name__}({items})"

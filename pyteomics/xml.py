@@ -33,7 +33,6 @@ from traceback import format_exc
 import operator as op
 import ast
 import os
-import json
 import warnings
 from collections import OrderedDict
 from lxml import etree
@@ -43,7 +42,7 @@ from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj, Hierar
 from .auxiliary import unitint, unitfloat, unitstr, cvstr
 from .auxiliary import _keepstate_method as _keepstate
 from .auxiliary import BinaryDataArrayTransformer
-from .auxiliary import TaskMappingMixin
+from .auxiliary import TaskMappingMixin, IndexedReaderMixin
 
 try: # Python 2.7
     from urllib2 import urlopen, URLError
@@ -545,6 +544,7 @@ class XML(FileReader):
                     return elem
                 if not found:
                     elem.clear()
+        raise KeyError(elem_id)
 
     @_keepstate
     def get_by_id(self, elem_id, **kwargs):
@@ -895,7 +895,7 @@ def _flatten_map(hierarchical_map):
     return OrderedDict(all_records)
 
 
-class IndexedXML(XML):
+class IndexedXML(IndexedReaderMixin, XML):
     """Subclass of :py:class:`XML` which uses an index of byte offsets for some
     elements for quick random access.
     """
@@ -948,8 +948,8 @@ class IndexedXML(XML):
         self._build_index()
 
     @property
-    def index(self):
-        return self._offset_index
+    def default_index(self):
+        return self._offset_index[self._default_iter_tag]
 
     def __reduce_ex__(self, protocol):
         reconstructor, args, state = XML.__reduce_ex__(self, protocol)
@@ -1016,11 +1016,8 @@ class IndexedXML(XML):
         data = self._get_info_smart(elem, **kwargs)
         return data
 
-    def __getitem__(self, elem_id):
-        return self.get_by_id(elem_id)
-
     def __contains__(self, key):
-        return key in self._offset_index
+        return key in self._offset_index[self._default_iter_tag]
 
     def __len__(self):
         return len(self._offset_index[self._default_iter_tag])
