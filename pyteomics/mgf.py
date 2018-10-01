@@ -281,26 +281,18 @@ class IndexedMGF(aux.TaskMappingMixin, aux.IndexedTextReader, MGFBase):
         header_lines = self.read(first).decode(self.encoding).split('\n')
         return self._read_header_lines(header_lines)
 
-    def _read(self, **kwargs):
-        for _, offsets in self._offset_index.items():
-            spectrum = self._read_spectrum(*offsets)
-            yield spectrum
-
-    def _read_spectrum(self, start, end):
-        """Read a single spectrum from ``self._source``.
-
-        Returns
-        -------
-        out : dict
-        """
+    def _item_from_offsets(self, offsets):
+        start, end = offsets
         lines = self._read_lines_from_offsets(start, end)
         return self._read_spectrum_lines(lines)
 
-    # @aux._keepstate_method
-    def get_spectrum(self, title):
-        if title in self._offset_index:
-            start, end = self._offset_index[title]
-            return self._read_spectrum(start, end)
+    def _read(self, **kwargs):
+        for _, offsets in self._offset_index.items():
+            spectrum = self._item_from_offsets(offsets)
+            yield spectrum
+
+    def get_spectrum(self, key):
+        return self.get_by_id(key)
 
 
 class MGF(aux.FileReader, MGFBase):

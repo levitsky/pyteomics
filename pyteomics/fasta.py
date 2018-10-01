@@ -133,9 +133,6 @@ class FASTABase():
     def get_entry(self, key):
         raise NotImplementedError
 
-    def __getitem__(self, key):
-        return self.get_entry(key)
-
 
 class FASTA(aux.FileReader, FASTABase):
     """Text-mode, sequential FASTA parser.
@@ -289,18 +286,19 @@ class IndexedFASTA(aux.TaskMappingMixin, aux.IndexedTextReader, FASTABase):
             description = self.parser(description)
         return Protein(description, sequence)
 
-    def _entry_from_offsets(self, start, end):
+    def _item_from_offsets(self, offsets):
+        start, end = offsets
         lines = self._read_lines_from_offsets(start, end)
         return self._read_protein_lines(lines)
 
     def _read(self, **kwargs):
         for key, offsets in self._offset_index.items():
-            yield self._entry_from_offsets(*offsets)
+            yield self._item_from_offsets(offsets)
 
     def get_entry(self, key):
         offsets = self._offset_index.get(key)
         if offsets is not None:
-            return self._entry_from_offsets(*offsets)
+            return self._item_from_offsets(offsets)
 
 
 class TwoLayerIndexedFASTA(IndexedFASTA):
@@ -372,15 +370,16 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
         super(TwoLayerIndexedFASTA, self).__setstate__(state)
         self._id2header = state['id2header']
 
-    def get_entry(self, key):
+    def get_by_id(self, key):
         """Get the entry by value of header string or extracted field."""
-        raw = super(TwoLayerIndexedFASTA, self).get_entry(key)
-        if raw is not None:
-            return raw
-        if self._id2header:
-            header = self._id2header.get(key)
-            if header is not None:
-                return super(TwoLayerIndexedFASTA, self).get_entry(header)
+        try:
+            return super(TwoLayerIndexedFASTA, self).get_by_id(key)
+        except KeyError:
+            if self._id2header:
+                header = self._id2header.get(key)
+                if header is not None:
+                    return super(TwoLayerIndexedFASTA, self).get_entry(header)
+        raise KeyError(key)
 
     def __contains__(self, key):
         return super(TwoLayerIndexedFASTA, self).__contains__(key) or key in self._id2header

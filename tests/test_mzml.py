@@ -142,6 +142,19 @@ class MzmlTest(unittest.TestCase):
         with pickle.loads(spec) as reader:
             self.assertEqual(next(reader)['id'], expected_data['id'])
 
+    def test_indexing(self):
+        with MzML(self.path) as reader:
+            self.assertEqual(mzml_spectra[0], reader[0])
+            self.assertEqual(mzml_spectra[0], reader['controllerType=0 controllerNumber=1 scan=1'])
+            self.assertEqual(mzml_spectra, reader[0:2])
+            self.assertEqual(mzml_spectra,
+                [reader['controllerType=0 controllerNumber=1 scan=1'],
+                 reader['controllerType=0 controllerNumber=1 scan=2']])
+            self.assertEqual(mzml_spectra, reader[[0, 1]])
+            self.assertEqual(mzml_spectra, reader[
+                ['controllerType=0 controllerNumber=1 scan=1', 'controllerType=0 controllerNumber=1 scan=2']])
+            self.assertEqual(mzml_spectra, reader[
+                'controllerType=0 controllerNumber=1 scan=2':'controllerType=0 controllerNumber=1 scan=1'])
 
 if __name__ == '__main__':
     unittest.main()
