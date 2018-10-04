@@ -1,6 +1,5 @@
 from os import path
 import unittest
-import pickle
 import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics import peff
@@ -12,8 +11,9 @@ class PEFFTest(unittest.TestCase):
     def setUp(self):
         self.peff_file = 'test.peff'
 
-    def test_parse(self):
-        reader = peff.IndexedPEFF(self.peff_file)
+    def test_parse(self, reader=None):
+        if reader is None:
+            reader = peff.IndexedPEFF(self.peff_file)
         self.assertEqual(reader.number_of_entries, 5)
         self.assertEqual(len(reader.header_blocks), 1)
 
@@ -28,7 +28,6 @@ class PEFFTest(unittest.TestCase):
         self.assertEqual(protein.description.TaxName, "Homo Sapiens")
         self.assertEqual(protein.description["NcbiTaxId"], 9606)
         self.assertEqual(len(protein.description.ModResPsi), 2)
-
 
 if __name__ == '__main__':
     unittest.main()

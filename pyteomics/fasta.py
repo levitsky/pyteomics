@@ -296,9 +296,7 @@ class IndexedFASTA(aux.TaskMappingMixin, aux.IndexedTextReader, FASTABase):
             yield self._item_from_offsets(offsets)
 
     def get_entry(self, key):
-        offsets = self._offset_index.get(key)
-        if offsets is not None:
-            return self._item_from_offsets(offsets)
+        return self.get_by_id(key)
 
 
 class TwoLayerIndexedFASTA(IndexedFASTA):

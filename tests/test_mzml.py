@@ -156,5 +156,11 @@ class MzmlTest(unittest.TestCase):
             self.assertEqual(mzml_spectra, reader[
                 'controllerType=0 controllerNumber=1 scan=2':'controllerType=0 controllerNumber=1 scan=1'])
 
+    def test_time_locator(self):
+        with MzML(self.path) as reader:
+            self.assertEqual(mzml_spectra[0], reader.time[0])
+            self.assertEqual(mzml_spectra[1], reader.time[0.1])
+            self.assertEqual(mzml_spectra, reader.time[0:0.1])
+
 if __name__ == '__main__':
     unittest.main()

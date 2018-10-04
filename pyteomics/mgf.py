@@ -188,6 +188,8 @@ class MGFBase():
                         params['pepmass'] = pepmass + (None,) * (2-len(pepmass))
                 if isinstance(params.get('charge'), aux.basestring):
                     params['charge'] = aux._parse_charge(params['charge'], True)
+                if 'rtinseconds' in params:
+                    params['rtinseconds'] = aux.unitfloat(params['rtinseconds'], 'second')
                 out = {'params': params}
                 data = {'m/z array': masses, 'intensity array': intensities}
                 if self._read_charges:
@@ -224,7 +226,7 @@ class MGFBase():
         return self.get_spectrum(key)
 
 
-class IndexedMGF(aux.TaskMappingMixin, aux.IndexedTextReader, MGFBase):
+class IndexedMGF(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.IndexedTextReader, MGFBase):
     """
     A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
     parsing. Specific spectra can be accessed by title using the indexing syntax in constant time.
@@ -247,7 +249,7 @@ class IndexedMGF(aux.TaskMappingMixin, aux.IndexedTextReader, MGFBase):
     """
 
     delimiter = 'BEGIN IONS'
-    label = r'TITLE=([^\n]+)\n'
+    label = r'TITLE=([^\n]*\w)\r?\n'
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
         dtype=None, encoding='utf-8', block_size=1000000, _skip_index=False):
@@ -293,6 +295,12 @@ class IndexedMGF(aux.TaskMappingMixin, aux.IndexedTextReader, MGFBase):
 
     def get_spectrum(self, key):
         return self.get_by_id(key)
+
+    def _get_time(self, spectrum):
+        try:
+            return spectrum['params']['rtinseconds']
+        except KeyError:
+            raise aux.PyteomicsError('RT information not found.')
 
 
 class MGF(aux.FileReader, MGFBase):
