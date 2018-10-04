@@ -5,6 +5,9 @@ except NameError:
 
 from . import patch as __patch
 
+import warnings
+warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
+
 from .structures import (
     PyteomicsError, Charge, ChargeList,
     _parse_charge, BasicComposition,
