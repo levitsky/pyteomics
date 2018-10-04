@@ -90,7 +90,7 @@ STANDARD_ARRAYS = set([
 ])
 
 
-class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML, xml.MultiProcessingXML):
+class MzML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for mzML files."""
     file_format = 'mzML'
     _root_element = 'mzML'
@@ -287,6 +287,9 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML, xml.MultiProcessingXML)
                     info.update(by_id)
                     del info[k]
                     info.pop('id', None)
+
+    def _get_time(self, scan):
+        return scan['scanList']['scan'][0]['scan start time']
 
 
 def read(source, read_schema=False, iterative=True, use_index=False, dtype=None, huge_tree=False):

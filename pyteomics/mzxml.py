@@ -124,7 +124,7 @@ class IteratorQueue(object):
             yield item
 
 
-class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML, xml.MultiProcessingXML):
+class MzXML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for mzXML files."""
     _root_element = 'mzXML'
     _default_iter_tag = 'scan'
@@ -218,6 +218,9 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML, xml.MultiProcessingXML
         else:
             for item in super(MzXML, self).iterfind(path, **kwargs):
                 yield item
+
+    def _get_time(self, scan):
+        return scan['retentionTime']
 
 def read(source, read_schema=False, iterative=True, use_index=False, dtype=None, huge_tree=False):
     """Parse `source` and iterate through spectra.

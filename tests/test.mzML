@@ -127,7 +127,7 @@
           <scanList count="1">
             <cvParam cvRef="MS" accession="MS:1000795" name="no combination" value=""/>
             <scan instrumentConfigurationRef="IC1">
-              <cvParam cvRef="MS" accession="MS:1000016" name="scan start time" value="0.0049350000000000002" unitCvRef="UO" unitAccession="UO:0000031" unitName="minute"/>
+              <cvParam cvRef="MS" accession="MS:1000016" name="scan start time" value="0.0059350000000000002" unitCvRef="UO" unitAccession="UO:0000031" unitName="minute"/>
               <cvParam cvRef="MS" accession="MS:1000512" name="filter string" value="FTMS + p ESI Full ms [200.00-2000.00]"/>
               <cvParam cvRef="MS" accession="MS:1000616" name="preset scan configuration" value="1"/>
               <userParam name="[Thermo Trailer Extra]Monoisotopic M/Z:" value="810.41522216796875" type="xsd:float"/>
@@ -154,7 +154,7 @@
             </binaryDataArray>
           </binaryDataArrayList>
         </spectrum>
- 
+
       </spectrumList>
       <chromatogramList count="1" defaultDataProcessingRef="pwiz_Reader_Thermo_conversion">
         <chromatogram index="0" id="TIC" defaultArrayLength="48">

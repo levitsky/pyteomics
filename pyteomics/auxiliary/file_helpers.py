@@ -216,7 +216,7 @@ def remove_bom(bstr):
     return bstr.replace(codecs.BOM_LE, b'').lstrip(b"\x00")
 
 
-class IndexedReaderMixin():
+class IndexedReaderMixin(object):
     """Common interface for :py:class:`IndexedTextReader` and :py:class:`IndexedXML`."""
     @property
     def index(self):
@@ -291,6 +291,87 @@ class IndexedReaderMixin():
             if item is None:
                 return list(self)
         raise PyteomicsError('Unsupported query key: {}'.format(key))
+
+
+class RTLocator():
+    def __init__(self, reader):
+        self._reader = reader
+
+    def _get_scan_by_time(self, time):
+        """Retrieve the scan object for the specified scan time.
+
+        Parameters
+        ----------
+        time : float
+            The time to get the nearest scan from
+        Returns
+        -------
+        tuple: (scan_id, scan, scan_time)
+        """
+        if not self._reader.default_index:
+            raise PyteomicsError("This method requires the index. Please pass `use_index=True` during initialization")
+
+        scan_ids = tuple(self._reader.default_index)
+        lo = 0
+        hi = len(scan_ids)
+
+        best_match = None
+        best_error = float('inf')
+        best_time = None
+        best_id = None
+
+        if time == float('inf'):
+            scan =  self._reader.get_by_id(scan_ids[-1])
+            return scan_ids[-1], scan, self._reader._get_time(scan)
+
+        while hi != lo:
+            mid = (hi + lo) // 2
+            sid = scan_ids[mid]
+            scan = self._reader.get_by_id(sid)
+            scan_time = self._reader._get_time(scan)
+            err = abs(scan_time - time)
+            if err < best_error:
+                best_error = err
+                best_match = scan
+                best_time = scan_time
+                best_id = sid
+            if scan_time == time:
+                return sid, scan, scan_time
+            elif (hi - lo) == 1:
+                return best_id, best_match, best_time
+            elif scan_time > time:
+                hi = mid
+            else:
+                lo = mid
+
+    def __getitem__(self, key):
+        if isinstance(key, (int, float)):
+            return self._get_scan_by_time(key)[1]
+        if isinstance(key, Sequence):
+            return [self._get_scan_by_time(t)[1] for t in key]
+        if isinstance(key, slice):
+            if key.start is None:
+                start_index = self._reader.default_index.from_index(0)
+            else:
+                start_index = self._get_scan_by_time(key.start)[0]
+            if key.stop is None:
+                stop_index = self._reader.default_index.from_index(-1)
+            else:
+                stop_index = self._get_scan_by_time(key.stop)[0]
+            return self._reader[start_index:stop_index:key.step]
+
+
+class TimeOrderedIndexedReaderMixin(IndexedReaderMixin):
+    @property
+    def time(self):
+        return self._time
+
+    def __init__(self, *args, **kwargs):
+        super(TimeOrderedIndexedReaderMixin, self).__init__(*args, **kwargs)
+        self._time = RTLocator(self)
+
+    def _get_time(self, scan):
+        raise NotImplementedError
 
 
 class IndexedTextReader(IndexedReaderMixin, FileReader):
