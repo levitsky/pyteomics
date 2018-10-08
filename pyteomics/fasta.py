@@ -216,8 +216,8 @@ def _reconstruct(cls, args, kwargs):
 
 class IndexedFASTA(aux.TaskMappingMixin, aux.IndexedTextReader, FASTABase):
     """Indexed FASTA parser. Supports direct indexing by matched labels."""
-    delimiter = '>'
-    label = r'^>(.*)'
+    delimiter = '\n>'
+    label = '^[\n]>(.*)'
 
     def __init__(self, source, ignore_comments=False, parser=None, **kwargs):
         """Create an indexed FASTA parser object.
@@ -243,9 +243,9 @@ class IndexedFASTA(aux.TaskMappingMixin, aux.IndexedTextReader, FASTABase):
         block_size : int or None, optional, keyword only
             Number of bytes to consume at once.
         delimiter : str or None, optional, keyword only
-            Overrides the FASTA record delimiter (default is ``'>'``).
+            Overrides the FASTA record delimiter (default is ``'\n>'``).
         label : str or None, optional, keyword only
-            Overrides the FASTA record label pattern. Default is ``r'^>(.*)'``.
+            Overrides the FASTA record label pattern. Default is ``'^[\n]>(.*)'``.
         label_group : int or str, optional, keyword only
             Overrides the matched group used as key in the byte offset index.
             This in combination with `label` can be used to extract fields from headers.
