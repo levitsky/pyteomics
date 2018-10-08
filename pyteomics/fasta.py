@@ -217,7 +217,7 @@ def _reconstruct(cls, args, kwargs):
 class IndexedFASTA(aux.TaskMappingMixin, aux.IndexedTextReader, FASTABase):
     """Indexed FASTA parser. Supports direct indexing by matched labels."""
     delimiter = '\n>'
-    label = '^[\n]?>(.*)'
+    label = r'^[\n]?>(.*)\s*'
 
     def __init__(self, source, ignore_comments=False, parser=None, **kwargs):
         """Create an indexed FASTA parser object.
