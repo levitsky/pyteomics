@@ -8,6 +8,7 @@ from data import tandem_spectra
 class TandemTest(unittest.TestCase):
     def setUp(self):
         self.maxDiff = None
+        self.path = 'test.t.xml'
 
     def testReadPSM(self):
         for func in [TandemXML, read, chain,
@@ -16,8 +17,11 @@ class TandemTest(unittest.TestCase):
                 lambda x, **kw: filter.chain(x, fdr=1, full_output=False),
                 lambda x, **kw: filter.chain.from_iterable([x], fdr=1, full_output=False)]:
             for it in range(2):
-                with func('test.t.xml', iterative=it) as r:
+                with func(self.path, iterative=it) as r:
                     self.assertEqual(list(r), tandem_spectra)
+
+    def test_df(self):
+        df = DataFrame(self.path)
 
 if __name__ == '__main__':
     unittest.main()
