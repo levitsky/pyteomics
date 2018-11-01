@@ -306,7 +306,6 @@ def DataFrame(*args, **kwargs):
                 protein.pop(k, None)
             for k in pep_keys:
                 protein['peptide'].pop(k, None)
-            del protein['peptide']['peptide']
             info.update(protein['peptide'])
             info['scan'] = item['support']['fragment ion mass spectrum']['note']
             data.append(info)
