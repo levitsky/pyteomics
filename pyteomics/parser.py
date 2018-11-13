@@ -203,9 +203,9 @@ def _split_label(label):
     else:
         return mod, X
 
-_modX_sequence = re.compile(r'^([^-]+-)?((?:[a-z]*[A-Z])+)(-[^-]+)?$')
-_modX_group = re.compile(r'[a-z]*[A-Z]')
-_modX_split = re.compile(r'([a-z]*)([A-Z])')
+_modX_sequence = re.compile(r'^([^-]+-)?((?:[^A-Z-]*[A-Z])+)(-[^-]+)?$')
+_modX_group = re.compile(r'[^A-Z-]*[A-Z]')
+_modX_split = re.compile(r'([^A-Z-]*)([A-Z])')
 
 def parse(sequence,
                    show_unmodified_termini=False, split=False,
@@ -268,6 +268,8 @@ def parse(sequence,
     ['T', 'E', 'pS', 'T', 'oxM']
     >>> parse('zPEPzTIDzE', True, True, labels=std_labels+['z'])
     [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',), ('z', 'E', '-OH')]
+    >>> parse('Pmod1EPTIDE')
+    ['P', 'mod1E', 'P', 'T', 'I', 'D', 'E']
     """
     sequence = str(sequence)
 
