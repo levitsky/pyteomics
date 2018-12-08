@@ -858,7 +858,7 @@ class TaskMappingMixin(object):
         feeder_thread = threading.Thread(target=feeder)
         feeder_thread.daemon = True
         feeder_thread.start()
-        return feeder
+        return feeder_thread
 
     def map(self, target=None, processes=-1, iterator=None, queue_timeout=_QUEUE_TIMEOUT, *args, **kwargs):
         """Execute the ``target`` function over entries of this object across up to ``processes``
