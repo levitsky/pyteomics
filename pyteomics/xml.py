@@ -431,8 +431,30 @@ class XML(FileReader):
              "Do not use `retrieve_refs=True`.").format(
                 self.__class__.__name__))
 
-    @_keepstate
     def iterfind(self, path, **kwargs):
+        """Parse the XML and yield info on elements with specified local
+        name or by specified "XPath".
+
+        Parameters
+        ----------
+        path : str
+            Element name or XPath-like expression. Only local names separated
+            with slashes are accepted. An asterisk (`*`) means any element.
+            You can specify a single condition in the end, such as:
+            ``"/path/to/element[some_value>1.5]"``
+            Note: you can do much more powerful filtering using plain Python.
+            The path can be absolute or "free". Please don't specify
+            namespaces.
+        **kwargs : passed to :py:meth:`self._get_info_smart`.
+
+        Returns
+        -------
+        out : iterator
+        """
+        return self._iterfind_impl(path, **kwargs)
+
+    @_keepstate
+    def _iterfind_impl(self, path, **kwargs):
         """Parse the XML and yield info on elements with specified local
         name or by specified "XPath".
 
@@ -1137,3 +1159,35 @@ class ArrayConversionMixin(BinaryDataArrayTransformer):
     def _finalize_record_conversion(self, array, record):
         key = record.key
         return self._convert_array(key, array)
+
+
+class IterfindProxy(TaskMappingMixin):
+    def __init__(self, parser, tag_name, **kwargs):
+        self.parser = parser
+        self.tag_name = tag_name
+        self.config = kwargs
+        self._iterator = None
+
+    def __repr__(self):
+        template = "{self.__class__.__name__}({self.tag_name})"
+        return template.format(self=self)
+
+    def __iter__(self):
+        return self
+
+    def _make_iterator(self):
+        return self.parser._iterfind_impl(self.tag_name, **self.config)
+
+    def __next__(self):
+        if self._iterator is None:
+            self._iterator = self._make_iterator()
+        return next(self._iterator)
+
+    def next(self):
+        return self.__next__()
+
+    def _default_iterator(self):
+        return iter(self.parser.index[self.tag_name])
+
+    def _get_reader_for_worker_spec(self):
+        return self.parser
