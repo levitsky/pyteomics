@@ -451,7 +451,7 @@ class XML(FileReader):
         -------
         out : iterator
         """
-        return self._iterfind_impl(path, **kwargs)
+        return Iterfind(self, path, **kwargs)
 
     @_keepstate
     def _iterfind_impl(self, path, **kwargs):
@@ -1050,6 +1050,39 @@ class MultiProcessingXML(IndexedXML, TaskMappingMixin):
     for parallel parsing and analysis of XML entries."""
 
     def map(self, target=None, processes=-1, tag=None, *args, **kwargs):
+        """Execute the ``target`` function over entries of this object across up to ``processes``
+        processes.
+
+        Results will be returned out of order.
+
+        Parameters
+        ----------
+        target : :class:`Callable`, optional
+            The function to execute over each entry. It will be given a single object yielded by
+            the wrapped iterator as well as all of the values in ``args`` and ``kwargs``
+        processes : int, optional
+            The number of worker processes to use. If negative, the number of processes
+            will match the number of available CPUs.
+        tag : :class:`str`, optional
+            The tag to use. If omitted, the index over the :attr:`_default_iter_tag` will
+            be used. If there is no index over that tag, a :class:`KeyError` will be raised
+        queue_timeout : float, optional
+            The number of seconds to block, waiting for a result before checking to see if
+            all workers are done.
+        *args
+            Additional arguments to be passed to the target function
+        **kwargs
+            Additional keyword arguments to be passed to the target function
+
+        Yields
+        ------
+        object
+            The work item returned by the target function.
+
+        Raises
+        ------
+        KeyError
+        """
         if tag is None:
             tag = self._default_iter_tag
         iterator = iter(self._offset_index[tag])
@@ -1161,7 +1194,7 @@ class ArrayConversionMixin(BinaryDataArrayTransformer):
         return self._convert_array(key, array)
 
 
-class IterfindProxy(TaskMappingMixin):
+class Iterfind(TaskMappingMixin):
     def __init__(self, parser, tag_name, **kwargs):
         self.parser = parser
         self.tag_name = tag_name
@@ -1169,8 +1202,12 @@ class IterfindProxy(TaskMappingMixin):
         self._iterator = None
 
     def __repr__(self):
-        template = "{self.__class__.__name__}({self.tag_name})"
-        return template.format(self=self)
+        template = "{self.__class__.__name__}({self.tag_name!r}{config})"
+        if self.config:
+            config = ", " + repr(self.config)
+        else:
+            config = ''
+        return template.format(self=self, config=config)
 
     def __iter__(self):
         return self
@@ -1191,3 +1228,13 @@ class IterfindProxy(TaskMappingMixin):
 
     def _get_reader_for_worker_spec(self):
         return self.parser
+
+    def reset(self):
+        self._iterator = None
+        self.parser.reset()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.reset()
