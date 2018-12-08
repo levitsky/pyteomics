@@ -822,14 +822,13 @@ except NotImplementedError:
 _QUEUE_TIMEOUT = 4
 
 class TaskMappingMixin(object):
-    def map(self, target=None, processes=-1, iterator=None, queue_timeout=_QUEUE_TIMEOUT, *args, **kwargs):
-        if iterator is None:
-            iterator = self._default_iterator()
-        if processes < 1:
-            processes = _NPROC
+    def _get_reader_for_worker_spec(self):
+        return self
+
+    def _build_worker_spec(self, target, args, kwargs):
         serialized = []
-        for obj, objname in [(self, 'reader'),
-            (target, 'target'), (args, 'args'), (kwargs, 'kwargs')]:
+        for obj, objname in [(self._get_reader_for_worker_spec(), 'reader'), (target, 'target'), (args, 'args'),
+                             (kwargs, 'kwargs')]:
             try:
                 serialized.append(serializer.dumps(obj))
             except serializer.PicklingError:
@@ -838,18 +837,18 @@ class TaskMappingMixin(object):
                 if serializer is not dill:
                     msg += ' Try installing `dill`.'
                 raise PyteomicsError(msg)
-        reader_spec, target_spec, args_spec, kwargs_spec = serialized
+        return serialized
 
-        done_event = mp.Event()
-        in_queue = mp.Queue(int(1e7))
-        out_queue = mp.Queue(int(1e7))
-
+    def _spawn_workers(self, specifications, in_queue, out_queue, done_event, processes):
+        reader_spec, target_spec, args_spec, kwargs_spec = specifications
         workers = []
         for _ in range(processes):
             worker = FileReadingProcess(
                 reader_spec, target_spec, in_queue, out_queue, done_event, args_spec, kwargs_spec)
             workers.append(worker)
+        return workers
 
+    def _spawn_feeder_thread(self, in_queue, iterator, processes):
         def feeder():
             for key in iterator:
                 in_queue.put(key)
@@ -859,8 +858,53 @@ class TaskMappingMixin(object):
         feeder_thread = threading.Thread(target=feeder)
         feeder_thread.daemon = True
         feeder_thread.start()
+        return feeder
+
+    def map(self, target=None, processes=-1, iterator=None, queue_timeout=_QUEUE_TIMEOUT, *args, **kwargs):
+        """Execute the ``target`` function over entries of this object across up to ``processes``
+        processes.
+
+        Results will be returned out of order.
+
+        Parameters
+        ----------
+        target : :class:`Callable`, optional
+            The function to execute over each entry. It will be given a single object yielded by
+            the wrapped iterator as well as all of the values in ``args`` and ``kwargs``
+        processes : int, optional
+            The number of worker processes to use. If negative, the number of processes
+            will match the number of available CPUs.
+        iterator : :class:`Iterator`, optional
+            The iterator to use. If omitted, the iterator returned by
+            :meth:`_default_iterator` will be used.
+        queue_timeout : float, optional
+            The number of seconds to block, waiting for a result before checking to see if
+            all workers are done.
+        *args
+            Additional arguments to be passed to the target function
+        **kwargs
+            Additional keyword arguments to be passed to the target function
+
+        Yields
+        ------
+        object
+            The work item returned by the target function.
+        """
+        if iterator is None:
+            iterator = self._default_iterator()
+        if processes < 1:
+            processes = _NPROC
+        serialized = self._build_worker_spec(target, args, kwargs)
+
+        done_event = mp.Event()
+        in_queue = mp.Queue(int(1e7))
+        out_queue = mp.Queue(int(1e7))
+
+        workers = self._spawn_workers(serialized, in_queue, out_queue, done_event, processes)
+        feeder_thread = self._spawn_feeder_thread(in_queue, iterator, processes)
         for worker in workers:
             worker.start()
+
         while True:
             try:
                 result = out_queue.get(True, queue_timeout)
@@ -870,6 +914,7 @@ class TaskMappingMixin(object):
                     break
                 else:
                     continue
+
         feeder_thread.join()
         for worker in workers:
             worker.join()
