@@ -1049,44 +1049,15 @@ class MultiProcessingXML(IndexedXML, TaskMappingMixin):
     """XML reader that feeds indexes to external processes
     for parallel parsing and analysis of XML entries."""
 
-    def map(self, target=None, processes=-1, tag=None, *args, **kwargs):
-        """Execute the ``target`` function over entries of this object across up to ``processes``
-        processes.
+    def _task_map_iterator(self):
+        """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
+        queue used by :meth:`map`
 
-        Results will be returned out of order.
-
-        Parameters
-        ----------
-        target : :class:`Callable`, optional
-            The function to execute over each entry. It will be given a single object yielded by
-            the wrapped iterator as well as all of the values in ``args`` and ``kwargs``
-        processes : int, optional
-            The number of worker processes to use. If negative, the number of processes
-            will match the number of available CPUs.
-        tag : :class:`str`, optional
-            The tag to use. If omitted, the index over the :attr:`_default_iter_tag` will
-            be used. If there is no index over that tag, a :class:`KeyError` will be raised
-        queue_timeout : float, optional
-            The number of seconds to block, waiting for a result before checking to see if
-            all workers are done.
-        *args
-            Additional arguments to be passed to the target function
-        **kwargs
-            Additional keyword arguments to be passed to the target function
-
-        Yields
-        ------
-        object
-            The work item returned by the target function.
-
-        Raises
-        ------
-        KeyError
+        Returns
+        -------
+        :class:`Iteratable`
         """
-        if tag is None:
-            tag = self._default_iter_tag
-        iterator = iter(self._offset_index[tag])
-        return super(MultiProcessingXML, self).map(target, processes, iterator, *args, **kwargs)
+        return iter(self._offset_index[self._default_iter_tag])
 
 
 class IndexSavingXML(IndexedXML):
@@ -1223,7 +1194,14 @@ class Iterfind(TaskMappingMixin):
     def next(self):
         return self.__next__()
 
-    def _default_iterator(self):
+    def _task_map_iterator(self):
+        """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
+        queue used by :meth:`map`
+
+        Returns
+        -------
+        :class:`Iteratable`
+        """
         return iter(self.parser.index[self.tag_name])
 
     def _get_reader_for_worker_spec(self):
