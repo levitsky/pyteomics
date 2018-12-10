@@ -821,6 +821,7 @@ except NotImplementedError:
     _NPROC = 4
 _QUEUE_TIMEOUT = 4
 
+
 class TaskMappingMixin(object):
     def _get_reader_for_worker_spec(self):
         return self
@@ -860,7 +861,7 @@ class TaskMappingMixin(object):
         feeder_thread.start()
         return feeder_thread
 
-    def map(self, target=None, processes=-1, iterator=None, queue_timeout=_QUEUE_TIMEOUT, *args, **kwargs):
+    def map(self, target=None, processes=-1, queue_timeout=_QUEUE_TIMEOUT, args=None, kwargs=None, **_kwargs):
         """Execute the ``target`` function over entries of this object across up to ``processes``
         processes.
 
@@ -874,26 +875,42 @@ class TaskMappingMixin(object):
         processes : int, optional
             The number of worker processes to use. If negative, the number of processes
             will match the number of available CPUs.
-        iterator : :class:`Iterator`, optional
-            The iterator to use. If omitted, the iterator returned by
-            :meth:`_default_iterator` will be used.
         queue_timeout : float, optional
             The number of seconds to block, waiting for a result before checking to see if
             all workers are done.
-        *args
-            Additional arguments to be passed to the target function
-        **kwargs
+        args : :class:`Sequence`, optional
+            Additional positional arguments to be passed to the target function
+        kwargs : :class:`Mapping`, optional
+            Additional keyword arguments to be passed to the target function
+        **_kwargs
             Additional keyword arguments to be passed to the target function
 
         Yields
         ------
         object
             The work item returned by the target function.
+
+        Deleted Parameters
+        ------------------
+        args: : class:`Sequence`
+            Additional arguments to be passed to the target function
+        kwargs: : class:`Mapping`
+            Additional keyword arguments to be passed to the target function
         """
-        if iterator is None:
-            iterator = self._default_iterator()
         if processes < 1:
             processes = _NPROC
+        iterator = self._task_map_iterator()
+
+        if args is None:
+            args = tuple()
+        else:
+            args = tuple(args)
+        if kwargs is None:
+            kwargs = dict()
+        else:
+            kwargs = dict(kwargs)
+        kwargs.update(_kwargs)
+
         serialized = self._build_worker_spec(target, args, kwargs)
 
         done_event = mp.Event()
@@ -919,5 +936,12 @@ class TaskMappingMixin(object):
         for worker in workers:
             worker.join()
 
-    def _default_iterator(self):
+    def _task_map_iterator(self):
+        """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
+        queue used by :meth:`map`
+
+        Returns
+        -------
+        :class:`Iteratable`
+        """
         return iter(self._offset_index.keys())
