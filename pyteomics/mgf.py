@@ -245,7 +245,6 @@ class IndexedMGF(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.In
 
     header : dict
         The file header.
-
     """
 
     delimiter = 'BEGIN IONS'
@@ -253,7 +252,7 @@ class IndexedMGF(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.In
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
         dtype=None, encoding='utf-8', block_size=1000000, _skip_index=False):
-        aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, encoding,
+        aux.TimeOrderedIndexedReaderMixin.__init__(self, source, self._read, False, (), {}, encoding,
             block_size, _skip_index=_skip_index)
         MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype)
 
