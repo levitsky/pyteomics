@@ -889,13 +889,6 @@ class TaskMappingMixin(object):
         ------
         object
             The work item returned by the target function.
-
-        Deleted Parameters
-        ------------------
-        args: : class:`Sequence`
-            Additional arguments to be passed to the target function
-        kwargs: : class:`Mapping`
-            Additional keyword arguments to be passed to the target function
         """
         if processes < 1:
             processes = _NPROC
