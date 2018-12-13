@@ -396,6 +396,9 @@ version_info = xml._make_version_info(MzML)
 chain = aux._make_chain(read, 'read')
 
 
+chain = aux.ChainBase._make_chain(MzML)
+
+
 class PreIndexedMzML(MzML):
     """Parser class for mzML files, subclass of :py:class:`MzML`.
     Uses byte offsets listed at the end of the file for quick access to spectrum elements.

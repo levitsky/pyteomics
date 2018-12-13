@@ -216,7 +216,10 @@ def iterfind(source, path, **kwargs):
     """
     return TandemXML(source, **kwargs).iterfind(path, **kwargs)
 
-chain = aux._make_chain(read, 'read')
+
+# chain = aux._make_chain(read, 'read')
+chain = aux.ChainBase._make_chain(TandemXML)
+
 
 def _is_decoy_prefix(psm, prefix='DECOY_'):
     """Given a PSM dict, return :py:const:`True` if all protein names for

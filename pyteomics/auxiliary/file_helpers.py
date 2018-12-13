@@ -761,6 +761,7 @@ def _make_chain(reader, readername, full_output=False):
 
     return dispatch
 
+
 def _check_use_index(source, use_index, default):
     if use_index is not None:
         use_index = bool(use_index)
@@ -938,3 +939,109 @@ class TaskMappingMixin(object):
         :class:`Iteratable`
         """
         return iter(self._offset_index.keys())
+
+
+class ChainBase(object):
+
+    """Chain readers over :meth:`reader_type` for several files.
+    Positional arguments should be file names or file objects.
+    Keyword arguments are passed to the :meth:`reader_type` function.
+
+    Attributes
+    ----------
+    files : :class:`Iterable`
+        Files specified by path or passed as file-like objects
+    kwargs : :class:`Mapping`
+        Additional arguments used to instantiate each reader
+    """
+
+    def __init__(self, *files, **kwargs):
+        self.files = files
+        self.kwargs = kwargs
+        self._iterator = None
+
+    @classmethod
+    def from_iterable(cls, files, **kwargs):
+        return cls(*files, **kwargs)
+
+    @classmethod
+    def _make_chain(cls, reader_type):
+        if isinstance(reader_type, type):
+            tp = type('%sChain' % reader_type.__class__.__name__, (cls,), {
+                'reader_type': reader_type
+            })
+        else:
+            tp = type('%sChain' % "Function", (cls,), {
+                'reader_type': reader_type
+            })
+        return tp
+
+    def reader_type(self, file):
+        raise NotImplementedError()
+
+    def concat_results(self):
+        results = [self._read(arg) for arg in self.files]
+        if pd is not None and all(isinstance(a, pd.DataFrame) for a in results):
+            return pd.concat(results)
+        return np.concatenate(results)
+
+    def _read(self, file):
+        return self.reader_type(file, **self.kwargs)
+
+    def _iterate_over_files(self):
+        for f in self.files:
+            with self._read(f) as r:
+                for item in r:
+                    yield item
+
+    def __enter__(self):
+        self._iterator = self._iterate_over_files()
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self._iterator = None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._iterator is None:
+            self._iterator = self._iterate_over_files()
+        return next(self._iterator)
+
+    def next(self):
+        return self.__next__()
+
+    def map(self, target=None, processes=-1, queue_timeout=_QUEUE_TIMEOUT, args=None, kwargs=None, **_kwargs):
+        """Execute the ``target`` function over entries of this object across up to ``processes``
+        processes.
+
+        Results will be returned out of order.
+
+        Parameters
+        ----------
+        target : :class:`Callable`, optional
+            The function to execute over each entry. It will be given a single object yielded by
+            the wrapped iterator as well as all of the values in ``args`` and ``kwargs``
+        processes : int, optional
+            The number of worker processes to use. If negative, the number of processes
+            will match the number of available CPUs.
+        queue_timeout : float, optional
+            The number of seconds to block, waiting for a result before checking to see if
+            all workers are done.
+        args : :class:`Sequence`, optional
+            Additional positional arguments to be passed to the target function
+        kwargs : :class:`Mapping`, optional
+            Additional keyword arguments to be passed to the target function
+        **_kwargs
+            Additional keyword arguments to be passed to the target function
+
+        Yields
+        ------
+        object
+            The work item returned by the target function.
+        """
+        for f in self.files:
+            with self._read(f) as r:
+                for result in r.map(target, processes, queue_timeout, args, kwargs, **_kwargs):
+                    yield result

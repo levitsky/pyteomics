@@ -151,7 +151,10 @@ def read(source, read_schema=False, iterative=True, **kwargs):
 
     return ProtXML(source, read_schema=read_schema, iterative=iterative)
 
-chain = aux._make_chain(read, 'read')
+
+# chain = aux._make_chain(read, 'read')
+chain = aux.ChainBase._make_chain(ProtXML)
+
 
 def _is_decoy_prefix(pg, prefix='DECOY_'):
     """Determine if a protein group should be considered decoy.
