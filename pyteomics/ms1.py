@@ -52,10 +52,169 @@ try:
     import numpy as np
 except ImportError:
     np = None
-_array_keys = ['m/z array', 'intensity array']
 
-@aux._file_reader()
-def read(source=None, use_header=False, convert_arrays=2, read_charges=True, dtype=None):
+
+class MS1Base():
+    _array_keys = ['m/z array', 'intensity array']
+    def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None):
+        if convert_arrays and np is None:
+            raise aux.PyteomicsError('numpy is required for array conversion')
+        self._convert_arrays = convert_arrays
+        self._dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in self._array_keys}
+        self._use_header = use_header
+        if use_header:
+            self._header = self._read_header()
+        else:
+            self._header = None
+        self._source_name = getattr(source, 'name', str(source))
+
+    @property
+    def header(self):
+        return self._header
+
+    def _read_header_lines(self, lines):
+        header = {}
+        for line in lines:
+            if line[0] != 'H':
+                break
+            l = line.split('\t', 2)
+            if len(l) < 3:
+                l = line.split(None, 2)
+            key = l[1]
+            val = l[2].strip()
+            header[key] = val
+        return header
+
+    def _read_spectrum_lines(self, lines):
+        reading_spectrum = False
+        params = {}
+        masses = []
+        intensities = []
+        if self._use_header: params.update(self.header)
+
+        def make_out():
+            out = {'params': params}
+            if self._convert_arrays:
+                data = {'m/z array': masses, 'intensity array': intensities}
+                for key, values in data.items():
+                    out[key] = np.array(values, dtype=self._dtype_dict.get(key))
+            else:
+                out['m/z array'] = masses
+                out['intensity array'] = intensities
+            return out
+
+        for line in lines:
+            sline = line.strip().split(None, 2)
+            if not reading_spectrum:
+                if sline[0] == 'S':
+                    reading_spectrum = True
+                    params['scan'] = tuple(sline[1:])
+                # otherwise we are not interested; do nothing, just move along
+            else:
+                if not sline:
+                    pass
+                elif sline[0] == 'S':
+                    return make_out()
+
+                else:
+                    if sline[0] == 'I': # spectrum-specific parameters!
+                        params[sline[1]] = sline[2]
+                    else: # this must be a peak list
+                        try:
+                            masses.append(float(sline[0]))            # this may cause
+                            intensities.append(float(sline[1]))       # exceptions...\
+                        except ValueError:
+                            raise aux.PyteomicsError(
+                                 'Error when parsing %s. Line: %s' %
+                                 (self._source_name, line))
+                        except IndexError:
+                            pass
+
+
+class MS1(aux.FileReader, MS1Base):
+    def __init__(self, source=None, use_header=True, convert_arrays=True, dtype=None, encoding=None):
+        aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
+        MS1Base.__init__(self, source, use_header, convert_arrays, dtype)
+        self.encoding = encoding
+
+    @aux._keepstate_method
+    def _read_header(self):
+        return self._read_header_lines(self._source)
+
+    def _read_spectrum(self, firstline):
+        return self._read_spectrum_lines(self._source, firstline)
+
+    def _read(self):
+        reading_spectrum = False
+        params = {}
+        masses = []
+        intensities = []
+        if self._use_header: params.update(self.header)
+
+        def make_out():
+            out = {'params': params}
+            if self._convert_arrays:
+                data = {'m/z array': masses, 'intensity array': intensities}
+                for key, values in data.items():
+                    out[key] = np.array(values, dtype=self._dtype_dict.get(key))
+            else:
+                out['m/z array'] = masses
+                out['intensity array'] = intensities
+            return out
+
+        for line in self._source:
+            sline = line.strip().split(None, 2)
+            if not reading_spectrum:
+                if sline[0] == 'S':
+                    reading_spectrum = True
+                    params['scan'] = tuple(sline[1:])
+                # otherwise we are not interested; do nothing, just move along
+            else:
+                if not sline:
+                    pass
+                elif sline[0] == 'S':
+                    yield make_out()
+                    params = dict(self.header) if self._use_header else {}
+                    params['scan'] = tuple(sline[1:])
+                    masses = []
+                    intensities = []
+                else:
+                    if sline[0] == 'I': # spectrum-specific parameters!
+                        params[sline[1]] = sline[2]
+                    else: # this must be a peak list
+                        try:
+                            masses.append(float(sline[0]))            # this may cause
+                            intensities.append(float(sline[1]))       # exceptions...\
+                        except ValueError:
+                            raise aux.PyteomicsError(
+                                 'Error when parsing %s. Line: %s' %
+                                 (self._source_name, line))
+                        except IndexError:
+                            pass
+
+        yield make_out()
+
+
+def read_header(source):
+    """
+    Read the specified MS1 file, get the parameters specified in the header
+    as a :py:class:`dict`.
+
+    Parameters
+    ----------
+
+    source : str or file
+        File name or file object representing an file in MS1 format.
+
+    Returns
+    -------
+
+    header : dict
+    """
+    return read(source, use_header=True).header
+
+
+def read(source=None, use_header=False, convert_arrays=2, dtype=None):
     """Read an MS1 file and return entries iteratively.
 
     Read the specified MS1 file, **yield** spectra one by one.
@@ -80,7 +239,7 @@ def read(source=None, use_header=False, convert_arrays=2, read_charges=True, dty
         If :py:const:`False`, m/z and intensities will be returned as regular lists.
         If :py:const:`True` (default), they will be converted to regular :py:class:`numpy.ndarray`'s.
         Conversion requires :py:mod:`numpy`.
-    
+
     dtype : type or str or dict, optional
         dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
         Keys should be 'm/z array' and/or 'intensity array'.
@@ -88,88 +247,10 @@ def read(source=None, use_header=False, convert_arrays=2, read_charges=True, dty
     Returns
     -------
 
-    out : FileReader
+    out : :py:class:`MS1Base`
+        An instance of :py:class:`MS1` or :py:class:`IndexedMS1`, depending on `use_index` and `source`.
     """
-    if convert_arrays and np is None:
-        raise aux.PyteomicsError('numpy is required for array conversion')
-    dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in _array_keys}
-    header = read_header(source)
-    reading_spectrum = False
-    params = {}
-    masses = []
-    intensities = []
-    if use_header: params.update(header)
+    return MS1(source, use_header, convert_arrays, dtype)
 
-    def make_out():
-        out = {'params': params}
-        if convert_arrays:
-            data = {'m/z array': masses, 'intensity array': intensities}
-            for key, values in data.items():
-                out[key] = np.array(values, dtype=dtype_dict.get(key))
-        else:
-            out['m/z array'] = masses
-            out['intensity array'] = intensities
-        return out
-
-    for line in source:
-        sline = line.strip().split(None, 2)
-        if not reading_spectrum:
-            if sline[0] == 'S':
-                reading_spectrum = True
-                params['scan'] = tuple(sline[1:])
-            # otherwise we are not interested; do nothing, just move along
-        else:
-            if not sline:
-                pass
-            elif sline[0] == 'S':
-                yield make_out()
-                params = dict(header) if use_header else {}
-                masses = []
-                intensities = []
-            else:
-                if sline[0] == 'I': # spectrum-specific parameters!
-                    params[sline[1]] = sline[2]
-                else: # this must be a peak list
-                    try:
-                        masses.append(float(sline[0]))            # this may cause
-                        intensities.append(float(sline[1]))       # exceptions...\
-                    except ValueError:
-                        raise aux.PyteomicsError(
-                             'Error when parsing %s. Line: %s' %
-                             (source.name, line))
-                    except IndexError:
-                        pass
-
-    yield make_out()
-
-@aux._keepstate
-def read_header(source):
-    """
-    Read the specified MS1 file, get the parameters specified in the header
-    as a :py:class:`dict`.
-
-    Parameters
-    ----------
-
-    source : str or file
-        File name or file object representing an file in MS1 format.
-
-    Returns
-    -------
-
-    header : dict
-    """
-    with aux._file_obj(source, 'r') as source:
-        header = {}
-        for line in source:
-            if line[0] != 'H':
-                break
-            l = line.split('\t', 2)
-            if len(l) < 3:
-                l = line.split(None, 2)
-            key = l[1]
-            val = l[2].strip()
-            header[key] = val
-        return header
 
 chain = aux._make_chain(read, 'read')
