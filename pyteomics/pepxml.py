@@ -97,6 +97,7 @@ This module requires :py:mod:`lxml`.
 from lxml import etree
 from . import xml, auxiliary as aux, _schema_defaults
 
+
 class PepXML(xml.MultiProcessingXML):
     """Parser class for pepXML files."""
     file_format = 'pepXML'
@@ -198,6 +199,7 @@ class PepXML(xml.MultiProcessingXML):
             info['search_hit'].sort(key=lambda x: x['hit_rank'])
         return info
 
+
 def read(source, read_schema=False, iterative=True, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
 
@@ -224,6 +226,7 @@ def read(source, read_schema=False, iterative=True, **kwargs):
     """
 
     return PepXML(source, read_schema=read_schema, iterative=iterative)
+
 
 def iterfind(source, path, **kwargs):
     """Parse `source` and yield info on elements with specified local
@@ -271,7 +274,9 @@ def iterfind(source, path, **kwargs):
     """
     return PepXML(source, **kwargs).iterfind(path, **kwargs)
 
+
 version_info = xml._make_version_info(PepXML)
+
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.
@@ -304,7 +309,9 @@ def roc_curve(source):
 
     return sorted(roc_curve, key=lambda x: x['min_prob'])
 
+
 chain = aux._make_chain(read, 'read')
+
 
 def _is_decoy_prefix(psm, prefix='DECOY_'):
     """Given a PSM dict, return :py:const:`True` if all protein names for
@@ -326,9 +333,11 @@ def _is_decoy_prefix(psm, prefix='DECOY_'):
     return all(protein['protein'].startswith(prefix)
             for protein in psm['search_hit'][0]['proteins'])
 
+
 def _is_decoy_suffix(psm, suffix='_DECOY'):
     return all(protein['protein'].endswith(suffix)
             for protein in psm['search_hit'][0]['proteins'])
+
 
 is_decoy = _is_decoy_prefix
 
@@ -338,6 +347,7 @@ _key = lambda x: min(
 qvalues = aux._make_qvalues(chain, _is_decoy_prefix, _is_decoy_suffix, _key)
 filter = aux._make_filter(chain, _is_decoy_prefix, _is_decoy_suffix, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter', True)
+
 
 def DataFrame(*args, **kwargs):
     """Read pepXML output files into a :py:class:`pandas.DataFrame`.
@@ -407,6 +417,7 @@ def DataFrame(*args, **kwargs):
                                 info['interprophet_probability'] = ar['interprophet_result']['probability']
                 yield info
     return pd.DataFrame(gen_items(), **pd_kwargs)
+
 
 def filter_df(*args, **kwargs):
     """Read pepXML files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.

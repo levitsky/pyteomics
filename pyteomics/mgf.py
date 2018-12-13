@@ -240,11 +240,14 @@ class IndexedMGF(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.In
     and 'params' stores a :py:class:`dict` of parameters (keys and values are
     :py:class:`str`, keys corresponding to MGF, lowercased).
 
+
     Attributes
     ----------
 
     header : dict
         The file header.
+    time : RTLocator
+        A property used for accessing spectra by retention time.
     """
 
     delimiter = 'BEGIN IONS'

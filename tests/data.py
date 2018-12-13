@@ -1617,7 +1617,8 @@ ms1_spectra = [{'intensity array': makeCA([  0.     ,  20.0522 ,  29.26406,  30.
   'params': {'BPI': '713524',
    'BPM': '544.2904',
    'RTime': '1.32083',
-   'TIC': '2694200'}}]
+   'TIC': '2694200',
+   'scan': ('2', '2')}}]
 
 ms1_spectra_lists = [{'intensity array': [0., 20.0522, 29.26406, 30.04175, 20.19221, 11.58895, 0.],
   'm/z array': [2.51263, 82.51282, 82.51301, 82.51321, 82.5134, 82.51359, 82.51378],
@@ -1631,7 +1632,8 @@ ms1_spectra_lists = [{'intensity array': [0., 20.0522, 29.26406, 30.04175, 20.19
   'params': {'BPI': '713524',
    'BPM': '544.2904',
    'RTime': '1.32083',
-   'TIC': '2694200'}}]
+   'TIC': '2694200',
+   'scan': ('2', '2')}}]
 
 ms1_header = {'CreationDate': 'Sat Jun 03 15:25:10 2017',
  'Extractor version': 'Xcalibur',
