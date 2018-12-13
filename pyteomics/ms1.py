@@ -93,6 +93,8 @@ class MS1Base():
         if self._use_header: params.update(self.header)
 
         def make_out():
+            if 'RTime' in params:
+                params['RTime'] = float(params['RTime'])
             out = {'params': params}
             if self._convert_arrays:
                 data = {'m/z array': masses, 'intensity array': intensities}
@@ -105,6 +107,7 @@ class MS1Base():
 
         for line in lines:
             sline = line.strip().split(None, 2)
+            if not sline: continue
             if not reading_spectrum:
                 if sline[0] == 'S':
                     reading_spectrum = True
@@ -129,10 +132,11 @@ class MS1Base():
                                  (self._source_name, line))
                         except IndexError:
                             pass
+        return make_out()
 
 
 class MS1(aux.FileReader, MS1Base):
-    def __init__(self, source=None, use_header=True, convert_arrays=True, dtype=None, encoding=None):
+    def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, encoding=None):
         aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
         MS1Base.__init__(self, source, use_header, convert_arrays, dtype)
         self.encoding = encoding
@@ -152,6 +156,8 @@ class MS1(aux.FileReader, MS1Base):
         if self._use_header: params.update(self.header)
 
         def make_out():
+            if 'RTime' in params:
+                params['RTime'] = float(params['RTime'])
             out = {'params': params}
             if self._convert_arrays:
                 data = {'m/z array': masses, 'intensity array': intensities}
@@ -195,7 +201,86 @@ class MS1(aux.FileReader, MS1Base):
         yield make_out()
 
 
-def read_header(source):
+class IndexedMS1(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.IndexedTextReader, MS1Base):
+    """
+    A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
+    parsing. Specific spectra can be accessed by title using the indexing syntax in constant time.
+    If created using a file object, it needs to be opened in binary mode.
+
+    When iterated, :py:class:`IndexedMGF` object yields spectra one by one.
+    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
+    'intensity array', 'charge array' and 'params'. 'm/z array' and
+    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
+    'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
+    and 'params' stores a :py:class:`dict` of parameters (keys and values are
+    :py:class:`str`, keys corresponding to MGF, lowercased).
+
+
+    Attributes
+    ----------
+
+    header : dict
+        The file header.
+    time : RTLocator
+        A property used for accessing spectra by retention time.
+    """
+
+    delimiter = '\nS'
+    label = r'^[\n]?S\s+(\S+)'
+
+    def __init__(self, source=None, use_header=False, convert_arrays=True,
+        dtype=None, encoding='utf-8', block_size=1000000, _skip_index=False):
+        aux.TimeOrderedIndexedReaderMixin.__init__(self, source, self._read, False, (), {}, encoding,
+            block_size, _skip_index=_skip_index)
+        MS1Base.__init__(self, source, use_header, convert_arrays, dtype)
+
+    def __reduce_ex__(self, protocol):
+        return (self.__class__,
+            (self._source_init, False, self._convert_arrays,
+                self._read_charges, self._dtype_dict, self.encoding, self.block_size, True),
+            self.__getstate__())
+
+    def __getstate__(self):
+        state = super(IndexedMS1, self).__getstate__()
+        state['use_header'] = self._use_header
+        state['header'] = self._header
+        return state
+
+    def __setstate__(self, state):
+        super(IndexedMS1, self).__setstate__(state)
+        self._use_header = state['use_header']
+        self._header = state['header']
+
+    @aux._keepstate_method
+    def _read_header(self):
+        try:
+            first = next(v for v in self._offset_index.values())[0]
+        except StopIteration: # the index is empty, no spectra in file
+            first = -1
+        header_lines = self.read(first).decode(self.encoding).split('\n')
+        return self._read_header_lines(header_lines)
+
+    def _item_from_offsets(self, offsets):
+        start, end = offsets
+        lines = self._read_lines_from_offsets(start, end)
+        return self._read_spectrum_lines(lines)
+
+    def _read(self, **kwargs):
+        for _, offsets in self._offset_index.items():
+            spectrum = self._item_from_offsets(offsets)
+            yield spectrum
+
+    def get_spectrum(self, key):
+        return self.get_by_id(key)
+
+    def _get_time(self, spectrum):
+        try:
+            return spectrum['params']['RTime']
+        except KeyError:
+            raise aux.PyteomicsError('RT information not found.')
+
+
+def read_header(source, *args, **kwargs):
     """
     Read the specified MS1 file, get the parameters specified in the header
     as a :py:class:`dict`.
@@ -211,10 +296,11 @@ def read_header(source):
 
     header : dict
     """
-    return read(source, use_header=True).header
+    kwargs['use_header'] = True
+    return read(source, *args, **kwargs).header
 
 
-def read(source=None, use_header=False, convert_arrays=2, dtype=None):
+def read(source=None, use_header=False, convert_arrays=True, dtype=None, encoding=None):
     """Read an MS1 file and return entries iteratively.
 
     Read the specified MS1 file, **yield** spectra one by one.
@@ -250,7 +336,7 @@ def read(source=None, use_header=False, convert_arrays=2, dtype=None):
     out : :py:class:`MS1Base`
         An instance of :py:class:`MS1` or :py:class:`IndexedMS1`, depending on `use_index` and `source`.
     """
-    return MS1(source, use_header, convert_arrays, dtype)
+    return MS1(source, use_header, convert_arrays, dtype, encoding)
 
 
 chain = aux._make_chain(read, 'read')
