@@ -304,7 +304,10 @@ def roc_curve(source):
 
     return sorted(roc_curve, key=lambda x: x['min_prob'])
 
-chain = aux._make_chain(read, 'read')
+
+# chain = aux._make_chain(read, 'read')
+chain = aux.ChainBase._make_chain(read)
+
 
 def _is_decoy_prefix(psm, prefix='DECOY_'):
     """Given a PSM dict, return :py:const:`True` if all protein names for

@@ -289,7 +289,10 @@ def get_by_id(source, elem_id, **kwargs):
     """
     return MzIdentML(source, **kwargs).get_by_id(elem_id, **kwargs)
 
-chain = aux._make_chain(read, 'read')
+
+# chain = aux._make_chain(read, 'read')
+chain = aux.ChainBase._make_chain(MzIdentML)
+
 
 def is_decoy(psm):
     """Given a PSM dict, return :py:const:`True` if all proteins in the dict
