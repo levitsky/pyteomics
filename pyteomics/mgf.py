@@ -395,7 +395,7 @@ def read(*args, **kwargs):
         :py:class:`IndexedMGF` is created. This facilitates random access by spectrum titles.
         If an open file is passed as `source`, it needs to be open in binary mode.
 
-        If :py:const:`False`, an instance of :py:class:`SequentialMGF` is created. It reads
+        If :py:const:`False`, an instance of :py:class:`MGF` is created. It reads
         `source` in text mode and is suitable for iterative parsing. Access by spectrum title
         requires linear search and thus takes linear time.
 

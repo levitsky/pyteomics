@@ -10,9 +10,11 @@ human-readable format for MS1 data. It allows storing MS1 peak lists and
 exprimental parameters.
 
 This module provides minimalistic infrastructure for access to data stored in
-MS1 files. The most important function is :py:func:`read`, which
-reads spectra and related information as saves them into human-readable
-:py:class:`dicts`.
+MS1 files.
+Two main classes are :py:class:`MS1`, which provides an iterative, text-mode parser,
+and :py:class:`IndexedMS1`, which is a binary-mode parser that supports random access using scan IDs
+and retention times.
+The function :py:func:`read` helps dispatch between the two classes.
 Also, common parameters can be read from MS1 file header with
 :py:func:`read_header` function.
 
@@ -55,6 +57,7 @@ except ImportError:
 
 
 class MS1Base():
+    """Abstract class representing an MS1 file. Subclasses implement different approaches to parsing."""
     _array_keys = ['m/z array', 'intensity array']
     def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None):
         if convert_arrays and np is None:
@@ -136,6 +139,23 @@ class MS1Base():
 
 
 class MS1(aux.FileReader, MS1Base):
+    """
+    A class representing an MS1 file. Supports the `with` syntax and direct iteration for sequential
+    parsing.
+
+    :py:class:`MGF` object behaves as an iterator, **yielding** spectra one by one.
+    Each 'spectrum' is a :py:class:`dict` with three keys: 'm/z array',
+    'intensity array', and 'params'. 'm/z array' and
+    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
+    and 'params' stores a :py:class:`dict` of parameters.
+
+    Attributes
+    ----------
+
+    header : dict
+        The file header.
+
+    """
     def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, encoding=None):
         aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
         MS1Base.__init__(self, source, use_header, convert_arrays, dtype)
@@ -300,7 +320,7 @@ def read_header(source, *args, **kwargs):
     return read(source, *args, **kwargs).header
 
 
-def read(source=None, use_header=False, convert_arrays=True, dtype=None, encoding=None):
+def read(*args, **kwargs):
     """Read an MS1 file and return entries iteratively.
 
     Read the specified MS1 file, **yield** spectra one by one.
@@ -330,13 +350,36 @@ def read(source=None, use_header=False, convert_arrays=True, dtype=None, encodin
         dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
         Keys should be 'm/z array' and/or 'intensity array'.
 
+    encoding : str, optional
+        File encoding.
+
+    use_index : bool, optional
+        Determines which parsing method to use. If :py:const:`True` (default), an instance of
+        :py:class:`IndexedMS1` is created. This facilitates random access by scan titles.
+        If an open file is passed as `source`, it needs to be open in binary mode.
+
+        If :py:const:`False`, an instance of :py:class:`MS1` is created. It reads
+        `source` in text mode and is suitable for iterative parsing.
+
+    block_size : int, optinal
+        Size of the chunk (in bytes) used to parse the file when creating the byte offset index.
+        (Accepted only for :py:class:`IndexedMGF`.)
+
     Returns
     -------
 
     out : :py:class:`MS1Base`
         An instance of :py:class:`MS1` or :py:class:`IndexedMS1`, depending on `use_index` and `source`.
     """
-    return MS1(source, use_header, convert_arrays, dtype, encoding)
+    if args:
+        source = args[0]
+    else:
+        source = kwargs.get('source')
+    use_index = kwargs.pop('use_index', None)
+    use_index = aux._check_use_index(source, use_index, True)
+    tp = IndexedMS1 if use_index else MS1
+
+    return tp(*args, **kwargs)
 
 
 chain = aux._make_chain(read, 'read')
