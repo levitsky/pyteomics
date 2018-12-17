@@ -942,60 +942,55 @@ class TaskMappingMixin(object):
 
 
 class ChainBase(object):
-
-    """Chain readers over :meth:`reader_type` for several files.
-    Positional arguments should be file names or file objects.
-    Keyword arguments are passed to the :meth:`reader_type` function.
+    """Chain :meth:`sequence_maker` for several sources into a
+    single iterable. Positional arguments should be sources like
+    file names or file objects. Keyword arguments are passed to
+    the :meth:`sequence_maker` function.
 
     Attributes
     ----------
-    files : :class:`Iterable`
-        Files specified by path or passed as file-like objects
+    sources : :class:`Iterable`
+        Sources for creating new sequences from, such as paths or
+        file-like objects
     kwargs : :class:`Mapping`
-        Additional arguments used to instantiate each reader
+        Additional arguments used to instantiate each sequence
     """
 
-    def __init__(self, *files, **kwargs):
-        self.files = files
+    def __init__(self, *sources, **kwargs):
+        self.sources = sources
         self.kwargs = kwargs
         self._iterator = None
 
     @classmethod
-    def from_iterable(cls, files, **kwargs):
-        return cls(*files, **kwargs)
+    def from_iterable(cls, sources, **kwargs):
+        return cls(*sources, **kwargs)
 
     @classmethod
-    def _make_chain(cls, reader_type):
-        if isinstance(reader_type, type):
-            tp = type('%sChain' % reader_type.__class__.__name__, (cls,), {
-                'reader_type': reader_type
+    def _make_chain(cls, sequence_maker):
+        if isinstance(sequence_maker, type):
+            tp = type('%sChain' % sequence_maker.__class__.__name__, (cls,), {
+                'sequence_maker': sequence_maker
             })
         else:
-            tp = type('%sChain' % "Function", (cls,), {
-                'reader_type': reader_type
+            tp = type('FunctionChain', (cls,), {
+                'sequence_maker': staticmethod(sequence_maker)
             })
         return tp
 
-    def reader_type(self, file):
+    def sequence_maker(self, file):
         raise NotImplementedError()
 
-    def concat_results(self):
-        results = [self._read(arg) for arg in self.files]
-        if pd is not None and all(isinstance(a, pd.DataFrame) for a in results):
-            return pd.concat(results)
-        return np.concatenate(results)
+    def _create_sequence(self, file):
+        return self.sequence_maker(file, **self.kwargs)
 
-    def _read(self, file):
-        return self.reader_type(file, **self.kwargs)
-
-    def _iterate_over_files(self):
-        for f in self.files:
-            with self._read(f) as r:
+    def _iterate_over_series(self):
+        for f in self.sources:
+            with self._create_sequence(f) as r:
                 for item in r:
                     yield item
 
     def __enter__(self):
-        self._iterator = self._iterate_over_files()
+        self._iterator = iter(self._iterate_over_series())
         return self
 
     def __exit__(self, *args, **kwargs):
@@ -1006,7 +1001,7 @@ class ChainBase(object):
 
     def __next__(self):
         if self._iterator is None:
-            self._iterator = self._iterate_over_files()
+            self._iterator = self._iterate_over_series()
         return next(self._iterator)
 
     def next(self):
@@ -1041,7 +1036,21 @@ class ChainBase(object):
         object
             The work item returned by the target function.
         """
-        for f in self.files:
-            with self._read(f) as r:
+        for f in self.sources:
+            with self._create_sequence(f) as r:
                 for result in r.map(target, processes, queue_timeout, args, kwargs, **_kwargs):
                     yield result
+
+
+class TableJoiner(ChainBase):
+    def concatenate(self, results):
+        if pd is not None and all(isinstance(a, pd.DataFrame) for a in results):
+            return pd.concat(results)
+        if isinstance(results[0], np.ndarray):
+            return np.concatenate(results)
+        else:
+            return np.array([b for a in results for b in a])
+
+    def _iterate_over_series(self):
+        results = [self._create_sequence(f) for f in self.sources]
+        return self.concatenate(results)
