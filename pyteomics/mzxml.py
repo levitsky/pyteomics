@@ -320,4 +320,6 @@ def iterfind(source, path, **kwargs):
 
 version_info = xml._make_version_info(MzXML)
 
-chain = aux._make_chain(read, 'read')
+
+# chain = aux._make_chain(read, 'read')
+chain = aux.ChainBase._make_chain(MzXML)

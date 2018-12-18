@@ -58,6 +58,64 @@ def _local_name(element):
     return element.tag
 
 
+def xsd_parser(schema_url):
+    """Parse an XSD file from the specified URL into a schema dictionary
+    that can be used by :class:`XML` parsers to automatically cast data to
+    the appropriate type.
+
+    Parameters
+    ----------
+    schema_url : str
+        The URL to retrieve the schema from
+
+    Returns
+    -------
+    dict
+    """
+    ret = {}
+    if not (schema_url.startswith('http://') or
+            schema_url.startswith('file://')):
+        schema_url = 'file://' + schema_url
+    schema_file = urlopen(schema_url)
+    p = etree.XMLParser(remove_comments=True)
+    schema_tree = etree.parse(schema_file, parser=p)
+    types = {'ints': {'int', 'long', 'nonNegativeInteger', 'positiveInt',
+                      'integer', 'unsignedInt'},
+             'floats': {'float', 'double'},
+             'bools': {'boolean'},
+             'intlists': {'listOfIntegers'},
+             'floatlists': {'listOfFloats'},
+             'charlists': {'listOfChars', 'listOfCharsOrAny'}}
+    for k, val in types.items():
+        tuples = set()
+        for elem in schema_tree.iter():
+            if _local_name(elem) == 'attribute' and elem.attrib.get(
+                    'type', '').split(':')[-1] in val:
+                anc = elem.getparent()
+                anc_name = _local_name(anc)
+                while not (
+                        (anc_name == 'complexType' and 'name' in anc.attrib) or anc_name == 'element'):
+                    anc = anc.getparent()
+                    anc_name = _local_name(anc)
+                    if anc is None:
+                        break
+                else:
+                    if anc_name == 'complexType':
+                        elnames = [x.attrib['name'] for x in
+                                   schema_tree.iter()
+                                   if x.attrib.get('type', '').split(':')[-1] == anc.attrib['name']]
+                    else:
+                        elnames = (anc.attrib['name'],)
+                    for elname in elnames:
+                        tuples.add(
+                            (elname, elem.attrib['name']))
+        ret[k] = tuples
+    ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
+        '//*[local-name()="element"]') if 'name' in elem.attrib and
+        elem.attrib.get('maxOccurs', '1') != '1')
+    return ret
+
+
 class XMLValueConverter(object):
     # Adapted from http://stackoverflow.com/questions/2764269/parsing-an-xsduration-datatype-into-a-python-datetime-timedelta-object
     _duration_parser = re.compile(
@@ -237,49 +295,7 @@ class XML(FileReader):
                 raise PyteomicsError(
                         'Schema information not found in {}.'.format(self.name))
             schema_url = schema.split()[-1]
-            if not (schema_url.startswith('http://') or
-                    schema_url.startswith('file://')):
-                schema_url = 'file://' + schema_url
-            schema_file = urlopen(schema_url)
-            p = etree.XMLParser(remove_comments=True)
-            schema_tree = etree.parse(schema_file, parser=p)
-            types = {'ints': {'int', 'long', 'nonNegativeInteger', 'positiveInt',
-                              'integer', 'unsignedInt'},
-                     'floats': {'float', 'double'},
-                     'bools': {'boolean'},
-                     'intlists': {'listOfIntegers'},
-                     'floatlists': {'listOfFloats'},
-                     'charlists': {'listOfChars', 'listOfCharsOrAny'}}
-            for k, val in types.items():
-                tuples = set()
-                for elem in schema_tree.iter():
-                    if _local_name(elem) == 'attribute' and elem.attrib.get(
-                            'type', '').split(':')[-1] in val:
-                        anc = elem.getparent()
-                        anc_name = _local_name(anc)
-                        while not (
-                                (anc_name == 'complexType'
-                                    and 'name' in anc.attrib)
-                                or anc_name == 'element'):
-                            anc = anc.getparent()
-                            anc_name = _local_name(anc)
-                            if anc is None:
-                                break
-                        else:
-                            if anc_name == 'complexType':
-                                elnames = [x.attrib['name'] for x in
-                                           schema_tree.iter()
-                                           if x.attrib.get('type', ''
-                                               ).split(':')[-1] == anc.attrib['name']]
-                            else:
-                                elnames = (anc.attrib['name'],)
-                            for elname in elnames:
-                                tuples.add(
-                                    (elname, elem.attrib['name']))
-                ret[k] = tuples
-            ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
-                '//*[local-name()="element"]') if 'name' in elem.attrib and
-                elem.attrib.get('maxOccurs', '1') != '1')
+            ret = xsd_parser(schema_url)
         except Exception as e:
             if isinstance(e, (URLError, socket.error, socket.timeout)):
                 warnings.warn("Can't get the {0.file_format} schema for version "
@@ -666,20 +682,6 @@ def _make_version_info(cls):
         A (version, schema URL) tuple, both elements are strings or None.
     """.format(cls)
     return version_info
-
-
-class ByteEncodingOrderedDict(OrderedDict):
-
-    def __getitem__(self, key):
-        try:
-            return super(ByteEncodingOrderedDict, self).__getitem__(key)
-        except KeyError:
-            key = ensure_bytes_single(key)
-            return super(ByteEncodingOrderedDict, self).__getitem__(key)
-
-    def __setitem__(self, key, value):
-        key = ensure_bytes_single(key)
-        return super(ByteEncodingOrderedDict, self).__setitem__(key, value)
 
 
 class ByteCountingXMLScanner(_file_obj):
