@@ -26,6 +26,7 @@ Contents:
    api/mzid
    api/featurexml
    api/trafoxml
+   api/traml
    api/auxiliary
    api/pylab_aux
    api/xml
