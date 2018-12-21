@@ -6,7 +6,7 @@ Summary
 -------
 
 TraML is a standard rich XML-format for targeted mass spectrometry method definitions.
-Please refer to `psidev.info <http://www.psidev.info/index.php?q=node/257>`_
+Please refer to `psidev.info <http://www.psidev.info/traml>`_
 for the detailed specification of the format and structure of TraML files.
 
 This module provides a minimalistic way to extract information from TraML
