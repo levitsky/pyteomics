@@ -9,9 +9,9 @@ except NameError:
     basestring = (str, bytes)
 
 try:
-    from collections import Container, Sized
-except ImportError:
     from collections.abc import Container, Sized
+except ImportError:
+    from collections import Container, Sized
 from bisect import bisect_right
 from contextlib import contextmanager
 

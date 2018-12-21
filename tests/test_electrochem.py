@@ -84,7 +84,5 @@ class ElectrochemTest(unittest.TestCase):
                         'E': 1, 'F': 1, 'G': 1, 'H': 1, '-OH': 1}, i))
 
 
-
-
 if __name__ == '__main__':
     unittest.main()
