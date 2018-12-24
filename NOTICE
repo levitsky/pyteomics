@@ -1,6 +1,11 @@
-When using or redistributing Pyteomics, or parts of it, please cite the following paper:
+When using or redistributing Pyteomics, or parts of it, please cite the following papers:
 
 Goloborodko, A.A.; Levitsky, L.I.; Ivanov, M.V.; and Gorshkov, M.V. (2013)
 "Pyteomics - a Python Framework for Exploratory Data Analysis and Rapid Software
 Prototyping in Proteomics", Journal of The American Society for Mass Spectrometry,
 24(2), 301–304. DOI: `10.1007/s13361-012-0516-6 <http://dx.doi.org/10.1007/s13361-012-0516-6>`_
+
+Levitsky, L.I.; Klein, J.; Ivanov, M.V.; and Gorshkov, M.V. (2018)
+"Pyteomics 4.0: five years of development of a Python proteomics framework",
+Journal of Proteome Research.
+DOI: `10.1021/acs.jproteome.8b00717 <http://dx.doi.org/10.1021/acs.jproteome.8b00717>`_
