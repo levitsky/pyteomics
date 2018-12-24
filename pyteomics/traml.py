@@ -178,5 +178,4 @@ def iterfind(source, path, **kwargs):
 
 version_info = xml._make_version_info(TraML)
 
-
 chain = aux.ChainBase._make_chain(TraML)
