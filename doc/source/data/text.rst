@@ -15,7 +15,7 @@ Reading
 
 :py:func:`pyteomics.mgf.read` function allows iterating through spectrum entries.
 Spectra are represented as :py:class:`dicts`. By default, MS/MS peak lists are stored
-as :py:class:`numpy.ndarray` objects `mass array` and `intensity array`.
+as :py:class:`numpy.ndarray` objects `m/z array` and `intensity array`.
 Fragment charges will be stored in a masked array under the `charge array` key.
 Parameters are stored as a :py:class:`dict` under `params` key.
 

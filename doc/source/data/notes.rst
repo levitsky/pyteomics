@@ -23,6 +23,11 @@ General Notes
        >>>     for spectrum in reader:
        >>>        ...
 
+- Additionally, most modules provide one or several classes which implement different
+  parsing modes, e.g. :py:class:`pyteomics.mgf.MGF` and :py:class:`pyteomics.mgf.IndexedMGF`.
+  Indexed parsers build an index of file entries and thus allow **random access** in addition
+  to **iteration**. See `Indexed Parsers`_ for a detailed description and examples.
+
 - Apart from :py:func:`read`, which reads just one file, all modules described
   here have functions for reading multiple files: :py:func:`chain` and
   :py:func:`chain.from_iterable`.
@@ -34,4 +39,5 @@ General Notes
 
 - Throughout this section we use
   :py:func:`pyteomics.auxiliary.print_tree` to display the structure of the
-  data returned by various parsers.
+  data returned by various parsers. Replace this call with the actual processsing
+  that you need to perform on your files.

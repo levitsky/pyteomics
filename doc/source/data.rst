@@ -10,19 +10,23 @@ results and protein databases.
 
 .. contents:: Document contents
     :backlinks: top
+    :depth: 2
 
 .. include :: data/text.rst
 
 .. include :: data/xml.rst
 
+.. include :: data/indexing.rst
+
 
 FDR estimation and filtering
 ============================
 
-Three modules for reading proteomics search engine output (:py:mod:`tandem`,
-:py:mod:`pepxml` and :py:mod:`mzid`) expose similar functions
-:py:func:`is_decoy`, :py:func:`fdr` and :py:func:`!filter`. These functions
-implement the widely used
+The modules for reading proteomics search engine or post-processing output
+(:py:mod:`tandem`, :py:mod:`pepxml`, :py:mod:`mzid` and :py:mod:`protxml`)
+expose similar functions
+:py:func:`is_decoy`, :py:func:`fdr` and :py:func:`!filter`.
+These functions implement the widely used
 Target-Decoy Approach (TDA) to estimation of False Discovery Rate (FDR).
 
 The :py:func:`is_decoy` function is supposed to determine if a particular
