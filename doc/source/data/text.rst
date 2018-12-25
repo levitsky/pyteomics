@@ -120,6 +120,11 @@ Since version 3.4.3, MGF parsing functionality is encapsulated in a class:
       'useremail': 'leu@altered-state.edu',
       'username': 'Lou Scene'}}
 
+.. note ::
+    :py:class:`MGF`'s support for direct indexing is rudimentary, because it does not in fact keep an index and has
+    to search through the file line-wise on every call. :py:class:`pyteomics.mgf.IndexedMGF` iis designed for
+    random access and more (see `Indexed Parsers`_ for details).
+
 Writing
 .......
 
@@ -172,7 +177,7 @@ MS1
 human-readable format for MS1 data. It allows storing MS1 peak lists and
 exprimental parameters. Just like MS1 format is quite similar to MGF,
 the corresponding module (:py:mod:`pyteomics.ms1`) provides the same functions
-with very similar signatures for reading headers and spectra from files.
+and classes with very similar signatures for reading headers and spectra from files.
 
 Writing is not supported at this time.
 
@@ -236,6 +241,27 @@ or try guessing the header format:
     {'PE': 2, 'gene_id': 'LCE6A', 'GN': 'LCE6A', 'id': 'A0A183', 'taxon': 'HUMAN',
      'SV': 1, 'OS': 'Homo sapiens', 'entry': 'LCE6A_HUMAN',
      'name': 'Late cornified envelope protein 6A', 'db': 'sp'}
+
+Class-based interface
+.....................
+
+The :py:class:`pyteomics.fasta.FASTA` class is available for text-based (old style) parsing
+(the same as shown with :py:func:`read` above). Also, the new binary-mode, indexed parser,
+:py:class:`pyteomics.fasta.IndexedFASTA` implements all the perks of the `Indexed Parsers`_.
+Both classes also have a number of flavor-specific subclasses that implement header parsing.
+
+Additionally, flavored indexed parsers allow accessing the protein entries by the extracted ID field,
+while the regular :py:class:`pyteomics.fasta.IndexedFASTA` uses full description string for identification::
+
+    In [1]: from pyteomics import fasta
+
+    In [2]: db = fasta.IndexedUniProt('sprot_human.fasta') # A SwissProt database
+
+    In [3]: len(db['Q8IYH5'].sequence)
+    Out[3]: 903
+
+    In [4]: db['Q8IYH5'] == db['sp|Q8IYH5|ZZZ3_HUMAN ZZ-type zinc finger-containing protein 3 OS=Homo sapiens GN=ZZZ3 PE=1 SV=1']
+    Out[4]: True
 
 
 Writing
