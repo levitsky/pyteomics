@@ -322,7 +322,8 @@ the :py:meth:`pyteomics.mzid.MzIdentML.get_by_id` method. Alternatively, the
 
 
 .. note:: Since version 3.3, :py:class:`pyteomics.mzid.MzIdentML` objects keep an index of byte
-          offsets for some of the elements. It helps achieve acceptable performance
+          offsets for some of the elements (see `Indexed Parsers`_).
+          Indexing helps achieve acceptable performance
           when using ``retrieve_refs=True``, or when accessing individual elements by their ID.
 
           This behavior can be disabled by passing
@@ -332,6 +333,13 @@ the :py:meth:`pyteomics.mzid.MzIdentML.get_by_id` method. Alternatively, the
           to the :py:class:`MzIdentML` constructor, or to :py:func:`pyteomics.mzid.read`,
           or call the :py:meth:`pyteomics.mzid.MzIdentML.build_id_cache` method
           prior to reading the data.
+
+Reading into a pandas.DataFrame
+...............................
+
+:py:mod:`pyteomics.mzid` also provides a :py:func:`pyteomics.mzid.DataFrame` function
+that reads one or several files into a single Pandas :py:class:`DataFrame`.
+This function requires :py:mod:`pandas`.
 
 
 FeatureXML
