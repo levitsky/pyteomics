@@ -22,8 +22,9 @@
 
      - :py:class:`pyteomics.fasta.FASTABase` - common ancestor, suitable for type checking;
 
-       - :py:class:`pyteomics.fasta.FASTA` - text-mode, sequential parser. Does
-         what the old :py:func:`fasta.read` was doing;
+       - :py:class:`pyteomics.fasta.FASTA` - text-mode, sequential parser; does
+         what the old :py:func:`fasta.read` was doing. Additionally, the following subclasses perform
+         format-specific parsing of FASTA headers:
 
          - :py:class:`pyteomics.fasta.UniProt`;
          - :py:class:`pyteomics.fasta.UniParc`;
@@ -36,7 +37,8 @@
          Supports direct indexing by header string;
 
          - :py:class:`pyteomics.fasta.TwoLayerIndexedFASTA` - additionally supports
-           indexing by extracted header fields;
+           indexing by extracted header fields. Format-specific second indexes are available in
+           subclasses:
 
            - :py:class:`pyteomics.fasta.IndexedUniProt`;
            - :py:class:`pyteomics.fasta.IndexedUniParc`;

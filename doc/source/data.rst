@@ -10,7 +10,7 @@ results and protein databases.
 
 .. contents:: Document contents
     :backlinks: top
-    :depth: 2
+    :depth: 3
 
 .. include :: data/text.rst
 
