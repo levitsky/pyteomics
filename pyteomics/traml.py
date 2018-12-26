@@ -103,15 +103,21 @@ class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
                 elif isinstance(v, dict):
                     key = v['ref']
                 else:
+                    if k != 'ref':
+                        info[k[:-3]] = info.pop(k)
                     continue
                 try:
                     by_id = self.get_by_id(key, retrieve_refs=True)
                 except KeyError:
                     warnings.warn('Ignoring unresolved reference: ' + key)
                 else:
-                    info.update(by_id)
-                    del info[k]
-                    info.pop('id', None)
+                    if k == 'ref':
+                        info.update(by_id)
+                    else:
+                        # by_id.pop('id', None)
+                        info[k[:-3]] = by_id
+                        del info[k]
+
 
 
 def read(source, read_schema=False, iterative=True, use_index=False, huge_tree=False):
