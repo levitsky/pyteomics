@@ -62,6 +62,14 @@ Parser objects can be used as dictionaries mapping entry IDs to entries, or as l
     In [8]: f[1]['params']['title'] # positional indexing
     Out[8]: 'Spectrum 2'
 
+Like dictionaries, indexed parsers support membership testing and :py:func:`len`::
+
+    In [9]: 'Spectrum 1' in f
+    Out[9]: True
+
+    In [10]: len(f)
+    Out[10]: 2
+
 Rich Indexing
 -------------
 
@@ -69,26 +77,26 @@ Indexed parsers also support positional indexing, slices of IDs and integers. ID
 endpoints; integer-based slices exclude the right edge of the interval. With integer indexing, *step*
 is also supported. Here is a self-explanatory demo of indexing functionality using a test file of two spectra::
 
-    In [9]: len(f['Spectrum 1':'Spectrum 2'])
-    Out[9]: 2
-
-    In [10]: len(f['Spectrum 2':'Spectrum 1'])
-    Out[10]: 2
-
-    In [11]: len(f[:])
+    In [11]: len(f['Spectrum 1':'Spectrum 2'])
     Out[11]: 2
 
-    In [12]: len(f[:1])
-    Out[12]: 1
+    In [12]: len(f['Spectrum 2':'Spectrum 1'])
+    Out[12]: 2
 
-    In [13]: len(f[1:0])
-    Out[13]: 0
+    In [13]: len(f[:])
+    Out[13]: 2
 
-    In [14]: len(f[1:0:-1])
+    In [14]: len(f[:1])
     Out[14]: 1
 
-    In [15]: len(f[::2])
-    Out[15]: 1
+    In [15]: len(f[1:0])
+    Out[15]: 0
+
+    In [16]: len(f[1:0:-1])
+    Out[16]: 1
+
+    In [17]: len(f[::2])
+    Out[17]: 1
 
 RT-based indexing
 .................
@@ -96,12 +104,12 @@ RT-based indexing
 In MGF, mzML and mzXML the spectra are usually time-ordered. The corresponding indexed parsers allow accessing the
 spectra by retention time, including slices::
 
-    In [16]: f = mzxml.MzXML('tests/test.mzXML')
+    In [18]: f = mzxml.MzXML('tests/test.mzXML')
 
-    In [17]: spec = f.time[5.5] # get the spectrum closest to this retention time
+    In [19]: spec = f.time[5.5] # get the spectrum closest to this retention time
 
-    In [18]: len(f.time[5.5:6.0]) # get spectra from a range
-    Out[18]: 2
+    In [20]: len(f.time[5.5:6.0]) # get spectra from a range
+    Out[20]: 2
 
 
 RT lookup is performed using binary search.
