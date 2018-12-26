@@ -393,8 +393,7 @@ def iterfind(source, path, **kwargs):
 
 version_info = xml._make_version_info(MzML)
 
-chain = aux._make_chain(read, 'read')
-
+# chain = aux._make_chain(read, 'read')
 
 chain = aux.ChainBase._make_chain(MzML)
 
@@ -408,7 +407,12 @@ class PreIndexedMzML(MzML):
         Build up a `dict` of `dict` of offsets for elements. Calls :meth:`_find_index_list`
         and assigns the return value to :attr:`_offset_index`
         """
-        self._offset_index = self._find_index_list()
+        index = self._find_index_list()
+        if index:
+            self._offset_index = index
+        else:
+            warnings.warn('Could not extract the embedded offset index. Falling back to default indexing procedure.')
+            super(PreIndexedMzML, self)._build_index()
 
     @xml._keepstate
     def _iterparse_index_list(self, offset):
