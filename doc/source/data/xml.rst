@@ -60,15 +60,7 @@ Here is an example of the output:
      -> no combination
 
 Additionally, :py:class:`pyteomics.mzml.MzML` objects support direct indexing
-with spectrum IDs:
-
-.. code-block:: python
-
-    >>> from pyteomics import mzml
-    >>> with mzml.MzML('tests/test.mzML') as reader:
-    >>>    spectrum = reader["controllerType=0 controllerNumber=1 scan=1"]
-    >>>    mz = spectrum['m/z array'] # do something with "spectrum"
-    >>>    ...
+with spectrum IDs and all other features of `Indexed Parsers`_.
 
 :py:class:`pyteomics.mzml.PreIndexedMzML` offers the same functionality,
 but it uses byte offset information found at the end of the file.
@@ -138,7 +130,7 @@ can use the :py:class:`pyteomics.pepxml.PepXML` interface.
 Reading into a pandas.DataFrame
 ...............................
 
-If you like working with tabular data using :py:mod:`pandas`, you can load data from pepXML files
+If you like working with tabular data using :py:mod:`pandas`, you can load pepXML files
 directly into :py:class:`pandas.DataFrames`
 using the :py:func:`pyteomics.pepxml.DataFrame` function. It can read multiple files
 at once (using :py:func:`pyteomics.pepxml.chain`) and return a combined table with
@@ -348,7 +340,8 @@ FeatureXML
 :py:mod:`pyteomics.openms.featurexml` implements a simple parser for **.featureXML** files
 used in the `OpenMS <http://open-ms.sourceforge.net/about/>`_ framework. The usage
 is identical to other XML parsing modules. Since **featureXML** has feature IDs,
-:py:class:`FeatureXML` objects also support direct indexing as well as iteration::
+:py:class:`FeatureXML` objects also support direct indexing as well as iteration, among
+the many features of `Indexed Parsers`_::
 
     >>> from pyteomics.openms import featurexml
 
@@ -374,7 +367,7 @@ TrafoXML
 
 **.trafoXML** is another OpenMS format based on XML. It describes a
 tranformation produced by an RT alignment algorithm. The file basically contains a series
-of `(from; to)` pairs corresponding to original and transformed retention times:
+of `(from; to)` pairs corresponding to original and transformed retention times::
 
    >>> from pyteomics.openms import trafoxml
    >>> from_rt, to_rt = [], []
@@ -389,6 +382,7 @@ of `(from; to)` pairs corresponding to original and transformed retention times:
 
 As always, :py:func:`pyteomics.openms.trafoxml.read`
 and :py:class:`pyteomics.openms.trafoxml.TrafoXML` are interchangeable.
+TrafoXML parsers do not support indexing because there are no IDs for specific data points in this format.
 
 Controlled Vocabularies
 =======================
