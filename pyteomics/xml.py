@@ -598,13 +598,11 @@ class XML(FileReader):
         -------
         out : :py:class:`dict` or :py:const:`None`
         """
-        elem = None
         if not self._id_dict:
             elem = self._find_by_id_no_reset(elem_id)
-        elif elem_id in self._id_dict:
+        else:
             elem = self._id_dict[elem_id]
-        if elem is not None:
-            return self._get_info_smart(elem, **kwargs)
+        return self._get_info_smart(elem, **kwargs)
 
 # XPath emulator tools
 pattern_path = re.compile(r'([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')

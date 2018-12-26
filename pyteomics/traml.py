@@ -1,6 +1,6 @@
 """
 traml - reader for targeted mass spectrometry transition data in TraML format
-=======================================================
+=============================================================================
 
 Summary
 -------
@@ -59,6 +59,7 @@ This module requires :py:mod:`lxml`
 #   limitations under the License.
 
 
+import warnings
 from . import xml, _schema_defaults, auxiliary as aux
 
 
@@ -79,6 +80,10 @@ class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
         'Compound',
     }
 
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault('retrieve_refs', True)
+        super(TraML, self).__init__(*args, **kwargs)
+
     def _get_info_smart(self, element, **kw):
         kwargs = dict(kw)
         rec = kwargs.pop('recursive', None)
@@ -87,6 +92,26 @@ class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
             recursive=(rec if rec is not None else True),
             **kwargs)
         return info
+
+    def _retrieve_refs(self, info, **kwargs):
+        """Retrieves and embeds the data for each attribute in `info` that
+        ends in `Ref`. Removes the id attribute from `info`"""
+        for k, v in dict(info).items():
+            if k[-3:] in {'Ref', 'ref'}:
+                if isinstance(v, str):
+                    key = v
+                elif isinstance(v, dict):
+                    key = v['ref']
+                else:
+                    continue
+                try:
+                    by_id = self.get_by_id(key, retrieve_refs=True)
+                except KeyError:
+                    warnings.warn('Ignoring unresolved reference: ' + key)
+                else:
+                    info.update(by_id)
+                    del info[k]
+                    info.pop('id', None)
 
 
 def read(source, read_schema=False, iterative=True, use_index=False, huge_tree=False):

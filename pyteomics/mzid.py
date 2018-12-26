@@ -139,8 +139,9 @@ class MzIdentML(xml.IndexSavingXML, xml.MultiProcessingXML):
         ends in _ref. Removes the id attribute from `info`"""
         for k, v in dict(info).items():
             if k.endswith('_ref'):
-                by_id = self.get_by_id(v, retrieve_refs=True)
-                if by_id is None:
+                try:
+                    by_id = self.get_by_id(v, retrieve_refs=True)
+                except KeyError:
                     warnings.warn('Ignoring unresolved reference: ' + v)
                 else:
                     info.update(by_id)
