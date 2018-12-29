@@ -34,7 +34,7 @@ import operator as op
 import ast
 import os
 import warnings
-from collections import OrderedDict
+from collections import OrderedDict, namedtuple
 from lxml import etree
 import numpy as np
 
@@ -167,6 +167,20 @@ class XMLValueConverter(object):
         }
 
 
+'''A holder for semantic parameters used in several common XML formats
+
+Attributes
+----------
+name: :class:`~.cvstr`
+    The name of the attribute, carrying the accession and unit information
+value: :class:`~.unitfloat`, :class:`~.unitint` or :class:`~.unitstr`
+    The value of the parameter
+type: :class:`str`
+    The parameter's local XML tag name.
+'''
+_XMLParam = namedtuple("XMLParam", ("name", "value", "type"))
+
+
 class XML(FileReader):
     """Base class for all format-specific XML parsers. The instances can be used
     as context managers and as iterators.
@@ -185,6 +199,8 @@ class XML(FileReader):
 
     # Configurable plugin logic
     _converters = XMLValueConverter.converters()
+
+    _promote_empty_param_to_name = False
 
     # Must be implemented by subclasses
     def _get_info_smart(self, element, **kwargs):
@@ -342,7 +358,23 @@ class XML(FileReader):
                 value = unitfloat(value, unit_info)
         except ValueError:
             value = unitstr(value, unit_info)
-        return {cvstr(attribs['name'], accession, unit_accesssion): value}
+
+        # return {cvstr(attribs['name'], accession, unit_accesssion): value}
+        return _XMLParam(cvstr(attribs['name'], accession, unit_accesssion), value, _local_name(element))
+
+    def _find_immediate_params(self, element, **kwargs):
+        return element.xpath(
+            './*[local-name()="cvParam" or local-name()="userParam" or local-name()="UserParam"]')
+
+    def _insert_param(self, info_dict, param):
+        key = param.name
+        if key in info_dict:
+            if isinstance(info_dict[key], list):
+                info_dict[key].append(param.value)
+            else:
+                info_dict[key] = [info_dict[key], param.value]
+        else:
+            info_dict[key] = param.value
 
     def _get_info(self, element, **kwargs):
         """Extract info from element's attributes, possibly recursive.
@@ -357,28 +389,33 @@ class XML(FileReader):
 
         info = dict(element.attrib)
         # process subelements
+        params = []
         if kwargs.get('recursive'):
             for child in element.iterchildren():
                 cname = _local_name(child)
                 if cname in {'cvParam', 'userParam', 'UserParam'}:
                     newinfo = self._handle_param(child, **kwargs)
-                    if not ('name' in info and 'name' in newinfo):
-                        for key in set(info) & set(newinfo):
-                            if isinstance(info[key], list):
-                                info[key].append(newinfo.pop(key))
-                            else:
-                                info[key] = [info[key], newinfo.pop(key)]
-                        info.update(newinfo)
-                    else:
-                        if not isinstance(info['name'], list):
-                            info['name'] = [info['name']]
-                        info['name'].append(newinfo.pop('name'))
+                    params.append(newinfo)
                 else:
                     if cname not in schema_info['lists']:
                         info[cname] = self._get_info_smart(child, ename=cname, **kwargs)
                     else:
                         info.setdefault(cname, []).append(
-                                self._get_info_smart(child, ename=cname, **kwargs))
+                            self._get_info_smart(child, ename=cname, **kwargs))
+        else:
+            # handle the case where we do not want to unpack all children, but
+            # *Param tags are considered part of the current entity, semantically
+            for child in self._find_immediate_params(element, **kwargs):
+                params.append(self._handle_param(child, **kwargs))
+
+        empty_values = []
+        for param in params:
+            self._insert_param(info, param)
+            if self._promote_empty_param_to_name and not param.value:
+                empty_values.append(param)
+
+        if len(empty_values) == 1 and 'name' not in info:
+            info['name'] = empty_values[0].name
 
         # process element text
         if element.text:
