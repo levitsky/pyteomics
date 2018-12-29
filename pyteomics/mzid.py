@@ -96,7 +96,6 @@ This module requires :py:mod:`lxml`.
 #   limitations under the License.
 
 import warnings
-warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
 from . import auxiliary as aux
 from . import xml, _schema_defaults
 
