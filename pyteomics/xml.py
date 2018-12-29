@@ -167,18 +167,23 @@ class XMLValueConverter(object):
         }
 
 
-'''A holder for semantic parameters used in several common XML formats
+class _XMLParam(namedtuple("XMLParam", ("name", "value", "type"))):
+    '''A holder for semantic parameters used in several common XML formats
 
-Attributes
-----------
-name: :class:`~.cvstr`
-    The name of the attribute, carrying the accession and unit information
-value: :class:`~.unitfloat`, :class:`~.unitint` or :class:`~.unitstr`
-    The value of the parameter
-type: :class:`str`
-    The parameter's local XML tag name.
-'''
-_XMLParam = namedtuple("XMLParam", ("name", "value", "type"))
+    Attributes
+    ----------
+    name: :class:`~.cvstr`
+        The name of the attribute, carrying the accession and unit information
+    value: :class:`~.unitfloat`, :class:`~.unitint` or :class:`~.unitstr`
+        The value of the parameter
+    type: :class:`str`
+        The parameter's local XML tag name.
+    '''
+    __slots__ = ()
+
+    def is_empty(self):
+        value = self.value
+        return value == "" or value is None
 
 
 class XML(FileReader):
@@ -411,7 +416,7 @@ class XML(FileReader):
         empty_values = []
         for param in params:
             self._insert_param(info, param)
-            if self._promote_empty_param_to_name and not param.value:
+            if self._promote_empty_param_to_name and param.is_empty():
                 empty_values.append(param)
 
         if len(empty_values) == 1 and 'name' not in info:
