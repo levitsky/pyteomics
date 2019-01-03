@@ -112,6 +112,14 @@ class MzIdentML(xml.IndexSavingXML, xml.MultiProcessingXML):
         'PeptideEvidence', 'SpectrumIdentificationItem', 'SearchDatabase',
         'DBSequence', 'SpectraData', 'Peptide'}
 
+    _element_handlers = xml.XML._element_handlers.copy()
+    _element_handlers.update({
+        "Modification": xml.XML._promote_empty_parameter_to_name,
+        "SpectrumIDFormat": xml.XML._promote_empty_parameter_to_name,
+        "FileFormat": xml.XML._promote_empty_parameter_to_name,
+        "Role": xml.XML._promote_empty_parameter_to_name
+    })
+
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('retrieve_refs', True)
         super(MzIdentML, self).__init__(*args, **kwargs)

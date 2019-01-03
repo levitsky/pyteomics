@@ -200,12 +200,11 @@ class XML(FileReader):
     _schema_location_param = 'schemaLocation'
     _default_id_attr = 'id'
     _huge_tree = False
-    _retrieve_refs_enabled = None # only some subclasses implement this
+    _retrieve_refs_enabled = None  # only some subclasses implement this
 
     # Configurable plugin logic
     _converters = XMLValueConverter.converters()
-
-    _promote_empty_param_to_name = False
+    _element_handlers = {}
 
     # Must be implemented by subclasses
     def _get_info_smart(self, element, **kwargs):
@@ -381,6 +380,20 @@ class XML(FileReader):
         else:
             info_dict[key] = param.value
 
+    def _promote_empty_parameter_to_name(self, info, params):
+        empty_values = []
+        not_empty_values = []
+        for param in params:
+            if param.is_empty():
+                empty_values.append(param)
+            else:
+                not_empty_values.append(param)
+
+        if len(empty_values) == 1 and 'name' not in info:
+            info['name'] = empty_values[0].name
+            return info, not_empty_values
+        return info, params
+
     def _get_info(self, element, **kwargs):
         """Extract info from element's attributes, possibly recursive.
         <cvParam> and <userParam> elements are treated in a special way."""
@@ -413,14 +426,12 @@ class XML(FileReader):
             for child in self._find_immediate_params(element, **kwargs):
                 params.append(self._handle_param(child, **kwargs))
 
-        empty_values = []
+        handler = self._element_handlers.get(name)
+        if handler is not None:
+            info, params = handler(self, info, params)
+
         for param in params:
             self._insert_param(info, param)
-            if self._promote_empty_param_to_name and param.is_empty():
-                empty_values.append(param)
-
-        if len(empty_values) == 1 and 'name' not in info:
-            info['name'] = empty_values[0].name
 
         # process element text
         if element.text:
