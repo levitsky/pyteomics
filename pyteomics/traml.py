@@ -82,7 +82,9 @@ class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
 
     _element_handlers = xml.XML._element_handlers.copy()
     _element_handlers.update({
-        "Modification": xml.XML._promote_empty_parameter_to_name,
+        'Modification': xml.XML._promote_empty_parameter_to_name,
+        'Interpretation': xml.XML._promote_empty_parameter_to_name,
+        'Software': xml.XML._promote_empty_parameter_to_name,
     })
 
     def __init__(self, *args, **kwargs):
