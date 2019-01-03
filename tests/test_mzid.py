@@ -19,10 +19,6 @@ class MzidTest(unittest.TestCase):
                     psms = list(reader)
                     self.assertEqual(psms, mzid_spectra[(rec, refs)])
 
-    def test_skip_empty_values(self):
-        with MzIdentML(self.path, skip_empty_cvparam_values=True, recursive=True, retrieve_refs=True) as f:
-            self.assertEqual(list(f), mzid_spectra[(True, True)])
-
     def test_unit_info(self):
         with MzIdentML(self.path) as handle:
             for protocol in handle.iterfind("SpectrumIdentificationProtocol"):
