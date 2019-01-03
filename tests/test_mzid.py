@@ -6,7 +6,6 @@ from pyteomics.mzid import MzIdentML, read, chain
 from pyteomics import auxiliary as aux
 from data import mzid_spectra
 from itertools import product
-import operator as op
 
 class MzidTest(unittest.TestCase):
     maxDiff = None
