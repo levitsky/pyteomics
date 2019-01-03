@@ -6,6 +6,7 @@ from pyteomics.mzid import MzIdentML, read, chain
 from pyteomics import auxiliary as aux
 from data import mzid_spectra
 from itertools import product
+import operator as op
 
 class MzidTest(unittest.TestCase):
     maxDiff = None
@@ -35,6 +36,10 @@ class MzidTest(unittest.TestCase):
         datum = next(gen)
         index = aux.cvquery(datum)
         assert index['MS:1000774'] == 'multiple peak list nativeID format'
+
+    def test_map(self):
+        self.assertEqual(len(mzid_spectra[(1, 1)]),
+            sum(1 for _ in MzIdentML(self.path).map()))
 
 
 if __name__ == '__main__':

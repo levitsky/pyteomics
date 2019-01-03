@@ -108,7 +108,7 @@ class MzIdentML(xml.IndexSavingXML, xml.MultiProcessingXML):
     _default_version = '1.1.0'
     _default_iter_tag = 'SpectrumIdentificationResult'
     _structures_to_flatten = {'Fragmentation'}
-    _indexed_tags = {
+    _indexed_tags = {'SpectrumIdentificationResult',
         'PeptideEvidence', 'SpectrumIdentificationItem', 'SearchDatabase',
         'DBSequence', 'SpectraData', 'Peptide'}
 
