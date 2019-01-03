@@ -4,6 +4,7 @@ pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir
 
 import unittest
 from itertools import product
+import operator as op
 from data import transitions
 from pyteomics.traml import TraML, read, chain
 
@@ -16,6 +17,11 @@ class FeatureXMLTest(unittest.TestCase):
                     lambda x, **kw: chain.from_iterable([x], **kw)]:
                 with func(self.path, read_schema=rs, iterative=it, use_index=ui, retrieve_refs=rr) as r:
                     self.assertEqual(transitions[rr], list(r))
+
+    def test_map(self):
+        self.assertEqual(sorted(transitions[1], key=op.itemgetter('id')),
+            sorted(TraML(self.path).map(), key=op.itemgetter('id')))
+
 
 if __name__ == '__main__':
     unittest.main()
