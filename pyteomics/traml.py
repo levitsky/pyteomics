@@ -80,6 +80,11 @@ class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
         'Compound',
     }
 
+    _element_handlers = xml.XML._element_handlers.copy()
+    _element_handlers.update({
+        "Modification": xml.XML._promote_empty_parameter_to_name,
+    })
+
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('retrieve_refs', True)
         super(TraML, self).__init__(*args, **kwargs)
