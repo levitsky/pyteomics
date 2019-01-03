@@ -127,13 +127,18 @@ class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
 
 
 
-def read(source, read_schema=False, iterative=True, use_index=False, huge_tree=False):
+def read(source, retrieve_refs=True, read_schema=False, iterative=True, use_index=False, huge_tree=False):
     """Parse `source` and iterate through transitions.
 
     Parameters
     ----------
     source : str or file
         A path to a target TraML file or the file object itself.
+
+    retrieve_refs : bool, optional
+        If :py:const:`True`, additional information from references will be
+        automatically added to the results. The file processing time will
+        increase. Default is :py:const:`True`.
 
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
@@ -159,11 +164,11 @@ def read(source, read_schema=False, iterative=True, use_index=False, huge_tree=F
 
     Returns
     -------
-    out : iterator
-       An iterator over the dicts with spectrum properties.
+    out : TraML
+       A :py:class:`TraML` object, suitable for iteration and possibly random access.
     """
 
-    return TraML(source, read_schema=read_schema, iterative=iterative,
+    return TraML(source, retrieve_refs=retrieve_refs, read_schema=read_schema, iterative=iterative,
                  use_index=use_index, huge_tree=huge_tree)
 
 
