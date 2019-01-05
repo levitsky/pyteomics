@@ -1,10 +1,10 @@
 import os
-from os import path
 import pyteomics
-pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
+pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
 from itertools import product
 import unittest
-from pyteomics.mzxml import *
+from pyteomics.mzxml import MzXML, read, chain
+from pyteomics import xml
 from data import mzxml_spectra
 import tempfile
 import shutil
@@ -40,29 +40,27 @@ class MzXMLTest(unittest.TestCase):
 
     def test_prebuild_index(self):
         test_dir = tempfile.mkdtemp()
-        work_path = path.join(test_dir, self.path)
+        work_path = os.path.join(test_dir, self.path)
         with open(work_path, 'w') as dest, open(self.path) as source:
             dest.write(source.read())
         assert dest.closed
         with MzXML(work_path, use_index=True) as inst:
-            offsets_exist = path.exists(inst._byte_offset_filename)
+            offsets_exist = os.path.exists(inst._byte_offset_filename)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
-            self.assertTrue(isinstance(inst._offset_index, xml.FlatTagSpecificXMLByteIndex))
-            self.assertTrue(not isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
+            self.assertTrue(isinstance(inst._offset_index, xml.HierarchicalOffsetIndex))
         self.assertTrue(inst._source.closed)
         MzXML.prebuild_byte_offset_file(work_path)
         with MzXML(work_path, use_index=True) as inst:
-            offsets_exist = path.exists(inst._byte_offset_filename)
+            offsets_exist = os.path.exists(inst._byte_offset_filename)
             self.assertTrue(offsets_exist)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
-            self.assertTrue(isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
+            self.assertTrue(isinstance(inst._offset_index, xml.HierarchicalOffsetIndex))
         self.assertTrue(inst._source.closed)
         os.remove(inst._byte_offset_filename)
         with MzXML(work_path, use_index=True) as inst:
-            offsets_exist = path.exists(inst._byte_offset_filename)
+            offsets_exist = os.path.exists(inst._byte_offset_filename)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
-            self.assertTrue(isinstance(inst._offset_index, xml.FlatTagSpecificXMLByteIndex))
-            self.assertTrue(not isinstance(inst._offset_index, xml.PrebuiltOffsetIndex))
+            self.assertTrue(isinstance(inst._offset_index, xml.HierarchicalOffsetIndex))
         self.assertTrue(inst._source.closed)
         shutil.rmtree(test_dir, True)
 

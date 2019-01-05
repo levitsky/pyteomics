@@ -28,33 +28,92 @@ This module requres :py:mod:`lxml` and :py:mod:`numpy`.
 #   limitations under the License.
 
 import re
-import warnings
-warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 import socket
 from traceback import format_exc
 import operator as op
 import ast
 import os
-import json
-import numpy as np
+import warnings
+from collections import OrderedDict, namedtuple
 from lxml import etree
-from collections import OrderedDict, defaultdict
-from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj
+import numpy as np
+
+from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj, HierarchicalOffsetIndex
 from .auxiliary import unitint, unitfloat, unitstr, cvstr
 from .auxiliary import _keepstate_method as _keepstate
 from .auxiliary import BinaryDataArrayTransformer
+from .auxiliary import TaskMappingMixin, IndexedReaderMixin
 
 try: # Python 2.7
     from urllib2 import urlopen, URLError
 except ImportError: # Python 3.x
     from urllib.request import urlopen, URLError
 
+# warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 
 def _local_name(element):
     """Strip namespace from the XML element's name"""
     if element.tag and element.tag[0] == '{':
         return element.tag.rpartition('}')[2]
     return element.tag
+
+
+def xsd_parser(schema_url):
+    """Parse an XSD file from the specified URL into a schema dictionary
+    that can be used by :class:`XML` parsers to automatically cast data to
+    the appropriate type.
+
+    Parameters
+    ----------
+    schema_url : str
+        The URL to retrieve the schema from
+
+    Returns
+    -------
+    dict
+    """
+    ret = {}
+    if not (schema_url.startswith('http://') or
+            schema_url.startswith('file://')):
+        schema_url = 'file://' + schema_url
+    schema_file = urlopen(schema_url)
+    p = etree.XMLParser(remove_comments=True)
+    schema_tree = etree.parse(schema_file, parser=p)
+    types = {'ints': {'int', 'long', 'nonNegativeInteger', 'positiveInt',
+                      'integer', 'unsignedInt'},
+             'floats': {'float', 'double'},
+             'bools': {'boolean'},
+             'intlists': {'listOfIntegers'},
+             'floatlists': {'listOfFloats'},
+             'charlists': {'listOfChars', 'listOfCharsOrAny'}}
+    for k, val in types.items():
+        tuples = set()
+        for elem in schema_tree.iter():
+            if _local_name(elem) == 'attribute' and elem.attrib.get(
+                    'type', '').split(':')[-1] in val:
+                anc = elem.getparent()
+                anc_name = _local_name(anc)
+                while not (
+                        (anc_name == 'complexType' and 'name' in anc.attrib) or anc_name == 'element'):
+                    anc = anc.getparent()
+                    anc_name = _local_name(anc)
+                    if anc is None:
+                        break
+                else:
+                    if anc_name == 'complexType':
+                        elnames = [x.attrib['name'] for x in
+                                   schema_tree.iter()
+                                   if x.attrib.get('type', '').split(':')[-1] == anc.attrib['name']]
+                    else:
+                        elnames = (anc.attrib['name'],)
+                    for elname in elnames:
+                        tuples.add(
+                            (elname, elem.attrib['name']))
+        ret[k] = tuples
+    ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
+        '//*[local-name()="element"]') if 'name' in elem.attrib and
+        elem.attrib.get('maxOccurs', '1') != '1')
+    return ret
 
 
 class XMLValueConverter(object):
@@ -108,6 +167,25 @@ class XMLValueConverter(object):
         }
 
 
+class _XMLParam(namedtuple("XMLParam", ("name", "value", "type"))):
+    '''A holder for semantic parameters used in several common XML formats
+
+    Attributes
+    ----------
+    name: :class:`~.cvstr`
+        The name of the attribute, carrying the accession and unit information
+    value: :class:`~.unitfloat`, :class:`~.unitint` or :class:`~.unitstr`
+        The value of the parameter
+    type: :class:`str`
+        The parameter's local XML tag name.
+    '''
+    __slots__ = ()
+
+    def is_empty(self):
+        value = self.value
+        return value == "" or value is None
+
+
 class XML(FileReader):
     """Base class for all format-specific XML parsers. The instances can be used
     as context managers and as iterators.
@@ -122,11 +200,11 @@ class XML(FileReader):
     _schema_location_param = 'schemaLocation'
     _default_id_attr = 'id'
     _huge_tree = False
-    _skip_empty_cvparam_values = False
-    _retrieve_refs_enabled = None # only some subclasses implement this
+    _retrieve_refs_enabled = None  # only some subclasses implement this
 
     # Configurable plugin logic
     _converters = XMLValueConverter.converters()
+    _element_handlers = {}
 
     # Must be implemented by subclasses
     def _get_info_smart(self, element, **kwargs):
@@ -160,14 +238,6 @@ class XML(FileReader):
             Default is :py:const:`False`.
             Enable this option for trusted files to avoid XMLSyntaxError exceptions
             (e.g. `XMLSyntaxError: xmlSAX2Characters: huge text node`).
-        skip_empty_cvparam_values : bool, optional
-            .. warning ::
-                This parameter affects the format of the produced dictionaries.
-
-            By default, when parsing cvParam elements, "value" attributes with empty values are not
-            treated differently from others. When this parameter is set to :py:const:`True`,
-            these empty values are flattened. You can enable this to obtain the same output structure
-            regardless of the presence of an empty "value". Default is :py:const:`False`.
         """
 
         super(XML, self).__init__(source, 'rb', self.iterfind, False,
@@ -188,7 +258,6 @@ class XML(FileReader):
 
         self._converters_items = self._converters.items()
         self._huge_tree = kwargs.get('huge_tree', self._huge_tree)
-        self._skip_empty_cvparam_values = kwargs.get('skip_empty_cvparam_values', False)
         self._retrieve_refs_enabled = kwargs.get('retrieve_refs')
 
     def __reduce_ex__(self, protocol):
@@ -200,7 +269,6 @@ class XML(FileReader):
     def __getstate__(self):
         state = super(XML, self).__getstate__()
         state['_huge_tree'] = self._huge_tree
-        state['_skip_empty_cvparam_values'] = self._skip_empty_cvparam_values
         state['_retrieve_refs_enabled'] = self._retrieve_refs_enabled
         state['_id_dict'] = self._id_dict
         return state
@@ -208,7 +276,6 @@ class XML(FileReader):
     def __setstate__(self, state):
         super(XML, self).__setstate__(state)
         self._huge_tree = state['_huge_tree']
-        self._skip_empty_cvparam_values = state['_skip_empty_cvparam_values']
         self._retrieve_refs_enabled = state['_retrieve_refs_enabled']
         self._id_dict = state['_id_dict']
 
@@ -248,49 +315,7 @@ class XML(FileReader):
                 raise PyteomicsError(
                         'Schema information not found in {}.'.format(self.name))
             schema_url = schema.split()[-1]
-            if not (schema_url.startswith('http://') or
-                    schema_url.startswith('file://')):
-                schema_url = 'file://' + schema_url
-            schema_file = urlopen(schema_url)
-            p = etree.XMLParser(remove_comments=True)
-            schema_tree = etree.parse(schema_file, parser=p)
-            types = {'ints': {'int', 'long', 'nonNegativeInteger', 'positiveInt',
-                              'integer', 'unsignedInt'},
-                     'floats': {'float', 'double'},
-                     'bools': {'boolean'},
-                     'intlists': {'listOfIntegers'},
-                     'floatlists': {'listOfFloats'},
-                     'charlists': {'listOfChars', 'listOfCharsOrAny'}}
-            for k, val in types.items():
-                tuples = set()
-                for elem in schema_tree.iter():
-                    if _local_name(elem) == 'attribute' and elem.attrib.get(
-                            'type', '').split(':')[-1] in val:
-                        anc = elem.getparent()
-                        anc_name = _local_name(anc)
-                        while not (
-                                (anc_name == 'complexType'
-                                    and 'name' in anc.attrib)
-                                or anc_name == 'element'):
-                            anc = anc.getparent()
-                            anc_name = _local_name(anc)
-                            if anc is None:
-                                break
-                        else:
-                            if anc_name == 'complexType':
-                                elnames = [x.attrib['name'] for x in
-                                           schema_tree.iter()
-                                           if x.attrib.get('type', ''
-                                               ).split(':')[-1] == anc.attrib['name']]
-                            else:
-                                elnames = (anc.attrib['name'],)
-                            for elname in elnames:
-                                tuples.add(
-                                    (elname, elem.attrib['name']))
-                ret[k] = tuples
-            ret['lists'] = set(elem.attrib['name'] for elem in schema_tree.xpath(
-                '//*[local-name()="element"]') if 'name' in elem.attrib and
-                elem.attrib.get('maxOccurs', '1') != '1')
+            ret = xsd_parser(schema_url)
         except Exception as e:
             if isinstance(e, (URLError, socket.error, socket.timeout)):
                 warnings.warn("Can't get the {0.file_format} schema for version "
@@ -326,21 +351,48 @@ class XML(FileReader):
         unit_accesssion = None
         if 'unitCvRef' in attribs or 'unitName' in attribs:
             unit_accesssion = attribs.get('unitAccession')
-            unit_name = attribs.get("unitName", unit_accesssion)
+            unit_name = attribs.get('unitName', unit_accesssion)
             unit_info = unit_name
-        accession = attribs.get("accession")
-        if 'value' in attribs and (not self._skip_empty_cvparam_values or
-            attribs['value'] != ''):
-            try:
-                if attribs.get('type') in types:
-                    value = types[attribs['type']](attribs['value'], unit_info)
-                else:
-                    value = unitfloat(attribs['value'], unit_info)
-            except ValueError:
-                value = unitstr(attribs['value'], unit_info)
-            return {cvstr(attribs['name'], accession, unit_accesssion): value}
+        accession = attribs.get('accession')
+        value = attribs.get('value', '')
+        try:
+            if attribs.get('type') in types:
+                value = types[attribs['type']](value, unit_info)
+            else:
+                value = unitfloat(value, unit_info)
+        except ValueError:
+            value = unitstr(value, unit_info)
+
+        # return {cvstr(attribs['name'], accession, unit_accesssion): value}
+        return _XMLParam(cvstr(attribs['name'], accession, unit_accesssion), value, _local_name(element))
+
+    def _find_immediate_params(self, element, **kwargs):
+        return element.xpath(
+            './*[local-name()="cvParam" or local-name()="userParam" or local-name()="UserParam"]')
+
+    def _insert_param(self, info_dict, param):
+        key = param.name
+        if key in info_dict:
+            if isinstance(info_dict[key], list):
+                info_dict[key].append(param.value)
+            else:
+                info_dict[key] = [info_dict[key], param.value]
         else:
-            return {'name': cvstr(attribs['name'], accession, unit_accesssion)}
+            info_dict[key] = param.value
+
+    def _promote_empty_parameter_to_name(self, info, params):
+        empty_values = []
+        not_empty_values = []
+        for param in params:
+            if param.is_empty():
+                empty_values.append(param)
+            else:
+                not_empty_values.append(param)
+
+        if len(empty_values) == 1 and 'name' not in info:
+            info['name'] = empty_values[0].name
+            return info, not_empty_values
+        return info, params
 
     def _get_info(self, element, **kwargs):
         """Extract info from element's attributes, possibly recursive.
@@ -355,28 +407,31 @@ class XML(FileReader):
 
         info = dict(element.attrib)
         # process subelements
+        params = []
         if kwargs.get('recursive'):
             for child in element.iterchildren():
                 cname = _local_name(child)
                 if cname in {'cvParam', 'userParam', 'UserParam'}:
                     newinfo = self._handle_param(child, **kwargs)
-                    if not ('name' in info and 'name' in newinfo):
-                        for key in set(info) & set(newinfo):
-                            if isinstance(info[key], list):
-                                info[key].append(newinfo.pop(key))
-                            else:
-                                info[key] = [info[key], newinfo.pop(key)]
-                        info.update(newinfo)
-                    else:
-                        if not isinstance(info['name'], list):
-                            info['name'] = [info['name']]
-                        info['name'].append(newinfo.pop('name'))
+                    params.append(newinfo)
                 else:
                     if cname not in schema_info['lists']:
                         info[cname] = self._get_info_smart(child, ename=cname, **kwargs)
                     else:
                         info.setdefault(cname, []).append(
-                                self._get_info_smart(child, ename=cname, **kwargs))
+                            self._get_info_smart(child, ename=cname, **kwargs))
+        else:
+            # handle the case where we do not want to unpack all children, but
+            # *Param tags are considered part of the current entity, semantically
+            for child in self._find_immediate_params(element, **kwargs):
+                params.append(self._handle_param(child, **kwargs))
+
+        handler = self._element_handlers.get(name)
+        if handler is not None:
+            info, params = handler(self, info, params)
+
+        for param in params:
+            self._insert_param(info, param)
 
         # process element text
         if element.text:
@@ -445,8 +500,30 @@ class XML(FileReader):
              "Do not use `retrieve_refs=True`.").format(
                 self.__class__.__name__))
 
-    @_keepstate
     def iterfind(self, path, **kwargs):
+        """Parse the XML and yield info on elements with specified local
+        name or by specified "XPath".
+
+        Parameters
+        ----------
+        path : str
+            Element name or XPath-like expression. Only local names separated
+            with slashes are accepted. An asterisk (`*`) means any element.
+            You can specify a single condition in the end, such as:
+            ``"/path/to/element[some_value>1.5]"``
+            Note: you can do much more powerful filtering using plain Python.
+            The path can be absolute or "free". Please don't specify
+            namespaces.
+        **kwargs : passed to :py:meth:`self._get_info_smart`.
+
+        Returns
+        -------
+        out : iterator
+        """
+        return Iterfind(self, path, **kwargs)
+
+    @_keepstate
+    def _iterfind_impl(self, path, **kwargs):
         """Parse the XML and yield info on elements with specified local
         name or by specified "XPath".
 
@@ -558,6 +635,7 @@ class XML(FileReader):
                     return elem
                 if not found:
                     elem.clear()
+        raise KeyError(elem_id)
 
     @_keepstate
     def get_by_id(self, elem_id, **kwargs):
@@ -573,13 +651,11 @@ class XML(FileReader):
         -------
         out : :py:class:`dict` or :py:const:`None`
         """
-        elem = None
         if not self._id_dict:
             elem = self._find_by_id_no_reset(elem_id)
-        elif elem_id in self._id_dict:
+        else:
             elem = self._id_dict[elem_id]
-        if elem is not None:
-            return self._get_info_smart(elem, **kwargs)
+        return self._get_info_smart(elem, **kwargs)
 
 # XPath emulator tools
 pattern_path = re.compile(r'([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
@@ -659,20 +735,6 @@ def _make_version_info(cls):
     return version_info
 
 
-class ByteEncodingOrderedDict(OrderedDict):
-
-    def __getitem__(self, key):
-        try:
-            return super(ByteEncodingOrderedDict, self).__getitem__(key)
-        except KeyError:
-            key = ensure_bytes_single(key)
-            return super(ByteEncodingOrderedDict, self).__getitem__(key)
-
-    def __setitem__(self, key, value):
-        key = ensure_bytes_single(key)
-        return super(ByteEncodingOrderedDict, self).__setitem__(key, value)
-
-
 class ByteCountingXMLScanner(_file_obj):
     """
     Carry out the construction of a byte offset index for `source` XML file
@@ -725,7 +787,7 @@ class ByteCountingXMLScanner(_file_obj):
         running = True
         while running:
             buff = f.read(read_size)
-            if len(buff) == 0:
+            if not buff:
                 running = False
                 buff = tail
             else:
@@ -775,20 +837,24 @@ class ByteCountingXMLScanner(_file_obj):
 
         Returns
         -------
-        defaultdict(ByteEncodingOrderedDict)
-            Mapping from tag type to ByteEncodingOrderedDict from identifier to byte offset
+        defaultdict(dict)
+            Mapping from tag type to dict from identifier to byte offset
         """
         if lookup_id_key_mapping is None:
             lookup_id_key_mapping = {}
+        lookup_id_key_mapping = {ensure_bytes_single(key): ensure_bytes_single(value)
+            for key, value in lookup_id_key_mapping.items()}
 
         for name in self.indexed_tags:
-            lookup_id_key_mapping.setdefault(name, "id")
-            lookup_id_key_mapping[name] = ensure_bytes_single(lookup_id_key_mapping[name])
+            bname = ensure_bytes_single(name)
+            lookup_id_key_mapping.setdefault(bname, 'id')
+            lookup_id_key_mapping[bname] = ensure_bytes_single(lookup_id_key_mapping[bname])
 
-        indices = defaultdict(ByteEncodingOrderedDict)
+        indices = HierarchicalOffsetIndex()
         g = self._generate_offsets()
         for offset, offset_type, attrs in g:
-            indices[offset_type][attrs[lookup_id_key_mapping[offset_type]]] = offset
+            indices[offset_type.decode('utf-8')][
+                attrs[lookup_id_key_mapping[offset_type]].decode('utf-8')] = offset
         return indices
 
     @classmethod
@@ -831,7 +897,7 @@ class TagSpecificXMLByteIndex(object):
         self.indexed_tags = indexed_tags
         self.indexed_tag_keys = keys
         self.source = source
-        self.offsets = defaultdict(ByteEncodingOrderedDict)
+        self.offsets = HierarchicalOffsetIndex()
         self.build_index()
 
     def __getstate__(self):
@@ -874,30 +940,10 @@ class TagSpecificXMLByteIndex(object):
     def __len__(self):
         return sum(len(group) for key, group in self.items())
 
-
-class FlatTagSpecificXMLByteIndex(TagSpecificXMLByteIndex):
-    """
-    An alternative interface on top of :py:class:`TagSpecificXMLByteIndex` that assumes
-    that identifiers across different tags are globally unique, as in MzIdentML.
-
-    Attributes
-    ----------
-    offsets : ByteEncodingOrderedDict
-        The mapping between ids and byte offsets.
-    """
-    def build_index(self):
-        hierarchical_index = super(FlatTagSpecificXMLByteIndex, self).build_index()
-        flat_index = []
-
-        for tag_type in hierarchical_index.values():
-            flat_index.extend(tag_type.items())
-
-        flat_index.sort(key=lambda x: x[1])
-        self.offsets = ByteEncodingOrderedDict(flat_index)
-        return self.offsets
-
-    def __len__(self):
-        return len(self.offsets)
+    @classmethod
+    def build(cls, source, indexed_tags=None, keys=None):
+        indexer = cls(source, indexed_tags, keys)
+        return indexer.offsets
 
 
 def ensure_bytes_single(string):
@@ -921,17 +967,18 @@ def _flatten_map(hierarchical_map):
         all_records.extend(records.items())
 
     all_records.sort(key=lambda x: x[1])
-    return ByteEncodingOrderedDict(all_records)
+    return OrderedDict(all_records)
 
 
-class IndexedXML(XML):
+class IndexedXML(IndexedReaderMixin, XML):
     """Subclass of :py:class:`XML` which uses an index of byte offsets for some
     elements for quick random access.
     """
     _indexed_tags = set()
     _indexed_tag_keys = {}
 
-    def __init__(self, source, read_schema=False, iterative=True, build_id_cache=False, use_index=True,  *args, **kwargs):
+    def __init__(self, source, read_schema=False, iterative=True, build_id_cache=False,
+                 use_index=True, *args, **kwargs):
         """Create an XML parser object.
 
         Parameters
@@ -969,17 +1016,15 @@ class IndexedXML(XML):
 
         self._use_index = use_index
 
-        self._indexed_tags = ensure_bytes(self._indexed_tags)
-        self._indexed_tag_keys = {
-            ensure_bytes_single(k): ensure_bytes_single(v)
-            for k, v in self._indexed_tag_keys.items()
-        }
-
         if use_index:
             build_id_cache = False
         super(IndexedXML, self).__init__(source, read_schema, iterative, build_id_cache, *args, **kwargs)
-        self._offset_index = ByteEncodingOrderedDict()
+        self._offset_index = HierarchicalOffsetIndex()
         self._build_index()
+
+    @property
+    def default_index(self):
+        return self._offset_index[self._default_iter_tag]
 
     def __reduce_ex__(self, protocol):
         reconstructor, args, state = XML.__reduce_ex__(self, protocol)
@@ -1009,7 +1054,7 @@ class IndexedXML(XML):
         """
         if not self._indexed_tags or not self._use_index:
             return
-        self._offset_index = FlatTagSpecificXMLByteIndex(
+        self._offset_index = TagSpecificXMLByteIndex.build(
             self._source, self._indexed_tags, self._indexed_tag_keys)
 
     @_keepstate
@@ -1017,7 +1062,7 @@ class IndexedXML(XML):
         return self._find_by_id_no_reset(elem_id, id_key=id_key)
 
     @_keepstate
-    def get_by_id(self, elem_id, id_key=None, **kwargs):
+    def get_by_id(self, elem_id, id_key=None, element_type=None, **kwargs):
         """
         Retrieve the requested entity by its id. If the entity
         is a spectrum described in the offset index, it will be retrieved
@@ -1038,7 +1083,7 @@ class IndexedXML(XML):
         """
         try:
             index = self._offset_index
-            offset = index[elem_id]
+            offset = index.find(elem_id, element_type)
             self._source.seek(offset)
             elem = self._find_by_id_no_reset(elem_id, id_key=id_key)
         except (KeyError, etree.LxmlError):
@@ -1046,62 +1091,26 @@ class IndexedXML(XML):
         data = self._get_info_smart(elem, **kwargs)
         return data
 
-    def __getitem__(self, elem_id):
-        return self.get_by_id(elem_id)
+    def __contains__(self, key):
+        return key in self._offset_index[self._default_iter_tag]
+
+    def __len__(self):
+        return len(self._offset_index[self._default_iter_tag])
 
 
-def save_byte_index(index, fp):
-    """Write the byte offset index to the provided
-    file
+class MultiProcessingXML(IndexedXML, TaskMappingMixin):
+    """XML reader that feeds indexes to external processes
+    for parallel parsing and analysis of XML entries."""
 
-    Parameters
-    ----------
-    index : ByteEncodingOrderedDict
-        The byte offset index to be saved
-    fp : file
-        The file to write the index to
+    def _task_map_iterator(self):
+        """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
+        queue used by :meth:`map`
 
-    Returns
-    -------
-    file
-    """
-    encoded_index = dict()
-    for key, offset in index.items():
-        encoded_index[key.decode("utf8")] = offset
-    json.dump(encoded_index, fp)
-    return fp
-
-
-def load_byte_index(fp):
-    """Read a byte offset index from a file
-
-    Parameters
-    ----------
-    fp : file
-        The file to read the index from
-
-    Returns
-    -------
-    ByteEncodingOrderedDict
-    """
-    data = json.load(fp)
-    index = ByteEncodingOrderedDict()
-    for key, value in sorted(data.items(), key=lambda x: x[1]):
-        index[key] = value
-    return index
-
-
-class PrebuiltOffsetIndex(FlatTagSpecificXMLByteIndex):
-    """An Offset Index class which just holds offsets
-    and performs no extra scanning effort.
-
-    Attributes
-    ----------
-    offsets : ByteEncodingOrderedDict
-    """
-
-    def __init__(self, offsets):
-        self.offsets = offsets
+        Returns
+        -------
+        :class:`Iteratable`
+        """
+        return iter(self._offset_index[self._default_iter_tag])
 
 
 class IndexSavingXML(IndexedXML):
@@ -1109,9 +1118,6 @@ class IndexSavingXML(IndexedXML):
     adds facilities to read and write the byte offset
     index externally.
     """
-
-    _save_byte_index_to_file = staticmethod(save_byte_index)
-    _load_byte_index_from_file = staticmethod(load_byte_index)
 
     @property
     def _byte_offset_filename(self):
@@ -1140,7 +1146,9 @@ class IndexSavingXML(IndexedXML):
         and populate :attr:`_offset_index`
         """
         with open(self._byte_offset_filename, 'r') as f:
-            index = PrebuiltOffsetIndex(self._load_byte_index_from_file(f))
+            index = HierarchicalOffsetIndex.load(f)
+            if index.schema_version is None:
+                raise TypeError("Legacy Offset Index!")
             self._offset_index = index
 
     def write_byte_offsets(self):
@@ -1148,7 +1156,7 @@ class IndexSavingXML(IndexedXML):
         at :attr:`_byte_offset_filename`
         """
         with open(self._byte_offset_filename, 'w') as f:
-            self._save_byte_index_to_file(self._offset_index, f)
+            self._offset_index.save(f)
 
     @_keepstate
     def _build_index(self):
@@ -1175,6 +1183,7 @@ class IndexSavingXML(IndexedXML):
         with cls(path, use_index=True) as inst:
             inst.write_byte_offsets()
 
+
 class ArrayConversionMixin(BinaryDataArrayTransformer):
     _dtype_dict = {}
     _array_keys = ['m/z array', 'intensity array']
@@ -1190,11 +1199,12 @@ class ArrayConversionMixin(BinaryDataArrayTransformer):
         super(ArrayConversionMixin, self).__init__(*args, **kwargs)
 
     def __getstate__(self):
-        state = {}
+        state = super(ArrayConversionMixin, self).__getstate__()
         state['_dtype_dict'] = self._dtype_dict
         return state
 
     def __setstate__(self, state):
+        super(ArrayConversionMixin, self).__setstate__(state)
         self._dtype_dict = state['_dtype_dict']
 
     def _convert_array(self, k, array):
@@ -1206,3 +1216,56 @@ class ArrayConversionMixin(BinaryDataArrayTransformer):
     def _finalize_record_conversion(self, array, record):
         key = record.key
         return self._convert_array(key, array)
+
+
+class Iterfind(TaskMappingMixin):
+    def __init__(self, parser, tag_name, **kwargs):
+        self.parser = parser
+        self.tag_name = tag_name
+        self.config = kwargs
+        self._iterator = None
+
+    def __repr__(self):
+        template = "{self.__class__.__name__}({self.tag_name!r}{config})"
+        if self.config:
+            config = ", " + repr(self.config)
+        else:
+            config = ''
+        return template.format(self=self, config=config)
+
+    def __iter__(self):
+        return self
+
+    def _make_iterator(self):
+        return self.parser._iterfind_impl(self.tag_name, **self.config)
+
+    def __next__(self):
+        if self._iterator is None:
+            self._iterator = self._make_iterator()
+        return next(self._iterator)
+
+    def next(self):
+        return self.__next__()
+
+    def _task_map_iterator(self):
+        """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
+        queue used by :meth:`map`
+
+        Returns
+        -------
+        :class:`Iteratable`
+        """
+        return iter(self.parser.index[self.tag_name])
+
+    def _get_reader_for_worker_spec(self):
+        return self.parser
+
+    def reset(self):
+        self._iterator = None
+        self.parser.reset()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.reset()

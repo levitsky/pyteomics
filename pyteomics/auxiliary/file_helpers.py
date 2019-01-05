@@ -1,8 +1,14 @@
 import sys
 import codecs
-
+import re
 from functools import wraps
 from contextlib import contextmanager
+from collections import OrderedDict, defaultdict
+import json
+import multiprocessing as mp
+import threading
+import warnings
+# warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 
 try:
     basestring
@@ -19,6 +25,29 @@ try:
 except ImportError:
     np = None
 
+try:
+    import dill
+except ImportError:
+    dill = None
+    try:
+        import cPickle as pickle
+    except ImportError:
+        import pickle
+    serializer = pickle
+else:
+    serializer = dill
+
+try:
+    from queue import Empty
+except ImportError:
+    from Queue import Empty
+
+try:
+    from collections.abc import Sequence
+except ImportError:
+    from collections import Sequence
+
+from . import PyteomicsError
 
 def _keepstate(func):
     """Decorator to help keep the position in open files passed as
@@ -183,6 +212,269 @@ class FileReader(IteratorContextManager):
             raise AttributeError
         return getattr(self._source, attr)
 
+def remove_bom(bstr):
+    return bstr.replace(codecs.BOM_LE, b'').lstrip(b"\x00")
+
+
+class IndexedReaderMixin(object):
+    """Common interface for :py:class:`IndexedTextReader` and :py:class:`IndexedXML`."""
+    @property
+    def index(self):
+        return self._offset_index
+
+    @property
+    def default_index(self):
+        return self._offset_index
+
+    def __len__(self):
+        return len(self._offset_index)
+
+    def __contains__(self, key):
+        return key in self._offset_index
+
+    def _item_from_offsets(self, offsets):
+        raise NotImplementedError
+
+    def get_by_id(self, elem_id):
+        index = self.default_index
+        if index is None:
+            raise PyteomicsError('Access by ID requires building an offset index.')
+        offsets = index[elem_id]
+        return self._item_from_offsets(offsets)
+
+    def get_by_ids(self, ids):
+        return [self.get_by_id(key) for key in ids]
+
+    def get_by_index(self, i):
+        try:
+            key = self.default_index.from_index(i, False)
+        except AttributeError:
+            raise PyteomicsError('Positional access requires building an offset index.')
+        return self.get_by_id(key)
+
+    def get_by_indexes(self, indexes):
+        return [self.get_by_index(i) for i in indexes]
+
+    def get_by_index_slice(self, s):
+        try:
+            keys = self.default_index.from_slice(s, False)
+        except AttributeError:
+            raise PyteomicsError('Positional access requires building an offset index.')
+        return self.get_by_ids(keys)
+
+    def get_by_key_slice(self, s):
+        keys = self.default_index.between(s.start, s.stop)
+        if s.step:
+            keys = keys[::s.step]
+        return self.get_by_ids(keys)
+
+    def __getitem__(self, key):
+        if isinstance(key, basestring):
+            return self.get_by_id(key)
+        if isinstance(key, int):
+            return self.get_by_index(key)
+        if isinstance(key, Sequence):
+            if not key:
+                return []
+            if isinstance(key[0], int):
+                return self.get_by_indexes(key)
+            if isinstance(key[0], basestring):
+                return self.get_by_ids(key)
+        if isinstance(key, slice):
+            for item in (key.start, key.stop, key.step):
+                if item is not None:
+                    break
+            if isinstance(item, int):
+                return self.get_by_index_slice(key)
+            if isinstance(item, basestring):
+                return self.get_by_key_slice(key)
+            if item is None:
+                return list(self)
+        raise PyteomicsError('Unsupported query key: {}'.format(key))
+
+
+class RTLocator():
+    def __init__(self, reader):
+        self._reader = reader
+
+    def _get_scan_by_time(self, time):
+        """Retrieve the scan object for the specified scan time.
+
+        Parameters
+        ----------
+        time : float
+            The time to get the nearest scan from
+        Returns
+        -------
+        tuple: (scan_id, scan, scan_time)
+        """
+        if not self._reader.default_index:
+            raise PyteomicsError("This method requires the index. Please pass `use_index=True` during initialization")
+
+        scan_ids = tuple(self._reader.default_index)
+        lo = 0
+        hi = len(scan_ids)
+
+        best_match = None
+        best_error = float('inf')
+        best_time = None
+        best_id = None
+
+        if time == float('inf'):
+            scan =  self._reader.get_by_id(scan_ids[-1])
+            return scan_ids[-1], scan, self._reader._get_time(scan)
+
+        while hi != lo:
+            mid = (hi + lo) // 2
+            sid = scan_ids[mid]
+            scan = self._reader.get_by_id(sid)
+            scan_time = self._reader._get_time(scan)
+            err = abs(scan_time - time)
+            if err < best_error:
+                best_error = err
+                best_match = scan
+                best_time = scan_time
+                best_id = sid
+            if scan_time == time:
+                return sid, scan, scan_time
+            elif (hi - lo) == 1:
+                return best_id, best_match, best_time
+            elif scan_time > time:
+                hi = mid
+            else:
+                lo = mid
+
+    def __getitem__(self, key):
+        if isinstance(key, (int, float)):
+            return self._get_scan_by_time(key)[1]
+        if isinstance(key, Sequence):
+            return [self._get_scan_by_time(t)[1] for t in key]
+        if isinstance(key, slice):
+            if key.start is None:
+                start_index = self._reader.default_index.from_index(0)
+            else:
+                start_index = self._get_scan_by_time(key.start)[0]
+            if key.stop is None:
+                stop_index = self._reader.default_index.from_index(-1)
+            else:
+                stop_index = self._get_scan_by_time(key.stop)[0]
+            return self._reader[start_index:stop_index:key.step]
+
+
+class TimeOrderedIndexedReaderMixin(IndexedReaderMixin):
+    @property
+    def time(self):
+        return self._time
+
+    def __init__(self, *args, **kwargs):
+        super(TimeOrderedIndexedReaderMixin, self).__init__(*args, **kwargs)
+        self._time = RTLocator(self)
+
+    def _get_time(self, scan):
+        raise NotImplementedError
+
+
+class IndexedTextReader(IndexedReaderMixin, FileReader):
+    """Abstract class for text file readers that keep an index of records for random access.
+    This requires reading the file in binary mode."""
+
+    delimiter = None
+    label = None
+    block_size = 1000000
+    label_group = 1
+
+    def __init__(self, source, func, pass_file, args, kwargs, encoding='utf-8', block_size=None,
+        delimiter=None, label=None, label_group=None, _skip_index=False):
+        # the underlying _file_obj gets None as encoding
+        # to avoid transparent decoding of StreamReader on read() calls
+        super(IndexedTextReader, self).__init__(source, 'rb', func, pass_file, args, kwargs, encoding=None)
+        self.encoding = encoding
+        if delimiter is not None:
+            self.delimiter = delimiter
+        if label is not None:
+            self.label = label
+        if block_size is not None:
+            self.block_size = block_size
+        if label_group is not None:
+            self.label_group = label_group
+        self._offset_index = None
+        if not _skip_index:
+            self._offset_index = self.build_byte_index()
+
+    def __getstate__(self):
+        state = super(IndexedTextReader, self).__getstate__()
+        state['offset_index'] = self._offset_index
+        return state
+
+    def __setstate__(self, state):
+        super(IndexedTextReader, self).__setstate__(state)
+        self._offset_index = state['offset_index']
+
+    def _chunk_iterator(self):
+        fh = self._source.file
+        delim = remove_bom(self.delimiter.encode(self.encoding))
+        buff = fh.read(self.block_size)
+        parts = buff.split(delim)
+        started_with_delim = buff.startswith(delim)
+        tail = parts[-1]
+        front = parts[:-1]
+        i = 0
+        for part in front:
+            i += 1
+            if part == b"":
+                continue
+            if i == 1:
+                if started_with_delim:
+                    yield delim + part
+                else:
+                    yield part
+            else:
+                yield delim + part
+        running = True
+        while running:
+            buff = fh.read(self.block_size)
+            if len(buff) == 0:
+                running = False
+                buff = tail
+            else:
+                buff = tail + buff
+            parts = buff.split(delim)
+            tail = parts[-1]
+            front = parts[:-1]
+            for part in front:
+                yield delim + part
+        yield delim + tail
+
+    def _generate_offsets(self):
+        i = 0
+        pattern = re.compile(remove_bom(self.label.encode(self.encoding)))
+        for chunk in self._chunk_iterator():
+            match = pattern.search(chunk)
+            if match:
+                label = match.group(self.label_group)
+                yield i, label.decode(self.encoding), match
+            i += len(chunk)
+        yield i, None, None
+
+    def build_byte_index(self):
+        index = OffsetIndex()
+        g = self._generate_offsets()
+        last_offset = 0
+        last_label = None
+        for offset, label, keyline in g:
+            if last_label is not None:
+                index[last_label] = (last_offset, offset)
+            last_label = label
+            last_offset = offset
+        assert last_label is None
+        return index
+
+    def _read_lines_from_offsets(self, start, end):
+        self._source.seek(start)
+        lines = self._source.read(end-start).decode(self.encoding).split('\n')
+        return lines
+
+
 
 def _file_reader(_mode='r'):
     # a lot of the code below is borrowed from
@@ -196,7 +488,8 @@ def _file_reader(_mode='r'):
         @wraps(_func)
         def helper(*args, **kwargs):
             if args:
-                return FileReader(args[0], _mode, _func, True, args[1:], kwargs, kwargs.pop('encoding', None))
+                return FileReader(args[0], _mode, _func, True, args[1:], kwargs,
+                    kwargs.pop('encoding', None))
             source = kwargs.pop('source', None)
             return FileReader(source, _mode, _func, True, (), kwargs, kwargs.pop('encoding', None))
         return helper
@@ -221,14 +514,208 @@ def _file_writer(_mode='a'):
     return decorator
 
 
+class OffsetIndex(OrderedDict):
+    '''An augmented OrderedDict that formally wraps getting items by index
+    '''
+    def __init__(self, *args, **kwargs):
+        OrderedDict.__init__(self, *args, **kwargs)
+        self._index_sequence = None
+
+    def _invalidate(self):
+        self._index_sequence = None
+
+    @property
+    def index_sequence(self):
+        """Keeps a cached copy of the :meth:`items` sequence
+        stored as a :class:`tuple` to avoid repeatedly copying
+        the sequence over many method calls.
+
+        Returns
+        -------
+        :class:`tuple`
+        """
+        if self._index_sequence is None:
+            self._index_sequence = tuple(self.items())
+        return self._index_sequence
+
+    def __setitem__(self, key, value):
+        self._invalidate()
+        return super(OffsetIndex, self).__setitem__(key, value)
+
+    def pop(self, *args, **kwargs):
+        self._invalidate()
+        return super(OffsetIndex, self).pop(*args, **kwargs)
+
+    def find(self, key, *args, **kwargs):
+        return self[key]
+
+    def from_index(self, index, include_value=False):
+        '''Get an entry by its integer index in the ordered sequence
+        of this mapping.
+
+        Parameters
+        ----------
+        index: int
+            The index to retrieve.
+        include_value: bool
+            Whether to return both the key and the value or just the key.
+            Defaults to :const:`False`.
+
+        Returns
+        -------
+        object:
+            If ``include_value`` is :const:`True`, a tuple of (key, value) at ``index``
+            else just the key at ``index``.
+        '''
+        items = self.index_sequence
+        if include_value:
+            return items[index]
+        else:
+            return items[index][0]
+
+    def from_slice(self, spec, include_value=False):
+        '''Get a slice along index in the ordered sequence
+        of this mapping.
+
+        Parameters
+        ----------
+        spec: slice
+            The slice over the range of indices to retrieve
+        include_value: bool
+            Whether to return both the key and the value or just the key.
+            Defaults to :const:`False`
+
+        Returns
+        -------
+        list:
+            If ``include_value`` is :const:`True`, a tuple of (key, value) at ``index``
+            else just the key at ``index`` for each ``index`` in ``spec``
+        '''
+        items = self.index_sequence
+        return [(k, v) if include_value else k for k, v in items[spec]]
+
+    def between(self, start, stop, include_value=False):
+        keys = list(self)
+        if start is not None:
+            try:
+                start_index = keys.index(start)
+            except ValueError:
+                raise KeyError(start)
+        else:
+            start_index = 0
+        if stop is not None:
+            try:
+                stop_index = keys.index(stop)
+            except ValueError:
+                raise KeyError(stop)
+        else:
+            stop_index = len(keys) - 1
+        if start is None or stop is None:
+            pass # won't switch indices
+        else:
+            start_index, stop_index = min(start_index, stop_index), max(start_index, stop_index)
+
+        if include_value:
+            return [(k, self[k]) for k in keys[start_index:stop_index + 1]]
+        return keys[start_index:stop_index + 1]
+
+    def __repr__(self):
+        template = "{self.__class__.__name__}({items})"
+        return template.format(self=self, items=list(self.items()))
+
+
+class HierarchicalOffsetIndex(object):
+    schema_version = (1, 0, 0)
+
+    _schema_version_tag_key = "@pyteomics_schema_version"
+    _inner_type = OffsetIndex
+
+    def __init__(self, base=None, schema_version=None):
+        if schema_version is None:
+            schema_version = self.schema_version
+        self.schema_version = schema_version
+        self.mapping = defaultdict(self._inner_type)
+        for key, value in (base or {}).items():
+            self.mapping[key] = self._inner_type(value)
+
+    def __getitem__(self, key):
+        return self.mapping[key]
+
+    def __setitem__(self, key, value):
+        self.mapping[key] = value
+
+    def __iter__(self):
+        return iter(self.mapping)
+
+    def __len__(self):
+        return sum(len(group) for key, group in self.items())
+
+    def __contains__(self, key):
+        return key in self.mapping
+
+    def find(self, key, element_type=None):
+        if element_type is None:
+            for element_type in self.keys():
+                try:
+                    return self.find(key, element_type)
+                except KeyError:
+                    continue
+            raise KeyError(key)
+        else:
+            return self[element_type][key]
+
+    def update(self, *args, **kwargs):
+        self.mapping.update(*args, **kwargs)
+
+    def pop(self, key, default=None):
+        return self.mapping.pop(key, default)
+
+    def keys(self):
+        return self.mapping.keys()
+
+    def values(self):
+        return self.mapping.values()
+
+    def items(self):
+        return self.mapping.items()
+
+    def save(self, fp):
+        encoded_index = dict()
+        keys = list(self.keys())
+        container = {
+            self._schema_version_tag_key: self.schema_version,
+            "keys": keys
+        }
+        for key, offset in self.items():
+            encoded_index[key] = offset
+        container['index'] = encoded_index
+        json.dump(container, fp)
+
+    @classmethod
+    def load(cls, fp):
+        container = json.load(fp)
+        version_tag = container.get(cls._schema_version_tag_key)
+        if version_tag is None:
+            # The legacy case, no special processing yet
+            inst = cls({}, None)
+            inst.schema_version = None
+            return inst
+        version_tag = tuple(version_tag)
+        index = container.get("index")
+        if version_tag < cls.schema_version:
+            # schema upgrade case, no special processing yet
+            return cls(index, version_tag)
+        # no need to upgrade
+        return cls(index, version_tag)
+
+
 def _make_chain(reader, readername, full_output=False):
 
     def concat_results(*args, **kwargs):
         results = [reader(arg, **kwargs) for arg in args]
         if pd is not None and all(isinstance(a, pd.DataFrame) for a in args):
             return pd.concat(results)
-        else:
-            return np.concatenate(results)
+        return np.concatenate(results)
 
     def _iter(files, kwargs):
         for f in files:
@@ -256,8 +743,7 @@ def _make_chain(reader, readername, full_output=False):
     def dispatch_from_iterable(args, **kwargs):
         if kwargs.get('full_output', full_output):
             return concat_results(*args, **kwargs)
-        else:
-            return _chain(*args, **kwargs)
+        return _chain(*args, **kwargs)
 
     dispatch.__doc__ = """Chain :py:func:`{0}` for several files.
         Positional arguments should be file names or file objects.
@@ -274,3 +760,297 @@ def _make_chain(reader, readername, full_output=False):
     dispatch.from_iterable = dispatch_from_iterable
 
     return dispatch
+
+
+def _check_use_index(source, use_index, default):
+    if use_index is not None:
+        use_index = bool(use_index)
+    if 'b' not in getattr(source, 'mode', 'b'):
+        if use_index is True:
+            warnings.warn('use_index is True, but the file mode is not binary. '
+                'Setting use_index to False')
+        use_index = False
+    elif 'b' in getattr(source, 'mode', ''):
+        if use_index is False:
+            warnings.warn('use_index is False, but the file mode is binary. '
+                'Setting use_index to True')
+        use_index = True
+    if use_index is None:
+        use_index = default
+    return use_index
+
+
+class FileReadingProcess(mp.Process):
+    """Process that does a share of distributed work on entries read from file.
+    Reconstructs a reader object, parses an entries from given indexes,
+    optionally does additional processing, sends results back.
+
+    The reader class must support the :py:meth:`__getitem__` dict-like lookup.
+    """
+    def __init__(self, reader_spec, target_spec, qin, qout, done_flag, args_spec, kwargs_spec):
+        super(FileReadingProcess, self).__init__(name='pyteomics-map-worker')
+        self.reader_spec = reader_spec
+        self.target_spec = target_spec
+        self.args_spec = args_spec
+        self.kwargs_spec = kwargs_spec
+        self._qin = qin
+        self._qout = qout
+        # self._in_flag = in_flag
+        self._done_flag = done_flag
+        self.daemon = True
+
+    def run(self):
+        reader = serializer.loads(self.reader_spec)
+        target = serializer.loads(self.target_spec)
+        args = serializer.loads(self.args_spec)
+        kwargs = serializer.loads(self.kwargs_spec)
+        for key in iter(self._qin.get, None):
+            item = reader[key]
+            if target is not None:
+                result = target(item, *args, **kwargs)
+            else:
+                result = item
+            self._qout.put(result)
+        self._done_flag.set()
+
+    def is_done(self):
+        return self._done_flag.is_set()
+
+try:
+    _NPROC = mp.cpu_count()
+except NotImplementedError:
+    _NPROC = 4
+_QUEUE_TIMEOUT = 4
+
+
+class TaskMappingMixin(object):
+    def _get_reader_for_worker_spec(self):
+        return self
+
+    def _build_worker_spec(self, target, args, kwargs):
+        serialized = []
+        for obj, objname in [(self._get_reader_for_worker_spec(), 'reader'), (target, 'target'), (args, 'args'),
+                             (kwargs, 'kwargs')]:
+            try:
+                serialized.append(serializer.dumps(obj))
+            except serializer.PicklingError:
+                msg = 'Could not serialize {0} {1} with {2.__name__}.'.format(
+                    objname, obj, serializer)
+                if serializer is not dill:
+                    msg += ' Try installing `dill`.'
+                raise PyteomicsError(msg)
+        return serialized
+
+    def _spawn_workers(self, specifications, in_queue, out_queue, done_event, processes):
+        reader_spec, target_spec, args_spec, kwargs_spec = specifications
+        workers = []
+        for _ in range(processes):
+            worker = FileReadingProcess(
+                reader_spec, target_spec, in_queue, out_queue, done_event, args_spec, kwargs_spec)
+            workers.append(worker)
+        return workers
+
+    def _spawn_feeder_thread(self, in_queue, iterator, processes):
+        def feeder():
+            for key in iterator:
+                in_queue.put(key)
+            for _ in range(processes):
+                in_queue.put(None)
+
+        feeder_thread = threading.Thread(target=feeder)
+        feeder_thread.daemon = True
+        feeder_thread.start()
+        return feeder_thread
+
+    def map(self, target=None, processes=-1, queue_timeout=_QUEUE_TIMEOUT, args=None, kwargs=None, **_kwargs):
+        """Execute the ``target`` function over entries of this object across up to ``processes``
+        processes.
+
+        Results will be returned out of order.
+
+        Parameters
+        ----------
+        target : :class:`Callable`, optional
+            The function to execute over each entry. It will be given a single object yielded by
+            the wrapped iterator as well as all of the values in ``args`` and ``kwargs``
+        processes : int, optional
+            The number of worker processes to use. If negative, the number of processes
+            will match the number of available CPUs.
+        queue_timeout : float, optional
+            The number of seconds to block, waiting for a result before checking to see if
+            all workers are done.
+        args : :class:`Sequence`, optional
+            Additional positional arguments to be passed to the target function
+        kwargs : :class:`Mapping`, optional
+            Additional keyword arguments to be passed to the target function
+        **_kwargs
+            Additional keyword arguments to be passed to the target function
+
+        Yields
+        ------
+        object
+            The work item returned by the target function.
+        """
+        if processes < 1:
+            processes = _NPROC
+        iterator = self._task_map_iterator()
+
+        if args is None:
+            args = tuple()
+        else:
+            args = tuple(args)
+        if kwargs is None:
+            kwargs = dict()
+        else:
+            kwargs = dict(kwargs)
+        kwargs.update(_kwargs)
+
+        serialized = self._build_worker_spec(target, args, kwargs)
+
+        done_event = mp.Event()
+        in_queue = mp.Queue(int(1e7))
+        out_queue = mp.Queue(int(1e7))
+
+        workers = self._spawn_workers(serialized, in_queue, out_queue, done_event, processes)
+        feeder_thread = self._spawn_feeder_thread(in_queue, iterator, processes)
+        for worker in workers:
+            worker.start()
+
+        while True:
+            try:
+                result = out_queue.get(True, queue_timeout)
+                yield result
+            except Empty:
+                if all(w.is_done() for w in workers):
+                    break
+                else:
+                    continue
+
+        feeder_thread.join()
+        for worker in workers:
+            worker.join()
+
+    def _task_map_iterator(self):
+        """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
+        queue used by :meth:`map`
+
+        Returns
+        -------
+        :class:`Iteratable`
+        """
+        return iter(self._offset_index.keys())
+
+
+class ChainBase(object):
+    """Chain :meth:`sequence_maker` for several sources into a
+    single iterable. Positional arguments should be sources like
+    file names or file objects. Keyword arguments are passed to
+    the :meth:`sequence_maker` function.
+
+    Attributes
+    ----------
+    sources : :class:`Iterable`
+        Sources for creating new sequences from, such as paths or
+        file-like objects
+    kwargs : :class:`Mapping`
+        Additional arguments used to instantiate each sequence
+    """
+
+    def __init__(self, *sources, **kwargs):
+        self.sources = sources
+        self.kwargs = kwargs
+        self._iterator = None
+
+    @classmethod
+    def from_iterable(cls, sources, **kwargs):
+        return cls(*sources, **kwargs)
+
+    @classmethod
+    def _make_chain(cls, sequence_maker):
+        if isinstance(sequence_maker, type):
+            tp = type('%sChain' % sequence_maker.__class__.__name__, (cls,), {
+                'sequence_maker': sequence_maker
+            })
+        else:
+            tp = type('FunctionChain', (cls,), {
+                'sequence_maker': staticmethod(sequence_maker)
+            })
+        return tp
+
+    def sequence_maker(self, file):
+        raise NotImplementedError()
+
+    def _create_sequence(self, file):
+        return self.sequence_maker(file, **self.kwargs)
+
+    def _iterate_over_series(self):
+        for f in self.sources:
+            with self._create_sequence(f) as r:
+                for item in r:
+                    yield item
+
+    def __enter__(self):
+        self._iterator = iter(self._iterate_over_series())
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self._iterator = None
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self._iterator is None:
+            self._iterator = self._iterate_over_series()
+        return next(self._iterator)
+
+    def next(self):
+        return self.__next__()
+
+    def map(self, target=None, processes=-1, queue_timeout=_QUEUE_TIMEOUT, args=None, kwargs=None, **_kwargs):
+        """Execute the ``target`` function over entries of this object across up to ``processes``
+        processes.
+
+        Results will be returned out of order.
+
+        Parameters
+        ----------
+        target : :class:`Callable`, optional
+            The function to execute over each entry. It will be given a single object yielded by
+            the wrapped iterator as well as all of the values in ``args`` and ``kwargs``
+        processes : int, optional
+            The number of worker processes to use. If negative, the number of processes
+            will match the number of available CPUs.
+        queue_timeout : float, optional
+            The number of seconds to block, waiting for a result before checking to see if
+            all workers are done.
+        args : :class:`Sequence`, optional
+            Additional positional arguments to be passed to the target function
+        kwargs : :class:`Mapping`, optional
+            Additional keyword arguments to be passed to the target function
+        **_kwargs
+            Additional keyword arguments to be passed to the target function
+
+        Yields
+        ------
+        object
+            The work item returned by the target function.
+        """
+        for f in self.sources:
+            with self._create_sequence(f) as r:
+                for result in r.map(target, processes, queue_timeout, args, kwargs, **_kwargs):
+                    yield result
+
+
+class TableJoiner(ChainBase):
+    def concatenate(self, results):
+        if pd is not None and all(isinstance(a, pd.DataFrame) for a in results):
+            return pd.concat(results)
+        if isinstance(results[0], np.ndarray):
+            return np.concatenate(results)
+        else:
+            return np.array([b for a in results for b in a])
+
+    def _iterate_over_series(self):
+        results = [self._create_sequence(f) for f in self.sources]
+        return self.concatenate(results)
