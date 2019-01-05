@@ -1,6 +1,11 @@
 4.0
 ---
 
+ .. seealso::
+    `Pyteomics 4.0: five years of development of a Python proteomics framework
+    <https://pubs.acs.org/doi/10.1021/acs.jproteome.8b00717>`_
+
+
  - Add parameters `semi` and `exception` in :py:func:`pyteomics.parser.cleave`.
 
  - Add new parameter `encoding` in file writers.
