@@ -49,7 +49,6 @@ try: # Python 2.7
 except ImportError: # Python 3.x
     from urllib.request import urlopen, URLError
 
-# warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 
 def _local_name(element):
     """Strip namespace from the XML element's name"""
