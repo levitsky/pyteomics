@@ -44,11 +44,11 @@ class MzmlTest(unittest.TestCase):
             spectrum = next(reader)
             record = spectrum['m/z array']
             self.assertEqual(record.compression, "no compression")
-            self.assertEqual(record.dtype, "d")
+            self.assertEqual(record.dtype, np.float64)
             array = record.decode()
             self.assertTrue(np.allclose(validation, array))
             record = spectrum['intensity array']
-            self.assertEqual(record.dtype, "f")
+            self.assertEqual(record.dtype, np.float32)
             self.assertEqual(record.compression, "no compression")
 
             spectrum = next(reader)
