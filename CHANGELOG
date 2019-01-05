@@ -1,5 +1,5 @@
-4.0.dev
--------
+4.0
+---
 
  - Add parameters `semi` and `exception` in :py:func:`pyteomics.parser.cleave`.
 
@@ -8,8 +8,10 @@
  - Add new parameters `write_charges` and `use_numpy` in :py:func:`pyteomics.mgf.write`.
    Speed up the writing when :py:mod:`numpy` is available.
 
- - Indexing text parsers. This release introduces a family of parser classes for text files.
-   These parsers create byte offsets of indexed entries to allow random access by unique key.
+ - :ref:`Indexing text parsers <indexing>`. This release introduces a family of parser classes for text files.
+   These parsers create byte offsets of indexed entries to allow random access by unique key or by positional index,
+   "rich" access by slices and, in case of MGF/mzML/mzXML, by retention time range.
+   All indexing parsers, text- or XML-based, now have a unified interface.
 
    - New class :py:class:`pyteomics.mgf.IndexedMGF` is now the recommended way to parse MGF files.
      It supports fast access by spectrum titles by using an index of byte offsets.
@@ -52,6 +54,8 @@
 
     - :py:class:`pyteomics.ms1.IndexedMS1` and :py:class:`pyteomics.ms1.MS1` are available for ms1 format.
 
+   *(In collaboration with J. Klein)*
+
  - Multiprocessing support: all indexed XML and text file parsers now expose a :py:meth:`map` method.
    This method can map a user-supplied function to each file entry in separate processes (or simply
    parallelize the parsing itself).
@@ -59,12 +63,13 @@
    the :py:meth:`map` interface to allow parallelizing the work over multiple files and when iterating over
    non-default XML tree elements.
    The order of entries is not preserved in the output.
+   *(In collaboration with J. Klein)*
 
  - New module :py:mod:`pyteomics.peff` implements the :py:class:`IndexedPEFF` parser for protein databases
-   in the new PSI standard format, `PEFF <http://www.psidev.info/peff>`_.
+   in the new PSI standard format, `PEFF <http://www.psidev.info/peff>`_. *(Contributed by J. Klein)*
 
  - New module :py:mod:`pyteomics.traml` implements the :py:class:`TraML` parser for the PSI standard format
-   for SRM data, `TraML <http://www.psidev.info/traml>`_.
+   for SRM data, `TraML <http://www.psidev.info/traml>`_. *(In collaboration with J. Klein)*
 
  - :py:class:`pyteomics.protxml.ProtXML` now also supports indexing and multiprocessing.
 
