@@ -9,15 +9,15 @@ except NameError:
     basestring = (str, bytes)
 
 try:
-    from collections import Container, Sized
-except ImportError:
     from collections.abc import Container, Sized
+except ImportError:
+    from collections import Container, Sized
 from bisect import bisect_right
 from contextlib import contextmanager
 
 
 from .structures import PyteomicsError
-from .file_helpers import _keepstate, IteratorContextManager, _make_chain
+from .file_helpers import _keepstate, IteratorContextManager, _make_chain, ChainBase, TableJoiner
 from .patch import pd
 
 
@@ -724,11 +724,14 @@ def _itercontext(x, **kw):
         yield x
 
 
-_iter = _make_chain(_itercontext, 'iter')
+# _iter = _make_chain(_itercontext, 'iter')
+_iter = ChainBase._make_chain(_itercontext)
 qvalues = _make_qvalues(_iter, None, None, None)
 
 filter = _make_filter(_iter, None, None, None, qvalues)
 filter.chain = _make_chain(filter, 'filter', True)
+# filter.chain = TableJoiner._make_chain(filter)
+
 
 try:
     import numpy as np

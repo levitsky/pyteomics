@@ -23,5 +23,3 @@
         ----------
         files : iterable
             Iterable of file names or file objects.
-
-

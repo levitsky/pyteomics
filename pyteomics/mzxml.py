@@ -124,7 +124,7 @@ class IteratorQueue(object):
             yield item
 
 
-class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
+class MzXML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for mzXML files."""
     _root_element = 'mzXML'
     _default_iter_tag = 'scan'
@@ -136,18 +136,15 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
 
     def __init__(self, *args, **kwargs):
         self.decode_binary = kwargs.pop('decode_binary', True)
-        xml.IndexSavingXML.__init__(self, *args, **kwargs)
-        xml.ArrayConversionMixin.__init__(self, *args, **kwargs)
+        super(MzXML, self).__init__(*args, **kwargs)
 
     def __getstate__(self):
-        state = xml.IndexSavingXML.__getstate__(self)
-        state.update(xml.ArrayConversionMixin.__getstate__(self))
+        state = super(MzXML, self).__getstate__()
         state['decode_binary'] = self.decode_binary
         return state
 
     def __setstate__(self, state):
-        xml.IndexSavingXML.__setstate__(self, state)
-        xml.ArrayConversionMixin.__setstate__(self, state)
+        super(MzXML, self).__setstate__(state)
         self.decode_binary = state['decode_binary']
 
     def _get_info_smart(self, element, **kw):
@@ -221,6 +218,9 @@ class MzXML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         else:
             for item in super(MzXML, self).iterfind(path, **kwargs):
                 yield item
+
+    def _get_time(self, scan):
+        return scan['retentionTime']
 
 def read(source, read_schema=False, iterative=True, use_index=False, dtype=None, huge_tree=False):
     """Parse `source` and iterate through spectra.
@@ -320,4 +320,6 @@ def iterfind(source, path, **kwargs):
 
 version_info = xml._make_version_info(MzXML)
 
-chain = aux._make_chain(read, 'read')
+
+# chain = aux._make_chain(read, 'read')
+chain = aux.ChainBase._make_chain(MzXML)

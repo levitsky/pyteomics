@@ -1,29 +1,63 @@
 from os import path
-import pyteomics
-pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import tempfile
 import unittest
-from pyteomics import fasta
 import random
 import string
+import pickle
+import pyteomics
+pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
+from pyteomics import fasta
 
 class FastaTest(unittest.TestCase):
+    maxDiff = None
     def setUp(self):
         self.fasta_file = 'test.fasta'
-        self.fasta_entries_short = list(fasta.read(self.fasta_file, ignore_comments=True))
-        self.fasta_entries_long = list(fasta.read(self.fasta_file))
+        self.fasta_entries_long = [
+            ('test sequence test sequence 2', 'TEST'),
+                          ('test sequence 3', 'TEST'),
+                          ('test sequence 4', 'TEST')
+        ]
+        self.fasta_entries_short = [
+            ('test sequence',   'TEST'),
+            ('test sequence 3', 'TEST'),
+            ('test sequence 4', 'TEST')
+        ]
 
     def test_simple_read_long_comments(self):
-        self.assertEqual(self.fasta_entries_long,
-                         [('test sequence test sequence 2', 'TEST'),
-                          ('test sequence 3', 'TEST'),
-                          ('test sequence 4', 'TEST')])
+        for reader in [fasta.read, fasta.FASTA]:
+            self.assertEqual(self.fasta_entries_long, list(reader(self.fasta_file)))
 
     def test_simple_read_short_comments(self):
-        self.assertEqual(self.fasta_entries_short,
-                         [('test sequence', 'TEST'),
-                          ('test sequence 3', 'TEST'),
-                          ('test sequence 4', 'TEST')])
+        for reader in [fasta.read, fasta.FASTA]:
+            self.assertEqual(self.fasta_entries_short,
+                list(reader(self.fasta_file, ignore_comments=True)))
+
+    def test_indexed_read(self):
+        tlir = fasta.TwoLayerIndexedFASTA(self.fasta_file)
+        ir = fasta.IndexedFASTA(self.fasta_file)
+        for reader in [ir, tlir]:
+            self.assertEqual(self.fasta_entries_short[1:], list(reader))
+
+    def test_index_retrieve(self):
+        key = 'test sequence 4'
+        with fasta.IndexedFASTA(self.fasta_file) as ir:
+            self.assertEqual(self.fasta_entries_short[2], ir[key])
+
+    def test_two_layer_retrieve(self):
+        with fasta.TwoLayerIndexedFASTA(self.fasta_file, r'test sequence (.*)') as tlir:
+            self.assertEqual(self.fasta_entries_short[2], tlir['4'])
+
+    def test_indexed_picklable(self):
+        reader = fasta.TwoLayerIndexedFASTA(self.fasta_file, r'test sequence (.*)', block_size=7777)
+        reader2 = pickle.loads(pickle.dumps(reader))
+        self.assertEqual(reader2.block_size, reader.block_size)
+        self.assertEqual(self.fasta_entries_short[2], reader2['4'])
+
+    def test_mp_map(self):
+        with fasta.IndexedFASTA(self.fasta_file) as ir:
+            self.assertEqual(
+                sorted(self.fasta_entries_short[1:]),
+                sorted(list(ir.map())))
 
     def test_decoy_sequence_reverse(self):
         sequence = ''.join(random.choice(string.ascii_uppercase)
@@ -210,6 +244,13 @@ class FastaTest(unittest.TestCase):
                  'gene_id': 'A1AG1',
                  'id': 'P02763 Q8TC16',
                  'taxon': 'HUMAN'}
+        self.assertEqual(fasta.parse(header), parsed)
+
+    def test_parser_ncbi(self):
+        header = '>NP_001351877.1 acylglycerol kinase, mitochondrial isoform 2 [Homo sapiens]'
+        parsed = {'description': 'acylglycerol kinase, mitochondrial isoform 2',
+                 'id': 'NP_001351877.1',
+                 'taxon': 'Homo sapiens'}
         self.assertEqual(fasta.parse(header), parsed)
 
 if __name__ == '__main__':
