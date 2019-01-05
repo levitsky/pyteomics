@@ -8,7 +8,6 @@ import json
 import multiprocessing as mp
 import threading
 import warnings
-# warnings.formatwarning = lambda msg, *args, **kw: str(msg) + '\n'
 
 try:
     basestring
