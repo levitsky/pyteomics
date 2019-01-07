@@ -622,6 +622,19 @@ class OffsetIndex(OrderedDict):
         template = "{self.__class__.__name__}({items})"
         return template.format(self=self, items=list(self.items()))
 
+    def _integrity_check(self):
+        indices = list(self.values())
+        sorted_indices = sorted(self.values())
+        return indices == sorted_indices
+
+    def sort(self):
+        sorted_pairs = sorted(self.items(), key=lambda x: x[1])
+        self.clear()
+        self._invalidate()
+        for key, value in sorted_pairs:
+            self[key] = value
+        return self
+
 
 class HierarchicalOffsetIndex(object):
     schema_version = (1, 0, 0)
@@ -636,6 +649,17 @@ class HierarchicalOffsetIndex(object):
         self.mapping = defaultdict(self._inner_type)
         for key, value in (base or {}).items():
             self.mapping[key] = self._inner_type(value)
+
+    def _integrity_check(self):
+        for key, value in self.items():
+            if not value._integrity_check():
+                return False
+        return True
+
+    def sort(self):
+        for key, value in self.items():
+            value.sort()
+        return self
 
     def __getitem__(self, key):
         return self.mapping[key]
@@ -686,13 +710,13 @@ class HierarchicalOffsetIndex(object):
             "keys": keys
         }
         for key, offset in self.items():
-            encoded_index[key] = offset
+            encoded_index[key] = list(offset.items())
         container['index'] = encoded_index
         json.dump(container, fp)
 
     @classmethod
     def load(cls, fp):
-        container = json.load(fp)
+        container = json.load(fp, object_hook=OrderedDict)
         version_tag = container.get(cls._schema_version_tag_key)
         if version_tag is None:
             # The legacy case, no special processing yet
