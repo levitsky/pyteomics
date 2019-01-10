@@ -979,7 +979,7 @@ class Unimod():
         elements = [x.attrib for x in self._xpath('/unimod/elements/elem')]
         avg = {}
         for elem in elements:
-            i, label = re.match('^(\d*)(\D+)$', elem['title']).groups()
+            i, label = re.match(r'^(\d*)(\D+)$', elem['title']).groups()
             if not i:
                 iso = 0
             else:

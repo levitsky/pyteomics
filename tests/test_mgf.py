@@ -4,27 +4,29 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import tempfile
 import unittest
-from pyteomics.mgf import read, write, read_header, MGF
+import pickle
+from pyteomics import mgf
 import data
 
 class MGFTest(unittest.TestCase):
     maxDiff = None
+    _encoding = 'utf-8'
     def setUp(self):
         self.path = 'test.mgf'
-        self.header = read_header(self.path)
-        self.spectra = list(read(self.path))
+        self.header = mgf.read_header(self.path)
+        self.spectra = list(mgf.read(self.path))
         self.tmpfile = tempfile.TemporaryFile(mode='r+')
-        write(header=self.header, spectra=self.spectra, output=self.tmpfile)
+        mgf.write(header=self.header, spectra=self.spectra, output=self.tmpfile)
         self.tmpfile.seek(0)
-        self.header2 = read_header(self.tmpfile)
+        self.header2 = mgf.read_header(self.tmpfile)
         self.tmpfile.seek(0)
-        tmpreader = read(self.tmpfile)
+        tmpreader = mgf.read(self.tmpfile)
         self.spectra2 = list(tmpreader)
         self.ns = len(self.spectra)
         self.tmpfile.close()
 
     def test_read(self):
-        for func in [read, MGF]:
+        for func in [mgf.read, mgf.MGF]:
             # http://stackoverflow.com/q/14246983/1258041
             self.assertEqual(data.mgf_spectra_long, list(func(self.path)))
             self.assertEqual(data.mgf_spectra_short, list(func(self.path, False)))
@@ -33,20 +35,32 @@ class MGFTest(unittest.TestCase):
             with func(self.path, False) as reader:
                 self.assertEqual(data.mgf_spectra_short, list(reader))
 
+    def test_read_decoding(self):
+        for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
+            self.assertEqual(data.mgf_spectra_long_decoded,
+                list(func(self.path, encoding=self._encoding)))
+            self.assertEqual(data.mgf_spectra_short_decoded,
+                list(func(self.path, False, encoding=self._encoding)))
+            with func(self.path, encoding=self._encoding) as reader:
+                self.assertEqual(data.mgf_spectra_long_decoded, list(reader))
+            with func(self.path, False, encoding=self._encoding) as reader:
+                self.assertEqual(data.mgf_spectra_short_decoded, list(reader))
+            self.assertEqual(data.mgf_spectra_long_decoded, list(func(self.path)))
+
     def test_read_no_charges(self):
-        with read(self.path, read_charges=False) as reader:
+        with mgf.read(self.path, read_charges=False) as reader:
             self.assertEqual(data.mgf_spectra_long_no_charges, list(reader))
-        with read(self.path, False, read_charges=False) as reader:
+        with mgf.read(self.path, False, read_charges=False) as reader:
             self.assertEqual(data.mgf_spectra_short_no_charges, list(reader))
 
     def test_read_array_conversion(self):
-        with read(self.path, convert_arrays=0) as reader:
+        with mgf.read(self.path, convert_arrays=0) as reader:
             self.assertEqual(data.mgf_spectra_lists, list(reader))
-        with read(self.path, convert_arrays=2) as reader:
+        with mgf.read(self.path, convert_arrays=2) as reader:
             s = next(reader)
             self.assertTrue(isinstance(s['charge array'], np.ma.core.MaskedArray))
             self.assertTrue(isinstance(s['m/z array'], np.ndarray))
-        with read(self.path, convert_arrays=1) as reader:
+        with mgf.read(self.path, convert_arrays=1) as reader:
             s = next(reader)
             self.assertTrue(isinstance(s['charge array'], np.ndarray))
             self.assertTrue(isinstance(s['m/z array'], np.ndarray))
@@ -90,10 +104,29 @@ class MGFTest(unittest.TestCase):
 
     def test_read_dtype(self):
         dtypes = {'m/z array': np.float32, 'intensity array': np.int32}
-        with read(self.path, dtype=dtypes) as f:
+        with mgf.read(self.path, dtype=dtypes) as f:
             for spec in f:
                 for k, v in dtypes.items():
                     self.assertEqual(spec[k].dtype, v)
+
+    def test_get_spectrum(self):
+        key = 'Spectrum 2'
+        for klass in [mgf.MGF, mgf.IndexedMGF]:
+            f = klass(self.path)
+            self.assertEqual(data.mgf_spectra_long[1], f[key])
+            self.assertEqual(data.mgf_spectra_long[1], f.get_spectrum(key))
+        self.assertEqual(data.mgf_spectra_long[1], mgf.get_spectrum(self.path, key))
+
+    def test_indexedmgf_picklable(self):
+        with mgf.IndexedMGF(self.path) as reader:
+            spec = pickle.dumps(reader)
+        with pickle.loads(spec) as reader:
+            self.assertEqual(data.mgf_spectra_long[0], next(reader))
+
+    def test_map(self):
+        with mgf.IndexedMGF(self.path) as reader:
+            spectra = sorted(list(reader.map()), key=lambda s: s['params']['title'])
+        self.assertEqual(data.mgf_spectra_long, spectra)
 
 if __name__ == "__main__":
     unittest.main()

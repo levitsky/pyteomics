@@ -9,19 +9,28 @@ Summary
 human-readable format for MS/MS data. It allows storing MS/MS peak lists and
 exprimental parameters.
 
-This module provides minimalistic infrastructure for access to data stored in
-MGF files. The most important function is :py:func:`read`, which
-reads spectra and related information as saves them into human-readable
-:py:class:`dicts`.
+This module provides classes and functions for access to data stored in
+MGF files.
+Parsing is done using :py:class:`MGF` and :py:class:`IndexedMGF` classes.
+The :py:func:`read` function can be used as an entry point.
+MGF spectra are converted to dictionaries. MS/MS data points are
+(optionally) represented as :py:mod:`numpy` arrays.
 Also, common parameters can be read from MGF file header with
-:py:func:`read_header` function. :py:func:`write` allows creation of MGF
-files.
+:py:func:`read_header` function.
+:py:func:`write` allows creation of MGF files.
 
 Classes
 -------
 
-  :py:class:`MGF` - a class representing an MGF file. Use it to read spectra
-  from a file consecutively or by title.
+  :py:class:`MGF` - a text-mode MGF parser. Suitable to read spectra from a file consecutively.
+  Needs a file opened in text mode (or will open it if given a file name).
+
+  :py:class:`IndexedMGF` - a binary-mode MGF parser. When created, builds a byte offset index
+  for fast random access by spectrum titles. Sequential iteration is also supported.
+  Needs a seekable file opened in binary mode (if created from existing file object).
+
+  :py:class:`MGFBase` - abstract class, the common ancestor of the two classes above.
+  Can be used for type checking.
 
 Functions
 ---------
@@ -58,33 +67,16 @@ Functions
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from . import auxiliary as aux
 try:
     import numpy as np
 except ImportError:
     np = None
 import itertools as it
+import sys
+from . import auxiliary as aux
 
-class MGF(aux.FileReader):
-    """
-    A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
-    parsing. Specific spectra can be accessed by title using the indexing syntax.
-
-    :py:class:`MGF` object behaves as an iterator, **yielding** spectra one by one.
-    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
-    'intensity array', 'charge array' and 'params'. 'm/z array' and
-    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
-    'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
-    and 'params' stores a :py:class:`dict` of parameters (keys and values are
-    :py:class:`str`, keys corresponding to MGF, lowercased).
-
-    Attributes
-    ----------
-
-    header : dict
-        The file header.
-
-    """
+class MGFBase():
+    """Abstract class representing an MGF file. Subclasses implement different approaches to parsing."""
     _comments = set('#;!/')
     _array = (lambda x, dtype: np.array(x, dtype=dtype)) if np is not None else None
     _ma = (lambda x, dtype: np.ma.masked_equal(np.array(x, dtype=dtype), 0)) if np is not None else None
@@ -95,9 +87,12 @@ class MGF(aux.FileReader):
         'charge array': [_identity, _array, _ma]
     }
     _array_keys = ['m/z array', 'intensity array', 'charge array']
+    _array_keys_unicode = [u'm/z array', u'intensity array', u'charge array']
+    encoding = None
 
-    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None, encoding=None):
-        """Create an MGF file object.
+
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None):
+        """Create an MGF file object, set MGF-specific parameters.
 
         Parameters
         ----------
@@ -125,9 +120,9 @@ class MGF(aux.FileReader):
             Keys should be 'm/z array', 'intensity array' and/or 'charge array'.
 
         encoding : str, optional
-            Encoding to read the files in. Default is UTF-8.
+            File encoding.
         """
-        super(MGF, self).__init__(source, 'r', self._read, False, (), {}, encoding)
+
         self._use_header = use_header
         self._convert_arrays = convert_arrays
         if self._convert_arrays and np is None:
@@ -145,10 +140,9 @@ class MGF(aux.FileReader):
             self._read_header()
         return self._header
 
-    @aux._keepstate_method
-    def _read_header(self):
+    def _read_header_lines(self, header_lines):
         header = {}
-        for line in self._source:
+        for line in header_lines:
             if line.strip() == 'BEGIN IONS':
                 break
             l = line.split('=')
@@ -160,29 +154,27 @@ class MGF(aux.FileReader):
             header['charge'] = aux._parse_charge(header['charge'], True)
         self._header = header
 
-    def _read(self, **kwargs):
-        for line in self._source:
-            sline = line.strip()
-            if sline == 'BEGIN IONS':
-                spectrum = self._read_spectrum()
-                yield spectrum
-                # otherwise we are not interested; do nothing, just move along
-
-    def _read_spectrum(self):
+    def _read_spectrum_lines(self, lines):
         """Read a single spectrum from ``self._source``.
 
         Returns
         -------
         out : dict
         """
+
         masses = []
         intensities = []
         charges = []
 
         params = self.header.copy() if self._use_header else {}
 
-        for line in self._source:
+        for i, line in enumerate(lines):
             sline = line.strip()
+            if sline == 'BEGIN IONS':
+                if i == 0:
+                    continue
+                else:
+                    raise aux.PyteomicsError('Error when parsing MGF: unexpected start of spectrum.')
             if not sline or sline[0] in self._comments:
                 pass
             elif sline == 'END IONS':
@@ -193,15 +185,21 @@ class MGF(aux.FileReader):
                         raise aux.PyteomicsError('MGF format error: cannot parse '
                                 'PEPMASS = {}'.format(params['pepmass']))
                     else:
-                        params['pepmass'] = pepmass + (None,)*(2-len(pepmass))
-                if isinstance(params.get('charge'), str):
+                        params['pepmass'] = pepmass + (None,) * (2-len(pepmass))
+                if isinstance(params.get('charge'), aux.basestring):
                     params['charge'] = aux._parse_charge(params['charge'], True)
+                if 'rtinseconds' in params:
+                    params['rtinseconds'] = aux.unitfloat(params['rtinseconds'], 'second')
                 out = {'params': params}
                 data = {'m/z array': masses, 'intensity array': intensities}
                 if self._read_charges:
                     data['charge array'] = charges
                 for key, values in data.items():
                     out[key] = self._array_converters[key][self._convert_arrays](values, dtype=self._dtype_dict.get(key))
+                if self.encoding and sys.version_info.major == 2:
+                    for key, ukey in zip(self._array_keys + ['params'], self._array_keys_unicode + [u'params']):
+                        if key in out:
+                            out[ukey] = out.pop(key)
                 return out
 
             else:
@@ -221,9 +219,135 @@ class MGF(aux.FileReader):
                     except IndexError:
                         pass
 
+    def get_spectrum(self, title):
+        raise NotImplementedError
+
+    def __getitem__(self, key):
+        return self.get_spectrum(key)
+
+
+class IndexedMGF(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.IndexedTextReader, MGFBase):
+    """
+    A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
+    parsing. Specific spectra can be accessed by title using the indexing syntax in constant time.
+    If created using a file object, it needs to be opened in binary mode.
+
+    When iterated, :py:class:`IndexedMGF` object yields spectra one by one.
+    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
+    'intensity array', 'charge array' and 'params'. 'm/z array' and
+    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
+    'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
+    and 'params' stores a :py:class:`dict` of parameters (keys and values are
+    :py:class:`str`, keys corresponding to MGF, lowercased).
+
+
+    Attributes
+    ----------
+
+    header : dict
+        The file header.
+    time : RTLocator
+        A property used for accessing spectra by retention time.
+    """
+
+    delimiter = 'BEGIN IONS'
+    label = r'TITLE=([^\n]*\w)\s*'
+
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
+        dtype=None, encoding='utf-8', block_size=1000000, _skip_index=False):
+        aux.TimeOrderedIndexedReaderMixin.__init__(self, source, self._read, False, (), {}, encoding,
+            block_size, _skip_index=_skip_index)
+        MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype)
+
+    def __reduce_ex__(self, protocol):
+        return (self.__class__,
+            (self._source_init, False, self._convert_arrays,
+                self._read_charges, self._dtype_dict, self.encoding, self.block_size, True),
+            self.__getstate__())
+
+    def __getstate__(self):
+        state = super(IndexedMGF, self).__getstate__()
+        state['use_header'] = self._use_header
+        state['header'] = self._header
+        return state
+
+    def __setstate__(self, state):
+        super(IndexedMGF, self).__setstate__(state)
+        self._use_header = state['use_header']
+        self._header = state['header']
+
+    @aux._keepstate_method
+    def _read_header(self):
+        try:
+            first = next(v for v in self._offset_index.values())[0]
+        except StopIteration: # the index is empty, no spectra in file
+            first = -1
+        header_lines = self.read(first).decode(self.encoding).split('\n')
+        return self._read_header_lines(header_lines)
+
+    def _item_from_offsets(self, offsets):
+        start, end = offsets
+        lines = self._read_lines_from_offsets(start, end)
+        return self._read_spectrum_lines(lines)
+
+    def _read(self, **kwargs):
+        for _, offsets in self._offset_index.items():
+            spectrum = self._item_from_offsets(offsets)
+            yield spectrum
+
+    def get_spectrum(self, key):
+        return self.get_by_id(key)
+
+    def _get_time(self, spectrum):
+        try:
+            return spectrum['params']['rtinseconds']
+        except KeyError:
+            raise aux.PyteomicsError('RT information not found.')
+
+
+class MGF(aux.FileReader, MGFBase):
+    """
+    A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
+    parsing. Specific spectra can be accessed by title using the indexing syntax (if the file is seekable),
+    but it takes linear time to search through the file. Consider using :py:class:`IndexedMGF` for
+    constant-time access to spectra.
+
+    :py:class:`MGF` object behaves as an iterator, **yielding** spectra one by one.
+    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
+    'intensity array', 'charge array' and 'params'. 'm/z array' and
+    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
+    'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
+    and 'params' stores a :py:class:`dict` of parameters (keys and values are
+    :py:class:`str`, keys corresponding to MGF, lowercased).
+
+    Attributes
+    ----------
+
+    header : dict
+        The file header.
+
+    """
+
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
+        dtype=None, encoding=None):
+        aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
+        MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype)
+        self.encoding = encoding
+
+    @aux._keepstate_method
+    def _read_header(self):
+        return self._read_header_lines(self._source)
+
+    def _read_spectrum(self):
+        return self._read_spectrum_lines(self._source)
+
+    def _read(self):
+        for line in self._source:
+            if line.strip() == 'BEGIN IONS':
+                yield self._read_spectrum()
+
     @aux._keepstate_method
     def get_spectrum(self, title):
-        self.reset()
         for line in self._source:
             sline = line.strip()
             if sline[:5] == 'TITLE' and sline.split('=', 1)[1].strip() == title:
@@ -231,22 +355,72 @@ class MGF(aux.FileReader):
                 spectrum['params']['title'] = title
                 return spectrum
 
-    __getitem__ = get_spectrum
-
 
 def read(*args, **kwargs):
-    """Read an MGF file and return entries iteratively.
+    """Returns a reader for a given MGF file. Most of the parameters repeat the
+    instantiation signature of :py:class:`MGF` and :py:class:`IndexedMGF`.
+    Additional parameter `use_index` helps decide which class to instantiate
+    for given `source`.
 
-    .. note:: This is an alias to :py:class:`MGF`.
+    Parameters
+    ----------
+
+    source : str or file or None, optional
+        A file object (or file name) with data in MGF format. Default is
+        :py:const:`None`, which means read standard input.
+
+    use_header : bool, optional
+        Add the info from file header to each dict. Spectrum-specific parameters
+        override those from the header in case of conflict.
+        Default is :py:const:`True`.
+
+    convert_arrays : one of {0, 1, 2}, optional
+        If `0`, m/z, intensities and (possibly) charges will be returned as regular lists.
+        If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
+        If `2`, charges will be reported as a masked array (default).
+        The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
+
+    read_charges : bool, optional
+        If `True` (default), fragment charges are reported. Disabling it improves performance.
+
+    dtype : type or str or dict, optional
+        dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
+        Keys should be 'm/z array', 'intensity array' and/or 'charge array'.
+
+    encoding : str, optional
+        File encoding.
+
+    use_index : bool, optional
+        Determines which parsing method to use. If :py:const:`True` (default), an instance of
+        :py:class:`IndexedMGF` is created. This facilitates random access by spectrum titles.
+        If an open file is passed as `source`, it needs to be open in binary mode.
+
+        If :py:const:`False`, an instance of :py:class:`MGF` is created. It reads
+        `source` in text mode and is suitable for iterative parsing. Access by spectrum title
+        requires linear search and thus takes linear time.
+
+    block_size : int, optinal
+        Size of the chunk (in bytes) used to parse the file when creating the byte offset index.
+        (Accepted only for :py:class:`IndexedMGF`.)
 
     Returns
     -------
 
-    out : MGF
+    out : MGFBase
+        Instance of :py:class:`MGF` or :py:class:`IndexedMGF`.
     """
-    return MGF(*args, **kwargs)
+    if args:
+        source = args[0]
+    else:
+        source = kwargs.get('source')
+    use_index = kwargs.pop('use_index', None)
+    use_index = aux._check_use_index(source, use_index, True)
+    tp = IndexedMGF if use_index else MGF
 
-def get_spectrum(source, title, use_header=True, convert_arrays=2, read_charges=True, dtype=None):
+    return tp(*args, **kwargs)
+
+
+def get_spectrum(source, title, *args, **kwargs):
     """Read one spectrum (with given `title`) from `source`.
 
     See :py:func:`read` for explanation of parameters affecting the output.
@@ -269,8 +443,7 @@ def get_spectrum(source, title, use_header=True, convert_arrays=2, read_charges=
         A dict with the spectrum, if it is found, and None otherwise.
 
     """
-    with MGF(source, use_header=use_header, convert_arrays=convert_arrays,
-            read_charges=read_charges, dtype=dtype) as f:
+    with read(source, *args, **kwargs) as f:
         return f[title]
 
 

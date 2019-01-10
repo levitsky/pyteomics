@@ -15,6 +15,7 @@ Contents:
    api/achrom
    api/electrochem
    api/fasta
+   api/peff
    api/mzml
    api/mzxml
    api/mgf
@@ -25,6 +26,7 @@ Contents:
    api/mzid
    api/featurexml
    api/trafoxml
+   api/traml
    api/auxiliary
    api/pylab_aux
    api/xml

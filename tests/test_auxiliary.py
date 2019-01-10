@@ -14,7 +14,6 @@ psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase,
             np.arange(0.01, 0.062, 0.001)))
 
 class QvalueTest(unittest.TestCase):
-
     key = staticmethod(op.itemgetter(0))
     is_decoy = staticmethod(lambda x: x[1].islower())
     pep = staticmethod(op.itemgetter(2))
@@ -783,7 +782,7 @@ class FDRTest(unittest.TestCase):
         pep = [self.pep((s, l, p)) for s, l, p in psms]
         self._run_check(psms, is_decoy=isd, pep=pep)
 
-class OtherTests(unittest.TestCase):
+class RegressionTests(unittest.TestCase):
     x = [1, 2, 3]
     y = [3, 5, 7]
     a = 2
@@ -801,7 +800,7 @@ class OtherTests(unittest.TestCase):
     def test_linear_regression_simple(self):
         result = aux.linear_regression(self.x, self.y)
         self._test_linreg(result)
-    
+
     def test_linear_regression_simple_vertical(self):
         result = aux.linear_regression_vertical(self.x, self.y)
         self._test_linreg(result)
@@ -847,6 +846,33 @@ class OtherTests(unittest.TestCase):
     def test_linear_regression_shape_exception_perpendicular(self):
         with self.assertRaises(aux.PyteomicsError):
             aux.linear_regression_perpendicular(self.x)
+
+class OffsetIndexTests(unittest.TestCase):
+    def setUp(self):
+        self.sequence = [(str(i), i) for i in range(10)]
+        self.index = aux.OffsetIndex(self.sequence)
+
+    def test_index_sequence(self):
+        self.assertEqual(self.index.index_sequence, tuple(self.sequence))
+
+    def test_find(self):
+        self.assertEqual(self.index.find('3'), 3)
+
+    def test_from_index(self):
+        self.assertEqual(self.index.from_index(3), '3')
+        self.assertEqual(self.index.from_index(4, True), ('4', 4))
+
+    def test_from_slice(self):
+        self.assertEqual(self.index.from_slice(slice(1, 3)), ['1', '2'])
+        self.assertEqual(self.index.from_slice(slice(1, 3), True), self.sequence[1:3])
+
+    def test_between(self):
+        self.assertEqual(self.index.between('1', '3'), ['1', '2', '3'])
+        self.assertEqual(self.index.between('1', '3', True), [('1', 1), ('2', 2), ('3', 3)])
+        self.assertEqual(self.index.between('3', '1'), ['1', '2', '3'])
+        self.assertEqual(self.index.between(None, '3'), ['0', '1', '2', '3'])
+        self.assertEqual(self.index.between('8', None), ['8', '9'])
+
 
 import warnings
 if __name__ == '__main__':

@@ -75,13 +75,16 @@ This module requres :py:mod:`lxml`.
 from . import xml, auxiliary as aux, _schema_defaults
 import operator as op
 
-class ProtXML(xml.XML):
+class ProtXML(xml.MultiProcessingXML):
     """Parser class for protXML files."""
     file_format = 'protXML'
     _root_element = 'protein_summary'
     _default_schema = _schema_defaults._protxml_schema_defaults
     # _default_version = None
     _default_iter_tag = 'protein_group'
+    _indexed_tag_keys = {'protein_group': 'group_number'}
+    _default_id_attr = 'group_number'
+    _indexed_tags = {'protein_group'}
     _structures_to_flatten = {'annotation'}
     # attributes which contain unconverted values
     _convert_items = {'float':  {'pct_spectrum_ids'},
@@ -151,7 +154,10 @@ def read(source, read_schema=False, iterative=True, **kwargs):
 
     return ProtXML(source, read_schema=read_schema, iterative=iterative)
 
-chain = aux._make_chain(read, 'read')
+
+# chain = aux._make_chain(read, 'read')
+chain = aux.ChainBase._make_chain(ProtXML)
+
 
 def _is_decoy_prefix(pg, prefix='DECOY_'):
     """Determine if a protein group should be considered decoy.
