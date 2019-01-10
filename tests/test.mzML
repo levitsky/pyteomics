@@ -114,7 +114,7 @@
             </binaryDataArray>
           </binaryDataArrayList>
         </spectrum>
-        <spectrum index="1" id="controllerType=0 controllerNumber=1 scan=1" defaultArrayLength="19914">
+        <spectrum index="1" id="controllerType=0 controllerNumber=1 scan=2" defaultArrayLength="19914">
           <cvParam cvRef="MS" accession="MS:1000511" name="ms level" value="1"/>
           <cvParam cvRef="MS" accession="MS:1000580" name="MSn spectrum" value=""/>
           <cvParam cvRef="MS" accession="MS:1000130" name="positive scan" value=""/>
@@ -127,7 +127,7 @@
           <scanList count="1">
             <cvParam cvRef="MS" accession="MS:1000795" name="no combination" value=""/>
             <scan instrumentConfigurationRef="IC1">
-              <cvParam cvRef="MS" accession="MS:1000016" name="scan start time" value="0.0049350000000000002" unitCvRef="UO" unitAccession="UO:0000031" unitName="minute"/>
+              <cvParam cvRef="MS" accession="MS:1000016" name="scan start time" value="0.0059350000000000002" unitCvRef="UO" unitAccession="UO:0000031" unitName="minute"/>
               <cvParam cvRef="MS" accession="MS:1000512" name="filter string" value="FTMS + p ESI Full ms [200.00-2000.00]"/>
               <cvParam cvRef="MS" accession="MS:1000616" name="preset scan configuration" value="1"/>
               <userParam name="[Thermo Trailer Extra]Monoisotopic M/Z:" value="810.41522216796875" type="xsd:float"/>
@@ -154,7 +154,7 @@
             </binaryDataArray>
           </binaryDataArrayList>
         </spectrum>
- 
+
       </spectrumList>
       <chromatogramList count="1" defaultDataProcessingRef="pwiz_Reader_Thermo_conversion">
         <chromatogram index="0" id="TIC" defaultArrayLength="48">

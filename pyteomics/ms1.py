@@ -10,9 +10,11 @@ human-readable format for MS1 data. It allows storing MS1 peak lists and
 exprimental parameters.
 
 This module provides minimalistic infrastructure for access to data stored in
-MS1 files. The most important function is :py:func:`read`, which
-reads spectra and related information as saves them into human-readable
-:py:class:`dicts`.
+MS1 files.
+Two main classes are :py:class:`MS1`, which provides an iterative, text-mode parser,
+and :py:class:`IndexedMS1`, which is a binary-mode parser that supports random access using scan IDs
+and retention times.
+The function :py:func:`read` helps dispatch between the two classes.
 Also, common parameters can be read from MS1 file header with
 :py:func:`read_header` function.
 
@@ -52,10 +54,273 @@ try:
     import numpy as np
 except ImportError:
     np = None
-_array_keys = ['m/z array', 'intensity array']
 
-@aux._file_reader()
-def read(source=None, use_header=False, convert_arrays=2, read_charges=True, dtype=None):
+
+class MS1Base():
+    """Abstract class representing an MS1 file. Subclasses implement different approaches to parsing."""
+    _array_keys = ['m/z array', 'intensity array']
+    def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None):
+        if convert_arrays and np is None:
+            raise aux.PyteomicsError('numpy is required for array conversion')
+        self._convert_arrays = convert_arrays
+        self._dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in self._array_keys}
+        self._use_header = use_header
+        if use_header:
+            self._header = self._read_header()
+        else:
+            self._header = None
+        self._source_name = getattr(source, 'name', str(source))
+
+    @property
+    def header(self):
+        return self._header
+
+    def _read_header_lines(self, lines):
+        header = {}
+        for line in lines:
+            if line[0] != 'H':
+                break
+            l = line.split('\t', 2)
+            if len(l) < 3:
+                l = line.split(None, 2)
+            key = l[1]
+            val = l[2].strip()
+            header[key] = val
+        return header
+
+    def _read_spectrum_lines(self, lines):
+        reading_spectrum = False
+        params = {}
+        masses = []
+        intensities = []
+        if self._use_header: params.update(self.header)
+
+        def make_out():
+            if 'RTime' in params:
+                params['RTime'] = float(params['RTime'])
+            out = {'params': params}
+            if self._convert_arrays:
+                data = {'m/z array': masses, 'intensity array': intensities}
+                for key, values in data.items():
+                    out[key] = np.array(values, dtype=self._dtype_dict.get(key))
+            else:
+                out['m/z array'] = masses
+                out['intensity array'] = intensities
+            return out
+
+        for line in lines:
+            sline = line.strip().split(None, 2)
+            if not sline: continue
+            if not reading_spectrum:
+                if sline[0] == 'S':
+                    reading_spectrum = True
+                    params['scan'] = tuple(sline[1:])
+                # otherwise we are not interested; do nothing, just move along
+            else:
+                if not sline:
+                    pass
+                elif sline[0] == 'S':
+                    return make_out()
+
+                else:
+                    if sline[0] == 'I': # spectrum-specific parameters!
+                        params[sline[1]] = sline[2]
+                    else: # this must be a peak list
+                        try:
+                            masses.append(float(sline[0]))            # this may cause
+                            intensities.append(float(sline[1]))       # exceptions...\
+                        except ValueError:
+                            raise aux.PyteomicsError(
+                                 'Error when parsing %s. Line: %s' %
+                                 (self._source_name, line))
+                        except IndexError:
+                            pass
+        return make_out()
+
+
+class MS1(aux.FileReader, MS1Base):
+    """
+    A class representing an MS1 file. Supports the `with` syntax and direct iteration for sequential
+    parsing.
+
+    :py:class:`MGF` object behaves as an iterator, **yielding** spectra one by one.
+    Each 'spectrum' is a :py:class:`dict` with three keys: 'm/z array',
+    'intensity array', and 'params'. 'm/z array' and
+    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
+    and 'params' stores a :py:class:`dict` of parameters.
+
+    Attributes
+    ----------
+
+    header : dict
+        The file header.
+
+    """
+    def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, encoding=None):
+        aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
+        MS1Base.__init__(self, source, use_header, convert_arrays, dtype)
+        self.encoding = encoding
+
+    @aux._keepstate_method
+    def _read_header(self):
+        return self._read_header_lines(self._source)
+
+    def _read_spectrum(self, firstline):
+        return self._read_spectrum_lines(self._source, firstline)
+
+    def _read(self):
+        reading_spectrum = False
+        params = {}
+        masses = []
+        intensities = []
+        if self._use_header: params.update(self.header)
+
+        def make_out():
+            if 'RTime' in params:
+                params['RTime'] = float(params['RTime'])
+            out = {'params': params}
+            if self._convert_arrays:
+                data = {'m/z array': masses, 'intensity array': intensities}
+                for key, values in data.items():
+                    out[key] = np.array(values, dtype=self._dtype_dict.get(key))
+            else:
+                out['m/z array'] = masses
+                out['intensity array'] = intensities
+            return out
+
+        for line in self._source:
+            sline = line.strip().split(None, 2)
+            if not reading_spectrum:
+                if sline[0] == 'S':
+                    reading_spectrum = True
+                    params['scan'] = tuple(sline[1:])
+                # otherwise we are not interested; do nothing, just move along
+            else:
+                if not sline:
+                    pass
+                elif sline[0] == 'S':
+                    yield make_out()
+                    params = dict(self.header) if self._use_header else {}
+                    params['scan'] = tuple(sline[1:])
+                    masses = []
+                    intensities = []
+                else:
+                    if sline[0] == 'I': # spectrum-specific parameters!
+                        params[sline[1]] = sline[2]
+                    else: # this must be a peak list
+                        try:
+                            masses.append(float(sline[0]))            # this may cause
+                            intensities.append(float(sline[1]))       # exceptions...\
+                        except ValueError:
+                            raise aux.PyteomicsError(
+                                 'Error when parsing %s. Line: %s' %
+                                 (self._source_name, line))
+                        except IndexError:
+                            pass
+
+        yield make_out()
+
+
+class IndexedMS1(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.IndexedTextReader, MS1Base):
+    """
+    A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
+    parsing. Specific spectra can be accessed by title using the indexing syntax in constant time.
+    If created using a file object, it needs to be opened in binary mode.
+
+    When iterated, :py:class:`IndexedMGF` object yields spectra one by one.
+    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
+    'intensity array', 'charge array' and 'params'. 'm/z array' and
+    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
+    'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
+    and 'params' stores a :py:class:`dict` of parameters (keys and values are
+    :py:class:`str`, keys corresponding to MGF, lowercased).
+
+
+    Attributes
+    ----------
+
+    header : dict
+        The file header.
+    time : RTLocator
+        A property used for accessing spectra by retention time.
+    """
+
+    delimiter = '\nS'
+    label = r'^[\n]?S\s+(\S+)'
+
+    def __init__(self, source=None, use_header=False, convert_arrays=True,
+        dtype=None, encoding='utf-8', block_size=1000000, _skip_index=False):
+        aux.TimeOrderedIndexedReaderMixin.__init__(self, source, self._read, False, (), {}, encoding,
+            block_size, _skip_index=_skip_index)
+        MS1Base.__init__(self, source, use_header, convert_arrays, dtype)
+
+    def __reduce_ex__(self, protocol):
+        return (self.__class__,
+            (self._source_init, False, self._convert_arrays,
+                self._read_charges, self._dtype_dict, self.encoding, self.block_size, True),
+            self.__getstate__())
+
+    def __getstate__(self):
+        state = super(IndexedMS1, self).__getstate__()
+        state['use_header'] = self._use_header
+        state['header'] = self._header
+        return state
+
+    def __setstate__(self, state):
+        super(IndexedMS1, self).__setstate__(state)
+        self._use_header = state['use_header']
+        self._header = state['header']
+
+    @aux._keepstate_method
+    def _read_header(self):
+        try:
+            first = next(v for v in self._offset_index.values())[0]
+        except StopIteration: # the index is empty, no spectra in file
+            first = -1
+        header_lines = self.read(first).decode(self.encoding).split('\n')
+        return self._read_header_lines(header_lines)
+
+    def _item_from_offsets(self, offsets):
+        start, end = offsets
+        lines = self._read_lines_from_offsets(start, end)
+        return self._read_spectrum_lines(lines)
+
+    def _read(self, **kwargs):
+        for _, offsets in self._offset_index.items():
+            spectrum = self._item_from_offsets(offsets)
+            yield spectrum
+
+    def get_spectrum(self, key):
+        return self.get_by_id(key)
+
+    def _get_time(self, spectrum):
+        try:
+            return spectrum['params']['RTime']
+        except KeyError:
+            raise aux.PyteomicsError('RT information not found.')
+
+
+def read_header(source, *args, **kwargs):
+    """
+    Read the specified MS1 file, get the parameters specified in the header
+    as a :py:class:`dict`.
+
+    Parameters
+    ----------
+
+    source : str or file
+        File name or file object representing an file in MS1 format.
+
+    Returns
+    -------
+
+    header : dict
+    """
+    kwargs['use_header'] = True
+    return read(source, *args, **kwargs).header
+
+
+def read(*args, **kwargs):
     """Read an MS1 file and return entries iteratively.
 
     Read the specified MS1 file, **yield** spectra one by one.
@@ -80,96 +345,41 @@ def read(source=None, use_header=False, convert_arrays=2, read_charges=True, dty
         If :py:const:`False`, m/z and intensities will be returned as regular lists.
         If :py:const:`True` (default), they will be converted to regular :py:class:`numpy.ndarray`'s.
         Conversion requires :py:mod:`numpy`.
-    
+
     dtype : type or str or dict, optional
         dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
         Keys should be 'm/z array' and/or 'intensity array'.
 
-    Returns
-    -------
+    encoding : str, optional
+        File encoding.
 
-    out : FileReader
-    """
-    if convert_arrays and np is None:
-        raise aux.PyteomicsError('numpy is required for array conversion')
-    dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in _array_keys}
-    header = read_header(source)
-    reading_spectrum = False
-    params = {}
-    masses = []
-    intensities = []
-    if use_header: params.update(header)
+    use_index : bool, optional
+        Determines which parsing method to use. If :py:const:`True` (default), an instance of
+        :py:class:`IndexedMS1` is created. This facilitates random access by scan titles.
+        If an open file is passed as `source`, it needs to be open in binary mode.
 
-    def make_out():
-        out = {'params': params}
-        if convert_arrays:
-            data = {'m/z array': masses, 'intensity array': intensities}
-            for key, values in data.items():
-                out[key] = np.array(values, dtype=dtype_dict.get(key))
-        else:
-            out['m/z array'] = masses
-            out['intensity array'] = intensities
-        return out
+        If :py:const:`False`, an instance of :py:class:`MS1` is created. It reads
+        `source` in text mode and is suitable for iterative parsing.
 
-    for line in source:
-        sline = line.strip().split(None, 2)
-        if not reading_spectrum:
-            if sline[0] == 'S':
-                reading_spectrum = True
-                params['scan'] = tuple(sline[1:])
-            # otherwise we are not interested; do nothing, just move along
-        else:
-            if not sline:
-                pass
-            elif sline[0] == 'S':
-                yield make_out()
-                params = dict(header) if use_header else {}
-                masses = []
-                intensities = []
-            else:
-                if sline[0] == 'I': # spectrum-specific parameters!
-                    params[sline[1]] = sline[2]
-                else: # this must be a peak list
-                    try:
-                        masses.append(float(sline[0]))            # this may cause
-                        intensities.append(float(sline[1]))       # exceptions...\
-                    except ValueError:
-                        raise aux.PyteomicsError(
-                             'Error when parsing %s. Line: %s' %
-                             (source.name, line))
-                    except IndexError:
-                        pass
-
-    yield make_out()
-
-@aux._keepstate
-def read_header(source):
-    """
-    Read the specified MS1 file, get the parameters specified in the header
-    as a :py:class:`dict`.
-
-    Parameters
-    ----------
-
-    source : str or file
-        File name or file object representing an file in MS1 format.
+    block_size : int, optinal
+        Size of the chunk (in bytes) used to parse the file when creating the byte offset index.
+        (Accepted only for :py:class:`IndexedMGF`.)
 
     Returns
     -------
 
-    header : dict
+    out : :py:class:`MS1Base`
+        An instance of :py:class:`MS1` or :py:class:`IndexedMS1`, depending on `use_index` and `source`.
     """
-    with aux._file_obj(source, 'r') as source:
-        header = {}
-        for line in source:
-            if line[0] != 'H':
-                break
-            l = line.split('\t', 2)
-            if len(l) < 3:
-                l = line.split(None, 2)
-            key = l[1]
-            val = l[2].strip()
-            header[key] = val
-        return header
+    if args:
+        source = args[0]
+    else:
+        source = kwargs.get('source')
+    use_index = kwargs.pop('use_index', None)
+    use_index = aux._check_use_index(source, use_index, True)
+    tp = IndexedMS1 if use_index else MS1
+
+    return tp(*args, **kwargs)
+
 
 chain = aux._make_chain(read, 'read')

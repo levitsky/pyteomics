@@ -65,9 +65,9 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import numpy as np
 import re
 import warnings
+import numpy as np
 from . import xml, auxiliary as aux, _schema_defaults
 from .xml import etree
 
@@ -90,30 +90,27 @@ STANDARD_ARRAYS = set([
 ])
 
 
-class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
+class MzML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for mzML files."""
     file_format = 'mzML'
     _root_element = 'mzML'
     _default_schema = _schema_defaults._mzml_schema_defaults
     _default_version = '1.1.0'
     _default_iter_tag = 'spectrum'
-    _structures_to_flatten = {'binaryDataArrayList', "referenceableParamGroupRef"}
+    _structures_to_flatten = {'binaryDataArrayList', 'referenceableParamGroupRef'}
     _indexed_tags = {'spectrum', 'chromatogram'}
 
     def __init__(self, *args, **kwargs):
         self.decode_binary = kwargs.pop('decode_binary', True)
-        xml.IndexSavingXML.__init__(self, *args, **kwargs)
-        xml.ArrayConversionMixin.__init__(self, *args, **kwargs)
+        super(MzML, self).__init__(*args, **kwargs)
 
     def __getstate__(self):
-        state = xml.IndexSavingXML.__getstate__(self)
-        state.update(xml.ArrayConversionMixin.__getstate__(self))
+        state = super(MzML, self).__getstate__()
         state['decode_binary'] = self.decode_binary
         return state
 
     def __setstate__(self, state):
-        xml.IndexSavingXML.__setstate__(self, state)
-        xml.ArrayConversionMixin.__setstate__(self, state)
+        super(MzML, self).__setstate__(state)
         self.decode_binary = state['decode_binary']
 
     def _detect_array_name(self, info):
@@ -162,11 +159,10 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         # can report it as such. Otherwise fall back
         # to "binary". This fallback signals special
         # behavior elsewhere.
-        elif n_candidates == 0:
+        if n_candidates == 0:
             if is_non_standard:
                 return NON_STANDARD_DATA_ARRAY
-            else:
-                return "binary"
+            return "binary"
         # Multiple choices means we need to make a decision which could
         # mask data from the user. This should never happen but stay safe.
         # There are multiple options to choose from. There is no way to
@@ -177,8 +173,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
             standard_options = set(candidates) & STANDARD_ARRAYS
             if standard_options:
                 return max(standard_options, key=len)
-            else:
-                return max(candidates, key=len)
+            return max(candidates, key=len)
 
     def _determine_array_dtype(self, info):
         dtype = None
@@ -208,17 +203,15 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
             if len(found_compression_types) == 1:
                 del info[found_compression_types[0]]
                 return found_compression_types[0]
-            else:
-                warnings.warn("Multiple options for binary array compression: %r" % (
-                    found_compression_types,))
-                return found_compression_types[0]
+            warnings.warn("Multiple options for binary array compression: %r" % (
+                found_compression_types,))
+            return found_compression_types[0]
         elif "name" in info:
             found_compression_types = known_compression_types & set(info['name'])
             if found_compression_types:
                 found_compression_types = tuple(found_compression_types)
                 if len(found_compression_types) == 1:
-                    if not self._skip_empty_cvparam_values:
-                        del info['name'][found_compression_types[0]]
+                    del info['name'][found_compression_types[0]]
                     return found_compression_types[0]
                 else:
                     warnings.warn("Multiple options for binary array compression: %r" % (
@@ -265,7 +258,7 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
         kwargs = dict(kw)
         rec = kwargs.pop('recursive', None)
         if name in {'indexedmzML', 'mzML'}:
-            info =  self._get_info(element,
+            info = self._get_info(element,
                     recursive=(rec if rec is not None else False),
                     **kwargs)
         else:
@@ -296,6 +289,9 @@ class MzML(xml.ArrayConversionMixin, xml.IndexSavingXML):
                     info.update(by_id)
                     del info[k]
                     info.pop('id', None)
+
+    def _get_time(self, scan):
+        return scan['scanList']['scan'][0]['scan start time']
 
 
 def read(source, read_schema=False, iterative=True, use_index=False, dtype=None, huge_tree=False):
@@ -399,7 +395,9 @@ def iterfind(source, path, **kwargs):
 
 version_info = xml._make_version_info(MzML)
 
-chain = aux._make_chain(read, 'read')
+# chain = aux._make_chain(read, 'read')
+
+chain = aux.ChainBase._make_chain(MzML)
 
 
 class PreIndexedMzML(MzML):
@@ -411,12 +409,17 @@ class PreIndexedMzML(MzML):
         Build up a `dict` of `dict` of offsets for elements. Calls :meth:`_find_index_list`
         and assigns the return value to :attr:`_offset_index`
         """
-        self._offset_index = xml._flatten_map(self._find_index_list())
+        index = self._find_index_list()
+        if index:
+            self._offset_index = index
+        else:
+            warnings.warn('Could not extract the embedded offset index. Falling back to default indexing procedure.')
+            super(PreIndexedMzML, self)._build_index()
 
     @xml._keepstate
     def _iterparse_index_list(self, offset):
-        index_map = {}
-        index = {}
+        index_map = xml.HierarchicalOffsetIndex()
+        index = index_map._inner_type()
         self._source.seek(offset)
         try:
             for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True):
@@ -460,7 +463,7 @@ class PreIndexedMzML(MzML):
         dict of str -> dict of str -> int
         """
         offsets = self._find_index_list_offset()
-        index_list = {}
+        index_list = xml.HierarchicalOffsetIndex()
         for offset in offsets:
             # Sometimes the offset is at the very beginning of the file,
             # due to a bug in an older version of ProteoWizard. If this crude
@@ -472,5 +475,5 @@ class PreIndexedMzML(MzML):
             # also emits invalid offsets which do not improve retrieval time.
             if offset < 1024:
                 continue
-            index_list.update(self._iterparse_index_list(offset))
+            index_list = self._iterparse_index_list(offset)
         return index_list

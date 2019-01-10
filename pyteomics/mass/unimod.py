@@ -299,8 +299,8 @@ class Brick(Base, HasFullNameMixin):
         composition = CompositionType()
         for element_relation in self.elements:
             symbol = element_relation.element
-            isotope, element = re.search(r'(?P<isotope>\d*)?(?P<element>\S+)', symbol).groups()
-            if isotope != '':
+            isotope, element = re.search(r'(?P<isotope>\d+)?(?P<element>\S+)', symbol).groups()
+            if isotope:
                 isotope = int(isotope)
                 iso_str = mass._make_isotope_string(element, isotope)
             else:
@@ -335,13 +335,13 @@ class Fragment(Base):
         session = object_session(self)
         for fragment_composition_relation in self._fragment_composition:
             symbol = fragment_composition_relation.brick_string
-            isotope, element = re.search(r'(?P<isotope>\d*)?(?P<element>\S+)', symbol).groups()
+            isotope, element = re.search(r'(?P<isotope>\d+)?(?P<element>\S+)', symbol).groups()
             count = fragment_composition_relation.count
             if count is not None:
                 count = int(count)
             else:
                 count = 1
-            if isotope != '':
+            if isotope:
                 name = mass._make_isotope_string(element, isotope)
             else:
                 name = element

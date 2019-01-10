@@ -96,11 +96,11 @@ This module requires :py:mod:`lxml`.
 #   limitations under the License.
 
 import warnings
-warnings.formatwarning = lambda msg, *args: str(msg) + '\n'
 from . import auxiliary as aux
 from . import xml, _schema_defaults
 
-class MzIdentML(xml.IndexSavingXML):
+
+class MzIdentML(xml.IndexSavingXML, xml.MultiProcessingXML):
     """Parser class for MzIdentML files."""
     file_format = 'mzIdentML'
     _root_element = 'MzIdentML'
@@ -108,9 +108,17 @@ class MzIdentML(xml.IndexSavingXML):
     _default_version = '1.1.0'
     _default_iter_tag = 'SpectrumIdentificationResult'
     _structures_to_flatten = {'Fragmentation'}
-    _indexed_tags = {
+    _indexed_tags = {'SpectrumIdentificationResult',
         'PeptideEvidence', 'SpectrumIdentificationItem', 'SearchDatabase',
         'DBSequence', 'SpectraData', 'Peptide'}
+
+    _element_handlers = xml.XML._element_handlers.copy()
+    _element_handlers.update({
+        "Modification": xml.XML._promote_empty_parameter_to_name,
+        "SpectrumIDFormat": xml.XML._promote_empty_parameter_to_name,
+        "FileFormat": xml.XML._promote_empty_parameter_to_name,
+        "Role": xml.XML._promote_empty_parameter_to_name
+    })
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('retrieve_refs', True)
@@ -138,8 +146,9 @@ class MzIdentML(xml.IndexSavingXML):
         ends in _ref. Removes the id attribute from `info`"""
         for k, v in dict(info).items():
             if k.endswith('_ref'):
-                by_id = self.get_by_id(v, retrieve_refs=True)
-                if by_id is None:
+                try:
+                    by_id = self.get_by_id(v, retrieve_refs=True)
+                except KeyError:
                     warnings.warn('Ignoring unresolved reference: ' + v)
                 else:
                     info.update(by_id)
@@ -288,7 +297,10 @@ def get_by_id(source, elem_id, **kwargs):
     """
     return MzIdentML(source, **kwargs).get_by_id(elem_id, **kwargs)
 
-chain = aux._make_chain(read, 'read')
+
+# chain = aux._make_chain(read, 'read')
+chain = aux.ChainBase._make_chain(MzIdentML)
+
 
 def is_decoy(psm):
     """Given a PSM dict, return :py:const:`True` if all proteins in the dict
