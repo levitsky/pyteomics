@@ -56,9 +56,10 @@ except ImportError:
     np = None
 
 
-class MS1Base():
+class MS1Base(object):
     """Abstract class representing an MS1 file. Subclasses implement different approaches to parsing."""
     _array_keys = ['m/z array', 'intensity array']
+
     def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None):
         if convert_arrays and np is None:
             raise aux.PyteomicsError('numpy is required for array conversion')
@@ -80,62 +81,84 @@ class MS1Base():
         for line in lines:
             if line[0] != 'H':
                 break
-            l = line.split('\t', 2)
-            if len(l) < 3:
-                l = line.split(None, 2)
-            key = l[1]
-            val = l[2].strip()
+            tokens = line.split('\t', 2)
+            if len(tokens) < 3:
+                tokens = line.split(None, 2)
+            key = tokens[1]
+            val = tokens[2].strip()
             header[key] = val
         return header
+
+    def _make_scan(self, params, masses, intensities):
+        if 'RTime' in params:
+            params['RTime'] = float(params['RTime'])
+        out = {'params': params}
+        if self._convert_arrays:
+            data = {'m/z array': masses, 'intensity array': intensities}
+            for key, values in data.items():
+                out[key] = np.array(values, dtype=self._dtype_dict.get(key))
+        else:
+            out['m/z array'] = masses
+            out['intensity array'] = intensities
+        return out
+
+    def _handle_S(self, line, sline, params):
+        sline = line.strip().split(None, 3)
+        params['scan'] = tuple(sline[1:3])
+        if len(sline) == 4:
+            params['precursor m/z'] = float(params[3])
+
+    def _handle_I(self, line, sline, params):
+        params[sline[1]] = sline[2]
+
+    def _handle_Z(self, line, sline, params):
+        params.setdefault('charge', []).append(float(sline[1]))
+        params.setdefault('neutral mass', []).append(float(sline[2]))
+
+    def _handle_D(self, line, sline, params):
+        params.setdefault('analyzer', []).append(sline[1:])
 
     def _read_spectrum_lines(self, lines):
         reading_spectrum = False
         params = {}
         masses = []
         intensities = []
-        if self._use_header: params.update(self.header)
-
-        def make_out():
-            if 'RTime' in params:
-                params['RTime'] = float(params['RTime'])
-            out = {'params': params}
-            if self._convert_arrays:
-                data = {'m/z array': masses, 'intensity array': intensities}
-                for key, values in data.items():
-                    out[key] = np.array(values, dtype=self._dtype_dict.get(key))
-            else:
-                out['m/z array'] = masses
-                out['intensity array'] = intensities
-            return out
+        if self._use_header:
+            params.update(self.header)
 
         for line in lines:
             sline = line.strip().split(None, 2)
-            if not sline: continue
+            if not sline:
+                continue
             if not reading_spectrum:
                 if sline[0] == 'S':
                     reading_spectrum = True
-                    params['scan'] = tuple(sline[1:])
+                    self._handle_S(line, sline, params)
                 # otherwise we are not interested; do nothing, just move along
             else:
                 if not sline:
                     pass
                 elif sline[0] == 'S':
-                    return make_out()
+                    return self._make_scan(params, masses, intensities)
 
                 else:
-                    if sline[0] == 'I': # spectrum-specific parameters!
-                        params[sline[1]] = sline[2]
-                    else: # this must be a peak list
+                    if sline[0] == 'I':  # spectrum-specific parameters!
+                        self._handle_I(line, sline, params)
+                    elif sline[0] == 'Z':
+                        self._handle_Z(line, sline, params)
+                    elif sline[0] == 'D':
+                        self._handle_D(line, sline, params)
+                    else:  # this must be a peak list
                         try:
                             masses.append(float(sline[0]))            # this may cause
                             intensities.append(float(sline[1]))       # exceptions...\
                         except ValueError:
                             raise aux.PyteomicsError(
-                                 'Error when parsing %s. Line: %s' %
-                                 (self._source_name, line))
+                                'Error when parsing %s. Line: %s' % (
+                                    self._source_name, line))
                         except IndexError:
                             pass
-        return make_out()
+        return self._make_scan(params, masses, intensities)
 
 
 class MS1(aux.FileReader, MS1Base):
@@ -143,7 +166,7 @@ class MS1(aux.FileReader, MS1Base):
     A class representing an MS1 file. Supports the `with` syntax and direct iteration for sequential
     parsing.
 
-    :py:class:`MGF` object behaves as an iterator, **yielding** spectra one by one.
+    :py:class:`MS1` object behaves as an iterator, **yielding** spectra one by one.
     Each 'spectrum' is a :py:class:`dict` with three keys: 'm/z array',
     'intensity array', and 'params'. 'm/z array' and
     'intensity array' store :py:class:`numpy.ndarray`'s of floats,
@@ -173,67 +196,61 @@ class MS1(aux.FileReader, MS1Base):
         params = {}
         masses = []
         intensities = []
-        if self._use_header: params.update(self.header)
-
-        def make_out():
-            if 'RTime' in params:
-                params['RTime'] = float(params['RTime'])
-            out = {'params': params}
-            if self._convert_arrays:
-                data = {'m/z array': masses, 'intensity array': intensities}
-                for key, values in data.items():
-                    out[key] = np.array(values, dtype=self._dtype_dict.get(key))
-            else:
-                out['m/z array'] = masses
-                out['intensity array'] = intensities
-            return out
+        if self._use_header:
+            params.update(self.header)
 
         for line in self._source:
             sline = line.strip().split(None, 2)
+            if not sline:
+                continue
             if not reading_spectrum:
                 if sline[0] == 'S':
                     reading_spectrum = True
-                    params['scan'] = tuple(sline[1:])
+                    self._handle_S(line, sline, params)
                 # otherwise we are not interested; do nothing, just move along
             else:
                 if not sline:
                     pass
                 elif sline[0] == 'S':
-                    yield make_out()
+                    yield self._make_scan(params, masses, intensities)
                     params = dict(self.header) if self._use_header else {}
                     params['scan'] = tuple(sline[1:])
                     masses = []
                     intensities = []
                 else:
-                    if sline[0] == 'I': # spectrum-specific parameters!
-                        params[sline[1]] = sline[2]
-                    else: # this must be a peak list
+                    if sline[0] == 'I':  # spectrum-specific parameters!
+                        self._handle_I(line, sline, params)
+                    elif sline[0] == 'Z':
+                        self._handle_Z(line, sline, params)
+                    elif sline[0] == 'D':
+                        self._handle_D(line, sline, params)
+                    else:  # this must be a peak list
                         try:
                             masses.append(float(sline[0]))            # this may cause
                             intensities.append(float(sline[1]))       # exceptions...\
                         except ValueError:
                             raise aux.PyteomicsError(
-                                 'Error when parsing %s. Line: %s' %
-                                 (self._source_name, line))
+                                'Error when parsing %s. Line: %s' % (
+                                    self._source_name, line))
                         except IndexError:
                             pass
 
-        yield make_out()
+        yield self._make_scan(params, masses, intensities)
 
 
 class IndexedMS1(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.IndexedTextReader, MS1Base):
     """
-    A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
+    A class representing an MS1 file. Supports the `with` syntax and direct iteration for sequential
     parsing. Specific spectra can be accessed by title using the indexing syntax in constant time.
     If created using a file object, it needs to be opened in binary mode.
 
-    When iterated, :py:class:`IndexedMGF` object yields spectra one by one.
+    When iterated, :py:class:`IndexedMS1` object yields spectra one by one.
     Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
     'intensity array', 'charge array' and 'params'. 'm/z array' and
     'intensity array' store :py:class:`numpy.ndarray`'s of floats,
     'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
     and 'params' stores a :py:class:`dict` of parameters (keys and values are
-    :py:class:`str`, keys corresponding to MGF, lowercased).
+    :py:class:`str`, keys corresponding to MS1, lowercased).
 
 
     Attributes
@@ -363,7 +380,7 @@ def read(*args, **kwargs):
 
     block_size : int, optinal
         Size of the chunk (in bytes) used to parse the file when creating the byte offset index.
-        (Accepted only for :py:class:`IndexedMGF`.)
+        (Accepted only for :py:class:`IndexedMS1`.)
 
     Returns
     -------
