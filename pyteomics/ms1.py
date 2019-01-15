@@ -105,7 +105,7 @@ class MS1Base(object):
     def _handle_S(self, line, sline, params):
         sline = line.strip().split(None, 3)
         params['scan'] = tuple(sline[1:3])
-        if len(sline) == 4:
+        if len(sline) == 4:  # in MS2 the S line contains the precursor m/z as a 4th column
             params['precursor m/z'] = float(params[3])
 
     def _handle_I(self, line, sline, params):
@@ -144,9 +144,9 @@ class MS1Base(object):
                 else:
                     if sline[0] == 'I':  # spectrum-specific parameters!
                         self._handle_I(line, sline, params)
-                    elif sline[0] == 'Z':
+                    elif sline[0] == 'Z':  # MS2-specific charge state guess
                         self._handle_Z(line, sline, params)
-                    elif sline[0] == 'D':
+                    elif sline[0] == 'D':  # MS2-specific analyzer annotation
                         self._handle_D(line, sline, params)
                     else:  # this must be a peak list
                         try:
@@ -220,9 +220,9 @@ class MS1(aux.FileReader, MS1Base):
                 else:
                     if sline[0] == 'I':  # spectrum-specific parameters!
                         self._handle_I(line, sline, params)
-                    elif sline[0] == 'Z':
+                    elif sline[0] == 'Z':  # MS2-specific charge state guess
                         self._handle_Z(line, sline, params)
-                    elif sline[0] == 'D':
+                    elif sline[0] == 'D':  # MS2-specific analyzer annotation
                         self._handle_D(line, sline, params)
                     else:  # this must be a peak list
                         try:
