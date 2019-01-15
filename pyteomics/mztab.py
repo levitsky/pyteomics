@@ -155,12 +155,14 @@ class MzTab(_MzTabParserBase):
     def type(self):
         return self.metadata['mzTab-type']
 
-    def _collapse_properties(self, proplist):
+    def collapse_properties(self, proplist):
         entities = OrderedDict()
+        rest = {}
         for key, value in proplist.items():
             try:
                 entity, prop_name = key.rsplit("-", 1)
             except ValueError:
+                rest[key] = value
                 continue
             try:
                 entity_dict = entities[entity]
@@ -172,6 +174,7 @@ class MzTab(_MzTabParserBase):
                 entity = entities[key]
                 if 'name' not in entity:
                     entity['name'] = value
+        entities.update(rest)
         return entities
 
     def __getitem__(self, key):
