@@ -94,7 +94,8 @@ class _MzTabTable(_MzTabParserBase):
         self.rows.append([self._cast_value(v) for v in row])
 
     def as_dict(self):
-        return [dict(zip(self.header, row)) for row in self.rows]
+        return {"rows": [dict(zip(self.header, row)) for row in self.rows],
+                "name": self.name}
 
     def as_df(self, index=None):
         """Convert the table to a DataFrame in memory.
@@ -133,15 +134,25 @@ class MzTab(_MzTabParserBase):
         The table of small molecule identifications.
     spectrum_match_table : _MzTabTable or pd.DataFrame
         The table of spectrum-to-peptide match identifications.
+    table_format: 'df', 'dict', or callable
+        The structure type to replace each table with. The string
+        'df' will use pd.DataFrame instances. 'dict' will create
+        a dictionary of dictionaries for each table. A callable
+        will be called on each raw _MzTabTable object
     """
 
-    def __init__(self, path, encoding='utf8'):
+    def __init__(self, path, encoding='utf8', table_format='df'):
         self.file = _file_obj(path, mode='r', encoding=encoding)
         self.metadata = OrderedDict()
         self.comments = []
+        self._table_format = table_format
         self._init_tables()
         self._parse()
         self._transform_tables()
+
+    @property
+    def table_format(self):
+        return self._table_format
 
     @property
     def version(self):
@@ -203,10 +214,21 @@ class MzTab(_MzTabParserBase):
         self.small_molecule_table = _MzTabTable('small molecule')
 
     def _transform_tables(self):
-        self.protein_table = self.protein_table.as_df('accession')
-        self.peptide_table = self.peptide_table.as_df()
-        self.spectrum_match_table = self.spectrum_match_table.as_df('PSM_ID')
-        self.small_molecule_table = self.small_molecule_table.as_df()
+        if self._table_format == 'df':
+            self.protein_table = self.protein_table.as_df('accession')
+            self.peptide_table = self.peptide_table.as_df()
+            self.spectrum_match_table = self.spectrum_match_table.as_df('PSM_ID')
+            self.small_molecule_table = self.small_molecule_table.as_df()
+        elif self._table_format == 'dict':
+            self.protein_table = self.protein_table.as_dict()
+            self.peptide_table = self.peptide_table.as_dict()
+            self.spectrum_match_table = self.spectrum_match_table.as_dict()
+            self.small_molecule_table = self.small_molecule_table.as_dict()
+        elif callable(self._table_format):
+            self.protein_table = self._table_format(self.protein_table)
+            self.peptide_table = self._table_format(self.peptide_table)
+            self.spectrum_match_table = self._table_format(self.spectrum_match_table)
+            self.small_molecule_table = self._table_format(self.small_molecule_table)
 
     def _parse(self):
         for i, line in enumerate(self.file):
