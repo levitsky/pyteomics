@@ -250,7 +250,7 @@ class IndexedMS1(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.In
     'intensity array' store :py:class:`numpy.ndarray`'s of floats,
     'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
     and 'params' stores a :py:class:`dict` of parameters (keys and values are
-    :py:class:`str`, keys corresponding to MS1, lowercased).
+    :py:class:`str`, keys corresponding to MS1).
 
 
     Attributes
