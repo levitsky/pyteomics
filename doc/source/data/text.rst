@@ -302,3 +302,19 @@ If you need to modify a single sequence, use the
     'TPPIDEE'
     >>> fasta.decoy_sequence('PEPTIDE', 'shuffle')
     'PTIDEPE'
+
+
+mzTab
+-----
+
+mzTab is a HUPO-PSI standardized text-based format for describing identification
+and quantification of peptides and small molecules. You can read an mzTab file into
+a set of :py:class:`pandas.DataFrame` objects with the :py:class:`pyteomics.mztab.MzTab`
+class.
+
+.. code-block:: python
+
+  >>> from pyteomics import mztab
+  >>> tables = mztab.MzTab("path/to/file.mzTab")
+  >>> psms = tables.spectrum_match_table
+  >>> # do something with DataFrame
