@@ -1,3 +1,24 @@
+"""
+mztab - mzTab file reader
+============================
+
+Summary
+-------
+
+`mzTab <http://www.psidev.info/mztab>`_  is one of the standards
+developed by the Proteomics Informatics working group of the HUPO Proteomics
+Standard Initiative.
+
+This module provides a way to read mzTab files into a collection of
+:py:class:`pandas.DataFrame` instances in memory, along with a mapping
+of the file-level metadata.
+
+Data access
+-----------
+
+  :py:class:`MzTab` - a class representing a single mzTab file
+"""
+
 import re
 
 import pandas as pd
@@ -167,6 +188,42 @@ class MzTab(_MzTabParserBase):
         return self.metadata['mzTab-type']
 
     def collapse_properties(self, proplist):
+        '''Collapse a flat property list into a hierchical structure.
+
+        This is intended to operate on :py:class:`Mapping` objects, including
+        :class:`dict`, :class:`pandas.Series` and :class:`pandas.DataFrame`.
+
+        .. code-block:: python
+
+            {
+              "ms_run[1]-format": "Andromeda:apl file format",
+              "ms_run[1]-location": "file://...",
+              "ms_run[1]-id_format": "scan number only nativeID format"
+            }
+
+        to
+        .. code-block:: python
+
+            {
+              "ms_run": [
+                {
+                  "format": "Andromeda:apl file format",
+                  "location": "file://...",
+                  "id_format": "scan number only nativeID format"
+                }
+              ]
+            }
+
+        Parameters
+        ----------
+        proplist: :class:`Mapping`
+            Key-Value pairs to collapse
+
+        Returns
+        -------
+        :class:`OrderedDict`:
+            The collapsed property list
+        '''
         entities = OrderedDict()
         rest = {}
         for key, value in proplist.items():
@@ -260,3 +317,12 @@ class MzTab(_MzTabParserBase):
                 self.spectrum_match_table.add(tokens[1:])
             elif tokens[0] == "SML":
                 self.small_molecule_table.add(tokens[1:])
+
+    def keys(self):
+        return OrderedDict(self).keys()
+
+    def values(self):
+        return OrderedDict(self).values()
+
+    def items(self):
+        return OrderedDict(self).items()
