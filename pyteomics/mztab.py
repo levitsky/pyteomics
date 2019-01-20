@@ -21,12 +21,21 @@ Data access
 
 import re
 
-import pandas as pd
+try:
+    import pandas as pd
+except ImportError:
+    pd = None
 
 from collections import OrderedDict
 
 from pyteomics.auxiliary import _file_obj
 from pyteomics.auxiliary import cvstr
+
+
+def _require_pandas():
+    if pd is None:
+        raise ImportError(
+            "To load an mzTab file into pandas.DataFrame objects, you must install pandas!")
 
 
 class _MzTabParserBase(object):
@@ -125,6 +134,7 @@ class _MzTabTable(_MzTabParserBase):
         -------
         pd.DataFrame
         """
+        _require_pandas()
         table = pd.DataFrame(data=self.rows, columns=self.header)
         if index is not None and len(table.index) > 0:
             table = table.set_index(index, drop=False)
@@ -134,6 +144,10 @@ class _MzTabTable(_MzTabParserBase):
     def clear(self):
         self.header = None
         self.rows = []
+
+
+DATA_FRAME_FORMAT = 'df'
+DICT_FORMAT = 'dict'
 
 
 class MzTab(_MzTabParserBase):
@@ -162,7 +176,9 @@ class MzTab(_MzTabParserBase):
         will be called on each raw _MzTabTable object
     """
 
-    def __init__(self, path, encoding='utf8', table_format='df'):
+    def __init__(self, path, encoding='utf8', table_format=DATA_FRAME_FORMAT):
+        if table_format == DATA_FRAME_FORMAT:
+            _require_pandas()
         self.file = _file_obj(path, mode='r', encoding=encoding)
         self.metadata = OrderedDict()
         self.comments = []
@@ -271,12 +287,12 @@ class MzTab(_MzTabParserBase):
         self.small_molecule_table = _MzTabTable('small molecule')
 
     def _transform_tables(self):
-        if self._table_format == 'df':
+        if self._table_format == DATA_FRAME_FORMAT:
             self.protein_table = self.protein_table.as_df('accession')
             self.peptide_table = self.peptide_table.as_df()
             self.spectrum_match_table = self.spectrum_match_table.as_df('PSM_ID')
             self.small_molecule_table = self.small_molecule_table.as_df()
-        elif self._table_format == 'dict':
+        elif self._table_format in (DICT_FORMAT, dict):
             self.protein_table = self.protein_table.as_dict()
             self.peptide_table = self.peptide_table.as_dict()
             self.spectrum_match_table = self.spectrum_match_table.as_dict()
