@@ -170,14 +170,15 @@ returned by :py:func:`read`, and the output path.
     1675.3 79.0
     END IONS
 
-MS1
----
+MS1 and MS2
+-----------
 
-`MS1 <http://dx.doi.org/10.1002/rcm.1603>`_ is a simple
-human-readable format for MS1 data. It allows storing MS1 peak lists and
-exprimental parameters. Just like MS1 format is quite similar to MGF,
-the corresponding module (:py:mod:`pyteomics.ms1`) provides the same functions
-and classes with very similar signatures for reading headers and spectra from files.
+`MS1 and MS2 <http://dx.doi.org/10.1002/rcm.1603>`_ are simple
+human-readable formats for MS1 and MSn data. It allows storing peak lists and
+exprimental parameters. Just like MS1 and MS2 formats are quite similar to MGF,
+the corresponding module (:py:mod:`pyteomics.ms1` and :py:mod:`pyteomics.ms2`) provides
+the same functions and classes with very similar signatures for reading headers and
+spectra from files.
 
 Writing is not supported at this time.
 
