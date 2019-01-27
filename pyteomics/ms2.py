@@ -1,5 +1,5 @@
 """
-ms2 - read and write MS/MS data in MS1 format
+ms2 - read and write MS/MS data in MS2 format
 =============================================
 
 Summary
