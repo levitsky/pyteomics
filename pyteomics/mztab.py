@@ -218,6 +218,7 @@ class MzTab(_MzTabParserBase):
             }
 
         to
+
         .. code-block:: python
 
             {

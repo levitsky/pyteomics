@@ -20,10 +20,12 @@ Contents:
    api/mzxml
    api/mgf
    api/ms1
+   api/ms2
    api/pepxml
    api/protxml
    api/tandem
    api/mzid
+   api/mztab
    api/featurexml
    api/trafoxml
    api/traml
