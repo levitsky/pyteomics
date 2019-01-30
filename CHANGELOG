@@ -1,10 +1,12 @@
-4.1
----
+4.1.dev
+-------
 
 - New module :py:mod:`pyteomics.mztab` provides a parser for `mzTab files <http://www.psidev.info/mztab>`_.
 
 - New module :py:mod:`pyteomics.ms2` provides a parser for **ms2** files.
   This is in fact an alias to :py:mod:`ms1`, which handles both formats.
+
+- New helper function :py:func:`pyteomics.pylab_aux.plot_spectrum`.
 
 4.0.1
 -----

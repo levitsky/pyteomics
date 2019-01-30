@@ -17,6 +17,11 @@ Generic plotting
   :py:func:`plot_function_contour` - plot a contour graph of a function of
   two variables.
 
+Spectrum visualization
+----------------------
+
+  :py:func:`plot_spectrum` - plot a single spectrum (m/z vs intensity).
+
 FDR control
 -----------
 
@@ -294,3 +299,34 @@ def plot_qvalue_curve(qvalues, *args, **kwargs):
     pylab.ylabel(kwargs.pop('ylabel', '# of PSMs'))
     pylab.title(kwargs.pop('title', ''))
     return pylab.plot(qvalues, 1+np.arange(qvalues.size), *args, **kwargs)
+
+def plot_spectrum(spectrum, centroided=False, *args, **kwargs):
+    """
+    Plot a spectrum, assuming it is a dictionary containing "m/z array" and "intensity array".
+
+    Parameters
+    ----------
+    spectrum : dict
+        A dictionary, as returned by MGF, mzML or mzXML parsers.
+        Must contain "m/z array" and "intensity array" keys with decoded arrays.
+    centroided : bool, optional
+        If :py:const:`True`, peaks of the spectrum are plotted using :py:func:`pylab.bar`.
+        If :py:const:`False` (default), the arrays are simply plotted using :py:func:`pylab.plot`.
+    xlabel : str, optional
+        Label for the X axis. Default is "m/z".
+    ylabel : str, optional
+        Label for the Y axis. Default is "intensity".
+    title : str, optional
+        The title. Empty by default.
+    *args, **kwargs : will be given to :py:func:`pylab.plot` or :py:func:`pylab.bar` (depending on `centroided`).
+    """
+    pylab.xlabel(kwargs.pop('xlabel', 'm/z'))
+    pylab.ylabel(kwargs.pop('ylabel', 'intensity'))
+    pylab.title(kwargs.pop('title', ''))
+    if centroided:
+        kwargs.setdefault('align', 'center')
+        kwargs.setdefault('width', 0)
+        kwargs.setdefault('linewidth', 1)
+        kwargs.setdefault('edgecolor', 'k')
+        return pylab.bar(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
+    return pylab.plot(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
