@@ -531,7 +531,7 @@ class IndexedSPD(SPDMixin, TwoLayerIndexedFASTA):
     pass
 
 
-class NCBIMixin():
+class NCBIMixin(FlavoredMixin):
     header_pattern = r'^(\S+)\s+(.*\S)\s+\[(.*)\]'
 
     def parser(self, header):
