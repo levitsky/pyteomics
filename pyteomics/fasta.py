@@ -549,6 +549,24 @@ class IndexedNCBI(NCBIMixin, TwoLayerIndexedFASTA):
     pass
 
 
+class RefSeqMixin(FlavoredMixin):
+    header_pattern = r'^ref\|([^|]+)\|\s*([^\[]*\S)\s*\[(.*)\]'
+
+    def parser(self, header):
+        ID, description, organism = re.match(self.header_pattern, header).groups()
+        return {'id': ID, 'description': description, 'taxon': organism}
+
+
+@_add_init
+class RefSeq(RefSeqMixin, FASTA):
+    pass
+
+
+@_add_init
+class IndexedRefSeq(RefSeqMixin, TwoLayerIndexedFASTA):
+    pass
+
+
 def read(source=None, use_index=None, flavor=None, **kwargs):
     """Parse a FASTA file. This function serves as a dispatcher between
     different parsers available in this module.
@@ -854,6 +872,7 @@ def _intify(d, keys):
 std_parsers = {'uniprot': (UniProt, IndexedUniProt), 'uniref': (UniRef, IndexedUniRef),
         'uniparc': (UniParc, IndexedUniParc), 'unimes': (UniMes, IndexedUniMes),
         'spd': (SPD, IndexedSPD), 'ncbi': (NCBI, IndexedNCBI),
+        'refseq': (RefSeq, IndexedRefSeq),
         None: (FASTA, IndexedFASTA)}
 """A dictionary with parsers for known FASTA header formats. For now, supported
 formats are those described at
@@ -861,7 +880,7 @@ formats are those described at
 
 _std_mixins = {'uniprot': UniProtMixin, 'uniref': UniRefMixin,
         'uniparc': UniParcMixin, 'unimes': UniMesMixin, 'spd': SPDMixin,
-        'ncbi': NCBIMixin}
+        'ncbi': NCBIMixin, 'refseq': RefSeqMixin}
 
 def parse(header, flavor='auto', parsers=None):
     """Parse the FASTA header and return a nice dictionary.
