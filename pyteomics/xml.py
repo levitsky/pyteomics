@@ -815,7 +815,7 @@ class ByteCountingXMLScanner(_file_obj):
         i = 0
         packed = b"|".join(self.indexed_tags)
         pattern = re.compile((r"^\s*<(%s)\s" % packed.decode()).encode())
-        attrs = re.compile(br"(\S+)=[\"']([^\"']+)[\"']")
+        attrs = re.compile(br"(\S+)=[\"']([^\"']*)[\"']")
         for line in self._chunk_iterator():
             match = pattern.match(line)
             if match:
