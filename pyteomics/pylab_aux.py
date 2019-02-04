@@ -61,6 +61,7 @@ This module requires :py:mod:`matplotlib`.
 import pylab
 import numpy as np
 from .auxiliary import linear_regression, PyteomicsError
+from . import parser, mass
 
 def plot_line(a, b, xlim=None, *args, **kwargs):
     """Plot a line y = a * x + b.
@@ -300,7 +301,7 @@ def plot_qvalue_curve(qvalues, *args, **kwargs):
     pylab.title(kwargs.pop('title', ''))
     return pylab.plot(qvalues, 1+np.arange(qvalues.size), *args, **kwargs)
 
-def plot_spectrum(spectrum, centroided=False, *args, **kwargs):
+def plot_spectrum(spectrum, centroided=True, *args, **kwargs):
     """
     Plot a spectrum, assuming it is a dictionary containing "m/z array" and "intensity array".
 
@@ -310,8 +311,8 @@ def plot_spectrum(spectrum, centroided=False, *args, **kwargs):
         A dictionary, as returned by MGF, mzML or mzXML parsers.
         Must contain "m/z array" and "intensity array" keys with decoded arrays.
     centroided : bool, optional
-        If :py:const:`True`, peaks of the spectrum are plotted using :py:func:`pylab.bar`.
-        If :py:const:`False` (default), the arrays are simply plotted using :py:func:`pylab.plot`.
+        If :py:const:`True` (default), peaks of the spectrum are plotted using :py:func:`pylab.bar`.
+        If :py:const:`False`, the arrays are simply plotted using :py:func:`pylab.plot`.
     xlabel : str, optional
         Label for the X axis. Default is "m/z".
     ylabel : str, optional
@@ -330,3 +331,38 @@ def plot_spectrum(spectrum, centroided=False, *args, **kwargs):
         kwargs.setdefault('edgecolor', 'k')
         return pylab.bar(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
     return pylab.plot(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
+
+
+def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
+    types = kwargs.pop('types', ('b', 'y'))
+    maxcharge = kwargs.pop('maxcharge', 1)
+    aa_mass = kwargs.pop('aa_mass', mass.std_aa_mass)
+    std_colors = {i: 'red' for i in 'xyz'}
+    std_colors.update({i: 'blue' for i in 'abc'})
+    colors = kwargs.pop('colors', std_colors)
+    tol = kwargs.pop('accuracy', 1e-5)
+    parsed = parser.parse(peptide, True)
+    n = len(parsed)
+    mz, names = {}, {}
+    for ion in types:
+        for charge in range(1, maxcharge+1):
+            if ion in 'abc':
+                for i in range(2, n):
+                    mz.setdefault(ion, []).append(mass.fast_mass2(parsed[1:i], aa_mass=aa_mass, charge=charge, ion_type=ion))
+                    names.setdefault(ion, []).append(ion + str(i-1))
+            else:
+                for i in range(1, n-2):
+                    mz.setdefault(ion, []).append(mass.fast_mass2(parsed[n-(i+1):-1], aa_mass=aa_mass, charge=charge, ion_type=ion))
+                    names.setdefault(ion, []).append(ion + str(i))
+
+    plot_spectrum(spectrum, centroided, *args, **kwargs)
+    for ion in types:
+        c = colors.get(ion, 'blue')
+        match = np.where(np.abs(spectrum['m/z array'] - np.array(mz[ion]).reshape(-1, 1)) / spectrum['m/z array'] < tol)
+        pseudo_spec = {'m/z array': spectrum['m/z array'][match[1]], 'intensity array': spectrum['intensity array'][match[1]]}
+        plot_spectrum(pseudo_spec, centroided=True, edgecolor=c)
+        for j, i in zip(*match):
+            x =  spectrum['m/z array'][i]
+            y = spectrum['intensity array'][i]
+            name = names[ion][j]
+            pylab.text(x, y, name, color=c, ha='center', clip_on=True)
