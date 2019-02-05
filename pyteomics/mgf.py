@@ -251,7 +251,7 @@ class IndexedMGF(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.In
     """
 
     delimiter = 'BEGIN IONS'
-    label = r'TITLE=([^\n]*\w)\s*'
+    label = r'TITLE=([^\n]*\S)\s*'
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
         dtype=None, encoding='utf-8', block_size=1000000, _skip_index=False):
