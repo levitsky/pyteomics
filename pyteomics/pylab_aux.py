@@ -340,7 +340,20 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
     std_colors = {i: 'red' for i in 'xyz'}
     std_colors.update({i: 'blue' for i in 'abc'})
     colors = kwargs.pop('colors', std_colors)
-    tol = kwargs.pop('accuracy', 1e-5)
+    ftol = kwargs.pop('ftol', None)
+    if ftol is None:
+        rtol = kwargs.pop('rtol', 1e-5)
+    adjust = kwargs.pop('adjust_text', None)
+    if adjust or adjust is None:
+        try:
+            from adjustText import adjust_text
+        except ImportError:
+            if adjust:
+                raise PyteomicsError('Install adjustText for text adjustment')
+            adjust = False
+        else:
+            if adjust is None:
+                adjust = True
     parsed = parser.parse(peptide, True)
     n = len(parsed)
     maxpeak = spectrum['intensity array'].max()
@@ -357,13 +370,20 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
                     names.setdefault(ion, []).append(ion[0] + str(i) + ion[1:])
 
     plot_spectrum(spectrum, centroided, *args, **kwargs)
+    texts = []
     for ion in types:
         c = colors.get(ion, colors.get(ion[0], 'blue'))
-        match = np.where(np.abs(spectrum['m/z array'] - np.array(mz[ion]).reshape(-1, 1)) / spectrum['m/z array'] < tol)
+        matrix = np.abs(spectrum['m/z array'] - np.array(mz[ion]).reshape(-1, 1))
+        if ftol is not None:
+            match = np.where(matrix < ftol)
+        else:
+            match = np.where(matrix / spectrum['m/z array'] < rtol)
         pseudo_spec = {'m/z array': spectrum['m/z array'][match[1]], 'intensity array': spectrum['intensity array'][match[1]]}
         plot_spectrum(pseudo_spec, centroided=True, edgecolor=c)
         for j, i in zip(*match):
             x = spectrum['m/z array'][i]
             y = spectrum['intensity array'][i] + maxpeak * 0.02
             name = names[ion][j]
-            pylab.text(x, y, name, color=c, ha='center', clip_on=True)
+            texts.append(pylab.text(x, y, name, color=c, ha='center', clip_on=True, backgroundcolor='#ffffff99'))
+    if adjust:
+        adjust_text(texts, only_move={'text': 'y', 'points': 'y', 'objects': 'y'}, autoalign=False, force_text=(1, 1))
