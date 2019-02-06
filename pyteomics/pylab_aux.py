@@ -343,26 +343,27 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
     tol = kwargs.pop('accuracy', 1e-5)
     parsed = parser.parse(peptide, True)
     n = len(parsed)
+    maxpeak = spectrum['intensity array'].max()
     mz, names = {}, {}
     for ion in types:
         for charge in range(1, maxcharge+1):
             if ion in 'abc':
                 for i in range(2, n):
                     mz.setdefault(ion, []).append(mass.fast_mass2(parsed[1:i], aa_mass=aa_mass, charge=charge, ion_type=ion))
-                    names.setdefault(ion, []).append(ion + str(i-1))
+                    names.setdefault(ion, []).append(ion[0] + str(i-1) + ion[1:])
             else:
                 for i in range(1, n-2):
                     mz.setdefault(ion, []).append(mass.fast_mass2(parsed[n-(i+1):-1], aa_mass=aa_mass, charge=charge, ion_type=ion))
-                    names.setdefault(ion, []).append(ion + str(i))
+                    names.setdefault(ion, []).append(ion[0] + str(i) + ion[1:])
 
     plot_spectrum(spectrum, centroided, *args, **kwargs)
     for ion in types:
-        c = colors.get(ion, 'blue')
+        c = colors.get(ion, colors.get(ion[0], 'blue'))
         match = np.where(np.abs(spectrum['m/z array'] - np.array(mz[ion]).reshape(-1, 1)) / spectrum['m/z array'] < tol)
         pseudo_spec = {'m/z array': spectrum['m/z array'][match[1]], 'intensity array': spectrum['intensity array'][match[1]]}
         plot_spectrum(pseudo_spec, centroided=True, edgecolor=c)
         for j, i in zip(*match):
-            x =  spectrum['m/z array'][i]
-            y = spectrum['intensity array'][i]
+            x = spectrum['m/z array'][i]
+            y = spectrum['intensity array'][i] + maxpeak * 0.02
             name = names[ion][j]
             pylab.text(x, y, name, color=c, ha='center', clip_on=True)
