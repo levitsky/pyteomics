@@ -22,6 +22,8 @@ Spectrum visualization
 
   :py:func:`plot_spectrum` - plot a single spectrum (m/z vs intensity).
 
+  :py:func:`annotate_spectrum` - plot and annotate peaks in MS/MS spectrum.
+
 FDR control
 -----------
 
@@ -334,15 +336,48 @@ def plot_spectrum(spectrum, centroided=True, *args, **kwargs):
 
 
 def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
+    """Plot a spectrum and annotate matching fragment peaks.
+
+    Parameters
+    ----------
+    spectrum : dict
+        A spectrum as returned by Pyteomics parsers. Needs to have 'm/z array' and 'intensity array' keys.
+    peptide : str
+        A modX sequence.
+    centroided : bool, optional
+        Passed to :py:func:`plot_spectrum`.
+    types : Container, optional
+        Ion types to be considered for annotation. Default is `('b', 'y')`.
+    colors : dict, optional
+        Keys are ion types, values are colors to plot the annotated peaks with. Defaults to a red-blue scheme.
+    ftol : float, optional
+        A fixed m/z tolerance value for peak matching. Alternative to `rtol`.
+    rtol : float, optional
+        A relative m/z error for peak matching. Default is 10 ppm.
+    adjust_text : bool, optional
+        Adjust the overlapping text annotations using :py:mod:`adjustText`.
+    text_kw : dict, optional
+        Keyword arguments for :py:func:`pylab.text`.
+    ion_comp : dict, optional
+        A dictionary defining definitions of ion compositions to override :py:const:`pyteomics.mass.std_ion_comp`.
+    mass_data : dict, optional
+        A dictionary of element masses to override :py:const:`pyteomics.mass.nist_mass`.
+    aa_mass : dict, optional
+        A dictionary of amino acid residue masses.
+    *args, **kwargs : passed to :py:func:`plot_spectrum`.
+    """
     types = kwargs.pop('types', ('b', 'y'))
     maxcharge = kwargs.pop('maxcharge', 1)
     aa_mass = kwargs.pop('aa_mass', mass.std_aa_mass)
+    mass_data = kwargs.pop('mass_data', mass.nist_mass)
+    ion_comp = kwargs.pop('ion_comp', mass.std_ion_comp)
     std_colors = {i: 'red' for i in 'xyz'}
     std_colors.update({i: 'blue' for i in 'abc'})
     colors = kwargs.pop('colors', std_colors)
     ftol = kwargs.pop('ftol', None)
     if ftol is None:
         rtol = kwargs.pop('rtol', 1e-5)
+    text_kw = kwargs.pop('text_kw', dict(ha='center', clip_on=True, backgroundcolor='#ffffff99'))
     adjust = kwargs.pop('adjust_text', None)
     if adjust or adjust is None:
         try:
@@ -362,11 +397,13 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
         for charge in range(1, maxcharge+1):
             if ion in 'abc':
                 for i in range(2, n):
-                    mz.setdefault(ion, []).append(mass.fast_mass2(parsed[1:i], aa_mass=aa_mass, charge=charge, ion_type=ion))
+                    mz.setdefault(ion, []).append(mass.fast_mass2(parsed[1:i],
+                        aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
                     names.setdefault(ion, []).append(ion[0] + str(i-1) + ion[1:])
             else:
                 for i in range(1, n-2):
-                    mz.setdefault(ion, []).append(mass.fast_mass2(parsed[n-(i+1):-1], aa_mass=aa_mass, charge=charge, ion_type=ion))
+                    mz.setdefault(ion, []).append(mass.fast_mass2(parsed[n-(i+1):-1],
+                        aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
                     names.setdefault(ion, []).append(ion[0] + str(i) + ion[1:])
 
     plot_spectrum(spectrum, centroided, *args, **kwargs)
@@ -384,6 +421,6 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
             x = spectrum['m/z array'][i]
             y = spectrum['intensity array'][i] + maxpeak * 0.02
             name = names[ion][j]
-            texts.append(pylab.text(x, y, name, color=c, ha='center', clip_on=True, backgroundcolor='#ffffff99'))
+            texts.append(pylab.text(x, y, name, color=c, **text_kw))
     if adjust:
         adjust_text(texts, only_move={'text': 'y', 'points': 'y', 'objects': 'y'}, autoalign=False, force_text=(1, 1))
