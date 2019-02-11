@@ -358,6 +358,8 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
         Adjust the overlapping text annotations using :py:mod:`adjustText`.
     text_kw : dict, optional
         Keyword arguments for :py:func:`pylab.text`.
+    adjust_kw : dict, optional
+        Keyword argyuments for `:py:func:`adjust_text`.
     ion_comp : dict, optional
         A dictionary defining definitions of ion compositions to override :py:const:`pyteomics.mass.std_ion_comp`.
     mass_data : dict, optional
@@ -382,6 +384,8 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
     if adjust or adjust is None:
         try:
             from adjustText import adjust_text
+            adjust_kw = kwargs.pop('adjust_kw', dict(
+                only_move={'text': 'y', 'points': 'y', 'objects': 'y'}, autoalign=False, force_text=(1, 1)))
         except ImportError:
             if adjust:
                 raise PyteomicsError('Install adjustText for text adjustment')
@@ -397,12 +401,12 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
         for charge in range(1, maxcharge+1):
             if ion in 'abc':
                 for i in range(2, n):
-                    mz.setdefault(ion, []).append(mass.fast_mass2(parsed[1:i],
+                    mz.setdefault(ion, []).append(mass.fast_mass2(parsed[:i] + [parsed[-1]],
                         aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
                     names.setdefault(ion, []).append(ion[0] + str(i-1) + ion[1:])
             else:
                 for i in range(1, n-2):
-                    mz.setdefault(ion, []).append(mass.fast_mass2(parsed[n-(i+1):-1],
+                    mz.setdefault(ion, []).append(mass.fast_mass2([parsed[0]] + parsed[n-(i+1):],
                         aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
                     names.setdefault(ion, []).append(ion[0] + str(i) + ion[1:])
 
@@ -423,4 +427,4 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
             name = names[ion][j]
             texts.append(pylab.text(x, y, name, color=c, **text_kw))
     if adjust:
-        adjust_text(texts, only_move={'text': 'y', 'points': 'y', 'objects': 'y'}, autoalign=False, force_text=(1, 1))
+        adjust_text(texts, **adjust_kw)
