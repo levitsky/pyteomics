@@ -399,7 +399,7 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
     mz, names = {}, {}
     for ion in types:
         for charge in range(1, maxcharge+1):
-            if ion in 'abc':
+            if ion[0] in 'abc':
                 for i in range(2, n):
                     mz.setdefault(ion, []).append(mass.fast_mass2(parsed[:i] + [parsed[-1]],
                         aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
