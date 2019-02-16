@@ -8,6 +8,8 @@
 
 - New helper functions :py:func:`pyteomics.pylab_aux.plot_spectrum` and :py:func:`pyteomics.pylab_aux.annotate_spectrum`.
 
+- The `rule` and `exception` arguments in :py:func:`pyteomics.parser.cleave` can be keys from :py:const:`expasy_rules`.
+
 - Fixes.
 
 
