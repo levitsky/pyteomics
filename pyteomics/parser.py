@@ -207,10 +207,7 @@ _modX_sequence = re.compile(r'^([^-]+-)?((?:[^A-Z-]*[A-Z])+)(-[^-]+)?$')
 _modX_group = re.compile(r'[^A-Z-]*[A-Z]')
 _modX_split = re.compile(r'([^A-Z-]*)([A-Z])')
 
-def parse(sequence,
-                   show_unmodified_termini=False, split=False,
-                   allow_unknown_modifications=False,
-                   **kwargs):
+def parse(sequence, show_unmodified_termini=False, split=False, allow_unknown_modifications=False, **kwargs):
     """Parse a sequence string written in modX notation into a list of
     labels or (if `split` argument is :py:const:`True`) into a list of
     tuples representing amino acid residues and their modifications.
@@ -417,11 +414,7 @@ def tostring(parsed_sequence, show_unmodified_termini=True):
                 labels.append(''.join(cterm[:-1]))
     return ''.join(labels)
 
-def amino_acid_composition(sequence,
-                           show_unmodified_termini=False,
-                           term_aa=False,
-                           allow_unknown_modifications=False,
-                           **kwargs):
+def amino_acid_composition(sequence, show_unmodified_termini=False, term_aa=False, allow_unknown_modifications=False, **kwargs):
     """Calculate amino acid composition of a polypeptide.
 
     Parameters
@@ -496,8 +489,7 @@ def amino_acid_composition(sequence,
     return aa_dict
 
 @memoize()
-def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False,
-    exception=None):
+def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False, exception=None):
     """Cleaves a polypeptide sequence using a given rule.
 
     Parameters
@@ -511,7 +503,8 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False,
             will not work as expected.
 
     rule : str or compiled regex
-        A `regular expression <https://docs.python.org/library/re.html#regular-expression-syntax>`_
+        A key present in :py:const:`expasy_rules` or a
+        `regular expression <https://docs.python.org/library/re.html#regular-expression-syntax>`_
         describing the site of cleavage. It is recommended
         to design the regex so that it matches only the residue whose C-terminal
         bond is to be cleaved. All additional requirements should be specified
@@ -534,8 +527,8 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False,
         This effectively cuts every peptide at every position and adds results to the output.
 
     exception : str or compiled RE or None, optional
-        Exceptions to the cleavage rule. If specified, should be a regular expression.
-        Cleavage sites matching `rule` will be checked against `exception` and omitted
+        Exceptions to the cleavage rule. If specified, should be a key present in :py:const:`expasy_rules`
+        or regular expression. Cleavage sites matching `rule` will be checked against `exception` and omitted
         if they match.
 
     Returns
@@ -546,6 +539,8 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False,
     Examples
     --------
     >>> cleave('AKAKBK', expasy_rules['trypsin'], 0) == {'AK', 'BK'}
+    True
+    >>> cleave('AKAKBK', 'trypsin', 0) == {'AK', 'BK'}
     True
     >>> cleave('GKGKYKCK', expasy_rules['trypsin'], 2) == \
     {'CK', 'GKYK', 'YKCK', 'GKGK', 'GKYKCK', 'GK', 'GKGKYK', 'YK'}
@@ -558,6 +553,8 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False, exc
     """Like :py:func:`cleave`, but the result is a list. Refer to
     :py:func:`cleave` for explanation of parameters.
     """
+    rule = expasy_rules.get(rule, rule)
+    exception = expasy_rules.get(exception, exception)
     peptides = []
     ml = missed_cleavages+2
     trange = range(ml)
