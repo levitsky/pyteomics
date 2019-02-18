@@ -97,7 +97,7 @@ This module requires :py:mod:`lxml`.
 from lxml import etree
 from . import xml, auxiliary as aux, _schema_defaults
 
-class PepXML(xml.MultiProcessingXML):
+class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for pepXML files."""
     file_format = 'pepXML'
     _root_element = 'msms_pipeline_analysis'
