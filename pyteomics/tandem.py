@@ -268,13 +268,17 @@ def DataFrame(*args, **kwargs):
 
     Parameters
     ----------
-    *args, **kwargs : passed to :py:func:`chain`
 
     sep : str or None, optional
         Some values related to PSMs (such as protein information) are variable-length
         lists. If `sep` is a :py:class:`str`, they will be packed into single string using
         this delimiter. If `sep` is :py:const:`None`, they are kept as lists. Default is
         :py:const:`None`.
+
+    pd_kwargs : dict, optional
+        Keyword arguments passed to the :py:class:`pandas.DataFrame` constructor.
+
+    *args, **kwargs : passed to :py:func:`chain`.
 
     Returns
     -------
@@ -285,6 +289,7 @@ def DataFrame(*args, **kwargs):
     prot_keys = ['id', 'uid', 'label', 'expect']
     pep_keys = ['id', 'pre', 'post', 'start', 'end']
     sep = kwargs.pop('sep', None)
+    pd_kwargs = kwargs.pop('pd_kwargs', {})
     with chain(*args, **kwargs) as f:
         for item in f:
             info = {}
@@ -312,7 +317,7 @@ def DataFrame(*args, **kwargs):
             info.update(protein['peptide'])
             info['scan'] = item['support']['fragment ion mass spectrum']['note']
             data.append(info)
-    return pd.DataFrame(data)
+    return pd.DataFrame(data, **pd_kwargs)
 
 def filter_df(*args, **kwargs):
     """Read X!Tandem output files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.
@@ -341,7 +346,7 @@ def filter_df(*args, **kwargs):
         else:
             df = args[0]
     else:
-        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep'] if k in kwargs}
+        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep', 'pd_kwargs'] if k in kwargs}
         df = DataFrame(*args, **read_kw)
 
     if 'is_decoy' not in kwargs:
