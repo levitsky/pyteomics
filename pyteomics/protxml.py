@@ -218,8 +218,6 @@ def DataFrame(*args, **kwargs):
 
     Parameters
     ----------
-    *args, **kwargs : passed to :py:func:`chain`
-
     sep : str or None, optional
         Some values related to protein groups are variable-length lists.
         If `sep` is a :py:class:`str`, they will be packed into single string using
@@ -228,6 +226,8 @@ def DataFrame(*args, **kwargs):
 
     pd_kwargs : dict, optional
         Keyword arguments passed to the :py:class:`pandas.DataFrame` constructor.
+
+    *args, **kwargs : passed to :py:func:`chain`.
 
     Returns
     -------
@@ -292,7 +292,7 @@ def filter_df(*args, **kwargs):
         else:
             df = args[0]
     else:
-        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep'] if k in kwargs}
+        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep', 'pd_kwargs'] if k in kwargs}
         df = DataFrame(*args, **read_kw)
     if 'is_decoy' not in kwargs:
         if 'decoy_suffix' in kwargs:

@@ -439,7 +439,7 @@ def filter_df(*args, **kwargs):
         else:
             df = args[0]
     else:
-        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep'] if k in kwargs}
+        read_kw = {k: kwargs.pop(k) for k in ['iterative', 'read_schema', 'sep', 'pd_kwargs'] if k in kwargs}
         df = DataFrame(*args, **read_kw)
     if 'is_decoy' not in kwargs:
         if sep is not None:
