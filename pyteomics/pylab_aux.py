@@ -377,7 +377,6 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
     std_colors.update({i: 'blue' for i in 'abc'})
     colors = kwargs.pop('colors', std_colors)
     ftol = kwargs.pop('ftol', None)
-    title = kwargs.pop('title', '')
     if ftol is None:
         rtol = kwargs.pop('rtol', 1e-5)
     text_kw = kwargs.pop('text_kw', dict(ha='center', clip_on=True, backgroundcolor='#ffffff99'))
@@ -411,7 +410,6 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
                         aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
                     names.setdefault(ion, []).append(ion[0] + str(i) + ion[1:])
 
-    plot_spectrum(spectrum, centroided, *args, **kwargs)
     texts = []
     for ion in types:
         c = colors.get(ion, colors.get(ion[0], 'blue'))
@@ -429,4 +427,5 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
             texts.append(pylab.text(x, y, name, color=c, **text_kw))
     if adjust:
         adjust_text(texts, **adjust_kw)
-    pylab.title(title)
+    kwargs.setdefault('zorder', -1)
+    plot_spectrum(spectrum, centroided, *args, **kwargs)
