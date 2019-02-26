@@ -393,7 +393,7 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
         else:
             if adjust is None:
                 adjust = True
-    parsed = parser.parse(peptide, True)
+    parsed = parser.parse(peptide, True, labels=list(aa_mass) + [parser.std_cterm, parser.std_nterm])
     n = len(parsed)
     maxpeak = spectrum['intensity array'].max()
     mz, names = {}, {}
@@ -401,15 +401,14 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
         for charge in range(1, maxcharge+1):
             if ion[0] in 'abc':
                 for i in range(2, n):
-                    mz.setdefault(ion, []).append(mass.fast_mass2(parsed[:i] + [parsed[-1]],
+                    mz.setdefault(ion, []).append(mass.fast_mass2(parsed[:i] + [parser.std_cterm],
                         aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
                     names.setdefault(ion, []).append(ion[0] + str(i-1) + ion[1:])
             else:
-                for i in range(1, n-2):
-                    mz.setdefault(ion, []).append(mass.fast_mass2([parsed[0]] + parsed[n-(i+1):],
+                for i in range(1, n-1):
+                    mz.setdefault(ion, []).append(mass.fast_mass2([parser.std_nterm] + parsed[n-(i+1):],
                         aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
                     names.setdefault(ion, []).append(ion[0] + str(i) + ion[1:])
-
     texts = []
     for ion in types:
         c = colors.get(ion, colors.get(ion[0], 'blue'))
