@@ -116,6 +116,9 @@ std_cterm = '-OH'
 std_labels = std_amino_acids + [std_nterm, std_cterm]
 """modX labels for the standard amino acids and unmodified termini."""
 
+_nterm_mod = r'[^-]+-$'
+_cterm_mod = r'-[^-]+$'
+
 def is_term_mod(label):
     """Check if `label` corresponds to a terminal modification.
 
@@ -126,8 +129,21 @@ def is_term_mod(label):
     Returns
     -------
     out : bool
+
+    Examples
+    --------
+    >>> is_term_mod('A')
+    False
+    >>> is_term_mod('Ac-')
+    True
+    >>> is_term_mod('-customGroup')
+    True
+    >>> is_term_mod('this-group-')
+    False
+    >>> is_term_mod('-')
+    False
     """
-    return label[0] == '-' or label[-1] == '-'
+    return (re.match(_nterm_mod, label) or re.match(_cterm_mod, label)) is not None
 
 def match_modX(label):
     """Check if `label` is a valid 'modX' label.
@@ -140,7 +156,7 @@ def match_modX(label):
     -------
     out : re.match or None
     """
-    return re.match(_modX_split, label)
+    return re.match(_modX_single, label)
 
 def is_modX(label):
     """Check if `label` is a valid 'modX' label.
@@ -152,6 +168,17 @@ def is_modX(label):
     Returns
     -------
     out : bool
+
+    Examples
+    --------
+    >>> is_modX('M')
+    True
+    >>> is_modX('oxM')
+    True
+    >>> is_modX('oxMet')
+    False
+    >>> is_modX('160C')
+    True
     """
     return bool(match_modX(label))
 
@@ -166,6 +193,10 @@ def length(sequence, **kwargs):
         a dict of amino acid composition.
     labels : list, optional
         A list of allowed labels for amino acids and terminal modifications.
+
+    Returns
+    -------
+    out : int
 
     Examples
     --------
@@ -206,6 +237,7 @@ def _split_label(label):
 _modX_sequence = re.compile(r'^([^-]+-)?((?:[^A-Z-]*[A-Z])+)(-[^-]+)?$')
 _modX_group = re.compile(r'[^A-Z-]*[A-Z]')
 _modX_split = re.compile(r'([^A-Z-]*)([A-Z])')
+_modX_single = re.compile(r'^([^A-Z-]*)([A-Z])$')
 
 def parse(sequence, show_unmodified_termini=False, split=False, allow_unknown_modifications=False, **kwargs):
     """Parse a sequence string written in modX notation into a list of
