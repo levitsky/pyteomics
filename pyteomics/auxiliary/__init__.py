@@ -16,7 +16,7 @@ from .constants import _nist_mass
 from .file_helpers import (
     _file_obj, _keepstate, _keepstate_method, IteratorContextManager,
     FileReader, IndexedTextReader, IndexedReaderMixin, TimeOrderedIndexedReaderMixin,
-    OffsetIndex, HierarchicalOffsetIndex,
+    IndexSavingMixin, OffsetIndex, HierarchicalOffsetIndex, IndexSavingTextReader,
     _file_reader, _file_writer,
     _make_chain, _check_use_index, FileReadingProcess, TaskMappingMixin,
     serializer, ChainBase, TableJoiner)
