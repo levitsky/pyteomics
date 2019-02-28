@@ -8,6 +8,7 @@ import json
 import multiprocessing as mp
 import threading
 import warnings
+import os
 
 try:
     basestring
@@ -474,6 +475,72 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
         return lines
 
 
+class IndexSavingMixin(object):
+    """Common interface for :py:class:`IndexSavingXML` and :py:class:`IndexSavingTextReader`."""
+    _index_class = NotImplemented
+
+    @property
+    def _byte_offset_filename(self):
+        try:
+            path = self._source.name
+        except AttributeError:
+            return None
+        byte_offset_filename = os.path.splitext(path)[0] + '-byte-offsets.json'
+        return byte_offset_filename
+
+    def _check_has_byte_offset_file(self):
+        """Check if the file at :attr:`_byte_offset_filename` exists
+
+        Returns
+        -------
+        bool
+            Whether the file exists
+        """
+        path = self._byte_offset_filename
+        if path is None:
+            return False
+        return os.path.exists(path)
+
+    @classmethod
+    def prebuild_byte_offset_file(cls, path):
+        """Construct a new XML reader, build its byte offset index and
+        write it to file
+
+        Parameters
+        ----------
+        path : str
+            The path to the file to parse
+        """
+        with cls(path) as inst:
+            inst.write_byte_offsets()
+
+    def write_byte_offsets(self):
+        """Write the byte offsets in :attr:`_offset_index` to the file
+        at :attr:`_byte_offset_filename`
+        """
+        with open(self._byte_offset_filename, 'w') as f:
+            self._offset_index.save(f)
+
+    @_keepstate_method
+    def _build_index(self):
+        """Build the byte offset index by either reading these offsets
+        from the file at :attr:`_byte_offset_filename`, or falling back
+        to the method used by :class:`IndexedXML` if this operation fails
+        due to an IOError
+        """
+        try:
+            self._read_byte_offsets()
+        except (IOError, AttributeError, TypeError):
+            super(IndexSavingMixin, self)._build_index()
+
+    def _read_byte_offsets(self):
+        """Read the byte offset index JSON file at :attr:`_byte_offset_filename`
+        and populate :attr:`_offset_index`
+        """
+        with open(self._byte_offset_filename, 'r') as f:
+            index = self._index_class.load(f)
+            self._offset_index = index
+
 
 def _file_reader(_mode='r'):
     # a lot of the code below is borrowed from
@@ -634,6 +701,18 @@ class OffsetIndex(OrderedDict):
         for key, value in sorted_pairs:
             self[key] = value
         return self
+
+    def save(self, fp):
+        json.dump(self, fp)
+
+    @classmethod
+    def load(cls, fp):
+        index = json.load(fp, object_hook=OrderedDict)
+        return cls(index)
+
+
+class IndexSavingTextReader(IndexSavingMixin, IndexedTextReader):
+    _index_class = OffsetIndex
 
 
 class HierarchicalOffsetIndex(object):

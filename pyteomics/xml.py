@@ -32,7 +32,6 @@ import socket
 from traceback import format_exc
 import operator as op
 import ast
-import os
 import warnings
 from collections import OrderedDict, namedtuple
 from lxml import etree
@@ -42,7 +41,7 @@ from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj, Hierar
 from .auxiliary import unitint, unitfloat, unitstr, cvstr
 from .auxiliary import _keepstate_method as _keepstate
 from .auxiliary import BinaryDataArrayTransformer
-from .auxiliary import TaskMappingMixin, IndexedReaderMixin
+from .auxiliary import TaskMappingMixin, IndexedReaderMixin, IndexSavingMixin
 
 try: # Python 2.7
     from urllib2 import urlopen, URLError
@@ -1112,75 +1111,23 @@ class MultiProcessingXML(IndexedXML, TaskMappingMixin):
         return iter(self._offset_index[self._default_iter_tag])
 
 
-class IndexSavingXML(IndexedXML):
+class IndexSavingXML(IndexSavingMixin, IndexedXML):
     """An extension to the IndexedXML type which
     adds facilities to read and write the byte offset
     index externally.
     """
-
-    @property
-    def _byte_offset_filename(self):
-        try:
-            path = self._source.name
-        except AttributeError:
-            return None
-        byte_offset_filename = os.path.splitext(path)[0] + '-byte-offsets.json'
-        return byte_offset_filename
-
-    def _check_has_byte_offset_file(self):
-        """Check if the file at :attr:`_byte_offset_filename` exists
-
-        Returns
-        -------
-        bool
-            Whether the file exists
-        """
-        path = self._byte_offset_filename
-        if path is None:
-            return False
-        return os.path.exists(path)
+    _index_class = HierarchicalOffsetIndex
 
     def _read_byte_offsets(self):
         """Read the byte offset index JSON file at :attr:`_byte_offset_filename`
         and populate :attr:`_offset_index`
         """
         with open(self._byte_offset_filename, 'r') as f:
-            index = HierarchicalOffsetIndex.load(f)
+            index = self._index_class.load(f)
             if index.schema_version is None:
                 raise TypeError("Legacy Offset Index!")
             self._offset_index = index
 
-    def write_byte_offsets(self):
-        """Write the byte offsets in :attr:`_offset_index` to the file
-        at :attr:`_byte_offset_filename`
-        """
-        with open(self._byte_offset_filename, 'w') as f:
-            self._offset_index.save(f)
-
-    @_keepstate
-    def _build_index(self):
-        """Build the byte offset index by either reading these offsets
-        from the file at :attr:`_byte_offset_filename`, or falling back
-        to the method used by :class:`IndexedXML` if this operation fails
-        due to an IOError
-        """
-        try:
-            self._read_byte_offsets()
-        except (IOError, AttributeError, TypeError):
-            super(IndexSavingXML, self)._build_index()
-
-    @classmethod
-    def prebuild_byte_offset_file(cls, path):
-        """Construct a new XML reader, build its byte offset index and
-        write it to file
-
-        Parameters
-        ----------
-        path : str
-            The path to the file to parse
-        """
-        with cls(path, use_index=True) as inst:
-            inst.write_byte_offsets()
 
 
 class ArrayConversionMixin(BinaryDataArrayTransformer):

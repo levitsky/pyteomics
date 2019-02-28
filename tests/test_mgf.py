@@ -1,11 +1,12 @@
-from os import path
+import os
 import numpy as np
 import pyteomics
-pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
+pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
 import tempfile
 import unittest
 import pickle
-from pyteomics import mgf
+import shutil
+from pyteomics import mgf, auxiliary as aux
 import data
 
 class MGFTest(unittest.TestCase):
@@ -127,6 +128,32 @@ class MGFTest(unittest.TestCase):
         with mgf.IndexedMGF(self.path) as reader:
             spectra = sorted(list(reader.map()), key=lambda s: s['params']['title'])
         self.assertEqual(data.mgf_spectra_long, spectra)
+
+    def test_prebuild_index(self):
+        test_dir = tempfile.mkdtemp()
+        work_path = os.path.join(test_dir, self.path)
+        with open(work_path, 'w') as dest, open(self.path) as source:
+            dest.write(source.read())
+        assert dest.closed
+        with mgf.IndexedMGF(work_path) as inst:
+            offsets_exist = os.path.exists(inst._byte_offset_filename)
+            self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
+            self.assertTrue(isinstance(inst._offset_index, aux.OffsetIndex))
+        self.assertTrue(inst._source.closed)
+        mgf.IndexedMGF.prebuild_byte_offset_file(work_path)
+        with mgf.IndexedMGF(work_path) as inst:
+            offsets_exist = os.path.exists(inst._byte_offset_filename)
+            self.assertTrue(offsets_exist)
+            self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
+            self.assertTrue(isinstance(inst._offset_index, aux.OffsetIndex))
+        self.assertTrue(inst._source.closed)
+        os.remove(inst._byte_offset_filename)
+        with mgf.IndexedMGF(work_path) as inst:
+            offsets_exist = os.path.exists(inst._byte_offset_filename)
+            self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
+            self.assertTrue(isinstance(inst._offset_index, aux.OffsetIndex))
+        self.assertTrue(inst._source.closed)
+        shutil.rmtree(test_dir, True)
 
 if __name__ == "__main__":
     unittest.main()
