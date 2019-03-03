@@ -485,7 +485,8 @@ class IndexSavingMixin(object):
             path = self._source.name
         except AttributeError:
             return None
-        byte_offset_filename = os.path.splitext(path)[0] + '-byte-offsets.json'
+        name, ext = os.path.splitext(path)
+        byte_offset_filename = '{}-{}-byte-offsets.json'.format(name, ext[1:])
         return byte_offset_filename
 
     def _check_has_byte_offset_file(self):
@@ -580,11 +581,42 @@ def _file_writer(_mode='a'):
     return decorator
 
 
-class OffsetIndex(OrderedDict):
+class WritableIndex(object):
+    schema_version = (1, 0, 0)
+    _schema_version_tag_key = "@pyteomics_schema_version"
+
+    def _serializable_container(self):
+        container = {'index': list(self.items())}
+        return container
+
+    def save(self, fp):
+        container = self._serializable_container()
+        container[self._schema_version_tag_key] = self.schema_version
+        json.dump(container, fp)
+
+    @classmethod
+    def load(cls, fp):
+        container = json.load(fp, object_hook=OrderedDict)
+        version_tag = container.get(cls._schema_version_tag_key)
+        if version_tag is None:
+            # The legacy case, no special processing yet
+            inst = cls({}, None)
+            inst.schema_version = None
+            return inst
+        version_tag = tuple(version_tag)
+        index = container.get("index")
+        if version_tag < cls.schema_version:
+            # schema upgrade case, no special processing yet
+            return cls(index, version_tag)
+        # no need to upgrade
+        return cls(index, version_tag)
+
+
+class OffsetIndex(OrderedDict, WritableIndex):
     '''An augmented OrderedDict that formally wraps getting items by index
     '''
     def __init__(self, *args, **kwargs):
-        OrderedDict.__init__(self, *args, **kwargs)
+        super(OffsetIndex, self).__init__(*args, **kwargs)
         self._index_sequence = None
 
     def _invalidate(self):
@@ -702,29 +734,15 @@ class OffsetIndex(OrderedDict):
             self[key] = value
         return self
 
-    def save(self, fp):
-        json.dump(self, fp)
-
-    @classmethod
-    def load(cls, fp):
-        index = json.load(fp, object_hook=OrderedDict)
-        return cls(index)
-
 
 class IndexSavingTextReader(IndexSavingMixin, IndexedTextReader):
     _index_class = OffsetIndex
 
 
-class HierarchicalOffsetIndex(object):
-    schema_version = (1, 0, 0)
-
-    _schema_version_tag_key = "@pyteomics_schema_version"
+class HierarchicalOffsetIndex(WritableIndex):
     _inner_type = OffsetIndex
 
-    def __init__(self, base=None, schema_version=None):
-        if schema_version is None:
-            schema_version = self.schema_version
-        self.schema_version = schema_version
+    def __init__(self, base=None):
         self.mapping = defaultdict(self._inner_type)
         for key, value in (base or {}).items():
             self.mapping[key] = self._inner_type(value)
@@ -781,34 +799,15 @@ class HierarchicalOffsetIndex(object):
     def items(self):
         return self.mapping.items()
 
-    def save(self, fp):
-        encoded_index = dict()
-        keys = list(self.keys())
+    def _serializable_container(self):
+        encoded_index = {}
         container = {
-            self._schema_version_tag_key: self.schema_version,
-            "keys": keys
+            'keys': list(self.keys())
         }
         for key, offset in self.items():
             encoded_index[key] = list(offset.items())
         container['index'] = encoded_index
-        json.dump(container, fp)
-
-    @classmethod
-    def load(cls, fp):
-        container = json.load(fp, object_hook=OrderedDict)
-        version_tag = container.get(cls._schema_version_tag_key)
-        if version_tag is None:
-            # The legacy case, no special processing yet
-            inst = cls({}, None)
-            inst.schema_version = None
-            return inst
-        version_tag = tuple(version_tag)
-        index = container.get("index")
-        if version_tag < cls.schema_version:
-            # schema upgrade case, no special processing yet
-            return cls(index, version_tag)
-        # no need to upgrade
-        return cls(index, version_tag)
+        return container
 
 
 def _make_chain(reader, readername, full_output=False):

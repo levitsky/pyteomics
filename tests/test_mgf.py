@@ -6,6 +6,8 @@ import tempfile
 import unittest
 import pickle
 import shutil
+import json
+from collections import OrderedDict
 from pyteomics import mgf, auxiliary as aux
 import data
 
@@ -154,6 +156,23 @@ class MGFTest(unittest.TestCase):
             self.assertTrue(isinstance(inst._offset_index, aux.OffsetIndex))
         self.assertTrue(inst._source.closed)
         shutil.rmtree(test_dir, True)
+
+    def test_write_index_keys(self):
+        test_dir = tempfile.mkdtemp()
+        work_path = os.path.join(test_dir, self.path)
+        with open(work_path, 'w') as dest, open(self.path) as source:
+            dest.write(source.read())
+        assert dest.closed
+        mgf.IndexedMGF.prebuild_byte_offset_file(work_path)
+        with mgf.IndexedMGF(work_path) as inst:
+            ipath = inst._byte_offset_filename
+        with open(ipath) as ifp:
+            container = json.load(ifp, object_hook=OrderedDict)
+        tag_key = mgf.IndexedMGF._index_class._schema_version_tag_key
+        self.assertEqual(set(container.keys()), {tag_key, 'index'})
+        self.assertEqual(tuple(container[tag_key]), mgf.IndexedMGF._index_class.schema_version)
+        self.assertEqual(container['index'], [('Spectrum 1', (217, 343)), ('Spectrum 2', (343, 506))])
+
 
 if __name__ == "__main__":
     unittest.main()
