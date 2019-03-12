@@ -134,6 +134,9 @@ class MGFBase():
         else:
             self._header = None
 
+    def parse_charge(self, charge_text, list_only=False):
+        return aux._parse_charge(charge_text, list_only=list_only)
+
     @property
     def header(self):
         if self._header is None:
@@ -151,7 +154,7 @@ class MGFBase():
                 val = l[1].strip()
                 header[key] = val
         if 'charge' in header:
-            header['charge'] = aux._parse_charge(header['charge'], True)
+            header['charge'] = self.parse_charge(header['charge'], True)
         self._header = header
 
     def _read_spectrum_lines(self, lines):
@@ -187,7 +190,7 @@ class MGFBase():
                     else:
                         params['pepmass'] = pepmass + (None,) * (2-len(pepmass))
                 if isinstance(params.get('charge'), aux.basestring):
-                    params['charge'] = aux._parse_charge(params['charge'], True)
+                    params['charge'] = self.parse_charge(params['charge'], True)
                 if 'rtinseconds' in params:
                     params['rtinseconds'] = aux.unitfloat(params['rtinseconds'], 'second')
                 out = {'params': params}
@@ -212,7 +215,7 @@ class MGFBase():
                         masses.append(float(l[0]))
                         intensities.append(float(l[1]))
                         if self._read_charges:
-                            charges.append(aux._parse_charge(l[2]) if len(l) > 2 else 0)
+                            charges.append(self.parse_charge(l[2]) if len(l) > 2 else 0)
                     except ValueError:
                         raise aux.PyteomicsError(
                              'Error when parsing %s. Line:\n%s' % (getattr(self._source, 'name', 'MGF file'), line))
