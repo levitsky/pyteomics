@@ -160,7 +160,7 @@ class MGFTest(unittest.TestCase):
     def test_write_index_keys(self):
         test_dir = tempfile.mkdtemp()
         work_path = os.path.join(test_dir, self.path)
-        with open(work_path, 'w') as dest, open(self.path) as source:
+        with open(work_path, 'wb') as dest, open(self.path, 'rb') as source:
             dest.write(source.read())
         assert dest.closed
         mgf.IndexedMGF.prebuild_byte_offset_file(work_path)
@@ -171,7 +171,7 @@ class MGFTest(unittest.TestCase):
         tag_key = mgf.IndexedMGF._index_class._schema_version_tag_key
         self.assertEqual(set(container.keys()), {tag_key, 'index'})
         self.assertEqual(tuple(container[tag_key]), mgf.IndexedMGF._index_class.schema_version)
-        self.assertEqual(container['index'], [('Spectrum 1', (217, 343)), ('Spectrum 2', (343, 506))])
+        self.assertEqual(container['index'], [['Spectrum 1', [217, 343]], ['Spectrum 2', [343, 506]]])
 
 
 if __name__ == "__main__":

@@ -16,11 +16,15 @@ class PyteomicsError(Exception):
         Error message.
     """
 
-    def __init__(self, msg):
+    def __init__(self, msg, *values):
         self.message = msg
+        self.values = values
 
     def __str__(self):
-        return "Pyteomics error, message: %s" % (repr(self.message),)
+        if not self.values:
+            return "Pyteomics error, message: %s" % (repr(self.message),)
+        else:
+            return "Pyteomics error, message: %s %r" % (repr(self.message), self.values)
 
 
 class Charge(int):
