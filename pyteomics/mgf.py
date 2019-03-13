@@ -157,7 +157,7 @@ class MGFBase():
                 val = l[1].strip()
                 header[key] = val
         if 'charge' in header:
-            header['charge'] = self.parse_charge(header['charge'], True)
+            header['charge'] = self.parse_precursor_charge(header['charge'], True)
         self._header = header
 
     def _read_spectrum_lines(self, lines):
