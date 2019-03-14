@@ -1,5 +1,5 @@
-4.1.dev
--------
+4.1
+---
 
 - New module :py:mod:`pyteomics.mztab` provides a parser for `mzTab files <http://www.psidev.info/mztab>`_.
 
