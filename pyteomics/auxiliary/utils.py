@@ -2,7 +2,7 @@ from __future__ import print_function
 
 import base64
 import zlib
-
+import sys
 from functools import wraps
 from collections import namedtuple
 
@@ -17,6 +17,10 @@ try:
 except ImportError:
     np = None
 
+try:
+    import PyMSNumpress
+except ImportError:
+    PyMSNumpress = None
 
 def print_tree(d, indent_str=' -> ', indent_count=1):
     """Read a nested dict (with strings as keys) and print its structure.
@@ -83,6 +87,29 @@ def _decode_base64_data_array(source, dtype, is_compressed):
     return output
 
 
+_default_compression_map = {
+        'no compression': lambda x: x,
+        'zlib compression': zlib.decompress,
+    }
+
+def _numpressDecompress(decoder):
+    def decode(data):
+        result = []
+        if sys.version_info.major < 3:
+            decoder([ord(b) for b in data], result)
+        else:
+            decoder(data, result)
+        return result
+    return decode
+
+if PyMSNumpress:
+    _default_compression_map.update(
+        {
+            'MS-Numpress short logged float compression': _numpressDecompress(PyMSNumpress.decodeSlof),
+            'MS-Numpress positive integer compression':   _numpressDecompress(PyMSNumpress.decodePic),
+            'MS-Numpress linear prediction compression':  _numpressDecompress(PyMSNumpress.decodeLinear),
+        })
+
 class BinaryDataArrayTransformer(object):
     """A base class that provides methods for reading
     base64-encoded binary arrays.
@@ -93,10 +120,7 @@ class BinaryDataArrayTransformer(object):
         Maps compressor type name to decompression function
     """
 
-    compression_type_map = {
-        'no compression': lambda x: x,
-        'zlib compression': zlib.decompress,
-    }
+    compression_type_map = _default_compression_map
 
     class binary_array_record(namedtuple(
             "binary_array_record", ("data", "compression", "dtype", "source", "key"))):
@@ -161,5 +185,7 @@ class BinaryDataArrayTransformer(object):
         """
         binary = self._base64_decode(source)
         binary = self._decompress(binary, compression_type)
+        if isinstance(binary, list):
+            return np.array(binary, dtype)
         array = self._transform_buffer(binary, dtype)
         return array
