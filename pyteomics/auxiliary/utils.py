@@ -18,9 +18,9 @@ except ImportError:
     np = None
 
 try:
-    import PyMSNumpress
+    import pynumpress
 except ImportError:
-    PyMSNumpress = None
+    pynumpress = None
 
 def print_tree(d, indent_str=' -> ', indent_count=1):
     """Read a nested dict (with strings as keys) and print its structure.
@@ -92,22 +92,17 @@ _default_compression_map = {
         'zlib compression': zlib.decompress,
     }
 
-def _numpressDecompress(decoder):
+def _pynumpressDecompress(decoder):
     def decode(data):
-        result = []
-        if sys.version_info.major < 3:
-            decoder([ord(b) for b in data], result)
-        else:
-            decoder(data, result)
-        return result
+        return decoder(np.frombuffer(data, dtype=np.uint8))
     return decode
 
-if PyMSNumpress:
+if pynumpress:
     _default_compression_map.update(
         {
-            'MS-Numpress short logged float compression': _numpressDecompress(PyMSNumpress.decodeSlof),
-            'MS-Numpress positive integer compression':   _numpressDecompress(PyMSNumpress.decodePic),
-            'MS-Numpress linear prediction compression':  _numpressDecompress(PyMSNumpress.decodeLinear),
+            'MS-Numpress short logged float compression': _pynumpressDecompress(pynumpress.decode_slof),
+            'MS-Numpress positive integer compression':   _pynumpressDecompress(pynumpress.decode_pic),
+            'MS-Numpress linear prediction compression':  _pynumpressDecompress(pynumpress.decode_linear),
         })
 
 class BinaryDataArrayTransformer(object):
@@ -185,7 +180,5 @@ class BinaryDataArrayTransformer(object):
         """
         binary = self._base64_decode(source)
         binary = self._decompress(binary, compression_type)
-        if isinstance(binary, list):
-            return np.array(binary, dtype)
         array = self._transform_buffer(binary, dtype)
         return array
