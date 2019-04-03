@@ -97,12 +97,20 @@ def _pynumpressDecompress(decoder):
         return decoder(np.frombuffer(data, dtype=np.uint8))
     return decode
 
+def _zlibNumpress(decoder):
+    def decode(data):
+        return decoder(np.frombuffer(zlib.decompress(data), dtype=np.uint8))
+    return decode
+
 if pynumpress:
     _default_compression_map.update(
         {
             'MS-Numpress short logged float compression': _pynumpressDecompress(pynumpress.decode_slof),
             'MS-Numpress positive integer compression':   _pynumpressDecompress(pynumpress.decode_pic),
             'MS-Numpress linear prediction compression':  _pynumpressDecompress(pynumpress.decode_linear),
+            'MS-Numpress short logged float compression followed by zlib compression': _zlibNumpress(pynumpress.decode_slof),
+            'MS-Numpress positive integer compression followed by zlib compression': _zlibNumpress(pynumpress.decode_pic),
+            'MS-Numpress linear prediction compression followed by zlib compression': _zlibNumpress(pynumpress.decode_linear),
         })
 
 class BinaryDataArrayTransformer(object):
@@ -155,8 +163,9 @@ class BinaryDataArrayTransformer(object):
         return decompressed_source
 
     def _transform_buffer(self, binary, dtype):
-        output = np.frombuffer(binary, dtype=dtype)
-        return output
+        if isinstance(binary, np.ndarray):
+            return binary.astype(dtype)
+        return np.frombuffer(binary, dtype=dtype)
 
     def decode_data_array(self, source, compression_type=None, dtype=np.float64):
         """Decode a base64-encoded, compressed bytestring into a numerical
