@@ -1,3 +1,10 @@
+dev
+---
+
+ - Add `numpress <https://dx.doi.org/10.1074%2Fmcp.O114.037879>`_ support for mzML and mzXML files.
+   To read files compressed with Numpress, install `pynumpress`
+   (`PyPI <https://pypi.org/project/pynumpress/>`_, `GitHub <https://github.com/mobiusklein/pynumpress>`_).
+
 4.1
 ---
 
