@@ -164,7 +164,7 @@ class BinaryDataArrayTransformer(object):
 
     def _transform_buffer(self, binary, dtype):
         if isinstance(binary, np.ndarray):
-            return binary.astype(dtype)
+            return binary.astype(dtype, copy=False)
         return np.frombuffer(binary, dtype=dtype)
 
     def decode_data_array(self, source, compression_type=None, dtype=np.float64):
