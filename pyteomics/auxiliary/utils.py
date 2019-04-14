@@ -2,7 +2,6 @@ from __future__ import print_function
 
 import base64
 import zlib
-import sys
 from functools import wraps
 from collections import namedtuple
 
@@ -83,7 +82,7 @@ def _decode_base64_data_array(source, dtype, is_compressed):
     decoded_source = base64.b64decode(source.encode('ascii'))
     if is_compressed:
         decoded_source = zlib.decompress(decoded_source)
-    output = np.frombuffer(decoded_source, dtype=dtype)
+    output = np.frombuffer(bytearray(decoded_source), dtype=dtype)
     return output
 
 
@@ -109,8 +108,8 @@ if pynumpress:
             'MS-Numpress positive integer compression':   _pynumpressDecompress(pynumpress.decode_pic),
             'MS-Numpress linear prediction compression':  _pynumpressDecompress(pynumpress.decode_linear),
             'MS-Numpress short logged float compression followed by zlib compression': _zlibNumpress(pynumpress.decode_slof),
-            'MS-Numpress positive integer compression followed by zlib compression': _zlibNumpress(pynumpress.decode_pic),
-            'MS-Numpress linear prediction compression followed by zlib compression': _zlibNumpress(pynumpress.decode_linear),
+            'MS-Numpress positive integer compression followed by zlib compression':   _zlibNumpress(pynumpress.decode_pic),
+            'MS-Numpress linear prediction compression followed by zlib compression':  _zlibNumpress(pynumpress.decode_linear),
         })
 
 class BinaryDataArrayTransformer(object):
@@ -189,5 +188,7 @@ class BinaryDataArrayTransformer(object):
         """
         binary = self._base64_decode(source)
         binary = self._decompress(binary, compression_type)
+        if isinstance(binary, bytes):
+            binary = bytearray(binary)
         array = self._transform_buffer(binary, dtype)
         return array
