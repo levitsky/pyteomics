@@ -5,6 +5,8 @@ dev
    To read files compressed with Numpress, install `pynumpress`
    (`PyPI <https://pypi.org/project/pynumpress/>`_, `GitHub <https://github.com/mobiusklein/pynumpress>`_).
 
+ - Bugfixes.
+
 4.1
 ---
 

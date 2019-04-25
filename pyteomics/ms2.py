@@ -87,6 +87,11 @@ class IndexedMS2(IndexedMS1):
     and 'params' stores a :py:class:`dict` of parameters (keys and values are
     :py:class:`str`, keys corresponding to MS2).
 
+    .. warning ::
+        Labels for scan objects are constructed as the first number in the S line, as follows:
+        for a line ``S  0   1   123.4`` the label is `'0'`. If these labels are not unique
+        for the scans in the file, the indexed parser will not work correctly. Consider using
+        :py:class:`MS2` instead.
 
     Attributes
     ----------
@@ -152,11 +157,16 @@ def read(*args, **kwargs):
         File encoding.
 
     use_index : bool, optional
-        Determines which parsing method to use. If :py:const:`True` (default), an instance of
+        Determines which parsing method to use. If :py:const:`True`, an instance of
         :py:class:`IndexedMS2` is created. This facilitates random access by scan titles.
         If an open file is passed as `source`, it needs to be open in binary mode.
 
-        If :py:const:`False`, an instance of :py:class:`MS2` is created. It reads
+        .. warning ::
+            Labels for scan objects are constructed as the first number in the S line, as follows:
+            for a line ``S  0   1   123.4`` the label is `'0'`. If these labels are not unique
+            for the scans in the file, the indexed parser will not work correctly.
+
+        If :py:const:`False` (default), an instance of :py:class:`MS2` is created. It reads
         `source` in text mode and is suitable for iterative parsing.
 
     block_size : int, optinal
@@ -174,7 +184,7 @@ def read(*args, **kwargs):
     else:
         source = kwargs.get('source')
     use_index = kwargs.pop('use_index', None)
-    use_index = aux._check_use_index(source, use_index, True)
+    use_index = aux._check_use_index(source, use_index, False)
     tp = IndexedMS2 if use_index else MS2
 
     return tp(*args, **kwargs)
