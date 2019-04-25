@@ -106,7 +106,7 @@ class MS1Base(object):
         sline = line.strip().split(None, 3)
         params['scan'] = tuple(sline[1:3])
         if len(sline) == 4:  # in MS2 the S line contains the precursor m/z as a 4th column
-            params['precursor m/z'] = float(params[3])
+            params['precursor m/z'] = float(sline[3])
 
     def _handle_I(self, line, sline, params):
         params[sline[1]] = sline[2]
@@ -214,9 +214,9 @@ class MS1(aux.FileReader, MS1Base):
                 elif sline[0] == 'S':
                     yield self._make_scan(params, masses, intensities)
                     params = dict(self.header) if self._use_header else {}
-                    params['scan'] = tuple(sline[1:])
                     masses = []
                     intensities = []
+                    self._handle_S(line, sline, params)
                 else:
                     if sline[0] == 'I':  # spectrum-specific parameters!
                         self._handle_I(line, sline, params)
@@ -227,11 +227,10 @@ class MS1(aux.FileReader, MS1Base):
                     else:  # this must be a peak list
                         try:
                             masses.append(float(sline[0]))            # this may cause
-                            intensities.append(float(sline[1]))       # exceptions...\
+                            intensities.append(float(sline[1]))       # exceptions...
                         except ValueError:
                             raise aux.PyteomicsError(
-                                'Error when parsing %s. Line: %s' % (
-                                    self._source_name, line))
+                                'Error when parsing %s. Line: %s' % (self._source_name, line))
                         except IndexError:
                             pass
 
@@ -252,6 +251,11 @@ class IndexedMS1(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.In
     and 'params' stores a :py:class:`dict` of parameters (keys and values are
     :py:class:`str`, keys corresponding to MS1).
 
+    .. warning ::
+        Labels for scan objects are constructed as the first number in the S line, as follows:
+        for a line ``S  0   1`` the label is `'0'`. If these labels are not unique
+        for the scans in the file, the indexed parser will not work correctly. Consider using
+        :py:class:`MS1` instead.
 
     Attributes
     ----------
@@ -371,12 +375,17 @@ def read(*args, **kwargs):
         File encoding.
 
     use_index : bool, optional
-        Determines which parsing method to use. If :py:const:`True` (default), an instance of
+        Determines which parsing method to use. If :py:const:`True`, an instance of
         :py:class:`IndexedMS1` is created. This facilitates random access by scan titles.
         If an open file is passed as `source`, it needs to be open in binary mode.
 
-        If :py:const:`False`, an instance of :py:class:`MS1` is created. It reads
+        If :py:const:`False` (default), an instance of :py:class:`MS1` is created. It reads
         `source` in text mode and is suitable for iterative parsing.
+
+        .. warning ::
+            Labels for scan objects are constructed as the first number in the S line, as follows:
+            for a line ``S  0   1`` the label is `'0'`. If these labels are not unique
+            for the scans in the file, the indexed parser will not work correctly.
 
     block_size : int, optinal
         Size of the chunk (in bytes) used to parse the file when creating the byte offset index.
@@ -393,7 +402,7 @@ def read(*args, **kwargs):
     else:
         source = kwargs.get('source')
     use_index = kwargs.pop('use_index', None)
-    use_index = aux._check_use_index(source, use_index, True)
+    use_index = aux._check_use_index(source, use_index, False)
     tp = IndexedMS1 if use_index else MS1
 
     return tp(*args, **kwargs)

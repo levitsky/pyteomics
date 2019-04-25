@@ -1641,6 +1641,31 @@ ms1_header = {'CreationDate': 'Sat Jun 03 15:25:10 2017',
  'Extractor': 'ProteoWizard',
  'Source file': 'Set 1. B2 at 193 nm RT.RAW'}
 
+ms2_spectra = [{'intensity array': makeCA([ 73.,  44.,  67., 291.,  54.,  49.]),
+  'm/z array': makeCA([ 846.6,  846.8,  847.6, 1640.1, 1640.6, 1895.5]),
+  'params': {'charge': [2.0],
+   'neutral mass': [1966.193],
+   'precursor m/z': 983.6,
+   'scan': ('0', '0')}},
+ {'intensity array': makeCA([ 237.,  128.,  108., 1007.,  974.,   79.]),
+  'm/z array': makeCA([ 345.1,  370.2,  460.2, 1673.3, 1674. , 1675.3]),
+  'params': {'RTime': 25.0, 'precursor m/z': 1084.9, 'scan': ('1', '1')}}]
+
+ms2_spectra_lists = [{'intensity array': [ 73.,  44.,  67., 291.,  54.,  49.],
+  'm/z array': [ 846.6,  846.8,  847.6, 1640.1, 1640.6, 1895.5],
+  'params': {'charge': [2.0],
+   'neutral mass': [1966.193],
+   'precursor m/z': 983.6,
+   'scan': ('0', '0')}},
+ {'intensity array': [ 237.,  128.,  108., 1007.,  974.,   79.],
+  'm/z array': [ 345.1,  370.2,  460.2, 1673.3, 1674. , 1675.3],
+  'params': {'RTime': 25.0, 'precursor m/z': 1084.9, 'scan': ('1', '1')}}]
+
+ms2_header = {'CreationDate': 'Wed Apr 24 17:06:23 2019',
+ 'Extractor': 'ProteoWizard',
+ 'Extractor version': 'pwiz_2.1.2575 (TPP v4.5 RAPTURE rev 2, Build 201208012328 (linux))',
+ 'Source file': 'test.mgf'}
+
 protxml_results =[{'group_number': 1,
   'probability': 1.0,
   'protein': [{'confidence': 1.0,
