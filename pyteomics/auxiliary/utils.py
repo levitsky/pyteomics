@@ -2,7 +2,6 @@ from __future__ import print_function
 
 import base64
 import zlib
-
 from functools import wraps
 from collections import namedtuple
 
@@ -17,6 +16,10 @@ try:
 except ImportError:
     np = None
 
+try:
+    import pynumpress
+except ImportError:
+    pynumpress = None
 
 def print_tree(d, indent_str=' -> ', indent_count=1):
     """Read a nested dict (with strings as keys) and print its structure.
@@ -79,9 +82,35 @@ def _decode_base64_data_array(source, dtype, is_compressed):
     decoded_source = base64.b64decode(source.encode('ascii'))
     if is_compressed:
         decoded_source = zlib.decompress(decoded_source)
-    output = np.frombuffer(decoded_source, dtype=dtype)
+    output = np.frombuffer(bytearray(decoded_source), dtype=dtype)
     return output
 
+
+_default_compression_map = {
+        'no compression': lambda x: x,
+        'zlib compression': zlib.decompress,
+    }
+
+def _pynumpressDecompress(decoder):
+    def decode(data):
+        return decoder(np.frombuffer(data, dtype=np.uint8))
+    return decode
+
+def _zlibNumpress(decoder):
+    def decode(data):
+        return decoder(np.frombuffer(zlib.decompress(data), dtype=np.uint8))
+    return decode
+
+if pynumpress:
+    _default_compression_map.update(
+        {
+            'MS-Numpress short logged float compression': _pynumpressDecompress(pynumpress.decode_slof),
+            'MS-Numpress positive integer compression':   _pynumpressDecompress(pynumpress.decode_pic),
+            'MS-Numpress linear prediction compression':  _pynumpressDecompress(pynumpress.decode_linear),
+            'MS-Numpress short logged float compression followed by zlib compression': _zlibNumpress(pynumpress.decode_slof),
+            'MS-Numpress positive integer compression followed by zlib compression':   _zlibNumpress(pynumpress.decode_pic),
+            'MS-Numpress linear prediction compression followed by zlib compression':  _zlibNumpress(pynumpress.decode_linear),
+        })
 
 class BinaryDataArrayTransformer(object):
     """A base class that provides methods for reading
@@ -93,10 +122,7 @@ class BinaryDataArrayTransformer(object):
         Maps compressor type name to decompression function
     """
 
-    compression_type_map = {
-        'no compression': lambda x: x,
-        'zlib compression': zlib.decompress,
-    }
+    compression_type_map = _default_compression_map
 
     class binary_array_record(namedtuple(
             "binary_array_record", ("data", "compression", "dtype", "source", "key"))):
@@ -136,8 +162,9 @@ class BinaryDataArrayTransformer(object):
         return decompressed_source
 
     def _transform_buffer(self, binary, dtype):
-        output = np.frombuffer(binary, dtype=dtype)
-        return output
+        if isinstance(binary, np.ndarray):
+            return binary.astype(dtype, copy=False)
+        return np.frombuffer(binary, dtype=dtype)
 
     def decode_data_array(self, source, compression_type=None, dtype=np.float64):
         """Decode a base64-encoded, compressed bytestring into a numerical
@@ -161,5 +188,7 @@ class BinaryDataArrayTransformer(object):
         """
         binary = self._base64_decode(source)
         binary = self._decompress(binary, compression_type)
+        if isinstance(binary, bytes):
+            binary = bytearray(binary)
         array = self._transform_buffer(binary, dtype)
         return array
