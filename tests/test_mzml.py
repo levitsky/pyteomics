@@ -12,6 +12,9 @@ from data import mzml_spectra
 import numpy as np
 import pickle
 import operator as op
+import pynumpress
+import base64
+import zlib
 
 class MzmlTest(unittest.TestCase):
     maxDiff = None
@@ -161,6 +164,42 @@ class MzmlTest(unittest.TestCase):
             self.assertEqual(mzml_spectra[0], reader.time[0])
             self.assertEqual(mzml_spectra[1], reader.time[0.1])
             self.assertEqual(mzml_spectra, reader.time[0:0.1])
+
+    def test_numpress_slof(self):
+        data = mzml_spectra[0]['intensity array']
+        encoded = base64.b64encode(pynumpress.encode_slof(data, pynumpress.optimal_slof_fixed_point(data)).tobytes()).decode('ascii')
+        record = aux.BinaryDataArrayTransformer()._make_record(encoded, 'MS-Numpress short logged float compression', data.dtype)
+        self.assertTrue(np.allclose(data, record.decode(), rtol=0.001))
+
+    def test_numpress_slof_zlib(self):
+        data = mzml_spectra[0]['intensity array']
+        encoded = base64.b64encode(zlib.compress(pynumpress.encode_slof(data, pynumpress.optimal_slof_fixed_point(data)).tobytes())).decode('ascii')
+        record = aux.BinaryDataArrayTransformer()._make_record(encoded, 'MS-Numpress short logged float compression followed by zlib compression', data.dtype)
+        self.assertTrue(np.allclose(data, record.decode(), rtol=0.001))
+
+    def test_numpress_linear(self):
+        data = mzml_spectra[0]['intensity array']
+        encoded = base64.b64encode(pynumpress.encode_linear(data, pynumpress.optimal_linear_fixed_point(data)).tobytes()).decode('ascii')
+        record = aux.BinaryDataArrayTransformer()._make_record(encoded, 'MS-Numpress linear prediction compression', data.dtype)
+        self.assertTrue(np.allclose(data, record.decode(), rtol=0.001))
+
+    def test_numpress_linear_zlib(self):
+        data = mzml_spectra[0]['intensity array']
+        encoded = base64.b64encode(zlib.compress(pynumpress.encode_linear(data, pynumpress.optimal_linear_fixed_point(data)).tobytes())).decode('ascii')
+        record = aux.BinaryDataArrayTransformer()._make_record(encoded, 'MS-Numpress linear prediction compression followed by zlib compression', data.dtype)
+        self.assertTrue(np.allclose(data, record.decode(), rtol=0.001))
+
+    def test_numpress_pic(self):
+        data = mzml_spectra[0]['intensity array']
+        encoded = base64.b64encode(pynumpress.encode_pic(data).tobytes()).decode('ascii')
+        record = aux.BinaryDataArrayTransformer()._make_record(encoded, 'MS-Numpress positive integer compression', data.dtype)
+        self.assertTrue(np.allclose(data, record.decode(), atol=0.6))
+
+    def test_numpress_pic_zlib(self):
+        data = mzml_spectra[0]['intensity array']
+        encoded = base64.b64encode(zlib.compress(pynumpress.encode_pic(data).tobytes())).decode('ascii')
+        record = aux.BinaryDataArrayTransformer()._make_record(encoded, 'MS-Numpress positive integer compression followed by zlib compression', data.dtype)
+        self.assertTrue(np.allclose(data, record.decode(), atol=0.6))
 
 if __name__ == '__main__':
     unittest.main()
