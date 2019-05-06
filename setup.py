@@ -11,7 +11,7 @@ import re
 
 with open('VERSION') as v:
     version = next(v).strip()
-with open('README') as r, open('INSTALL') as i:
+with open('README.rst') as r, open('INSTALL') as i:
     long_description = re.sub(r':py:\w+:`([^`]+)`',
             lambda m: '**{}**'.format(m.group(1)),
             ''.join(r) + '\n' + ''.join(i))
