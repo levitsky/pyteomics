@@ -1,7 +1,21 @@
-![PyPI](https://img.shields.io/pypi/v/pyteomics.svg)
-[![Read the Docs](https://readthedocs.org/projects/pyteomics/badge/?version=latest)](https://pyteomics.readthedocs.io/en/latest/?badge=latest)
-![Apache license](https://img.shields.io/aur/license/python-pyteomics.svg)
-![python-pyteomics on AUR](https://img.shields.io/aur/version/python-pyteomics.svg)
+.. image:: https://img.shields.io/pypi/v/pyteomics.svg
+    :target: https://pypi.org/project/pyteomics/
+    :alt: PyPI
+
+.. image:: https://img.shields.io/readthedocs/pyteomics.svg
+    :target: https://pyteomics.readthedocs.io/
+    :alt: Read the Docs (latest)
+
+.. image:: https://img.shields.io/aur/license/python-pyteomics.svg
+    :target: https://www.apache.org/licenses/LICENSE-2.0
+    :alt: Apache License
+
+.. image:: https://img.shields.io/aur/version/python-pyteomics.svg
+    :target: https://aur.archlinux.org/packages/python-pyteomics/
+    :alt: python-pyteomics on AUR
+
+.. image:: https://img.shields.io/badge/pyteomics-awesome-orange.svg
+    :alt: Pyteomics is awesome
 
 
 What is Pyteomics?
