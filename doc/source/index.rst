@@ -6,7 +6,7 @@
 Welcome to Pyteomics tutorial!
 ==============================
 
-.. include:: ../../README
+.. include:: ../../README.rst
 
 Citation
 --------
