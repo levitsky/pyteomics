@@ -25,3 +25,6 @@ class MzTabTest(unittest.TestCase):
         reader = mztab.MzTab(self.path)
         table = reader['psm']
         self.assertIsInstance(table, mztab.pd.DataFrame)
+
+if __name__ == '__main__':
+    unittest.main()
