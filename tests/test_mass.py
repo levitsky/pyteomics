@@ -314,7 +314,10 @@ class MassTest(unittest.TestCase):
             i = states.index(state)
             self.assertNotEqual(i, -1)
             self.assertAlmostEqual(abundances[i], abundance)
-            
+
+    def test_std_aa_mass(self):
+        for key, value in mass.std_aa_mass.items():
+            self.assertAlmostEqual(value, mass.calculate_mass(parsed_sequence=[key]), places=4)
 
 if __name__ == '__main__':
     unittest.main()
