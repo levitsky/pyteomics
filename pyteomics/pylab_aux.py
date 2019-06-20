@@ -348,6 +348,8 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
         Passed to :py:func:`plot_spectrum`.
     types : Container, optional
         Ion types to be considered for annotation. Default is `('b', 'y')`.
+    maxcharge : int, optional
+        Maximum charge state for fragment ions to be considered. Default is `1`.
     colors : dict, optional
         Keys are ion types, values are colors to plot the annotated peaks with. Defaults to a red-blue scheme.
     ftol : float, optional
