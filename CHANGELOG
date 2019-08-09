@@ -1,3 +1,9 @@
+dev
+---
+
+New method :py:meth:`mass.Unimod.by_id`.
+Also, :py:class:`mass.Unimod` now supports dict-like queries with record IDs.
+
 4.1.2
 -----
 

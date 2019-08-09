@@ -965,8 +965,11 @@ class Unimod():
             self._tree = etree.parse(source)
         self._massdata = self._mass_data()
         self._mods = []
-        for mod in self._xpath('/unimod/modifications/mod'):
-            self._mods.append(process_mod(mod))
+        self._id = {}
+        for i, mod in enumerate(self._xpath('/unimod/modifications/mod')):
+            mod_dict = process_mod(mod)
+            self._mods.append(mod_dict)
+            self._id[mod_dict['record_id']] = i
 
     def _xpath(self, path, element=None):
         from ..xml import xpath
@@ -1057,3 +1060,23 @@ class Unimod():
         if len(result) == 1:
             return result[0]
         return result
+
+    def by_id(self, i):
+        """Search modifications by record ID. If a modification is found,
+        it is returned. Otherwise, :py:exc:`KeyError` is raised.
+
+        Parameters
+        ----------
+        i : int or str
+            The Unimod record ID.
+
+        Returns
+        -------
+        out : dict
+            A single modification dict.
+        """
+        if isinstance(i, str):
+            i = int(i)
+        return self._mods[self._id[i]]
+
+    __getitem__ = by_id
