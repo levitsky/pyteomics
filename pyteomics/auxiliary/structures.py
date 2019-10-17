@@ -1,3 +1,4 @@
+import sys
 import re
 from collections import defaultdict, Counter
 
@@ -5,6 +6,15 @@ try:
     basestring
 except NameError:
     basestring = (str, bytes)
+    intern = sys.intern
+
+
+def _try_intern(s):
+    try:
+        return intern(s)
+    except TypeError as err:
+        print(s, err)
+        return s
 
 
 class PyteomicsError(Exception):
@@ -187,11 +197,35 @@ class BasicComposition(defaultdict, Counter):
         return class_, args, state, list_iterator, dict_iterator
 
 
+class _MappingOverAttributeProxy(object):
+    '''A replacement for __dict__ for unpickling an object which once
+    has __slots__ now but did not before.'''
+
+    def __init__(self, obj):
+        self.obj = obj
+
+    def __getitem__(self, key):
+        return getattr(self.obj, key)
+
+    def __setitem__(self, key, value):
+        setattr(self.obj, key, value)
+
+    def __contains__(self, key):
+        return hasattr(self.obj, key)
+
+    def __repr__(self):
+        return "{self.__class__.__name__}({self.obj})".format(self=self)
+
+
 class unitint(int):
+
     def __new__(cls, value, unit_info=None):
         inst = super(unitint, cls).__new__(cls, value)
         inst.unit_info = unit_info
         return inst
+
+    def __reduce__(self):
+        return self.__class__, (int(self), self.unit_info)
 
     def _repr_pretty_(self, p, cycle):
         base = super(unitint, self).__repr__()
@@ -203,10 +237,19 @@ class unitint(int):
 
 
 class unitfloat(float):
+    __slots__ = ('unit_info', )
+
     def __new__(cls, value, unit_info=None):
         inst = super(unitfloat, cls).__new__(cls, value)
         inst.unit_info = unit_info
         return inst
+
+    @property
+    def __dict__(self):
+        return _MappingOverAttributeProxy(self)
+
+    def __reduce__(self):
+        return self.__class__, (float(self), self.unit_info)
 
     def _repr_pretty_(self, p, cycle):
         base = super(unitfloat, self).__repr__()
@@ -218,10 +261,19 @@ class unitfloat(float):
 
 
 class unitstr(str):
+    __slots__ = ("unit_info", )
+
     def __new__(cls, value, unit_info=None):
         inst = super(unitstr, cls).__new__(cls, value)
         inst.unit_info = unit_info
         return inst
+
+    @property
+    def __dict__(self):
+        return _MappingOverAttributeProxy(self)
+
+    def __reduce__(self):
+        return self.__class__, (str(self), self.unit_info)
 
     def _repr_pretty_(self, p, cycle):
         base = super(unitstr, self).__repr__()
@@ -235,11 +287,21 @@ class unitstr(str):
 class cvstr(str):
     '''A helper class to associate a controlled vocabullary accession
     number with an otherwise plain :class:`str` object'''
+
+    __slots__ = ('accession', 'unit_accession')
+
     def __new__(cls, value, accession=None, unit_accession=None):
         inst = super(cvstr, cls).__new__(cls, value)
-        inst.accession = accession
-        inst.unit_accession = unit_accession
+        inst.accession = _try_intern(accession)
+        inst.unit_accession = _try_intern(unit_accession)
         return inst
+
+    @property
+    def __dict__(self):
+        return _MappingOverAttributeProxy(self)
+
+    def __reduce__(self):
+        return self.__class__, (str(self), self.accession, self.unit_accession)
 
 
 class CVQueryEngine(object):
