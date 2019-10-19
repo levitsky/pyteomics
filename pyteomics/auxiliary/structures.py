@@ -34,6 +34,8 @@ def _intern_unit_or_cv(unit_or_cv):
     object:
         The object which `unit_or_cv` hash-equals in :const:`~._UNIT_CV_INTERN_TABLE`.
     """
+    if unit_or_cv is None:
+        return None
     try:
         return _UNIT_CV_INTERN_TABLE[unit_or_cv]
     except KeyError:
@@ -244,8 +246,8 @@ class _MappingOverAttributeProxy(object):
 class unitint(int):
 
     def __new__(cls, value, unit_info=None):
-        inst = super(unitint, cls).__new__(cls, value)
-        inst.unit_info = _intern_unit_or_cv(unit_info)
+        inst = int.__new__(cls, value)
+        inst.unit_info = (unit_info)
         return inst
 
     def __reduce__(self):
@@ -264,8 +266,8 @@ class unitfloat(float):
     __slots__ = ('unit_info', )
 
     def __new__(cls, value, unit_info=None):
-        inst = super(unitfloat, cls).__new__(cls, value)
-        inst.unit_info = _intern_unit_or_cv(unit_info)
+        inst = float.__new__(cls, value)
+        inst.unit_info = unit_info
         return inst
 
     @property
@@ -289,8 +291,8 @@ class unitstr(str):
         __slots__ = ("unit_info", )
 
     def __new__(cls, value, unit_info=None):
-        inst = super(unitstr, cls).__new__(cls, value)
-        inst.unit_info = _intern_unit_or_cv(unit_info)
+        inst = str.__new__(cls, value)
+        inst.unit_info = unit_info
         return inst
 
     @property
@@ -316,10 +318,19 @@ class cvstr(str):
     if not PY2:
         __slots__ = ('accession', 'unit_accession')
 
+    _cache = {}
+
     def __new__(cls, value, accession=None, unit_accession=None):
-        inst = super(cvstr, cls).__new__(cls, value)
+        try:
+            inst = cls._cache[value]
+            if inst.accession == accession and inst.unit_accession == unit_accession:
+                return inst
+        except KeyError:
+            pass
+        inst = str.__new__(cls, value)
         inst.accession = _intern_unit_or_cv(accession)
         inst.unit_accession = _intern_unit_or_cv(unit_accession)
+        cls._cache[value] = inst
         return inst
 
     @property
