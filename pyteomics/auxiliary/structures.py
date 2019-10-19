@@ -4,17 +4,41 @@ from collections import defaultdict, Counter
 
 try:
     basestring
+    PY2 = True
 except NameError:
     basestring = (str, bytes)
-    intern = sys.intern
+    PY2 = False
 
 
-def _try_intern(s):
+_UNIT_CV_INTERN_TABLE = dict()
+
+
+def clear_unit_cv_table():
+    """Clear the module-level unit name and
+    controlled vocabulary accession table.
+    """
+    _UNIT_CV_INTERN_TABLE.clear()
+
+
+def _intern_unit_or_cv(unit_or_cv):
+    """Intern `unit_or_cv` in :const:`~._UNIT_CV_INTERN_TABLE`, potentially
+    keeping a reference to the object stored for the duration of the program.
+
+    Parameters
+    ----------
+    unit_or_cv : object
+        The value to intern
+
+    Returns
+    -------
+    object:
+        The object which `unit_or_cv` hash-equals in :const:`~._UNIT_CV_INTERN_TABLE`.
+    """
     try:
-        return intern(s)
-    except TypeError as err:
-        print(s, err)
-        return s
+        return _UNIT_CV_INTERN_TABLE[unit_or_cv]
+    except KeyError:
+        _UNIT_CV_INTERN_TABLE[unit_or_cv] = unit_or_cv
+        return _UNIT_CV_INTERN_TABLE[unit_or_cv]
 
 
 class PyteomicsError(Exception):
@@ -221,7 +245,7 @@ class unitint(int):
 
     def __new__(cls, value, unit_info=None):
         inst = super(unitint, cls).__new__(cls, value)
-        inst.unit_info = unit_info
+        inst.unit_info = _intern_unit_or_cv(unit_info)
         return inst
 
     def __reduce__(self):
@@ -241,7 +265,7 @@ class unitfloat(float):
 
     def __new__(cls, value, unit_info=None):
         inst = super(unitfloat, cls).__new__(cls, value)
-        inst.unit_info = unit_info
+        inst.unit_info = _intern_unit_or_cv(unit_info)
         return inst
 
     @property
@@ -261,11 +285,12 @@ class unitfloat(float):
 
 
 class unitstr(str):
-    __slots__ = ("unit_info", )
+    if not PY2:
+        __slots__ = ("unit_info", )
 
     def __new__(cls, value, unit_info=None):
         inst = super(unitstr, cls).__new__(cls, value)
-        inst.unit_info = unit_info
+        inst.unit_info = _intern_unit_or_cv(unit_info)
         return inst
 
     @property
@@ -288,12 +313,13 @@ class cvstr(str):
     '''A helper class to associate a controlled vocabullary accession
     number with an otherwise plain :class:`str` object'''
 
-    __slots__ = ('accession', 'unit_accession')
+    if not PY2:
+        __slots__ = ('accession', 'unit_accession')
 
     def __new__(cls, value, accession=None, unit_accession=None):
         inst = super(cvstr, cls).__new__(cls, value)
-        inst.accession = _try_intern(accession)
-        inst.unit_accession = _try_intern(unit_accession)
+        inst.accession = _intern_unit_or_cv(accession)
+        inst.unit_accession = _intern_unit_or_cv(unit_accession)
         return inst
 
     @property
