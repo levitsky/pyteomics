@@ -1,4 +1,3 @@
-import sys
 import re
 from collections import defaultdict, Counter
 
@@ -291,6 +290,8 @@ class unitstr(str):
         __slots__ = ("unit_info", )
 
     def __new__(cls, value, unit_info=None):
+        if PY2 and isinstance(value, unicode):
+            value = value.encode('utf-8')
         inst = str.__new__(cls, value)
         inst.unit_info = unit_info
         return inst
@@ -327,6 +328,9 @@ class cvstr(str):
                 return inst
         except KeyError:
             pass
+
+        if PY2 and isinstance(value, unicode):
+            value = value.encode('utf-8')
         inst = str.__new__(cls, value)
         inst.accession = _intern_unit_or_cv(accession)
         inst.unit_accession = _intern_unit_or_cv(unit_accession)
