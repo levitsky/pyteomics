@@ -403,11 +403,16 @@ def DataFrame(*args, **kwargs):
                     if 'analysis_result' in sh:
                         for ar in sh['analysis_result']:
                             if ar['analysis'] == 'peptideprophet':
-                                info.update(ar['peptideprophet_result']['parameter'])
+                                try:
+                                    info.update(ar['peptideprophet_result']['parameter'])
+                                except KeyError:
+                                    pass
                                 info['peptideprophet_probability'] = ar['peptideprophet_result']['probability']
+                                info['peptideprophet_ntt_prob'] = ar['peptideprophet_result']['all_ntt_prob']
                             elif ar['analysis'] == 'interprophet':
                                 info.update(ar['interprophet_result']['parameter'])
                                 info['interprophet_probability'] = ar['interprophet_result']['probability']
+                                info['interprophet_ntt_prob'] = ar['interprophet_result']['all_ntt_prob']
                 yield info
     return pd.DataFrame(gen_items(), **pd_kwargs)
 
