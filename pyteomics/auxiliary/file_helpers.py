@@ -600,16 +600,18 @@ class WritableIndex(object):
         version_tag = container.get(cls._schema_version_tag_key)
         if version_tag is None:
             # The legacy case, no special processing yet
-            inst = cls({}, None)
+            inst = cls()
             inst.schema_version = None
             return inst
         version_tag = tuple(version_tag)
         index = container.get("index")
         if version_tag < cls.schema_version:
             # schema upgrade case, no special processing yet
-            return cls(index, version_tag)
+            inst = cls(index)
+            inst.schema_version = version_tag
+            return inst
         # no need to upgrade
-        return cls(index, version_tag)
+        return cls(index)
 
 
 class OffsetIndex(OrderedDict, WritableIndex):
