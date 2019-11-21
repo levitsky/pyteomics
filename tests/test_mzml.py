@@ -78,12 +78,21 @@ class MzmlTest(unittest.TestCase):
         with open(work_path, 'w') as dest, open(self.path) as source:
             dest.write(source.read())
         assert dest.closed
+        with MzML(work_path, use_index=False) as inst:
+            self.assertRaises(IOError, inst._read_byte_offsets)
+            with open(inst._byte_offset_filename, 'wt') as fh:
+                fh.write("{}")
+            self.assertRaises(TypeError, inst._read_byte_offsets)
+            os.remove(inst._byte_offset_filename)
         with MzML(work_path, use_index=True) as inst:
             offsets_exist = os.path.exists(inst._byte_offset_filename)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
             self.assertTrue(isinstance(inst._offset_index, xml.HierarchicalOffsetIndex))
         self.assertTrue(inst._source.closed)
         MzML.prebuild_byte_offset_file(work_path)
+        with open(inst._byte_offset_filename, 'rt') as fh:
+            index = MzML._index_class.load(fh)
+            assert inst._offset_index['spectrum'] == index['spectrum']
         with MzML(work_path, use_index=True) as inst:
             offsets_exist = os.path.exists(inst._byte_offset_filename)
             self.assertTrue(offsets_exist)
