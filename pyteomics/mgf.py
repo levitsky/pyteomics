@@ -75,8 +75,8 @@ import itertools as it
 import sys
 from . import auxiliary as aux
 
-class MGFBase():
-    """Abstract class representing an MGF file. Subclasses implement different approaches to parsing."""
+class MGFBase(object):
+    """Abstract mixin class representing an MGF file. Subclasses implement different approaches to parsing."""
     _comments = set('#;!/')
     _array = (lambda x, dtype: np.array(x, dtype=dtype)) if np is not None else None
     _ma = (lambda x, dtype: np.ma.masked_equal(np.array(x, dtype=dtype), 0)) if np is not None else None
@@ -91,7 +91,7 @@ class MGFBase():
     encoding = None
 
 
-    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, dtype=None):
+    def __init__(self, source=None, **kwargs):
         """Create an MGF file object, set MGF-specific parameters.
 
         Parameters
@@ -101,33 +101,35 @@ class MGFBase():
             A file object (or file name) with data in MGF format. Default is
             :py:const:`None`, which means read standard input.
 
-        use_header : bool, optional
+        use_header : bool, optional, keyword only
             Add the info from file header to each dict. Spectrum-specific parameters
             override those from the header in case of conflict.
             Default is :py:const:`True`.
 
-        convert_arrays : one of {0, 1, 2}, optional
+        convert_arrays : one of {0, 1, 2}, optional, keyword only
             If `0`, m/z, intensities and (possibly) charges will be returned as regular lists.
             If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
             If `2`, charges will be reported as a masked array (default).
             The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
 
-        read_charges : bool, optional
+        read_charges : bool, optional, keyword only
             If `True` (default), fragment charges are reported. Disabling it improves performance.
 
-        dtype : type or str or dict, optional
+        dtype : type or str or dict, optional, keyword only
             dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
             Keys should be 'm/z array', 'intensity array' and/or 'charge array'.
 
-        encoding : str, optional
+        encoding : str, optional, keyword only
             File encoding.
         """
 
-        self._use_header = use_header
-        self._convert_arrays = convert_arrays
+        super(MGFBase, self).__init__(source, **kwargs)
+        self._use_header = kwargs.pop('use_header', True)
+        self._convert_arrays = kwargs.pop('convert_arrays', 2)
         if self._convert_arrays and np is None:
             raise aux.PyteomicsError('numpy is required for array conversion')
-        self._read_charges = read_charges
+        self._read_charges = kwargs.pop('read_charges', True)
+        dtype = kwargs.pop('dtype', None)
         self._dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in self._array_keys}
         if self._use_header:
             self._read_header()
@@ -232,7 +234,7 @@ class MGFBase():
         return self.get_spectrum(key)
 
 
-class IndexedMGF(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.IndexSavingTextReader, MGFBase):
+class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.IndexSavingTextReader):
     """
     A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
     parsing. Specific spectra can be accessed by title using the indexing syntax in constant time.
@@ -260,15 +262,15 @@ class IndexedMGF(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.In
     label = r'TITLE=([^\n]*\S)\s*'
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
-        dtype=None, encoding='utf-8', block_size=1000000, _skip_index=False):
-        aux.TimeOrderedIndexedReaderMixin.__init__(self, source, self._read, False, (), {}, encoding,
-            block_size, _skip_index=_skip_index)
-        MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype)
+        dtype=None, encoding='utf-8', _skip_index=False, **kwargs):
+        super(IndexedMGF, self).__init__(source, parser_func=self._read, pass_file=False, args=(), kwargs={},
+            use_header=use_header, convert_arrays=convert_arrays, read_charges=read_charges,
+            dtype=dtype, encoding=encoding, _skip_index=_skip_index, **kwargs)
 
     def __reduce_ex__(self, protocol):
         return (self.__class__,
-            (self._source_init, False, self._convert_arrays,
-                self._read_charges, self._dtype_dict, self.encoding, self.block_size, True),
+            (self._source_init, False, self._convert_arrays, self._read_charges,
+                self._dtype_dict, self.encoding, True),
             self.__getstate__())
 
     def __getstate__(self):
@@ -279,8 +281,8 @@ class IndexedMGF(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.In
 
     def __setstate__(self, state):
         super(IndexedMGF, self).__setstate__(state)
-        self._use_header = state['use_header']
         self._header = state['header']
+        self._use_header = state['use_header']
 
     @aux._keepstate_method
     def _read_header(self):
@@ -311,7 +313,7 @@ class IndexedMGF(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.In
             raise aux.PyteomicsError('RT information not found.')
 
 
-class MGF(aux.FileReader, MGFBase):
+class MGF(MGFBase, aux.FileReader):
     """
     A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential
     parsing. Specific spectra can be accessed by title using the indexing syntax (if the file is seekable),
@@ -336,9 +338,9 @@ class MGF(aux.FileReader, MGFBase):
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
         dtype=None, encoding=None):
-        aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
-        MGFBase.__init__(self, source, use_header, convert_arrays, read_charges, dtype)
-        self.encoding = encoding
+        super(MGF, self).__init__(source, mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={},
+            encoding=encoding, use_header=use_header, convert_arrays=convert_arrays, read_charges=read_charges, dtype=dtype)
+        # self.encoding = encoding
 
     @aux._keepstate_method
     def _read_header(self):
@@ -422,7 +424,6 @@ def read(*args, **kwargs):
     use_index = kwargs.pop('use_index', None)
     use_index = aux._check_use_index(source, use_index, True)
     tp = IndexedMGF if use_index else MGF
-
     return tp(*args, **kwargs)
 
 
