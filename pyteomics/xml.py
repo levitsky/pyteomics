@@ -238,9 +238,8 @@ class XML(FileReader):
             (e.g. `XMLSyntaxError: xmlSAX2Characters: huge text node`).
         """
 
-        super(XML, self).__init__(source, 'rb', self.iterfind, False,
-                (self._default_iter_tag,), kwargs)
-
+        super(XML, self).__init__(source, mode='rb', parser_func=self.iterfind, pass_file=False,
+                args=(self._default_iter_tag,), kwargs=kwargs)
         if iterative:
             self._tree = None
         else:
@@ -1017,6 +1016,7 @@ class IndexedXML(IndexedReaderMixin, XML):
         if use_index:
             build_id_cache = False
         super(IndexedXML, self).__init__(source, read_schema, iterative, build_id_cache, *args, **kwargs)
+
         self._offset_index = HierarchicalOffsetIndex()
         self._build_index()
 
@@ -1127,7 +1127,6 @@ class IndexSavingXML(IndexSavingMixin, IndexedXML):
             if index.schema_version is None:
                 raise TypeError("Legacy Offset Index!")
             self._offset_index = index
-
 
 
 class ArrayConversionMixin(BinaryDataArrayTransformer):

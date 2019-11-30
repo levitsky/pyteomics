@@ -6,8 +6,7 @@ dev
 
  - Reduce memory footprint for unit primitives (PR #35 by Joshua Klein).
 
- - Fix issues #47, #48.
-
+ - Fix issues #44, #46, #47, #48.
 
 
 4.1.2

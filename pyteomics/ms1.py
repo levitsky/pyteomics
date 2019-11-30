@@ -60,7 +60,8 @@ class MS1Base(object):
     """Abstract class representing an MS1 file. Subclasses implement different approaches to parsing."""
     _array_keys = ['m/z array', 'intensity array']
 
-    def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None):
+    def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, **kwargs):
+        super(MS1Base, self).__init__(source, **kwargs)
         if convert_arrays and np is None:
             raise aux.PyteomicsError('numpy is required for array conversion')
         self._convert_arrays = convert_arrays
@@ -71,6 +72,7 @@ class MS1Base(object):
         else:
             self._header = None
         self._source_name = getattr(source, 'name', str(source))
+
 
     @property
     def header(self):
@@ -161,7 +163,7 @@ class MS1Base(object):
         return self._make_scan(params, masses, intensities)
 
 
-class MS1(aux.FileReader, MS1Base):
+class MS1(MS1Base, aux.FileReader):
     """
     A class representing an MS1 file. Supports the `with` syntax and direct iteration for sequential
     parsing.
@@ -179,10 +181,12 @@ class MS1(aux.FileReader, MS1Base):
         The file header.
 
     """
-    def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, encoding=None):
-        aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
-        MS1Base.__init__(self, source, use_header, convert_arrays, dtype)
-        self.encoding = encoding
+    def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, encoding=None, **kwargs):
+        super(MS1, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype, encoding=encoding,
+            mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={})
+        # aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
+        # MS1Base.__init__(self, source, use_header, convert_arrays, dtype)
+        # self.encoding = encoding
 
     @aux._keepstate_method
     def _read_header(self):
@@ -237,7 +241,7 @@ class MS1(aux.FileReader, MS1Base):
         yield self._make_scan(params, masses, intensities)
 
 
-class IndexedMS1(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.IndexedTextReader, MS1Base):
+class IndexedMS1(MS1Base, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.IndexedTextReader):
     """
     A class representing an MS1 file. Supports the `with` syntax and direct iteration for sequential
     parsing. Specific spectra can be accessed by title using the indexing syntax in constant time.
@@ -269,11 +273,12 @@ class IndexedMS1(aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.In
     delimiter = '\nS'
     label = r'^[\n]?S\s+(\S+)'
 
-    def __init__(self, source=None, use_header=False, convert_arrays=True,
-        dtype=None, encoding='utf-8', block_size=1000000, _skip_index=False):
-        aux.TimeOrderedIndexedReaderMixin.__init__(self, source, self._read, False, (), {}, encoding,
-            block_size, _skip_index=_skip_index)
-        MS1Base.__init__(self, source, use_header, convert_arrays, dtype)
+    def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, encoding='utf-8', _skip_index=False, **kwargs):
+        super(IndexedMS1, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype, encoding=encoding,
+            parser_func=self._read, pass_file=False, args=(), kwargs={}, _skip_index=_skip_index)
+        # aux.TimeOrderedIndexedReaderMixin.__init__(self, source, self._read, False, (), {}, encoding,
+        #     block_size, _skip_index=_skip_index)
+        # MS1Base.__init__(self, source, use_header, convert_arrays, dtype)
 
     def __reduce_ex__(self, protocol):
         return (self.__class__,

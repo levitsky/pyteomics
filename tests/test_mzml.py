@@ -34,6 +34,12 @@ class MzmlTest(unittest.TestCase):
         with MzML(self.path) as f:
             self.assertEqual(sorted(mzml_spectra, key=key), sorted(list(f.map()), key=key))
 
+    def test_map_qsize(self):
+        key = op.itemgetter('index')
+        with MzML(self.path, queue_size=1000) as f:
+            self.assertEqual(f._queue_size, 1000)
+            self.assertEqual(sorted(mzml_spectra, key=key), sorted(list(f.map()), key=key))
+
     def test_decoding(self):
         with MzML(self.path, decode_binary=True) as reader:
             spectrum = next(reader)

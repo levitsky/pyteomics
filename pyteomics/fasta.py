@@ -114,7 +114,7 @@ from . import auxiliary as aux
 
 Protein = namedtuple('Protein', ('description', 'sequence'))
 
-class FASTABase():
+class FASTABase(object):
     """Abstract base class for FASTA file parsers.
     Can be used for type checking.
     """
@@ -122,10 +122,12 @@ class FASTABase():
     _ignore_comments = False
     _comments = set('>;')
 
-    def __init__(self, ignore_comments=False, parser=None):
-        self._ignore_comments = ignore_comments
+    def __init__(self, source, **kwargs):
+        self._ignore_comments = kwargs.pop('ignore_comments', False)
+        parser = kwargs.pop('parser', None)
         if parser is not None:
             self.parser = parser
+        super(FASTABase, self).__init__(source, **kwargs)
 
     def _is_comment(self, line):
         return line[0] in self._comments
@@ -134,7 +136,7 @@ class FASTABase():
         raise NotImplementedError
 
 
-class FASTA(aux.FileReader, FASTABase):
+class FASTA(FASTABase, aux.FileReader):
     """Text-mode, sequential FASTA parser.
     Suitable for iteration over the file to obtain all entries in order.
     """
@@ -162,9 +164,8 @@ class FASTA(aux.FileReader, FASTABase):
         encoding : str or None, optional
             File encoding (if it is given by name).
         """
-        aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
-        FASTABase.__init__(self, ignore_comments, parser)
-        self.encoding = encoding
+        super(FASTA, self).__init__(source, mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={},
+            encoding=encoding, ignore_comments=ignore_comments, parser=parser)
 
     def _read(self):
         accumulated_strings = []
@@ -214,7 +215,7 @@ def _reconstruct(cls, args, kwargs):
     return cls(*args, **kwargs)
 
 
-class IndexedFASTA(aux.TaskMappingMixin, aux.IndexedTextReader, FASTABase):
+class IndexedFASTA(FASTABase, aux.TaskMappingMixin, aux.IndexedTextReader):
     """Indexed FASTA parser. Supports direct indexing by matched labels."""
     delimiter = '\n>'
     label = r'^[\n]?>(.*)\s*'
@@ -251,8 +252,8 @@ class IndexedFASTA(aux.TaskMappingMixin, aux.IndexedTextReader, FASTABase):
             This in combination with `label` can be used to extract fields from headers.
             However, consider using :py:class:`TwoLayerIndexedFASTA` for this purpose.
         """
-        aux.IndexedTextReader.__init__(self, source, self._read, False, (), {}, **kwargs)
-        FASTABase.__init__(self, ignore_comments, parser)
+        super(IndexedFASTA, self).__init__(source, ignore_comments=ignore_comments, parser=parser,
+            parser_func=self._read, pass_file=False, args=(), kwargs={}, **kwargs)
         self._init_args = (source, ignore_comments, parser)
         self._init_kwargs = kwargs
 
@@ -304,7 +305,8 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
     full headers are mapped to byte offsets.
 
     When indexed, the key is looked up in both indexes, allowing access by meaningful IDs
-    (like UniProt accession) and by full header string."""
+    (like UniProt accession) and by full header string.
+    """
     header_group = 1
     header_pattern = None
     def __init__(self, source, header_pattern=None, header_group=None,

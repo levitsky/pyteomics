@@ -129,15 +129,19 @@ class _file_obj(object):
     def __iter__(self):
         return iter(self.file)
 
+class NoOpBaseReader(object):
+    def __init__(self, *args, **kwargs):
+        pass
 
-class IteratorContextManager(object):
+class IteratorContextManager(NoOpBaseReader):
 
-    def __init__(self, _func, *args, **kwargs):
-        self._func = _func
+    def __init__(self, *args, **kwargs):
+        self._func = kwargs.pop('parser_func')
         self._args = args
         self._kwargs = kwargs
         if type(self) == IteratorContextManager:
             self.reset()
+        super(IteratorContextManager, self).__init__(*args, **kwargs)
 
     def __getstate__(self):
         state = {}
@@ -181,12 +185,13 @@ class FileReader(IteratorContextManager):
     for file readers.
     """
 
-    def __init__(self, source, mode, func, pass_file, args, kwargs, encoding=None):
-        super(FileReader, self).__init__(func, *args, **kwargs)
-        self._pass_file = pass_file
+    def __init__(self, source, **kwargs):
+        func = kwargs['parser_func']
+        super(FileReader, self).__init__(*kwargs['args'], parser_func=func, **kwargs['kwargs'])
+        self._pass_file = kwargs['pass_file']
         self._source_init = source
-        self._mode = mode
-        self._encoding = encoding
+        self._mode = kwargs['mode']
+        self._encoding = kwargs.get('encoding')
         self.reset()
 
     def reset(self):
@@ -216,7 +221,7 @@ def remove_bom(bstr):
     return bstr.replace(codecs.BOM_LE, b'').lstrip(b"\x00")
 
 
-class IndexedReaderMixin(object):
+class IndexedReaderMixin(NoOpBaseReader):
     """Common interface for :py:class:`IndexedTextReader` and :py:class:`IndexedXML`."""
     @property
     def index(self):
@@ -383,22 +388,17 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
     block_size = 1000000
     label_group = 1
 
-    def __init__(self, source, func, pass_file, args, kwargs, encoding='utf-8', block_size=None,
-        delimiter=None, label=None, label_group=None, _skip_index=False):
+    def __init__(self, source, **kwargs):
         # the underlying _file_obj gets None as encoding
         # to avoid transparent decoding of StreamReader on read() calls
-        super(IndexedTextReader, self).__init__(source, 'rb', func, pass_file, args, kwargs, encoding=None)
+        encoding = kwargs.pop('encoding', 'utf-8')
+        super(IndexedTextReader, self).__init__(source, mode='rb', encoding=None, **kwargs)
         self.encoding = encoding
-        if delimiter is not None:
-            self.delimiter = delimiter
-        if label is not None:
-            self.label = label
-        if block_size is not None:
-            self.block_size = block_size
-        if label_group is not None:
-            self.label_group = label_group
+        for attr in ['delimiter', 'label', 'block_size', 'label_group']:
+            if attr in kwargs:
+                setattr(self, attr, kwargs.pop(attr))
         self._offset_index = None
-        if not _skip_index:
+        if not kwargs.pop('_skip_index', False):
             self._offset_index = self.build_byte_index()
 
     def __getstate__(self):
@@ -475,7 +475,7 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
         return lines
 
 
-class IndexSavingMixin(object):
+class IndexSavingMixin(NoOpBaseReader):
     """Common interface for :py:class:`IndexSavingXML` and :py:class:`IndexSavingTextReader`."""
     _index_class = NotImplemented
 
@@ -529,6 +529,7 @@ class IndexSavingMixin(object):
         to the method used by :class:`IndexedXML` if this operation fails
         due to an IOError
         """
+        if not self._use_index: return
         try:
             self._read_byte_offsets()
         except (IOError, AttributeError, TypeError):
@@ -555,10 +556,10 @@ def _file_reader(_mode='r'):
         @wraps(_func)
         def helper(*args, **kwargs):
             if args:
-                return FileReader(args[0], _mode, _func, True, args[1:], kwargs,
-                    kwargs.pop('encoding', None))
+                return FileReader(args[0], mode=_mode, parser_func=_func, pass_file=True, args=args[1:], kwargs=kwargs,
+                    encoding=kwargs.pop('encoding', None))
             source = kwargs.pop('source', None)
-            return FileReader(source, _mode, _func, True, (), kwargs, kwargs.pop('encoding', None))
+            return FileReader(source, mode=_mode, parser_func=_func, pass_file=True, args=(), kwargs=kwargs, encoding=kwargs.pop('encoding', None))
         return helper
     return decorator
 
@@ -924,9 +925,30 @@ try:
 except NotImplementedError:
     _NPROC = 4
 _QUEUE_TIMEOUT = 4
+_QUEUE_SIZE = int(1e7)
 
+class TaskMappingMixin(NoOpBaseReader):
+    def __init__(self, *args, **kwargs):
+        '''
+        Instantiate a :py:class:`TaskMappingMixin` object, set default parameters for IPC.
 
-class TaskMappingMixin(object):
+        Parameters
+        ----------
+
+        queue_timeout : float, keyword only, optional
+            The number of seconds to block, waiting for a result before checking to see if
+            all workers are done.
+        queue_size : int, keyword only, optional
+            The length of IPC queue used.
+        processes : int, keyword only, optional
+            Number of worker processes to spawn when :py:meth:`map` is called. This can also be
+            specified in the :py:meth:`map` call.
+        '''
+        self._queue_size = kwargs.pop('queue_size', _QUEUE_SIZE)
+        self._queue_timeout = kwargs.pop('timeout', _QUEUE_TIMEOUT)
+        self._nproc = kwargs.pop('processes', _NPROC)
+        super(TaskMappingMixin, self).__init__(*args, **kwargs)
+
     def _get_reader_for_worker_spec(self):
         return self
 
@@ -937,8 +959,7 @@ class TaskMappingMixin(object):
             try:
                 serialized.append(serializer.dumps(obj))
             except serializer.PicklingError:
-                msg = 'Could not serialize {0} {1} with {2.__name__}.'.format(
-                    objname, obj, serializer)
+                msg = 'Could not serialize {0} {1} with {2.__name__}.'.format(objname, obj, serializer)
                 if serializer is not dill:
                     msg += ' Try installing `dill`.'
                 raise PyteomicsError(msg)
@@ -965,7 +986,7 @@ class TaskMappingMixin(object):
         feeder_thread.start()
         return feeder_thread
 
-    def map(self, target=None, processes=-1, queue_timeout=_QUEUE_TIMEOUT, args=None, kwargs=None, **_kwargs):
+    def map(self, target=None, processes=-1, args=None, kwargs=None, **_kwargs):
         """Execute the ``target`` function over entries of this object across up to ``processes``
         processes.
 
@@ -977,11 +998,9 @@ class TaskMappingMixin(object):
             The function to execute over each entry. It will be given a single object yielded by
             the wrapped iterator as well as all of the values in ``args`` and ``kwargs``
         processes : int, optional
-            The number of worker processes to use. If negative, the number of processes
-            will match the number of available CPUs.
-        queue_timeout : float, optional
-            The number of seconds to block, waiting for a result before checking to see if
-            all workers are done.
+            The number of worker processes to use. If 0 or negative,
+            defaults to the number of available CPUs.
+            This parameter can also be set at reader creation.
         args : :class:`Sequence`, optional
             Additional positional arguments to be passed to the target function
         kwargs : :class:`Mapping`, optional
@@ -995,7 +1014,7 @@ class TaskMappingMixin(object):
             The work item returned by the target function.
         """
         if processes < 1:
-            processes = _NPROC
+            processes = self._nproc
         iterator = self._task_map_iterator()
 
         if args is None:
@@ -1011,8 +1030,8 @@ class TaskMappingMixin(object):
         serialized = self._build_worker_spec(target, args, kwargs)
 
         done_event = mp.Event()
-        in_queue = mp.Queue(int(1e7))
-        out_queue = mp.Queue(int(1e7))
+        in_queue = mp.Queue(self._queue_size)
+        out_queue = mp.Queue(self._queue_size)
 
         workers = self._spawn_workers(serialized, in_queue, out_queue, done_event, processes)
         feeder_thread = self._spawn_feeder_thread(in_queue, iterator, processes)
@@ -1021,7 +1040,7 @@ class TaskMappingMixin(object):
 
         while True:
             try:
-                result = out_queue.get(True, queue_timeout)
+                result = out_queue.get(True, self._queue_timeout)
                 yield result
             except Empty:
                 if all(w.is_done() for w in workers):

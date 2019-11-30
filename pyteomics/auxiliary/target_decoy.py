@@ -691,7 +691,7 @@ def _make_filter(read, is_decoy_prefix, is_decoy_suffix, key, qvalues):
         """
         if kwargs.pop('full_output', True):
             return filter(*args, full_output=True, **kwargs)
-        return IteratorContextManager(filter, *args, **kwargs)
+        return IteratorContextManager(*args, parser_func=filter, **kwargs)
 
     _fix_docstring(_filter, is_decoy=is_decoy_prefix, key=key)
     if read is _iter:

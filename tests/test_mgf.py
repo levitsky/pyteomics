@@ -29,7 +29,7 @@ class MGFTest(unittest.TestCase):
         self.tmpfile.close()
 
     def test_read(self):
-        for func in [mgf.read, mgf.MGF]:
+        for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
             # http://stackoverflow.com/q/14246983/1258041
             self.assertEqual(data.mgf_spectra_long, list(func(self.path)))
             self.assertEqual(data.mgf_spectra_short, list(func(self.path, False)))
@@ -37,6 +37,10 @@ class MGFTest(unittest.TestCase):
                 self.assertEqual(data.mgf_spectra_long, list(reader))
             with func(self.path, False) as reader:
                 self.assertEqual(data.mgf_spectra_short, list(reader))
+
+    def test_read_source_kw(self):
+        for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
+            self.assertEqual(data.mgf_spectra_long, list(func(source=self.path)))
 
     def test_read_decoding(self):
         for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
