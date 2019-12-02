@@ -8,7 +8,7 @@ pipelines:
           caches:
             - pip
           script:
-            - pip install lxml numpy sqlalchemy pandas
+            - pip install lxml numpy sqlalchemy pandas cython
             - pip install pynumpress
             - cd tests; find . -name 'test_*.py' -print0 | xargs -0 -n1 env PYTHONPATH=.. python
 
@@ -18,6 +18,6 @@ pipelines:
           caches:
             - pip
           script:
-            - pip install lxml numpy sqlalchemy pandas
+            - pip install lxml numpy sqlalchemy pandas cython
             - pip install pynumpress
             - cd tests; find . -name 'test_*.py' -print0 | xargs -0 -n1 env PYTHONPATH=.. python
