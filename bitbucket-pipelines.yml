@@ -1,9 +1,8 @@
 
-image: python:3.8
-
 pipelines:
   default:
     - step:
+        image: python:3.8
         caches:
           - pip
         script:
@@ -11,3 +10,11 @@ pipelines:
           - pip install pynumpress
           - cd tests; PYTHONPATH=.. find . -name 'test_*.py' -exec python {} \;
 
+    - step:
+        image: python:2.7
+        caches:
+          - pip
+        script:
+          - pip install lxml numpy sqlalchemy pandas
+          - pip install pynumpress
+          - cd tests; PYTHONPATH=.. find . -name 'test_*.py' -exec python {} \;
