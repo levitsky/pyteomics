@@ -1,0 +1,12 @@
+
+image: python:3.8
+
+pipelines:
+  default:
+    - step:
+        caches:
+          - pip
+        script:
+          - pip install lxml numpy sqlalchemy pandas pynumpress
+          - cd tests; PYTHONPATH=.. find . -name 'test_*.py' -exec python {} \;
+
