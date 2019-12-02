@@ -10,7 +10,7 @@ pipelines:
           script:
             - pip install lxml numpy sqlalchemy pandas
             - pip install pynumpress
-            - cd tests; PYTHONPATH=.. find . -name 'test_*.py' -print0 | xargs -0 -n1 python
+            - cd tests; find . -name 'test_*.py' -print0 | xargs -0 -n1 env PYTHONPATH=.. python
 
       - step:
           name: Python 2.7
@@ -20,4 +20,4 @@ pipelines:
           script:
             - pip install lxml numpy sqlalchemy pandas
             - pip install pynumpress
-            - cd tests; PYTHONPATH=.. find . -name 'test_*.py' -print0 | xargs -0 -n1 python
+            - cd tests; find . -name 'test_*.py' -print0 | xargs -0 -n1 env PYTHONPATH=.. python
