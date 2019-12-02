@@ -2,6 +2,7 @@
 pipelines:
   default:
     - step:
+        name: Python 3.8
         image: python:3.8
         caches:
           - pip
@@ -11,6 +12,7 @@ pipelines:
           - cd tests; PYTHONPATH=.. find . -name 'test_*.py' -exec python {} \;
 
     - step:
+        name: Python 2.7
         image: python:2.7
         caches:
           - pip
