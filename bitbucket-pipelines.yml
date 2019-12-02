@@ -7,6 +7,7 @@ pipelines:
         caches:
           - pip
         script:
-          - pip install lxml numpy sqlalchemy pandas pynumpress
+          - pip install lxml numpy sqlalchemy pandas
+          - pip install pynumpress
           - cd tests; PYTHONPATH=.. find . -name 'test_*.py' -exec python {} \;
 
