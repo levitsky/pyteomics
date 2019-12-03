@@ -122,7 +122,7 @@ Since version 3.4.3, MGF parsing functionality is encapsulated in a class:
 
 .. note ::
     :py:class:`MGF`'s support for direct indexing is rudimentary, because it does not in fact keep an index and has
-    to search through the file line-wise on every call. :py:class:`pyteomics.mgf.IndexedMGF` iis designed for
+    to search through the file line-wise on every call. :py:class:`pyteomics.mgf.IndexedMGF` is designed for
     random access and more (see `Indexed Parsers`_ for details).
 
 Writing
