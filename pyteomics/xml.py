@@ -30,8 +30,6 @@ This module requres :py:mod:`lxml` and :py:mod:`numpy`.
 import re
 import socket
 from traceback import format_exc
-import operator as op
-import ast
 import warnings
 from collections import OrderedDict, namedtuple
 from lxml import etree
@@ -51,9 +49,10 @@ except ImportError: # Python 3.x
 
 def _local_name(element):
     """Strip namespace from the XML element's name"""
-    if element.tag and element.tag[0] == '{':
-        return element.tag.rpartition('}')[2]
-    return element.tag
+    tag = element.tag
+    if tag and tag[0] == '{':
+        return tag.rpartition('}')[2]
+    return tag
 
 
 def xsd_parser(schema_url):
@@ -192,13 +191,16 @@ class XML(FileReader):
     file_format = 'XML'
     _root_element = None
     _default_schema = {}
+    _read_schema = False
     _default_version = 0
     _default_iter_tag = None
+    _default_iter_path = None
     _structures_to_flatten = []
     _schema_location_param = 'schemaLocation'
     _default_id_attr = 'id'
     _huge_tree = False
     _retrieve_refs_enabled = None  # only some subclasses implement this
+    _iterative = True
 
     # Configurable plugin logic
     _converters = XMLValueConverter.converters()
@@ -208,8 +210,7 @@ class XML(FileReader):
     def _get_info_smart(self, element, **kwargs):
         raise NotImplementedError
 
-    def __init__(self, source, read_schema=False,
-                 iterative=True, build_id_cache=False, **kwargs):
+    def __init__(self, source, read_schema=None, iterative=None, build_id_cache=False, **kwargs):
         """Create an XML parser object.
 
         Parameters
@@ -239,7 +240,9 @@ class XML(FileReader):
         """
 
         super(XML, self).__init__(source, mode='rb', parser_func=self.iterfind, pass_file=False,
-                args=(self._default_iter_tag,), kwargs=kwargs)
+                args=(self._default_iter_path or self._default_iter_tag,), kwargs=kwargs)
+        if iterative is None:
+            iterative = self._iterative
         if iterative:
             self._tree = None
         else:
@@ -250,7 +253,8 @@ class XML(FileReader):
             self._id_dict = None
 
         self.version_info = self._get_version_info()
-        self._read_schema = read_schema
+        if read_schema is not None:
+            self._read_schema = read_schema
         self.schema_info = self._get_schema_info(read_schema)
 
         self._converters_items = self._converters.items()
@@ -504,13 +508,10 @@ class XML(FileReader):
         Parameters
         ----------
         path : str
-            Element name or XPath-like expression. Only local names separated
-            with slashes are accepted. An asterisk (`*`) means any element.
-            You can specify a single condition in the end, such as:
-            ``"/path/to/element[some_value>1.5]"``
-            Note: you can do much more powerful filtering using plain Python.
-            The path can be absolute or "free". Please don't specify
-            namespaces.
+            Element name or XPath-like expression. The path is very close to
+            full XPath syntax, but local names should be used for all elements in the path.
+            They will be substituted with local-name() checks, up to the (first) predicate.
+            The path can be absolute or "free". Please don't specify namespaces.
         **kwargs : passed to :py:meth:`self._get_info_smart`.
 
         Returns
@@ -527,13 +528,10 @@ class XML(FileReader):
         Parameters
         ----------
         path : str
-            Element name or XPath-like expression. Only local names separated
-            with slashes are accepted. An asterisk (`*`) means any element.
-            You can specify a single condition in the end, such as:
-            ``"/path/to/element[some_value>1.5]"``
-            Note: you can do much more powerful filtering using plain Python.
-            The path can be absolute or "free". Please don't specify
-            namespaces.
+            Element name or XPath-like expression. The path is very close to
+            full XPath syntax, but local names should be used for all elements in the path.
+            They will be substituted with local-name() checks, up to the (first) predicate.
+            The path can be absolute or "free". Please don't specify namespaces.
         **kwargs : passed to :py:meth:`self._get_info_smart`.
 
         Returns
@@ -541,34 +539,46 @@ class XML(FileReader):
         out : iterator
         """
         try:
-            path, _, cond = re.match(pattern_path, path).groups()
+            path, tail = re.match(pattern_path, path).groups()
         except AttributeError:
             raise PyteomicsError('Invalid path: ' + path)
-        if path.startswith('//') or not path.startswith('/'):
+        if path[:2] == '//' or path[0] != '/':
             absolute = False
-            if path.startswith('//'):
+            if path[:2] == '//':
                 path = path[2:]
-                if path.startswith('/') or '//' in path:
+                if path[0] == '/' or '//' in path:
                     raise PyteomicsError("Too many /'s in a row.")
         else:
             absolute = True
             path = path[1:]
         nodes = path.rstrip('/').split('/')
+        if not nodes:
+            raise PyteomicsError('Invalid path: ' + path)
+
         if not self._tree:
-            localname = nodes[0].lower()
+            if tail:
+                if tail[0] == '[':
+                    tail = '(.)' + tail
+                else:
+                    raise PyteomicsError('Cannot parse path tail: ' + tail)
+                xpath = etree.XPath(tail)
+            localname = nodes[0]
             found = False
-            for ev, elem in etree.iterparse(self, events=('start', 'end'),
-                    remove_comments=True, huge_tree=self._huge_tree):
-                name_lc = _local_name(elem).lower()
+            for ev, elem in etree.iterparse(self, events=('start', 'end'), remove_comments=True, huge_tree=self._huge_tree):
+                name_lc = _local_name(elem)
                 if ev == 'start':
                     if name_lc == localname or localname == '*':
-                        found += True
+                        found += 1
                 else:
                     if name_lc == localname or localname == '*':
                         if (absolute and elem.getparent() is None) or not absolute:
                             for child in get_rel_path(elem, nodes[1:]):
-                                info = self._get_info_smart(child, **kwargs)
-                                if cond is None or satisfied(info, cond):
+                                if tail:
+                                    for elem in xpath(child):
+                                        info = self._get_info_smart(elem, **kwargs)
+                                        yield info
+                                else:
+                                    info = self._get_info_smart(child, **kwargs)
                                     yield info
                         if not localname == '*':
                             found -= 1
@@ -576,11 +586,10 @@ class XML(FileReader):
                         elem.clear()
         else:
             xpath = ('/' if absolute else '//') + '/'.join(
-                    '*[local-name()="{}"]'.format(node) for node in nodes)
+                    '*[local-name()="{}"]'.format(node) if node != '*' else '*' for node in nodes ) + tail
             for elem in self._tree.xpath(xpath):
                 info = self._get_info_smart(elem, **kwargs)
-                if cond is None or satisfied(info, cond):
-                    yield info
+                yield info
 
     @_keepstate
     def build_id_cache(self):
@@ -655,32 +664,19 @@ class XML(FileReader):
         return self._get_info_smart(elem, **kwargs)
 
 # XPath emulator tools
-pattern_path = re.compile(r'([\w/*]*)(\[(\w+[<>=]{1,2}[^\]]+)\])?')
-pattern_cond = re.compile(r'^\s*(\w+)\s*([<>=]{,2})\s*([^\]]+)$')
+pattern_path = re.compile(r'([\w/*]*)(.*)')
 
 def get_rel_path(element, names):
     if not names:
         yield element
     else:
         for child in element.iterchildren():
-            if names[0] == '*' or _local_name(child).lower() == names[0].lower():
+            if names[0] == '*' or _local_name(child) == names[0]:
                 if len(names) == 1:
                     yield child
                 else:
                     for gchild in get_rel_path(child, names[1:]):
                         yield gchild
-
-def satisfied(d, cond):
-    func = {'<': 'lt', '<=': 'le', '=': 'eq', '==': 'eq',
-            '!=': 'ne', '<>': 'ne', '>': 'gt', '>=': 'ge'}
-    try:
-        lhs, sign, rhs = re.match(pattern_cond, cond).groups()
-        if lhs in d:
-            return getattr(op, func[sign])(
-                    d[lhs], ast.literal_eval(rhs))
-        return False
-    except (AttributeError, KeyError, ValueError):
-        raise PyteomicsError('Invalid condition: ' + cond)
 
 def xpath(tree, path, ns=None):
     """Return the results of XPath query with added namespaces.
@@ -973,10 +969,11 @@ class IndexedXML(IndexedReaderMixin, XML):
     """
     _indexed_tags = set()
     _indexed_tag_keys = {}
+    _use_index = True
 
     def __init__(self, source, read_schema=False, iterative=True, build_id_cache=False,
-                 use_index=True, *args, **kwargs):
-        """Create an XML parser object.
+                 use_index=None, *args, **kwargs):
+        """Create an indexed XML parser object.
 
         Parameters
         ----------
@@ -1011,13 +1008,17 @@ class IndexedXML(IndexedReaderMixin, XML):
         if tag_index_keys is not None:
             self._indexed_tag_keys = tag_index_keys
 
-        self._use_index = use_index
+        if use_index is not None:
+            self._use_index = use_index
 
         if use_index:
             build_id_cache = False
+            if self._default_iter_path and self._default_iter_path != self._default_iter_tag:
+                warnings.warn('_default_iter_path differs from _default_iter_tag and index is enabled. '
+                    '_default_iter_tag will be used in the index, mind the consequences.')
         super(IndexedXML, self).__init__(source, read_schema, iterative, build_id_cache, *args, **kwargs)
 
-        self._offset_index = HierarchicalOffsetIndex()
+        self._offset_index = None
         self._build_index()
 
     @property
@@ -1084,7 +1085,7 @@ class IndexedXML(IndexedReaderMixin, XML):
             offset = index.find(elem_id, element_type)
             self._source.seek(offset)
             elem = self._find_by_id_no_reset(elem_id, id_key=id_key)
-        except (KeyError, etree.LxmlError):
+        except (KeyError, AttributeError, etree.LxmlError):
             elem = self._find_by_id_reset(elem_id, id_key=id_key)
         data = self._get_info_smart(elem, **kwargs)
         return data
