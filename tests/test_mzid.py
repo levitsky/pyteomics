@@ -16,8 +16,12 @@ class MzidTest(unittest.TestCase):
                     lambda x, **kw: chain.from_iterable([x], **kw)]:
                 with func(self.path, recursive=rec, retrieve_refs=refs,
                         read_schema=rs, iterative=it, use_index=ui) as reader:
-                    psms = list(reader)
-                    self.assertEqual(psms, mzid_spectra[(rec, refs)])
+                    try:
+                        psms = list(reader)
+                        self.assertEqual(psms, mzid_spectra[(rec, refs)])
+                    except Exception:
+                        print('Parameters causing exception: ', rec, refs, rs, it, ui)
+                        raise
 
     def test_unit_info(self):
         with MzIdentML(self.path) as handle:

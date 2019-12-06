@@ -34,6 +34,10 @@ class MzmlTest(unittest.TestCase):
         with MzML(self.path) as f:
             self.assertEqual(sorted(mzml_spectra, key=key), sorted(list(f.map()), key=key))
 
+    def test_mp_requires_index(self):
+        with MzML(self.path, use_index=False) as r:
+            self.assertRaises(aux.PyteomicsError, r.map)
+
     def test_map_qsize(self):
         key = op.itemgetter('index')
         with MzML(self.path, queue_size=1000) as f:
@@ -76,7 +80,7 @@ class MzmlTest(unittest.TestCase):
         with read(self.path, use_index=True) as f:
             self.assertGreater(len(f._offset_index), 0)
         with read(self.path, use_index=False) as f:
-            self.assertEqual(len(f._offset_index), 0)
+            self.assertEqual(f._offset_index, None)
 
     def test_prebuild_index(self):
         test_dir = tempfile.mkdtemp()

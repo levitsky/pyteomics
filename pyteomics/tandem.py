@@ -95,7 +95,7 @@ class TandemXML(xml.XML):
     file_format = "TandemXML"
     _root_element = "bioml"
     _default_schema = _schema_defaults._tandem_schema_defaults
-    _default_iter_tag = 'group[type="model"]'
+    _default_iter_path = 'group[@type="model"]'
     _structures_to_flatten = {'domain'}
 
     def __init__(self, *args, **kwargs):

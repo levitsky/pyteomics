@@ -891,7 +891,7 @@ class FileReadingProcess(mp.Process):
 
     The reader class must support the :py:meth:`__getitem__` dict-like lookup.
     """
-    def __init__(self, reader_spec, target_spec, qin, qout, done_flag, args_spec, kwargs_spec):
+    def __init__(self, reader_spec, target_spec, qin, qout, args_spec, kwargs_spec):
         super(FileReadingProcess, self).__init__(name='pyteomics-map-worker')
         self.reader_spec = reader_spec
         self.target_spec = target_spec
@@ -900,7 +900,7 @@ class FileReadingProcess(mp.Process):
         self._qin = qin
         self._qout = qout
         # self._in_flag = in_flag
-        self._done_flag = done_flag
+        self._done_flag = mp.Event()
         self.daemon = True
 
     def run(self):
@@ -965,12 +965,12 @@ class TaskMappingMixin(NoOpBaseReader):
                 raise PyteomicsError(msg)
         return serialized
 
-    def _spawn_workers(self, specifications, in_queue, out_queue, done_event, processes):
+    def _spawn_workers(self, specifications, in_queue, out_queue, processes):
         reader_spec, target_spec, args_spec, kwargs_spec = specifications
         workers = []
         for _ in range(processes):
             worker = FileReadingProcess(
-                reader_spec, target_spec, in_queue, out_queue, done_event, args_spec, kwargs_spec)
+                reader_spec, target_spec, in_queue, out_queue, args_spec, kwargs_spec)
             workers.append(worker)
         return workers
 
@@ -1013,6 +1013,9 @@ class TaskMappingMixin(NoOpBaseReader):
         object
             The work item returned by the target function.
         """
+        if self._offset_index is None:
+            raise PyteomicsError('The reader needs an index for map() calls. Create the reader with `use_index=True`.')
+
         if processes < 1:
             processes = self._nproc
         iterator = self._task_map_iterator()
@@ -1029,28 +1032,30 @@ class TaskMappingMixin(NoOpBaseReader):
 
         serialized = self._build_worker_spec(target, args, kwargs)
 
-        done_event = mp.Event()
+
         in_queue = mp.Queue(self._queue_size)
         out_queue = mp.Queue(self._queue_size)
 
-        workers = self._spawn_workers(serialized, in_queue, out_queue, done_event, processes)
+        workers = self._spawn_workers(serialized, in_queue, out_queue, processes)
         feeder_thread = self._spawn_feeder_thread(in_queue, iterator, processes)
         for worker in workers:
             worker.start()
 
-        while True:
-            try:
-                result = out_queue.get(True, self._queue_timeout)
-                yield result
-            except Empty:
-                if all(w.is_done() for w in workers):
-                    break
-                else:
-                    continue
+        def iterate():
+            while True:
+                try:
+                    result = out_queue.get(True, self._queue_timeout)
+                    yield result
+                except Empty:
+                    if all(w.is_done() for w in workers):
+                        break
+                    else:
+                        continue
 
-        feeder_thread.join()
-        for worker in workers:
-            worker.join()
+            feeder_thread.join()
+            for worker in workers:
+                worker.join()
+        return iterate()
 
     def _task_map_iterator(self):
         """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
@@ -1060,7 +1065,9 @@ class TaskMappingMixin(NoOpBaseReader):
         -------
         :class:`Iteratable`
         """
+
         return iter(self._offset_index.keys())
+
 
 
 class ChainBase(object):
