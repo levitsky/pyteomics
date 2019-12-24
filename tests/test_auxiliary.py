@@ -782,6 +782,12 @@ class FDRTest(unittest.TestCase):
         pep = [self.pep((s, l, p)) for s, l, p in psms]
         self._run_check(psms, is_decoy=isd, pep=pep)
 
+    def test_sigma_T(self):
+        self.assertAlmostEqual(aux.sigma_T(psms, is_decoy=self.is_decoy), 7.348469228)
+
+    def test_sigma_fdr(self):
+        self.assertAlmostEqual(aux.sigma_fdr(psms, is_decoy=self.is_decoy), 0.28263343)
+
 class RegressionTests(unittest.TestCase):
     x = [1, 2, 3]
     y = [3, 5, 7]

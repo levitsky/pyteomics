@@ -31,6 +31,8 @@ dev
 
  - Reduce memory footprint for unit primitives (PR #35 by Joshua Klein).
 
+ - New functions :py:func:`pyteomics.auxiliary.sigma_T` and :py:func:`pyteomics.auxiliary.sigma_fdr`.
+
  - Fix issues #44, #46, #47, #48.
 
 

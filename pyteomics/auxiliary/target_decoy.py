@@ -787,6 +787,34 @@ def _log_pi(d, k, p=0.5):
     return _log_pi_r(d, k, p) + (d + 1) * math.log(1 - p)
 
 
+def _count_psms(psms, is_decoy, pep, decoy_prefix, decoy_suffix, is_decoy_prefix, is_decoy_suffix):
+    total, decoy = 0, 0
+    if pep is not None:
+        is_decoy = pep
+    elif is_decoy is None:
+        if decoy_suffix is not None:
+            is_decoy = lambda x: is_decoy_suffix(x, decoy_suffix)
+        else:
+            is_decoy = lambda x: is_decoy_prefix(x, decoy_prefix)
+    if isinstance(is_decoy, basestring):
+        decoy = psms[is_decoy].sum()
+        total = psms.shape[0]
+    elif callable(is_decoy):
+        for psm in psms:
+            total += 1
+            d = is_decoy(psm)
+            decoy += d if pep is not None else bool(d)
+    else:
+        if not isinstance(is_decoy, (Sized, Container)):
+            is_decoy = list(is_decoy)
+        if pep is not None:
+            decoy = sum(is_decoy)
+        else:
+            decoy = sum(map(bool, is_decoy))
+        total = len(is_decoy)
+    return decoy, total
+
+
 def _make_fdr(is_decoy_prefix, is_decoy_suffix):
     def fdr(psms=None, formula=1, is_decoy=None, ratio=1, correction=0, pep=None, decoy_prefix='DECOY_', decoy_suffix=None):
         """Estimate FDR of a data set using TDA or given PEP values.
@@ -890,30 +918,8 @@ def _make_fdr(is_decoy_prefix, is_decoy_suffix):
         """
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2.')
-        total, decoy = 0, 0
-        if pep is not None:
-            is_decoy = pep
-        elif is_decoy is None:
-            if decoy_suffix is not None:
-                is_decoy = lambda x: is_decoy_suffix(x, decoy_suffix)
-            else:
-                is_decoy = lambda x: is_decoy_prefix(x, decoy_prefix)
-        if isinstance(is_decoy, basestring):
-            decoy = psms[is_decoy].sum()
-            total = psms.shape[0]
-        elif callable(is_decoy):
-            for psm in psms:
-                total += 1
-                d = is_decoy(psm)
-                decoy += d if pep is not None else bool(d)
-        else:
-            if not isinstance(is_decoy, (Sized, Container)):
-                is_decoy = list(is_decoy)
-            if pep is not None:
-                decoy = sum(is_decoy)
-            else:
-                decoy = sum(map(bool, is_decoy))
-            total = len(is_decoy)
+
+        decoy, total = _count_psms(psms, is_decoy, pep, decoy_prefix, decoy_suffix, is_decoy_prefix, is_decoy_suffix)
         if pep is not None:
             return float(decoy) / total
         tfalse = decoy
@@ -950,3 +956,35 @@ def _make_fdr(is_decoy_prefix, is_decoy_suffix):
 
 
 fdr = _make_fdr(None, None)
+
+def _sigma_T(decoy, ratio):
+    return math.sqrt((decoy + 1) * (ratio + 1) / (ratio * ratio))
+
+def sigma_T(psms, is_decoy, ratio=1):
+    """Calculates the standard error for the number of false positive target PSMs.
+
+    The formula is::
+
+    .. math ::
+
+        \\sigma(T) = \\sqrt{\\frac{(d + 1) \\cdot {p}}{(1 - p)^{2}}} = \\sqrt{\\frac{d+1}{r^{2}} \\cdot (r+1)}
+
+    This estimation is accurate for low FDRs.
+    See the `article <http://dx.doi.org/10.1021/acs.jproteome.6b00144>`_ for more details.
+    """
+    decoy, total = _count_psms(psms, is_decoy, None, None, None, None, None)
+    return _sigma_T(decoy, ratio)
+
+def sigma_fdr(psms=None, formula=1, is_decoy=None, ratio=1):
+    """Calculates the standard error of FDR using the formula for negative binomial distribution.
+    See :py:func:`sigma_T` for math. This estimation is accurate for low FDRs.
+    See also the `article <http://dx.doi.org/10.1021/acs.jproteome.6b00144>`_ for more details.
+    """
+
+    if formula not in {1, 2}:
+        raise PyteomicsError('`formula` must be either 1 or 2.')
+    decoy, total = _count_psms(psms, is_decoy, None, None, None, None, None)
+    sigmaT = _sigma_T(decoy, ratio)
+    if formula == 1:
+        return sigmaT / (total - decoy) / ratio
+    return sigmaT / total / ratio

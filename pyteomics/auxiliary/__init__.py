@@ -30,7 +30,7 @@ from .target_decoy import (
     _construct_dtype, _make_qvalues, _make_filter,
     _itercontext, _iter, qvalues, filter, log_factorial,
     _expectation, _confidence_value, _log_pi_r,
-    _log_pi, _make_fdr, fdr)
+    _log_pi, _make_fdr, fdr, sigma_T, sigma_fdr)
 
 from .utils import (
     print_tree, memoize, BinaryDataArrayTransformer,
