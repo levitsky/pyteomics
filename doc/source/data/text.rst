@@ -227,7 +227,7 @@ parsers that can be used for this purpose.
 
 .. code-block:: python
 
-    >>> with fasta.read('HUMAN.fasta', parser=fasta.std_parsers['uniprotkb']) as r:
+    >>> with fasta.read('HUMAN.fasta', parser=fasta.std_parsers['uniprot']) as r:
     >>>    print(next(r).description)
     {'PE': 2, 'gene_id': 'LCE6A', 'GN': 'LCE6A', 'id': 'A0A183', 'taxon': 'HUMAN',
      'SV': 1, 'OS': 'Homo sapiens', 'entry': 'LCE6A_HUMAN',
