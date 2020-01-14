@@ -230,9 +230,6 @@ class MGFBase(object):
     def get_spectrum(self, title):
         raise NotImplementedError()
 
-    def __getitem__(self, key):
-        return self.get_spectrum(key)
-
 
 class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.IndexSavingTextReader):
     """
@@ -362,6 +359,9 @@ class MGF(MGFBase, aux.FileReader):
                 spectrum = self._read_spectrum()
                 spectrum['params']['title'] = title
                 return spectrum
+
+    def __getitem__(self, key):
+        return self.get_spectrum(key)
 
 
 def read(*args, **kwargs):
