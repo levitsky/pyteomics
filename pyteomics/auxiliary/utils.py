@@ -112,83 +112,87 @@ if pynumpress:
             'MS-Numpress linear prediction compression followed by zlib compression':  _zlibNumpress(pynumpress.decode_linear),
         })
 
-class BinaryDataArrayTransformer(object):
-    """A base class that provides methods for reading
-    base64-encoded binary arrays.
+if np is not None:
+    class BinaryDataArrayTransformer(object):
+        """A base class that provides methods for reading
+        base64-encoded binary arrays.
 
-    Attributes
-    ----------
-    compression_type_map : dict
-        Maps compressor type name to decompression function
-    """
-
-    compression_type_map = _default_compression_map
-
-    class binary_array_record(namedtuple(
-            "binary_array_record", ("data", "compression", "dtype", "source", "key"))):
-        """Hold all of the information about a base64 encoded array needed to
-        decode the array.
+        Attributes
+        ----------
+        compression_type_map : dict
+            Maps compressor type name to decompression function
         """
 
-        def decode(self):
-            """Decode :attr:`data` into a numerical array
+        compression_type_map = _default_compression_map
+
+        class binary_array_record(namedtuple(
+                "binary_array_record", ("data", "compression", "dtype", "source", "key"))):
+            """Hold all of the information about a base64 encoded array needed to
+            decode the array.
+            """
+
+            def decode(self):
+                """Decode :attr:`data` into a numerical array
+
+                Returns
+                -------
+                np.ndarray
+                """
+                return self.source._decode_record(self)
+
+        def _make_record(self, data, compression, dtype, key=None):
+            return self.binary_array_record(data, compression, dtype, self, key)
+
+        def _decode_record(self, record):
+            array = self.decode_data_array(
+                record.data, record.compression, record.dtype)
+            return self._finalize_record_conversion(array, record)
+
+        def _finalize_record_conversion(self, array, record):
+            return array
+
+        def _base64_decode(self, source):
+            decoded_source = base64.b64decode(source.encode('ascii'))
+            return decoded_source
+
+        def _decompress(self, source, compression_type=None):
+            if compression_type is None:
+                return source
+            decompressor = self.compression_type_map.get(compression_type)
+            decompressed_source = decompressor(source)
+            return decompressed_source
+
+        def _transform_buffer(self, binary, dtype):
+            if isinstance(binary, np.ndarray):
+                return binary.astype(dtype, copy=False)
+            return np.frombuffer(binary, dtype=dtype)
+
+        def decode_data_array(self, source, compression_type=None, dtype=np.float64):
+            """Decode a base64-encoded, compressed bytestring into a numerical
+            array.
+
+            Parameters
+            ----------
+            source : bytes
+                A base64 string encoding a potentially compressed numerical
+                array.
+            compression_type : str, optional
+                The name of the compression method used before encoding the
+                array into base64.
+            dtype : type, optional
+                The data type to use to decode the binary array from the
+                decompressed bytes.
 
             Returns
             -------
             np.ndarray
             """
-            return self.source._decode_record(self)
+            binary = self._base64_decode(source)
+            binary = self._decompress(binary, compression_type)
+            if isinstance(binary, bytes):
+                binary = bytearray(binary)
+            array = self._transform_buffer(binary, dtype)
+            return array
 
-    def _make_record(self, data, compression, dtype, key=None):
-        return self.binary_array_record(data, compression, dtype, self, key)
-
-    def _decode_record(self, record):
-        array = self.decode_data_array(
-            record.data, record.compression, record.dtype)
-        return self._finalize_record_conversion(array, record)
-
-    def _finalize_record_conversion(self, array, record):
-        return array
-
-    def _base64_decode(self, source):
-        decoded_source = base64.b64decode(source.encode('ascii'))
-        return decoded_source
-
-    def _decompress(self, source, compression_type=None):
-        if compression_type is None:
-            return source
-        decompressor = self.compression_type_map.get(compression_type)
-        decompressed_source = decompressor(source)
-        return decompressed_source
-
-    def _transform_buffer(self, binary, dtype):
-        if isinstance(binary, np.ndarray):
-            return binary.astype(dtype, copy=False)
-        return np.frombuffer(binary, dtype=dtype)
-
-    def decode_data_array(self, source, compression_type=None, dtype=np.float64):
-        """Decode a base64-encoded, compressed bytestring into a numerical
-        array.
-
-        Parameters
-        ----------
-        source : bytes
-            A base64 string encoding a potentially compressed numerical
-            array.
-        compression_type : str, optional
-            The name of the compression method used before encoding the
-            array into base64.
-        dtype : type, optional
-            The data type to use to decode the binary array from the
-            decompressed bytes.
-
-        Returns
-        -------
-        np.ndarray
-        """
-        binary = self._base64_decode(source)
-        binary = self._decompress(binary, compression_type)
-        if isinstance(binary, bytes):
-            binary = bytearray(binary)
-        array = self._transform_buffer(binary, dtype)
-        return array
+else:
+    BinaryDataArrayTransformer = None
