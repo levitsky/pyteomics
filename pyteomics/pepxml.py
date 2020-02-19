@@ -342,6 +342,7 @@ qvalues = aux._make_qvalues(chain, _is_decoy_prefix, _is_decoy_suffix, _key)
 filter = aux._make_filter(chain, _is_decoy_prefix, _is_decoy_suffix, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter', True)
 
+
 def DataFrame(*args, **kwargs):
     """Read pepXML output files into a :py:class:`pandas.DataFrame`.
 
@@ -415,6 +416,7 @@ def DataFrame(*args, **kwargs):
                                 info['interprophet_ntt_prob'] = ar['interprophet_result']['all_ntt_prob']
                 yield info
     return pd.DataFrame(gen_items(), **pd_kwargs)
+
 
 def filter_df(*args, **kwargs):
     """Read pepXML files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.

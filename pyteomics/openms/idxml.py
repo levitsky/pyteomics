@@ -1,44 +1,44 @@
 """
-mzid - mzIdentML file reader
-============================
+idxml - idXML file reader
+=========================
 
 Summary
 -------
 
-`mzIdentML <http://www.psidev.info/mzidentml>`_  is one of the standards
-developed by the Proteomics Informatics working group of the HUPO Proteomics
-Standard Initiative.
+**idXML** is a format specified in the
+`OpenMS <http://open-ms.sourceforge.net/about/>`_ project.
+It defines a list of peptide identifications.
 
-This module provides a minimalistic way to extract information from mzIdentML
+This module provides a minimalistic way to extract information from idXML
 files. You can use the old functional interface (:py:func:`read`) or the new
-object-oriented interface (:py:class:`MzIdentML`) to iterate over entries in
+object-oriented interface (:py:class:`IDXML`) to iterate over entries in
 ``<SpectrumIdentificationResult>`` elements, i.e. groups of identifications
 for a certain spectrum. Note that each entry can contain more than one PSM
 (peptide-spectrum match). They are accessible with "SpectrumIdentificationItem"
 key.
-:py:class:`MzIdentML` objects also support direct indexing by element ID.
+:py:class:`IDXML` objects also support direct indexing by element ID.
 
 Data access
 -----------
 
-  :py:class:`MzIdentML` - a class representing a single MzIdentML file.
+  :py:class:`IDXML` - a class representing a single idXML file.
   Other data access functions use this class internally.
 
-  :py:func:`read` - iterate through peptide-spectrum matches in an mzIdentML
+  :py:func:`read` - iterate through peptide-spectrum matches in an idXML
   file. Data from a single PSM group are converted to a human-readable dict.
-  Basically creates an :py:class:`MzIdentML` object and reads it.
+  Basically creates an :py:class:`IDXML` object and reads it.
 
   :py:func:`chain` - read multiple files at once.
 
   :py:func:`chain.from_iterable` - read multiple files at once, using an
   iterable of files.
 
-  :py:func:`DataFrame` - read MzIdentML files into a :py:class:`pandas.DataFrame`.
+  :py:func:`DataFrame` - read idXML files into a :py:class:`pandas.DataFrame`.
 
 Target-decoy approach
 ---------------------
 
-  :py:func:`filter` - read a chain of mzIdentML files and filter to a certain
+  :py:func:`filter` - read a chain of idXML files and filter to a certain
   FDR using TDA.
 
   :py:func:`filter.chain` - chain a series of filters applied independently to
@@ -47,7 +47,7 @@ Target-decoy approach
   :py:func:`filter.chain.from_iterable` - chain a series of filters applied
   independently to an iterable of files.
 
-  :py:func:`filter_df` - filter MzIdentML files and return a :py:class:`pandas.DataFrame`.
+  :py:func:`filter_df` - filter idXML files and return a :py:class:`pandas.DataFrame`.
 
   :py:func:`is_decoy` - determine if a "SpectrumIdentificationResult" should be
   consiudered decoy.
@@ -61,16 +61,16 @@ Target-decoy approach
 Deprecated functions
 --------------------
 
-  :py:func:`version_info` - get information about mzIdentML version and schema.
-  You can just read the corresponding attribute of the :py:class:`MzIdentML`
+  :py:func:`version_info` - get information about idXML version and schema.
+  You can just read the corresponding attribute of the :py:class:`IDXML`
   object.
 
   :py:func:`get_by_id` - get an element by its ID and extract the data from it.
-  You can just call the corresponding method of the :py:class:`MzIdentML`
+  You can just call the corresponding method of the :py:class:`IDXML`
   object.
 
-  :py:func:`iterfind` - iterate over elements in an mzIdentML file.
-  You can just call the corresponding method of the :py:class:`MzIdentML`
+  :py:func:`iterfind` - iterate over elements in an idXML file.
+  You can just call the corresponding method of the :py:class:`IDXML`
   object.
 
 Dependencies
@@ -81,7 +81,7 @@ This module requires :py:mod:`lxml`.
 -------------------------------------------------------------------------------
 """
 
-#   Copyright 2012 Anton Goloborodko, Lev Levitsky
+#   Copyright 2020 Lev Levitsky
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -95,34 +95,26 @@ This module requires :py:mod:`lxml`.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+
 import warnings
-from . import auxiliary as aux
-from . import xml, _schema_defaults
+from .. import auxiliary as aux
+from .. import xml, _schema_defaults
 
 
-class MzIdentML(xml.MultiProcessingXML, xml.IndexSavingXML):
-    """Parser class for MzIdentML files."""
-    file_format = 'mzIdentML'
-    _root_element = 'MzIdentML'
-    _default_schema = _schema_defaults._mzid_schema_defaults
-    _default_version = '1.1.0'
-    _default_iter_tag = 'SpectrumIdentificationResult'
-    _structures_to_flatten = {'Fragmentation'}
-    _indexed_tags = {'SpectrumIdentificationResult',
-        'PeptideEvidence', 'SpectrumIdentificationItem', 'SearchDatabase',
-        'DBSequence', 'SpectraData', 'Peptide'}
-
-    _element_handlers = xml.XML._element_handlers.copy()
-    _element_handlers.update({
-        "Modification": xml.XML._promote_empty_parameter_to_name,
-        "SpectrumIDFormat": xml.XML._promote_empty_parameter_to_name,
-        "FileFormat": xml.XML._promote_empty_parameter_to_name,
-        "Role": xml.XML._promote_empty_parameter_to_name
-    })
+class IDXML(xml.IndexedXML):
+    """Parser class for idXML files."""
+    file_format = 'idXML'
+    _root_element = 'IdXML'
+    _default_schema = _schema_defaults._idxml_schema_defaults
+    _default_version = '1.5'
+    _default_iter_tag = 'PeptideIdentification'
+    _structures_to_flatten = {}
+    _indexed_tags = {'ProteinHit'}
+    _schema_location_param = 'noNamespaceSchemaLocation'
 
     def __init__(self, *args, **kwargs):
         kwargs.setdefault('retrieve_refs', True)
-        super(MzIdentML, self).__init__(*args, **kwargs)
+        super(IDXML, self).__init__(*args, **kwargs)
 
     def _get_info_smart(self, element, **kwargs):
         """Extract the info in a smart way depending on the element type"""
@@ -133,39 +125,49 @@ class MzIdentML(xml.MultiProcessingXML, xml.IndexSavingXML):
         # Try not to recursively unpack the root element
         # unless the user really wants to.
         if name == self._root_element:
-            return self._get_info(element,
+            info = self._get_info(element,
                     recursive=(rec if rec is not None else False),
                     **kwargs)
         else:
-            return self._get_info(element,
+            info = self._get_info(element,
                     recursive=(rec if rec is not None else True),
                     **kwargs)
+        for k in ['start', 'end']:
+            v = info.get(k)
+            if isinstance(v, list) and len(v) == 2:
+                info[k] = [int(x) for x in v[0].split()]
+        for k in ['aa_before', 'aa_after']:
+            if k in info:
+                info[k] = info[k].split()
+        return info
 
     def _retrieve_refs(self, info, **kwargs):
         """Retrieves and embeds the data for each attribute in `info` that
         ends in _ref. Removes the id attribute from `info`"""
         for k, v in dict(info).items():
-            if k.endswith('_ref'):
+            if k[-5:] == '_refs':
                 try:
-                    by_id = self.get_by_id(v, retrieve_refs=True)
+                    by_id = [self.get_by_id(x, retrieve_refs=True) for x in v.split()]
                 except KeyError:
                     warnings.warn('Ignoring unresolved reference: ' + v)
                 else:
-                    info.update(by_id)
+                    for x in by_id:
+                        x.pop('id', None)
+                    info[k[:-5]] = by_id
                     del info[k]
-                    info.pop('id', None)
+
 
 def read(source, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
 
     .. note:: This function is provided for backward compatibility only.
-        It simply creates an :py:class:`MzIdentML` instance using
+        It simply creates an :py:class:`IDXML` instance using
         provided arguments and returns it.
 
     Parameters
     ----------
     source : str or file
-        A path to a target mzIdentML file or the file object itself.
+        A path to a target IDXML file or the file object itself.
 
     recursive : bool, optional
         If :py:const:`False`, subelements will not be processed when
@@ -185,13 +187,13 @@ def read(source, **kwargs):
 
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
-        mentioned in the mzIdentML header (default). Otherwise, use default
+        mentioned in the IDXML header (default). Otherwise, use default
         parameters. Disable this to avoid waiting on slow network connections or
         if you don't like to get the related warnings.
 
     build_id_cache : bool, optional
         Defines whether a cache of element IDs should be built and stored on the
-        created :py:class:`MzIdentML` instance. Default value is the value of
+        created :py:class:`IDXML` instance. Default value is the value of
         `retrieve_refs`.
 
         .. note:: This parameter is ignored when ``use_index`` is ``True`` (default).
@@ -205,13 +207,14 @@ def read(source, **kwargs):
 
     Returns
     -------
-    out : MzIdentML
+    out : IDXML
        An iterator over the dicts with PSM properties.
     """
     kwargs = kwargs.copy()
     kwargs.setdefault('retrieve_refs', True)
     kwargs['build_id_cache'] = kwargs.get('build_id_cache', kwargs.get('retrieve_refs'))
-    return MzIdentML(source, **kwargs)
+    return IDXML(source, **kwargs)
+
 
 def iterfind(source, path, **kwargs):
     """Parse `source` and yield info on elements with specified local
@@ -219,7 +222,7 @@ def iterfind(source, path, **kwargs):
 
     .. note:: This function is provided for backward compatibility only.
         If you do multiple :py:func:`iterfind` calls on one file, you should
-        create an :py:class:`MzIdentML` object and use its
+        create an :py:class:`IDXML` object and use its
         :py:meth:`!iterfind` method.
 
     Parameters
@@ -254,13 +257,13 @@ def iterfind(source, path, **kwargs):
 
     read_schema : bool, optional
         If :py:const:`True`, attempt to extract information from the XML schema
-        mentioned in the mzIdentML header (default). Otherwise, use default
+        mentioned in the IDXML header (default). Otherwise, use default
         parameters. Disable this to avoid waiting on slow network connections or
         if you don't like to get the related warnings.
 
     build_id_cache : bool, optional
         Defines whether a cache of element IDs should be built and stored on the
-        created :py:class:`MzIdentML` instance. Default value is the value of
+        created :py:class:`IDXML` instance. Default value is the value of
         `retrieve_refs`.
 
     Returns
@@ -268,11 +271,12 @@ def iterfind(source, path, **kwargs):
     out : iterator
     """
     kwargs = kwargs.copy()
-    kwargs['build_id_cache'] = kwargs.get('build_id_cache',
-            kwargs.get('retrieve_refs'))
-    return MzIdentML(source, **kwargs).iterfind(path, **kwargs)
+    kwargs['build_id_cache'] = kwargs.get('build_id_cache', kwargs.get('retrieve_refs'))
+    return IDXML(source, **kwargs).iterfind(path, **kwargs)
 
-version_info = xml._make_version_info(MzIdentML)
+
+version_info = xml._make_version_info(IDXML)
+
 
 def get_by_id(source, elem_id, **kwargs):
     """Parse `source` and return the element with `id` attribute equal
@@ -280,7 +284,7 @@ def get_by_id(source, elem_id, **kwargs):
 
     .. note:: This function is provided for backward compatibility only.
         If you do multiple :py:func:`get_by_id` calls on one file, you should
-        create an :py:class:`MzIdentML` object and use its
+        create an :py:class:`IDXML` object and use its
         :py:meth:`!get_by_id` method.
 
     Parameters
@@ -295,16 +299,15 @@ def get_by_id(source, elem_id, **kwargs):
     -------
     out : :py:class:`dict` or :py:const:`None`
     """
-    return MzIdentML(source, **kwargs).get_by_id(elem_id, **kwargs)
+    return IDXML(source, **kwargs).get_by_id(elem_id, **kwargs)
 
 
-# chain = aux._make_chain(read, 'read')
-chain = aux.ChainBase._make_chain(MzIdentML)
+chain = aux.ChainBase._make_chain(IDXML)
 
 
 def is_decoy(psm, prefix=None):
-    """Given a PSM dict, return :py:const:`True` if all proteins in the dict
-    are marked as decoy, and :py:const:`False` otherwise.
+    """Given a PSM dict, return :py:const:`True` if it is marked as decoy,
+    and :py:const:`False` otherwise.
 
     Parameters
     ----------
@@ -316,17 +319,15 @@ def is_decoy(psm, prefix=None):
     -------
     out : bool
     """
-    return all(pe['isDecoy'] for sii in psm['SpectrumIdentificationItem']
-            for pe in sii['PeptideEvidenceRef'])
+    return psm['PeptideHit'][0]['target_decoy'] == 'decoy'
 
 
 def DataFrame(*args, **kwargs):
-    """Read MzIdentML files into a :py:class:`pandas.DataFrame`.
+    """Read idXML files into a :py:class:`pandas.DataFrame`.
 
     Requires :py:mod:`pandas`.
 
-    .. warning :: Only the first 'SpectrumIdentificationItem' element is considered in every
-                  'SpectrumIdentificationResult'.
+    .. warning :: Only the first 'PeptideHit' element is considered in every 'PeptideIdentification'.
 
     Parameters
     ----------
@@ -352,59 +353,58 @@ def DataFrame(*args, **kwargs):
             for k, v in item.items():
                 if isinstance(v, (str, int, float)):
                     info[k] = v
-            sii = item.get('SpectrumIdentificationItem', [None])[0]
-            if sii is not None:
-                info.update((k, v) for k, v in sii.items() if isinstance(v, (str, int, float)))
-                evref = sii.get('PeptideEvidenceRef')
-                if evref:
-                    prot_descr, accessions, isd, starts, ends, lengths = [], [], [], [], [], []
-                    for d in evref:
-                        prot_descr.append(d.get('protein description'))
+            peptide_hit = item.get('PeptideHit', [None])[0]
+            if peptide_hit is not None:
+                info.update((k, v) for k, v in peptide_hit.items() if isinstance(v, (str, int, float)))
+                protein = peptide_hit.get('protein')
+                if protein:
+                    accessions, isd, starts, ends, scores, aa_bs, aa_as = [], [], [], [], [], [], []
+                    for d, start, end, aab, aaa in zip(protein, peptide_hit['start'], peptide_hit['end'], peptide_hit['aa_before'], peptide_hit['aa_after']):
                         accessions.append(d.get('accession'))
-                        isd.append(d.get('isDecoy'))
-                        starts.append(d.get('start'))
-                        ends.append(d.get('end'))
-                        lengths.append(d.get('length'))
-                    isd = all(isd)
-                    if sep is not None:
-                        if all(isinstance(prd, str) for prd in prot_descr):
-                            prot_descr = sep.join(prot_descr)
+                        isd.append(d.get('target_decoy'))
+                        scores.append(d.get('score'))
+                        starts.append(start)
+                        ends.append(end)
+                        aa_bs.append(aab)
+                        aa_as.append(aaa)
 
+                    isd = all(x == 'decoy' for x in isd)
+                    if sep is not None:
                         if all(isinstance(acc, str) for acc in accessions):
                             accessions = sep.join(accessions)
-
-                    if all(prd is None for prd in prot_descr):
-                        prot_descr = None
+                        if all(isinstance(aaa, str) for aaa in aa_as):
+                            aa_as = sep.join(aa_as)
+                        if all(isinstance(aab, str) for aab in aa_bs):
+                            aa_bs = sep.join(aa_bs)
                     if all(acc is None for acc in accessions):
                         accessions = None
 
-                    info.update((k, v) for k, v in evref[0].items() if isinstance(v, (str, int, float, list)))
-                    info['protein description'] = prot_descr
+                    info.update((k, v) for k, v in protein[0].items() if isinstance(v, (str, int, float, list)))
                     info['accession'] = accessions
-                    info['isDecoy'] = isd
+                    info['is decoy'] = isd
                     info['start'] = starts
                     info['end'] = ends
-                    info['length'] = lengths
+                    info['aa_before'] = aa_bs
+                    info['aa_after'] = aa_as
             data.append(info)
     df = pd.DataFrame(data)
     return df
 
 
 def filter_df(*args, **kwargs):
-    """Read MzIdentML files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.
-    Positional arguments can be MzIdentML files or DataFrames.
+    """Read idXML files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.
+    Positional arguments can be idXML files or DataFrames.
 
     Requires :py:mod:`pandas`.
 
-    .. warning :: Only the first 'SpectrumIdentificationItem' element is considered in every
-                  'SpectrumIdentificationResult'.
+    .. warning :: Only the first 'PeptideHit' element is considered in every 'PeptideIdentification'.
 
     Parameters
     ----------
     key : str / iterable / callable, optional
-        Default is 'mascot:expectation value'.
+        Default is 'score'. You will probably need to change it.
     is_decoy : str / iterable / callable, optional
-        Default is 'isDecoy'.
+        Default is 'is decoy'.
     *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
 
     Returns
@@ -412,18 +412,18 @@ def filter_df(*args, **kwargs):
     out : pandas.DataFrame
     """
     import pandas as pd
-    kwargs.setdefault('key', 'mascot:expectation value')
-    kwargs.setdefault('is_decoy', 'isDecoy')
+    kwargs.setdefault('key', 'score')
     if all(isinstance(arg, pd.DataFrame) for arg in args):
         df = pd.concat(args)
     else:
         df = DataFrame(*args, **kwargs)
+    if 'is_decoy' not in kwargs:
+        kwargs['is_decoy'] = 'is decoy'
     return aux.filter(df, **kwargs)
 
 
 fdr = aux._make_fdr(is_decoy, None)
-_key = lambda x: min(
-    sii['mascot:expectation value'] for sii in x['SpectrumIdentificationItem'])
+_key = lambda x: x['PeptideHit'][0]['score']
 qvalues = aux._make_qvalues(chain, is_decoy, None, _key)
 filter = aux._make_filter(chain, is_decoy, None, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter', True)

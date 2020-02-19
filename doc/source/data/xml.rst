@@ -333,6 +333,17 @@ Reading into a pandas.DataFrame
 that reads one or several files into a single Pandas :py:class:`DataFrame`.
 This function requires :py:mod:`pandas`.
 
+
+idXML
+-----
+
+**idXML** is an OpenMS format for peptide identifications. It is supported in :py:mod:`pyteomics.openms.idxml`.
+It partially supports indexing (protein information can be indexed and extracted with `retrieve_refs`).
+
+The regular iterative parsing is done through :py:func:`read` or :py:class:`IDXML`, and :py:class:`pandas.DataFrame`s
+can be created as well.
+
+
 TraML
 -----
 
@@ -340,6 +351,7 @@ TraML
 The parser, :py:class:`pyteomics.traml.TraML`, iterates over `<Transition>` elements by default.
 Like `MzIdentML`_, it has a `retrieve_refs` parameter that helps pull in the information from other parts of the file.
 :py:class:`TraML` is one of the `Indexed Parsers`_.
+
 
 FeatureXML
 ----------
