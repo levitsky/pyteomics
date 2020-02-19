@@ -2,7 +2,7 @@ FDR estimation and filtering
 ============================
 
 The modules for reading proteomics search engine or post-processing output
-(:py:mod:`tandem`, :py:mod:`pepxml`, :py:mod:`mzid` and :py:mod:`protxml`)
+(:py:mod:`tandem`, :py:mod:`pepxml`, :py:mod:`mzid`, :py:mod:`idxml` and :py:mod:`protxml`)
 expose similar functions
 :py:func:`is_decoy`, :py:func:`fdr` and :py:func:`!filter`.
 These functions implement the widely used

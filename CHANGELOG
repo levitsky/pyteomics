@@ -1,3 +1,8 @@
+dev
+---
+
+ - New module :py:mod:`pyteomics.openms.idxml`.
+
 4.2
 ---
 

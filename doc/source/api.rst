@@ -28,6 +28,7 @@ Contents:
    api/mztab
    api/featurexml
    api/trafoxml
+   api/idxml
    api/traml
    api/pylab_aux
    api/xml

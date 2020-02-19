@@ -71,6 +71,7 @@ def xsd_parser(schema_url):
     """
     ret = {}
     if not (schema_url.startswith('http://') or
+            schema_url.startswith('https://') or
             schema_url.startswith('file://')):
         schema_url = 'file://' + schema_url
     schema_file = urlopen(schema_url)
@@ -403,7 +404,7 @@ class XML(FileReader):
         except KeyError:
             name = _local_name(element)
         schema_info = self.schema_info
-        if name in {'cvParam', 'userParam'}:
+        if name in {'cvParam', 'userParam', 'UserParam'}:
             return self._handle_param(element, **kwargs)
 
         info = dict(element.attrib)
@@ -1082,8 +1083,13 @@ class IndexedXML(IndexedReaderMixin, XML):
         """
         try:
             index = self._offset_index
-            offset = index.find(elem_id, element_type)
+            if element_type is None:
+                offset, element_type = index.find_no_type(elem_id)
+            else:
+                offset = index.find(elem_id, element_type)
             self._source.seek(offset)
+            if id_key is None:
+                id_key = self._indexed_tag_keys.get(element_type)
             elem = self._find_by_id_no_reset(elem_id, id_key=id_key)
         except (KeyError, AttributeError, etree.LxmlError):
             elem = self._find_by_id_reset(elem_id, id_key=id_key)

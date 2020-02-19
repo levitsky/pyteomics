@@ -787,6 +787,16 @@ class HierarchicalOffsetIndex(WritableIndex):
         else:
             return self[element_type][key]
 
+    def find_no_type(self, key):
+        """Try to find `key` in each of the lower-level indexes, returning both
+        value and the element type that match the key."""
+        for element_type in self.keys():
+            try:
+                return self.find(key, element_type), element_type
+            except KeyError:
+                continue
+        raise KeyError(key)
+
     def update(self, *args, **kwargs):
         self.mapping.update(*args, **kwargs)
 
