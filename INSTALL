@@ -15,6 +15,7 @@ Pyteomics uses the following Python packages:
  - `pandas <http://pandas.pydata.org/>`_ (can be used with :py:mod:`pyteomics.pepxml`,
    :py:mod:`pyteomics.tandem`, :py:mod:`pyteomics.mzid`, :py:mod:`pyteomics.auxiliary`)
  - `sqlalchemy <http://www.sqlalchemy.org/>`_ (used by :py:mod:`pyteomics.mass.unimod`)
+ - `pynumpress <https://pypi.org/project/pynumpress/>`_ (adds support for Numpress compression)
 
 All dependencies are optional.
 

@@ -27,8 +27,8 @@ setup(
     packages           = ['pyteomics', 'pyteomics.mass', 'pyteomics.openms', 'pyteomics.auxiliary'],
     project_urls       = {
                           'Documentation': 'http://pyteomics.readthedocs.io',
-                          'Source Code'  : 'https://bitbucket.org/levitsky/pyteomics',
-                          'Issue Tracker': 'http://bitbucket.org/levitsky/pyteomics/issues',
+                          'Source Code'  : 'https://github.com/levitsky/pyteomics',
+                          'Issue Tracker': 'https://github.com/levitsky/pyteomics/issues',
                           'Mailing List' : 'https://groups.google.com/group/pyteomics',
                          },
     namespace_packages = ['pyteomics'],
