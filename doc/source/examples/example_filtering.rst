@@ -13,4 +13,4 @@ The files used in this example can be downloaded from
 The example, including code, figures, and accompanying text, is contained in the IPython Notebook file.
 
 `View the rendered notebook online.
-<http://nbviewer.ipython.org/url/bitbucket.org/levitsky/pyteomics/raw/tip/doc/source/examples/filtering/filtering.ipynb>`_
+<https://github.com/levitsky/pyteomics/blob/master/doc/source/examples/filtering/filtering.ipynb>`_
