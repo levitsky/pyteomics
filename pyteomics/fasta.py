@@ -444,9 +444,11 @@ def _add_init(cls):
 class UniProt(UniProtMixin, FASTA):
     pass
 
+
 @_add_init
 class IndexedUniProt(UniProtMixin, TwoLayerIndexedFASTA):
     pass
+
 
 class UniRefMixin(FlavoredMixin):
     header_pattern = r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$'
@@ -632,6 +634,7 @@ def write(entries, output=None):
 
     return output.file
 
+
 def reverse(sequence, keep_nterm=False, keep_cterm=False):
     """
     Create a decoy sequence by reversing the original one.
@@ -657,6 +660,7 @@ def reverse(sequence, keep_nterm=False, keep_cterm=False):
     if start == end:
         return sequence
     return sequence[:start] + sequence[start:end][::-1] + sequence[end:]
+
 
 def shuffle(sequence, keep_nterm=False, keep_cterm=False):
     """
@@ -688,6 +692,7 @@ def shuffle(sequence, keep_nterm=False, keep_cterm=False):
     modified_sequence = list(sequence)
     random.shuffle(modified_sequence)
     return ''.join(modified_sequence)
+
 
 def fused_decoy(sequence, decoy_mode='reverse', sep='R', **kwargs):
     """
@@ -728,7 +733,9 @@ def fused_decoy(sequence, decoy_mode='reverse', sep='R', **kwargs):
     decoy = decoy_sequence(sequence, decoy_mode, **kwargs)
     return decoy + sep + sequence
 
+
 _decoy_functions = {'reverse': reverse, 'shuffle': shuffle, 'fused': fused_decoy}
+
 
 def decoy_sequence(sequence, mode='reverse', **kwargs):
     """
