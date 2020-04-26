@@ -198,6 +198,7 @@ class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
             info['search_hit'].sort(key=lambda x: x['hit_rank'])
         return info
 
+
 def read(source, read_schema=False, iterative=True, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
 
@@ -224,6 +225,7 @@ def read(source, read_schema=False, iterative=True, **kwargs):
     """
 
     return PepXML(source, read_schema=read_schema, iterative=iterative)
+
 
 def iterfind(source, path, **kwargs):
     """Parse `source` and yield info on elements with specified local
@@ -271,7 +273,9 @@ def iterfind(source, path, **kwargs):
     """
     return PepXML(source, **kwargs).iterfind(path, **kwargs)
 
+
 version_info = xml._make_version_info(PepXML)
+
 
 def roc_curve(source):
     """Parse source and return a ROC curve for peptideprophet analysis.
