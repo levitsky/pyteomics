@@ -75,11 +75,15 @@ class _MzTabParserBase(object):
         """
         if value == 'null':
             return None
-        if "|" in value and value.startswith("["):
-            return [self._cast_value(v) for v in value.split("|")]
         # is it a parameter?
-        elif value.startswith("["):
-            return self._parse_param(value)
+        if value.startswith("["):
+            try:
+                if "|" in value:
+                    return [self._cast_value(v) for v in value.split("|")]
+                else:
+                    return self._parse_param(value)
+            except ValueError:
+                return value
         else:
             # begin guessing dtype
             try:
