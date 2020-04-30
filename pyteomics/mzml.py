@@ -148,7 +148,6 @@ class MzML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.Mult
                         is_non_standard = True
                     else:
                         candidates.append(val)
-
         # Name candidate resolution
         n_candidates = len(candidates)
         # Easy case, exactly one name given
@@ -160,16 +159,29 @@ class MzML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.Mult
         # to "binary". This fallback signals special
         # behavior elsewhere.
         if n_candidates == 0:
-            if is_non_standard:
-                return NON_STANDARD_DATA_ARRAY
-            return "binary"
+            invalid = {"encodedLength", "dataProcessingRef", "arrayLength",
+                       "binary"}
+            for k in info:
+                if k in invalid:
+                    continue
+                candidates.append(k)
+            if len(candidates) == 0:
+                if is_non_standard:
+                    return NON_STANDARD_DATA_ARRAY
+                warnings.warn("No options for non-standard data array")
+                return "binary"
+            else:
+                warnings.warn(
+                    "Multiple options for naming binary array after no valid name found: %r" % candidates)
+                return max(candidates, key=len)
         # Multiple choices means we need to make a decision which could
         # mask data from the user. This should never happen but stay safe.
         # There are multiple options to choose from. There is no way to
         # make a good choice here. We first prefer the standardized
         # arrays before falling back to just guessing.
         else:
-            warnings.warn("Multiple options for naming binary array: %r" % candidates)
+            warnings.warn(
+                "Multiple options for naming binary array: %r" % candidates)
             standard_options = set(candidates) & STANDARD_ARRAYS
             if standard_options:
                 return max(standard_options, key=len)
