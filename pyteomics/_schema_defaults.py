@@ -288,7 +288,7 @@ _tandem_schema_defaults = {'ints': {
             'a_ions', 'x_ions', 'c_ions', 'z_ions']},
 
             'floats': {('group', k) for k in [
-                'fI', 'sumI', 'maxI', 'mh', 'expect', 'rt']} | {
+                'fI', 'sumI', 'maxI', 'mh', 'expect']} | {
                    ('domain', k) for k in [
                        'expect', 'hyperscore', 'b_score', 'y_score',
                        'a_score', 'x_score', 'c_score', 'z_score',
@@ -299,7 +299,7 @@ _tandem_schema_defaults = {'ints': {
             'bools': set(),
             'lists': {'group', 'trace', 'attribute', 'protein', 'aa', 'note'},
             'floatlists': {('values', 'values')},
-            'intlists': set(), 'charlists': set()}
+            'intlists': set(), 'charlists': set(), 'duration': {('group', 'rt')}}
 
 _mzxml_schema_defaults = {'bools': {('dataProcessing', 'centroided'),
                                  ('dataProcessing', 'chargeDeconvoluted'),

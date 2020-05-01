@@ -86,9 +86,9 @@ This module requires :py:mod:`lxml` and :py:mod:`numpy`.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import itertools as it
 import operator
 from . import xml, auxiliary as aux, _schema_defaults
+
 
 class TandemXML(xml.XML):
     """Parser class for TandemXML files."""
@@ -109,9 +109,7 @@ class TandemXML(xml.XML):
     def _get_info_smart(self, element, **kw):
         info = self._get_info(element, **kw)
         # handy simplifications below
-        if isinstance(info.get('note'), list
-                ) and len(info['note']) == 1 and set(
-                        info['note'][0]) == {'label', 'note'}:
+        if isinstance(info.get('note'), list) and len(info['note']) == 1 and set(info['note'][0]) == {'label', 'note'}:
             info['note'] = info['note'][0]['note']
         if 'protein' in info and 'label' in info:
             del info['label']
@@ -142,6 +140,7 @@ class TandemXML(xml.XML):
                     del info['support']['fragment ion mass spectrum'][l]['label']
         if 'charge' in info:
             info['charge'] = int(info['charge'])
+
         return info
 
     def _get_schema_info(self, read_schema):
@@ -153,6 +152,7 @@ class TandemXML(xml.XML):
         return n
 
     next = __next__
+
 
 def read(source, iterative=True, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
@@ -172,8 +172,8 @@ def read(source, iterative=True, **kwargs):
     out : iterator
        An iterator over dicts with PSM properties.
     """
-    return TandemXML(source, read_schema=False,
-            recursive=True, iterative=iterative)
+    return TandemXML(source, read_schema=False, recursive=True, iterative=iterative)
+
 
 def iterfind(source, path, **kwargs):
     """Parse `source` and yield info on elements with specified local
@@ -237,6 +237,7 @@ def _is_decoy_prefix(psm, prefix='DECOY_'):
     """
     return all(prot['label'].startswith(prefix) for prot in psm['protein'])
 
+
 def _is_decoy_suffix(psm, suffix='_DECOY'):
     """Given a PSM dict, return :py:const:`True` if all protein names for
     the PSM end with `suffix`, and :py:const:`False` otherwise.
@@ -254,11 +255,13 @@ def _is_decoy_suffix(psm, suffix='_DECOY'):
     """
     return all(prot['label'].endswith(suffix) for prot in psm['protein'])
 
+
 is_decoy = _is_decoy_prefix
 qvalues = aux._make_qvalues(chain, _is_decoy_prefix, _is_decoy_suffix, operator.itemgetter('expect'))
 filter = aux._make_filter(chain, _is_decoy_prefix, _is_decoy_suffix, operator.itemgetter('expect'), qvalues)
 fdr = aux._make_fdr(_is_decoy_prefix, _is_decoy_suffix)
 filter.chain = aux._make_chain(filter, 'filter', True)
+
 
 def DataFrame(*args, **kwargs):
     """Read X!Tandem output files into a :py:class:`pandas.DataFrame`.
@@ -317,6 +320,7 @@ def DataFrame(*args, **kwargs):
             info['scan'] = item['support']['fragment ion mass spectrum']['note']
             data.append(info)
     return pd.DataFrame(data, **pd_kwargs)
+
 
 def filter_df(*args, **kwargs):
     """Read X!Tandem output files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.

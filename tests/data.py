@@ -7,6 +7,7 @@ from copy import deepcopy
 import sys
 from pyteomics.auxiliary import basestring
 
+
 # http://stackoverflow.com/q/14246983/1258041
 class ComparableArray(np.ndarray):
     def __eq__(self, other):
@@ -15,10 +16,12 @@ class ComparableArray(np.ndarray):
         other = np.asarray(other, dtype=np.float)
         return self.shape == other.shape and np.allclose(self, other)
 
+
 def makeCA(arr):
     if not isinstance(arr, np.ndarray):
         arr = np.array(arr)
     return ComparableArray(arr.shape, arr.dtype, arr)
+
 
 pepxml_results = [
             {'spectrum': 'pps_sl20060731_18mix_25ul_r1_1154456409.0100.0100.1',
@@ -1339,9 +1342,9 @@ def decode_dict(d, encoding='utf-8'):
     """Recursively decode all strings in a dict"""
     out = {}
     if isinstance(d, basestring):
-         return d.decode(encoding)
+        return d.decode(encoding)
     if not isinstance(d, dict):
-         return d
+        return d
     for k, v in d.items():
         newk = k.decode(encoding)
         if isinstance(v, basestring):

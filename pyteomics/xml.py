@@ -41,9 +41,9 @@ from .auxiliary import _keepstate_method as _keepstate
 from .auxiliary import BinaryDataArrayTransformer
 from .auxiliary import TaskMappingMixin, IndexedReaderMixin, IndexSavingMixin
 
-try: # Python 2.7
+try:  # Python 2.7
     from urllib2 import urlopen, URLError
-except ImportError: # Python 3.x
+except ImportError:  # Python 3.x
     from urllib.request import urlopen, URLError
 
 
@@ -121,9 +121,12 @@ class XMLValueConverter(object):
 
     @classmethod
     def duration_str_to_float(cls, s):
-        # Not a duration, so pass along unchanged
-        if not s.startswith("P"):
-            return unitstr(s, "duration")
+        # Not a duration, so pass along
+        if not s.startswith('P'):
+            try:
+                return unitfloat(s, 'duration')
+            except ValueError:
+                return unitstr(s, 'duration')
         match = cls._duration_parser.search(s)
         if match:
             matchdict = match.groupdict()
@@ -132,9 +135,9 @@ class XMLValueConverter(object):
             seconds = float(matchdict.get('seconds', 0) or 0)
             minutes += hours * 60.
             minutes += (seconds / 60.)
-            return unitfloat(minutes, "minute")
+            return unitfloat(minutes, 'minute')
         else:
-            return unitstr(s, "duration")
+            return unitstr(s, 'duration')
 
     @classmethod
     def str_to_bool(cls, s):
