@@ -3,6 +3,9 @@ dev
 
  - New module :py:mod:`pyteomics.openms.idxml`.
 
+ - Fix `#3 <https://github.com/levitsky/pyteomics/issues/3>`_, `#5 <https://github.com/levitsky/pyteomics/issues/5>`_,
+   and some issues in :py:mod:`tandem`.
+
 4.2
 ---
 
