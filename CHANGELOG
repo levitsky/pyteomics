@@ -1,5 +1,11 @@
-dev
+4.3
 ---
+
+First release after the move to Github. Issue and PR numbers from now on refer to the
+`Github repo <https://github.com/levitsky/pyteomics>`_. Archive of the Bibucket issues and PRs is stored
+`here <https://levitsky.github.io/bitbucket_backup/#!/levitsky/pyteomics>`_.
+
+Changes in this release:
 
  - New module :py:mod:`pyteomics.openms.idxml`.
 

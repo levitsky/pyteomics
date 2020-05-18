@@ -12,10 +12,8 @@ It defines a list of peptide identifications.
 This module provides a minimalistic way to extract information from idXML
 files. You can use the old functional interface (:py:func:`read`) or the new
 object-oriented interface (:py:class:`IDXML`) to iterate over entries in
-``<SpectrumIdentificationResult>`` elements, i.e. groups of identifications
-for a certain spectrum. Note that each entry can contain more than one PSM
-(peptide-spectrum match). They are accessible with "SpectrumIdentificationItem"
-key.
+``<PeptideIdentification>`` elements. Note that each entry can contain more than one PSM
+(peptide-spectrum match). They are accessible with ``'PeptideHit'`` key.
 :py:class:`IDXML` objects also support direct indexing by element ID.
 
 Data access
@@ -125,13 +123,9 @@ class IDXML(xml.IndexedXML):
         # Try not to recursively unpack the root element
         # unless the user really wants to.
         if name == self._root_element:
-            info = self._get_info(element,
-                    recursive=(rec if rec is not None else False),
-                    **kwargs)
+            info = self._get_info(element, recursive=(rec if rec is not None else False), **kwargs)
         else:
-            info = self._get_info(element,
-                    recursive=(rec if rec is not None else True),
-                    **kwargs)
+            info = self._get_info(element, recursive=(rec if rec is not None else True), **kwargs)
         for k in ['start', 'end']:
             v = info.get(k)
             if isinstance(v, list) and len(v) == 2:
