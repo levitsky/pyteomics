@@ -1,4 +1,5 @@
 .. image:: https://github.com/levitsky/pyteomics/workflows/tests/badge.svg
+   :target: https://github.com/levitsky/pyteomics/actions?query=workflow%3Atests
    :alt: Test status
 
 .. image:: https://img.shields.io/pypi/v/pyteomics.svg
