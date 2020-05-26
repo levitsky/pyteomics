@@ -1,3 +1,6 @@
+.. image:: https://github.com/levitsky/pyteomics/workflows/tests/badge.svg
+   :alt: Test status
+
 .. image:: https://img.shields.io/pypi/v/pyteomics.svg
     :target: https://pypi.org/project/pyteomics/
     :alt: PyPI
