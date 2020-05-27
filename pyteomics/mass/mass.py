@@ -103,12 +103,14 @@ abundant isotopes and a separate entry for undefined isotope with zero
 key, mass of the most abundant isotope and 1.0 abundance.
 """
 
+
 def _make_isotope_string(element_name, isotope_num):
     """Form a string label for an isotope."""
     if isotope_num == 0:
         return element_name
     else:
         return '{}[{}]'.format(element_name, isotope_num)
+
 
 def _parse_isotope_string(label):
     """Parse an string with an isotope label and return the element name and
@@ -122,6 +124,7 @@ def _parse_isotope_string(label):
     element_name, num = re.match(_isotope_string, label).groups()
     isotope_num = int(num) if num else 0
     return element_name, isotope_num
+
 
 # Initialize std_aa_comp and std_ion_comp before the Composition class
 # description, fill it later.
@@ -141,6 +144,7 @@ and the sum of elemental compositions of its constituting amino acid residues.
 _isotope_string = r'^([A-Z][a-z+]*)(?:\[(\d+)\])?$'
 _atom = r'([A-Z][a-z+]*)(?:\[(\d+)\])?([+-]?\d+)?'
 _formula = r'^({})*$'.format(_atom)
+
 
 class Composition(BasicComposition):
     """
@@ -169,8 +173,7 @@ class Composition(BasicComposition):
                         comp[elem] += cnt
 
                 except (PyteomicsError, KeyError):
-                    raise PyteomicsError(
-                            'No information for %s in `aa_comp`' % aa)
+                    raise PyteomicsError('No information for %s in `aa_comp`' % aa)
         self._from_composition(comp)
 
     def _from_split_sequence(self, split_sequence, aa_comp):
@@ -179,7 +182,7 @@ class Composition(BasicComposition):
         for group in split_sequence:
             i = 0
             while i < len(group):
-                for j in range(len(group)+1, -1, -1):
+                for j in range(len(group) + 1, -1, -1):
                     try:
                         label = ''.join(group[i:j])
                         for elem, cnt in aa_comp[label].items():
@@ -190,7 +193,7 @@ class Composition(BasicComposition):
                         i = j
                         break
                 if j == 0:
-                    raise PyteomicsError("Invalid group starting from position %d: %s" % (i+1, group))
+                    raise PyteomicsError("Invalid group starting from position %d: %s" % (i + 1, group))
         self._from_composition(comp)
 
     def _from_sequence(self, sequence, aa_comp):
@@ -204,10 +207,9 @@ class Composition(BasicComposition):
         if not re.match(_formula, formula):
             raise PyteomicsError('Invalid formula: ' + formula)
         for elem, isotope, number in re.findall(_atom, formula):
-            if not elem in mass_data:
+            if elem not in mass_data:
                 raise PyteomicsError('Unknown chemical element: ' + elem)
-            self[_make_isotope_string(elem, int(isotope) if isotope else 0)
-                    ] += int(number) if number else 1
+            self[_make_isotope_string(elem, int(isotope) if isotope else 0)] += int(number) if number else 1
 
     def _from_composition(self, comp):
         for isotope_string, num_atoms in comp.items():
@@ -282,7 +284,6 @@ class Composition(BasicComposition):
         aa_comp = kwargs.get('aa_comp', std_aa_comp)
         mass_data = kwargs.get('mass_data', nist_mass)
 
-
         kw_given = self._kw_sources.intersection(kwargs)
         if len(kw_given) > 1:
             raise PyteomicsError('Only one of {} can be specified!\n'
@@ -311,7 +312,7 @@ class Composition(BasicComposition):
             else:
                 try:
                     self._from_sequence(parser.tostring(args[0], True), aa_comp)
-                except:
+                except Exception:
                     raise PyteomicsError('Could not create a Composition object'
                             ' from `{}`. A Composition object must be '
                             'specified by sequence, parsed or split sequence,'
@@ -327,9 +328,7 @@ class Composition(BasicComposition):
         charge = self['H+']
         if 'charge' in kwargs:
             if charge:
-                raise PyteomicsError(
-                    'Charge is specified both by the number of protons and '
-                    '`charge` in kwargs')
+                raise PyteomicsError('Charge is specified both by the number of protons and `charge` in kwargs')
             charge = kwargs['charge']
             self['H+'] = charge
 
@@ -385,6 +384,7 @@ class Composition(BasicComposition):
             mass /= charge
         return mass
 
+
 std_aa_comp.update({
     'A':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1}),
     'C':   Composition({'H': 5, 'C': 3, 'S': 1, 'O': 1, 'N': 1}),
@@ -411,6 +411,7 @@ std_aa_comp.update({
     'H-':  Composition({'H': 1}),
     '-OH': Composition({'O': 1, 'H': 1}),
     })
+
 
 std_ion_comp.update({
     'M':        Composition(formula=''),
@@ -501,10 +502,9 @@ def calculate_mass(*args, **kwargs):
     mass : float
     """
     # Make a copy of `composition` keyword argument.
-    composition = (Composition(kwargs['composition'])
-                   if 'composition' in kwargs
-                   else Composition(*args, **kwargs))
+    composition = (Composition(kwargs['composition']) if 'composition' in kwargs else Composition(*args, **kwargs))
     return composition.mass(**kwargs)
+
 
 def most_probable_isotopic_composition(*args, **kwargs):
     """Calculate the most probable isotopic composition of a peptide
@@ -562,12 +562,9 @@ def most_probable_isotopic_composition(*args, **kwargs):
     isotopic_composition = Composition()
 
     for element_name in composition:
-        if (not elements_with_isotopes
-        or (element_name in elements_with_isotopes)):
+        if not elements_with_isotopes or (element_name in elements_with_isotopes):
             # Take the two most abundant isotopes.
-            first_iso, second_iso = sorted(
-                [(i[0], i[1][1])
-                     for i in mass_data[element_name].items() if i[0]],
+            first_iso, second_iso = sorted([(i[0], i[1][1]) for i in mass_data[element_name].items() if i[0]],
                 key=lambda x: -x[1])[:2]
 
             # Write the number of isotopes of the most abundant type.
@@ -577,16 +574,13 @@ def most_probable_isotopic_composition(*args, **kwargs):
 
             # Write the number of the second isotopes.
             second_iso_str = _make_isotope_string(element_name, second_iso[0])
-            isotopic_composition[second_iso_str] = (
-                composition[element_name]
-                - isotopic_composition[first_iso_str])
+            isotopic_composition[second_iso_str] = composition[element_name] - isotopic_composition[first_iso_str]
         else:
             isotopic_composition[element_name] = composition[element_name]
 
     return (isotopic_composition,
-            isotopic_composition_abundance(
-                composition=isotopic_composition,
-                mass_data=mass_data))
+            isotopic_composition_abundance(composition=isotopic_composition, mass_data=mass_data))
+
 
 def isotopic_composition_abundance(*args, **kwargs):
     """Calculate the relative abundance of a given isotopic composition
@@ -622,15 +616,11 @@ def isotopic_composition_abundance(*args, **kwargs):
         # If there is already an entry for this element and either it
         # contains a default isotope or newly added isotope is default
         # then raise an exception.
-        if ((element_name in isotopic_composition)
-             and (isotope_num == 0
-                  or 0 in isotopic_composition[element_name])):
+        if (element_name in isotopic_composition) and (isotope_num == 0 or 0 in isotopic_composition[element_name]):
             raise PyteomicsError(
-                'Please specify the isotopic states of all atoms of '
-                '%s or do not specify them at all.' % element_name)
+                'Please specify the isotopic states of all atoms of %s or do not specify them at all.' % element_name)
         else:
-            isotopic_composition[element_name][isotope_num] = (
-                composition[element])
+            isotopic_composition[element_name][isotope_num] = composition[element]
 
     # Calculate relative abundance.
     mass_data = kwargs.get('mass_data', nist_mass)
@@ -640,10 +630,10 @@ def isotopic_composition_abundance(*args, **kwargs):
         for isotope_num, isotope_content in isotope_dict.items():
             denom *= math.factorial(isotope_content)
             if isotope_num:
-                num2 *= (mass_data[element_name][isotope_num][1]
-                        ** isotope_content)
+                num2 *= mass_data[element_name][isotope_num][1] ** isotope_content
 
     return num2 * (num1 / denom)
+
 
 def isotopologues(*args, **kwargs):
     """Iterate over possible isotopic states of a molecule.
@@ -725,6 +715,7 @@ def isotopologues(*args, **kwargs):
         else:
             yield ic
 
+
 std_aa_mass = {
     'G': 57.02146,
     'A': 71.03711,
@@ -748,10 +739,11 @@ std_aa_mass = {
     'Y': 163.06333,
     'W': 186.07931,
     'O': 237.14773,
-    }
+}
 """A dictionary with monoisotopic masses of the twenty standard
 amino acid residues, selenocysteine and pyrrolysine.
 """
+
 
 def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
     """Calculate monoisotopic mass of an ion using the fast
@@ -800,13 +792,13 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         except KeyError:
             raise PyteomicsError('Unknown ion type: {}'.format(ion_type))
 
-        mass += sum(mass_data[element][0][0] * num
-             for element, num in icomp.items())
+        mass += sum(mass_data[element][0][0] * num for element, num in icomp.items())
 
     if charge:
         mass = (mass + mass_data['H+'][0][0] * charge) / charge
 
     return mass
+
 
 def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
     """Calculate monoisotopic mass of an ion using the fast
@@ -861,8 +853,7 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
                 mod, X = parser._split_label(aa)
                 mass += (aa_mass[mod] + aa_mass[X]) * num
     except KeyError as e:
-        raise PyteomicsError(
-                'Unspecified mass for modification: "{}"'.format(e.args[0]))
+        raise PyteomicsError('Unspecified mass for modification: "{}"'.format(e.args[0]))
 
     if ion_type:
         try:
@@ -877,6 +868,7 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
         mass = (mass + mass_data['H+'][0][0] * charge) / charge
 
     return mass
+
 
 class Unimod():
     """A class for Unimod database of modifications.
@@ -901,29 +893,29 @@ class Unimod():
         """
         from lxml import etree
         from ..xml import _local_name
+
         def process_mod(mod):
             d = mod.attrib
             new_d = {}
             for key in ('date_time_modified', 'date_time_posted'):
-                new_d[key] = datetime.strptime(d.pop(key),
-                    '%Y-%m-%d %H:%M:%S')
+                new_d[key] = datetime.strptime(d.pop(key), '%Y-%m-%d %H:%M:%S')
             comp = Composition()
-            for delta in self._xpath('delta', mod): # executed 1 time
+            for delta in self._xpath('delta', mod):  # executed 1 time
                 for key in ('avge_mass', 'mono_mass'):
                     new_d[key] = float(delta.attrib.pop(key))
                 for elem in self._xpath('element', delta):
                     e_d = elem.attrib
                     amount = int(e_d.pop('number'))
                     label = e_d.pop('symbol')
-                    isotope, symbol = re.match('^(\d*)(\D+)$', label).groups()
-                    if not isotope: isotope = 0
-                    else: isotope = int(isotope)
-                    comp += Composition(
-                            formula = _make_isotope_string(symbol, isotope),
-                            mass_data = self._massdata) * amount
+                    isotope, symbol = re.match(r'^(\d*)(\D+)$', label).groups()
+                    if not isotope:
+                        isotope = 0
+                    else:
+                        isotope = int(isotope)
+                    comp += Composition(formula=_make_isotope_string(symbol, isotope), mass_data=self._massdata) * amount
             new_d['composition'] = comp
             new_d['record_id'] = int(d.pop('record_id'))
-            new_d['approved'] = (d.pop('approved') == '1')
+            new_d['approved'] = d.pop('approved') == '1'
             new_d.update(d)
             spec = []
             for sp in self._xpath('specificity', mod):
