@@ -8,7 +8,7 @@ Summary
 This module is used to calculate the
 electrochemical properties of polypeptide molecules.
 
-The theory behind this module is based on the Henderson-Hasselbalch
+The theory behind most of this module is based on the Henderson-Hasselbalch
 equation and was thoroughly described in a number of sources [#Aronson]_,
 [#Moore]_.
 
@@ -96,6 +96,7 @@ References
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+from __future__ import division
 from . import parser
 from .auxiliary import PyteomicsError
 from collections import Iterable, Counter
@@ -284,7 +285,7 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
         pK_cterm = kwargs.get('pK_cterm', {})
     elif isinstance(sequence, dict) and (('pK_nterm' in kwargs) or ('pK_cterm' in kwargs)):
         raise PyteomicsError('Can not use terminal features for %s' % type(sequence))
-    
+
     peptide_dict, pK = _prepare_charge_dict(sequence, pK=pK, pK_cterm=pK_cterm, pK_nterm=pK_nterm)
     # The algorithm is based on the fact that charge(pH) is a monotonic function.
     left_x, right_x = pI_range
@@ -415,6 +416,59 @@ Reference points for comparisons of two-dimensional maps of proteins from
 different human cell types defined in a pH scale where isoelectric points
 correlate with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
 """
+
+hydropathicity_KD = {
+    "A": 1.800,
+    "R": -4.500,
+    "N": -3.500,
+    "D": -3.500,
+    "C": 2.500,
+    "Q": -3.500,
+    "E": -3.500,
+    "G": -0.400,
+    "H": -3.200,
+    "I": 4.500,
+    "L": 3.800,
+    "K": -3.900,
+    "M": 1.900,
+    "F": 2.800,
+    "P": -1.600,
+    "S": -0.800,
+    "T": -0.700,
+    "W": -0.900,
+    "Y": -1.300,
+    "V": 4.200,
+}
+"""
+A set of hydropathicity indexes obtained from Kyte J., Doolittle F. J. Mol. Biol. 157:105-132 (1982).
+"""
+
+
+def gravy(sequence, hydropathicity=hydropathicity_KD):
+    """
+    Calculate GRand AVerage of hYdropathicity (GRAVY) index for amino acid sequence.
+
+    Parameters
+    ----------
+    sequence : str
+        Polypeptide sequence in one-letter format.
+    hydropathicity : dict, optional
+        Hydropathicity indexes of amino acids. Default is :py:data:`hydropathicity_KD`.
+
+    Returns
+    -------
+    out : float
+        GRand AVerage of hYdropathicity (GRAVY) index.
+
+    Examples
+    >>> gravy('PEPTIDE')
+    -1.4375
+    """
+    try:
+        return sum(hydropathicity[aa] for aa in sequence) / len(sequence)
+    except KeyError as e:
+        raise PyteomicsError("Hydropathicity for amino acid {} not provided.".format(e.args[0]))
+
 
 if __name__ == "__main__":
     import doctest
