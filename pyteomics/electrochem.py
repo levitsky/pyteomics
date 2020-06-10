@@ -443,6 +443,7 @@ hydropathicity_KD = {
 A set of hydropathicity indexes obtained from Kyte J., Doolittle F. J. Mol. Biol. 157:105-132 (1982).
 """
 
+
 def gravy(sequence, hydropathicity=hydropathicity_KD):
     """
     Calculate GRand AVerage of hYdropathicity (GRAVY) index for amino acid sequence.
@@ -457,7 +458,7 @@ def gravy(sequence, hydropathicity=hydropathicity_KD):
     Returns
     -------
     out : float
-        Rand AVerage of hYdropathicity (GRAVY) index.
+        GRand AVerage of hYdropathicity (GRAVY) index.
 
     Examples
     >>> gravy('PEPTIDE')
