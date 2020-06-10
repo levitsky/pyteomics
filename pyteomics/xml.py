@@ -505,6 +505,7 @@ class XML(FileReader):
              "Do not use `retrieve_refs=True`.").format(
                 self.__class__.__name__))
 
+    @_keepstate
     def iterfind(self, path, **kwargs):
         """Parse the XML and yield info on elements with specified local
         name or by specified "XPath".
