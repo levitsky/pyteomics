@@ -667,8 +667,10 @@ class XML(FileReader):
             elem = self._id_dict[elem_id]
         return self._get_info_smart(elem, **kwargs)
 
+
 # XPath emulator tools
 pattern_path = re.compile(r'([\w/*]*)(.*)')
+
 
 def get_rel_path(element, names):
     if not names:
@@ -681,6 +683,7 @@ def get_rel_path(element, names):
                 else:
                     for gchild in get_rel_path(child, names[1:]):
                         yield gchild
+
 
 def xpath(tree, path, ns=None):
     """Return the results of XPath query with added namespaces.
@@ -700,6 +703,7 @@ def xpath(tree, path, ns=None):
         while root.getparent() is not None:
             root = root.getparent()
     ns = root.nsmap.get(ns)
+
     def repl(m):
         s = m.group(1)
         if not ns: return s
@@ -709,10 +713,11 @@ def xpath(tree, path, ns=None):
     n_s = ({'d': ns} if ns else None)
     return tree.xpath(new_path, namespaces=n_s)
 
+
 def _make_version_info(cls):
     def version_info(source):
         return cls(source).version_info
-    version_info.__doc__ =  """
+    version_info.__doc__ = """
     Provide version information about the {0.file_format} file.
 
     .. note:: This function is provided for backward compatibility only.
