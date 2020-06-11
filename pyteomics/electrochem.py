@@ -22,12 +22,19 @@ where the sum is taken over all ionizable groups of the polypeptide, and
 :math:`Q_i` is -1 and +1 for acidic and basic functional groups,
 respectively.
 
-Main functions
---------------
+Charge and pI functions
+-----------------------
 
   :py:func:`charge` - calculate the charge of a polypeptide
 
   :py:func:`pI` - calculate the isoelectric point of a polypeptide
+
+
+GRand AVerage of hYdropathicity (GRAVY)
+---------------------------------------
+
+  :py:func:`gravy` - calculate the GRAVY index of a polypeptide
+
 
 Data
 ----
@@ -46,6 +53,9 @@ Data
   :py:data:`pK_nterm_bjellqvist` - a set of N-terminal pK from [#Bjellqvist]_.
 
   :py:data:`pK_cterm_bjellqvist` - a set of C-terminal pK from [#Bjellqvist]_.
+
+  :py:data:`hydropathicity_KD` - a set of hydropathicity indexes from [#Kyte]_.
+
 
 References
 ----------
@@ -78,6 +88,11 @@ References
     correlate with polypeptide compositions. Electrophoresis 1994, 15, 529-539.
     `Link. <http://dx.doi.org/10.1002/elps.1150150171>`_
 
+.. [#Kyte] Kyte, J.; Doolittle, R. F..
+   A simple method for displaying the hydropathic character of a protein.
+   Journal of molecular biology 1982, 157 (1), 105-32.
+   `Link. <https://doi.org/10.1016/0022-2836(82)90515-0>`_
+
 -------------------------------------------------------------------------------
 
 """
@@ -100,6 +115,7 @@ from __future__ import division
 from . import parser
 from .auxiliary import PyteomicsError
 from collections import Iterable, Counter
+
 
 def charge(sequence, pH, **kwargs):
     """Calculate the charge of a polypeptide in given pH or list of pHs using
@@ -151,6 +167,7 @@ def charge(sequence, pH, **kwargs):
 
     charge_list = _charge_for_dict(peptide_dict, pH_list, pK)
     return charge_list[0] if not isinstance(pH, Iterable) else charge_list
+
 
 def _prepare_charge_dict(sequence, **kwargs):
     nterm = cterm = n_aa = c_aa = None
@@ -227,6 +244,7 @@ def _prepare_charge_dict(sequence, **kwargs):
 
     return peptide_dict, pK
 
+
 def _charge_for_dict(peptide_dict, pH_list, pK):
     # Calculate the charge for each value of pH.
     charge_list = []
@@ -239,6 +257,7 @@ def _charge_for_dict(peptide_dict, pH_list, pK):
         charge_list.append(charge)
 
     return charge_list
+
 
 def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
     """Calculate the isoelectric point of a polypeptide using a given set
