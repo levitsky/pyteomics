@@ -288,26 +288,27 @@ def roc_curve(source):
     Returns
     -------
     out : list
-        A list of ROC points, sorted by ascending min prob.
+        A list of ROC points.
     """
 
     parser = etree.XMLParser(remove_comments=True, ns_clean=True)
     tree = etree.parse(source, parser=parser)
 
     roc_curve = []
-    for roc_element in tree.xpath(
-        "/*[local-name()='msms_pipeline_analysis']"
-        "/*[local-name()='analysis_summary and @analysis='peptideprophet']"
-        "/*[local-name()='peptideprophet_summary']"
-        "/*[local-name()='roc_data_point']"):
+    for roc_error_data in tree.xpath(
+        "/*[local-name()='msms_pipeline_analysis'] \
+        //*[local-name()='analysis_summary' and @analysis='peptideprophet'] \
+        //*[local-name()='peptideprophet_summary'] \
+        //*[local-name()='roc_error_data']"):
+        for element in roc_error_data.xpath("*[local-name()='roc_data_point' or local-name()='error_point']"):
+            data_point = dict(element.attrib)
+            for key in data_point:
+                data_point[key] = float(data_point[key])
+            data_point["charge"] = roc_error_data.attrib["charge"]
+            data_point["tag"] = etree.QName(element).localname
+            roc_curve.append(data_point)
 
-        roc_data_point = dict(roc_element.attrib)
-        for key in roc_data_point:
-            roc_data_point[key] = float(roc_data_point[key])
-        roc_curve.append(roc_data_point)
-
-    return sorted(roc_curve, key=lambda x: x['min_prob'])
-
+    return roc_curve
 
 # chain = aux._make_chain(read, 'read')
 chain = aux.ChainBase._make_chain(read)
