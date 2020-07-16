@@ -7,7 +7,7 @@ from . import patch as __patch
 
 from .structures import (
     PyteomicsError, Charge, ChargeList,
-    _parse_charge, BasicComposition,
+    _parse_charge, _parse_ion, BasicComposition,
     unitfloat, unitint, unitstr, cvstr,
     cvquery)
 

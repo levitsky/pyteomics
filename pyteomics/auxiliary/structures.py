@@ -82,6 +82,15 @@ class Charge(int):
     def __str__(self):
         return str(abs(self)) + '+-'[self < 0]
 
+class Ion(str):
+    """Represents an Ion, right now just a subclass of String.
+    """
+    def __init__(self, *args, **kwargs):
+        if args and isinstance(args[0], basestring):
+            try:
+                self.ion_type, self.neutral_loss, self.charge = re.match(r'([abcxyz]\d+(\-H2O|\-NH3)?)([\+|-]\d+)', args[0]).groups() #"y2-H2O+1"
+            except Exception as e:
+                raise PyteomicsError("Malformed ion string, must match the regex r'([abcxyz]\d+(\-H2O|\-NH3)?)([\+|-]\d+)'")
 
 class ChargeList(list):
     """Just a list of :py:class:`Charge`s. When printed, looks like an
@@ -117,6 +126,11 @@ def _parse_charge(s, list_only=False):
             pass
     return ChargeList(s)
 
+def _parse_ion(ion_text):
+    try:
+        return Ion(ion_text)
+    except Exception as e:
+        print(e)
 
 class BasicComposition(defaultdict, Counter):
     """A generic dictionary for compositions.

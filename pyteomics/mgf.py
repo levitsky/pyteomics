@@ -84,10 +84,11 @@ class MGFBase(object):
     _array_converters = {
         'm/z array': [_identity, _array, _array],
         'intensity array': [_identity, _array, _array],
-        'charge array': [_identity, _array, _ma]
+        'charge array': [_identity, _array, _ma],
+        'ion array': [_identity, _array,  _array]
     }
-    _array_keys = ['m/z array', 'intensity array', 'charge array']
-    _array_keys_unicode = [u'm/z array', u'intensity array', u'charge array']
+    _array_keys = ['m/z array', 'intensity array', 'charge array', 'ion array']
+    _array_keys_unicode = [u'm/z array', u'intensity array', u'charge array', u'ion array']
     encoding = None
 
 
@@ -107,7 +108,7 @@ class MGFBase(object):
             Default is :py:const:`True`.
 
         convert_arrays : one of {0, 1, 2}, optional, keyword only
-            If `0`, m/z, intensities and (possibly) charges will be returned as regular lists.
+            If `0`, m/z, intensities and (possibly) charges or (possibly) ions will be returned as regular lists
             If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
             If `2`, charges will be reported as a masked array (default).
             The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
@@ -115,9 +116,13 @@ class MGFBase(object):
         read_charges : bool, optional, keyword only
             If `True` (default), fragment charges are reported. Disabling it improves performance.
 
+        read_ions : bool, optional
+            If `True` (default: False), fragment ions are reported. Disabling it improves performance.
+            Note that right now, only one of (read_charges, read_ions) may be True.
+
         dtype : type or str or dict, optional, keyword only
             dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
-            Keys should be 'm/z array', 'intensity array' and/or 'charge array'.
+            Keys should be 'm/z array', 'intensity array', 'charge array' and/or 'ion array'.
 
         encoding : str, optional, keyword only
             File encoding.
@@ -129,6 +134,10 @@ class MGFBase(object):
         if self._convert_arrays and np is None:
             raise aux.PyteomicsError('numpy is required for array conversion')
         self._read_charges = kwargs.pop('read_charges', True)
+        self._read_ions = kwargs.pop('read_ions', False)
+        #Make sure no charges are read if ions are read
+        if self._read_ions:
+            self._read_charges = False
         dtype = kwargs.pop('dtype', None)
         self._dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in self._array_keys}
         if self._use_header:
@@ -136,11 +145,15 @@ class MGFBase(object):
         else:
             self._header = None
 
+
     def parse_precursor_charge(self, charge_text, list_only=False):
         return aux._parse_charge(charge_text, list_only=list_only)
 
     def parse_peak_charge(self, charge_text, list_only=False):
         return aux._parse_charge(charge_text, list_only=False)
+
+    def parse_peak_ion(self, ion_text):
+        return aux._parse_ion(ion_text)
 
     @property
     def header(self):
@@ -173,6 +186,7 @@ class MGFBase(object):
         masses = []
         intensities = []
         charges = []
+        ions = []
 
         params = self.header.copy() if self._use_header else {}
 
@@ -202,6 +216,8 @@ class MGFBase(object):
                 data = {'m/z array': masses, 'intensity array': intensities}
                 if self._read_charges:
                     data['charge array'] = charges
+                if self._read_ions:
+                    data['ion array'] = ions
                 for key, values in data.items():
                     out[key] = self._array_converters[key][self._convert_arrays](values, dtype=self._dtype_dict.get(key))
                 if self.encoding and sys.version_info.major == 2:
@@ -221,6 +237,8 @@ class MGFBase(object):
                         intensities.append(float(l[1]))
                         if self._read_charges:
                             charges.append(self.parse_peak_charge(l[2]) if len(l) > 2 else 0)
+                        if self._read_ions:
+                            ions.append(self.parse_peak_ion(l[2]) if len(l) > 2 else "")
                     except ValueError:
                         raise aux.PyteomicsError(
                              'Error when parsing %s. Line:\n%s' % (getattr(self._source, 'name', 'MGF file'), line))
@@ -238,10 +256,11 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
     If created using a file object, it needs to be opened in binary mode.
 
     When iterated, :py:class:`IndexedMGF` object yields spectra one by one.
-    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
-    'intensity array', 'charge array' and 'params'. 'm/z array' and
+    Each 'spectrum' is a :py:class:`dict` with five keys: 'm/z array',
+    'intensity array', 'charge array', 'ion array' and 'params'. 'm/z array' and
     'intensity array' store :py:class:`numpy.ndarray`'s of floats,
     'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
+    'ion_array' is an array of Ions (str)
     and 'params' stores a :py:class:`dict` of parameters (keys and values are
     :py:class:`str`, keys corresponding to MGF, lowercased).
 
@@ -254,20 +273,21 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
     time : RTLocator
         A property used for accessing spectra by retention time.
     """
-
     delimiter = 'BEGIN IONS'
-    label = r'TITLE=([^\n]*\S)\s*'
+    
+    
 
-    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
-        dtype=None, encoding='utf-8', _skip_index=False, **kwargs):
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, 
+        read_ions=False, dtype=None, encoding='utf-8', index_by_scans=False, _skip_index=False, **kwargs):
+        self.label = r'SCANS=(\d+)\s*' if index_by_scans else r'TITLE=([^\n]*\S)\s*'
         super(IndexedMGF, self).__init__(source, parser_func=self._read, pass_file=False, args=(), kwargs={},
             use_header=use_header, convert_arrays=convert_arrays, read_charges=read_charges,
-            dtype=dtype, encoding=encoding, _skip_index=_skip_index, **kwargs)
+            read_ions=read_ions, dtype=dtype, encoding=encoding, _skip_index=_skip_index, **kwargs)
 
     def __reduce_ex__(self, protocol):
         return (self.__class__,
             (self._source_init, False, self._convert_arrays, self._read_charges,
-                self._dtype_dict, self.encoding, True),
+                self._read_ions, self._dtype_dict, self.encoding, True),
             self.__getstate__())
 
     def __getstate__(self):
@@ -301,7 +321,7 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
             yield spectrum
 
     def get_spectrum(self, key):
-        return self.get_by_id(key)
+        return self.get_by_id(str(key))
 
     def _get_time(self, spectrum):
         try:
@@ -318,10 +338,11 @@ class MGF(MGFBase, aux.FileReader):
     constant-time access to spectra.
 
     :py:class:`MGF` object behaves as an iterator, **yielding** spectra one by one.
-    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
-    'intensity array', 'charge array' and 'params'. 'm/z array' and
+    Each 'spectrum' is a :py:class:`dict` with five keys: 'm/z array',
+    'intensity array', 'charge array', 'ion array' and 'params'. 'm/z array' and
     'intensity array' store :py:class:`numpy.ndarray`'s of floats,
     'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
+    'ion_array' is a masked array of Ions (str)
     and 'params' stores a :py:class:`dict` of parameters (keys and values are
     :py:class:`str`, keys corresponding to MGF, lowercased).
 
@@ -334,9 +355,10 @@ class MGF(MGFBase, aux.FileReader):
     """
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
-        dtype=None, encoding=None):
+        read_ions=False, dtype=None, encoding=None):
         super(MGF, self).__init__(source, mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={},
-            encoding=encoding, use_header=use_header, convert_arrays=convert_arrays, read_charges=read_charges, dtype=dtype)
+            encoding=encoding, use_header=use_header, convert_arrays=convert_arrays, read_charges=read_charges, 
+            read_ions=read_ions, dtype=dtype)
         # self.encoding = encoding
 
     @aux._keepstate_method
@@ -359,6 +381,16 @@ class MGF(MGFBase, aux.FileReader):
                 spectrum = self._read_spectrum()
                 spectrum['params']['title'] = title
                 return spectrum
+
+#TODO DELETE BEFORE COMMIT  
+    # @aux._keepstate_method
+    # def get_spectrum_by_scan(self, scan):
+    #     for line in self._source:
+    #         sline = line.strip()
+    #         if sline[:5] == 'SCANS' and sline.split('=', 1)[1].strip() == str(scan):
+    #             spectrum = self._read_spectrum()
+    #             #spectrum['params']['scans'] = scan
+    #             return spectrum
 
     def __getitem__(self, key):
         return self.get_spectrum(key)
@@ -391,9 +423,13 @@ def read(*args, **kwargs):
     read_charges : bool, optional
         If `True` (default), fragment charges are reported. Disabling it improves performance.
 
+    read_ions : bool, optional
+        If `True` (default: False), fragment charges are reported. Disabling it improves performance.
+        Note that right now, only one of (read_charges, read_ions) may be True.
+
     dtype : type or str or dict, optional
         dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
-        Keys should be 'm/z array', 'intensity array' and/or 'charge array'.
+        Keys should be 'm/z array', 'intensity array', 'charge array' and/or 'ion array'.
 
     encoding : str, optional
         File encoding.
@@ -510,7 +546,7 @@ _default_value_formatters = {'pepmass': _pepmass_repr, 'charge': _charge_repr}
 
 @aux._file_writer()
 def write(spectra, output=None, header='', key_order=_default_key_order,
-    fragment_format=None, write_charges=True, use_numpy=None,
+    fragment_format=None, write_charges=True, write_ions=False, use_numpy=None,
     param_formatters=_default_value_formatters):
     """
     Create a file in MGF format.
@@ -546,6 +582,10 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
     write_charges : bool, optional
         If :py:const:`False`, fragment charges from 'charge array' will not be written.
         Default is :py:const:`True`.
+
+    write_ions : bool, optional
+        If :py:const:`False`, fragment ions from 'ion array' will not be written.
+        Default is :py:const:`False`.
 
     fragment_format : str, optional
         Format string for m/z, intensity and charge of a fragment. Useful to set
@@ -649,7 +689,7 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
         try:
             success = True
             if np is not None and use_numpy:
-                if not write_charges or 'charge array' not in spectrum:
+                if (not write_charges or 'charge array' not in spectrum) and (not write_ions or 'ion array' not in spectrum):
                     X = np.empty((len(spectrum['m/z array']), 2))
                     X[:, 0] = spectrum['m/z array']
                     X[:, 1] = spectrum['intensity array']
@@ -659,6 +699,12 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
                     X[:, 0] = spectrum['m/z array']
                     X[:, 1] = spectrum['intensity array']
                     X[:, 2] = spectrum['charge array']
+                    np.savetxt(output, X, fmt=np_format_3)
+                elif isinstance(spectrum.get('ion array'), np.ndarray):
+                    X = np.empty((len(spectrum['m/z array']), 3), dtype=object)
+                    X[:, 0] = spectrum['m/z array']
+                    X[:, 1] = spectrum['intensity array']
+                    X[:, 2] = spectrum['ion array']
                     np.savetxt(output, X, fmt=np_format_3)
                 else:
                     success = False
