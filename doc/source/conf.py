@@ -40,6 +40,7 @@ sys.path.insert(0, pyteomics_path)
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 
 extensions = [
+              'numpydoc',
               'sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
               'sphinx.ext.viewcode',
@@ -50,7 +51,6 @@ extensions = [
               'matplotlib.sphinxext.plot_directive',
               # 'matplotlib.sphinxext.only_directives',
               'matplotlib.sphinxext.mathmpl',
-              'numpydoc',
               'sphinxcontrib.googleanalytics',
               'sphinx_sitemap',
              ]
@@ -284,7 +284,7 @@ def skip(app, what, name, obj, skip, options):
         return False
     return skip
 
-autodoc_default_flags = ['members', 'inherited-members', 'show-inheritance']
+autodoc_default_options = {'members': True, 'inherited-members': True, 'show-inheritance': True}
 
 def setup(app):
     app.connect('autodoc-skip-member', skip)
