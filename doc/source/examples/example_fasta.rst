@@ -31,15 +31,25 @@ a gzip-compressed database from Uniprot FTP server:
    :language: python
    :lines: 8-14
 
-The :py:func:`pyteomics.fasta.read` function allows to iterate over the protein
-sequences in a FASTA file in a regular Python loop. In order to obtain
+The :py:func:`pyteomics.fasta.FASTA` class allows to iterate over the protein
+sequences in a FASTA file in a regular Python loop. It replaced
+:py:func:`pyteomics.fasta.read`, although the latter still exists, too.
+In this example, we create a :py:class:`FASTA` object from a file-like object
+representing a **gzip** archive. All file parser objects are flexible and support
+a variety of use cases. Additionally :py:mod:`pyteomics.fasta` supports an even
+greater variety of FASTA types and flavors.
+
+For all FASTA parser classes, check :doc:`../api/fasta`.
+See also: an explanation of :ref:`indexing`.
+
+In order to obtain
 the peptide sequences, we cleave each protein using the
 :py:func:`pyteomics.parser.cleave` function and combine results into a set object
 that automatically discards multiple occurrences of the same sequence.
 
 .. literalinclude:: ../_static/example_fasta.py
    :language: python
-   :lines: 16-21
+   :lines: 16-22
 
 Later we will calculate different peptide properties. In order
 to store them, we create a list of dicts, where each dict stores the properties
@@ -47,7 +57,7 @@ of a single peptide, including its sequence.
 
 .. literalinclude:: ../_static/example_fasta.py
    :language: python
-   :lines: 23
+   :lines: 24
 
 It is also more efficient to pre-parse the sequences into individual amino acids
 and supply the parsed structures into the functions that calculate m/z, charge,
@@ -56,14 +66,14 @@ that they are taken into the account when calculating m/z and charge of a peptid
 
 .. literalinclude:: ../_static/example_fasta.py
    :language: python
-   :lines: 25-31
+   :lines: 26-32
 
 For our purposes, we will limit ourselves to reasonably short peptides with
 the length less than 100 residues.
 
 .. literalinclude:: ../_static/example_fasta.py
    :language: python
-   :lines: 33
+   :lines: 34
 
 We use :py:func:`pyteomics.electrochem.charge` to calculate the charge at pH=2.0.
 The neutral mass and m/z of an ion is found with
@@ -71,7 +81,7 @@ The neutral mass and m/z of an ion is found with
 
 .. literalinclude:: ../_static/example_fasta.py
    :language: python
-   :lines: 35-42
+   :lines: 36-43
 
 Next, we calculate the retention time in the reversed- and normal-phase
 chromatography using :py:func:`pyteomics.achrom.calculate_RT` for two different
@@ -83,7 +93,7 @@ correspondingly.
 
 .. literalinclude:: ../_static/example_fasta.py
    :language: python
-   :lines: 44-52
+   :lines: 45-53
 
 Now, as we have all the numbers we can estimate the complexity of a sample
 by plotting the distributions of parameters measurable in a typical proteomic
@@ -92,14 +102,14 @@ plotting function from matplotlib.
 
 .. literalinclude:: ../_static/example_fasta.py
    :language: python
-   :lines: 54-59
+   :lines: 55-60
 
 The same set of commands allows us to plot the distribution of charge states
 in the sample:
 
 .. literalinclude:: ../_static/example_fasta.py
    :language: python
-   :lines: 61-66
+   :lines: 62-67
 
 Next, we want to visualize the statistical correlation
 between m/z and retention time in reversed-phase chromatography.
@@ -119,14 +129,14 @@ m/z and retention time.
 
 .. literalinclude:: ../_static/example_fasta.py
    :language: python
-   :lines: 68-72
+   :lines: 69-73
 
 The obtained heatmap is plotted with :py:func:`matplotlib.pyplot.imshow()` function
 that visualizes matrices.
 
 .. literalinclude:: ../_static/example_fasta.py
    :language: python
-   :lines: 74-78
+   :lines: 75-79
 
 The same code can also be applied to compare the retention times obtained on
 different chromatographic phases.
@@ -135,7 +145,7 @@ different chromatographic phases seem to be uncorrelated.
 
 .. literalinclude:: ../_static/example_fasta.py
    :language: python
-   :lines: 80-94
+   :lines: 81-95
 
 Finally, let us check whether the retention times remain uncorrelated when
 we narrow down the sample of peptides. We select the peptides with m/z lying in
@@ -144,7 +154,7 @@ the sample allows us to use a scatter plot.
 
 .. literalinclude:: ../_static/example_fasta.py
    :language: python
-   :lines: 96-108
+   :lines: 97-109
 
 As you can see, the retention times of peptides lying in a narrow mass window
 turn out to be substantially correlated.

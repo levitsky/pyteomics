@@ -15,9 +15,10 @@ if not os.path.isfile('yeast.fasta.gz'):
 
 print('Cleaving the proteins with trypsin...')
 unique_peptides = set()
-for description, sequence in fasta.read(gzip.open('yeast.fasta.gz')):
-    new_peptides = parser.cleave(sequence, parser.expasy_rules['trypsin'])
-    unique_peptides.update(new_peptides)
+with gzip.open('yeast.fasta.gz', mode='rt') as gzfile:
+    for description, sequence in fasta.FASTA(gzfile):
+        new_peptides = parser.cleave(sequence, 'trypsin')
+        unique_peptides.update(new_peptides)
 print('Done, {0} sequences obtained!'.format(len(unique_peptides)))
 
 peptides = [{'sequence': i} for i in unique_peptides]
