@@ -284,7 +284,7 @@ def skip(app, what, name, obj, skip, options):
         return False
     return skip
 
-autodoc_default_options = {'members': True, 'inherited-members': True, 'show-inheritance': True}
+autodoc_default_options = {'members': None, 'inherited-members': None, 'show-inheritance': None}
 
 def setup(app):
     app.connect('autodoc-skip-member', skip)
