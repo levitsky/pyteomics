@@ -1,6 +1,6 @@
 """
-traml - reader for targeted mass spectrometry transition data in TraML format
-=============================================================================
+traml - targeted MS transition data in TraML format
+===================================================
 
 Summary
 -------
