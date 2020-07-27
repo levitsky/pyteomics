@@ -877,21 +877,40 @@ def _make_chain(reader, readername, full_output=False):
 
 
 def _check_use_index(source, use_index, default):
-    if use_index is not None:
-        use_index = bool(use_index)
-    if 'b' not in getattr(source, 'mode', 'b'):
-        if use_index is True:
-            warnings.warn('use_index is True, but the file mode is not binary. '
-                'Setting use_index to False')
-        use_index = False
-    elif 'b' in getattr(source, 'mode', ''):
-        if use_index is False:
-            warnings.warn('use_index is False, but the file mode is binary. '
-                'Setting use_index to True')
-        use_index = True
-    if use_index is None:
-        use_index = default
-    return use_index
+    try:
+        if isinstance(source, basestring):
+            return default
+        if use_index is not None:
+            use_index = bool(use_index)
+        seekable = True
+        if hasattr(source, 'seekable'):
+            if not source.seekable():
+                use_index = False
+                seekable = False
+        if hasattr(source, 'mode'):
+            ui = 'b' in source.mode
+            if use_index is not None and ui != use_index:
+                warnings.warn('use_index is {}, but the file mode is {}. '
+                    'Setting use_index to {}'.format(use_index, source.mode, ui))
+            use_index = ui
+
+        if use_index and not seekable:
+            warnings.warn('Cannot use indexing as {} is not seekable. Setting `use_index` to False.'.format(source))
+            use_index = False
+
+        if use_index is not None:
+            return use_index
+
+        warnings.warn('Could not check mode on {}. '
+            'Specify `use_index` explicitly to avoid errors.'.format(source))
+        return default
+
+    except Exception as e:
+        warnings.warn('Could not check mode on {}. Reason: {!r}. '
+            'Specify `use_index` explicitly to avoid errors.'.format(source, e))
+        if use_index is not None:
+            return use_index
+        return default
 
 
 class FileReadingProcess(mp.Process):
