@@ -7,11 +7,8 @@
         Chain :py:func:`read` for several files.
         Keyword arguments are passed to the :py:func:`read` function.
 
-        Parameters
-        ----------
-        files : iterable
-            Iterable of file names or file objects.
-
+        :param files: Iterable of file names or file objects.
+        :type param: iterable
 
    .. autofunction:: decoy_chain
    .. py:function :: decoy_chain.from_iterable(files, **kwargs)
@@ -19,7 +16,5 @@
         Chain :py:func:`decoy_db` for several files.
         Keyword arguments are passed to the :py:func:`decoy_db` function.
 
-        Parameters
-        ----------
-        files : iterable
-            Iterable of file names or file objects.
+        :param files: Iterable of file names or file objects.
+        :type param: iterable

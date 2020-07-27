@@ -9,10 +9,8 @@
         Chain :py:func:`read` for several files.
         Keyword arguments are passed to the :py:func:`read` function.
 
-        Parameters
-        ----------
-        files : iterable
-            Iterable of file names or file objects.
+        :param files: Iterable of file names or file objects.
+        :type param: iterable
 
     .. autofunction:: filter
     .. py:function :: filter.chain(*files, **kwargs)
@@ -26,8 +24,6 @@
         Chain :py:func:`filter` for several files.
         Keyword arguments are passed to the :py:func:`filter` function.
 
-        Parameters
-        ----------
-        files : iterable
-            Iterable of file names or file objects.
+        :param files: Iterable of file names or file objects.
+        :type param: iterable
 

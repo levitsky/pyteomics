@@ -245,9 +245,9 @@ class IndexedFASTA(FASTABase, aux.TaskMappingMixin, aux.IndexedTextReader):
         block_size : int or None, optional, keyword only
             Number of bytes to consume at once.
         delimiter : str or None, optional, keyword only
-            Overrides the FASTA record delimiter (default is ``'\n>'``).
+            Overrides the FASTA record delimiter (default is ``'\\n>'``).
         label : str or None, optional, keyword only
-            Overrides the FASTA record label pattern. Default is ``'^[\n]?>(.*)'``.
+            Overrides the FASTA record label pattern. Default is ``'^[\\n]?>(.*)'``.
         label_group : int or str, optional, keyword only
             Overrides the matched group used as key in the byte offset index.
             This in combination with `label` can be used to extract fields from headers.
