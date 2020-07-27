@@ -282,7 +282,11 @@ def DataFrame(*args, **kwargs):
     pd_kwargs : dict, optional
         Keyword arguments passed to the :py:class:`pandas.DataFrame` constructor.
 
-    *args, **kwargs : passed to :py:func:`chain`.
+    *args
+        Passed to :py:func:`chain`.
+
+    **kwargs
+        Passed to :py:func:`chain`.
 
     Returns
     -------
@@ -336,7 +340,10 @@ def filter_df(*args, **kwargs):
         Default is 'expect'.
     is_decoy : str / iterable / callable, optional
         Default is to check if all strings in the "protein" column start with `'DECOY_'`
-    *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+    *args
+        Passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+    **kwargs
+        Passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
 
     Returns
     -------
