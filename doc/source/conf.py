@@ -40,7 +40,7 @@ sys.path.insert(0, pyteomics_path)
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 
 extensions = [
-              'numpydoc',
+              'sphinx.ext.napoleon',
               'sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
               'sphinx.ext.viewcode',
