@@ -1,13 +1,18 @@
 from pyteomics import mgf, pepxml, mass
 import os
-from urllib.request import urlretrieve
+from urllib.request import urlopen, Request
 import pylab
 
 # get the files
 for fname in ('mgf', 'pep.xml'):
     if not os.path.isfile('example.' + fname):
-        urlretrieve('http://pyteomics.readthedocs.io/en/latest/_static/example.'
-                + fname, 'example.' + fname)
+        headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
+        url = 'http://pyteomics.readthedocs.io/en/latest/_static/example.' + fname
+        request = Request(url, None, headers)
+        target_name = 'example.' + fname
+        with urlopen(request) as response, open(target_name, 'wb') as fout:
+            print('Downloading ' + target_name + '...')
+            fout.write(response.read())
 
 def fragments(peptide, types=('b', 'y'), maxcharge=1):
     """

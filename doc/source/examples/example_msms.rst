@@ -27,7 +27,7 @@ Then we'll download the files, if needed:
 
 .. literalinclude:: ../_static/example_msms.py
     :language: python
-    :lines: 7-10
+    :lines: 7-15
 
 Now it's time to define the function that will give us *m/z* of theoretical
 fragments for a given sequence. We will use
@@ -37,7 +37,7 @@ over possible charges and ion types:
 
 .. literalinclude:: ../_static/example_msms.py
     :language: python
-    :lines: 12-25
+    :lines: 17-30
 
 So, the outer loop is over "fragmentation sites", the next one is over ion
 types, then over charges, and lastly over two parts of the sequence
@@ -49,25 +49,25 @@ recommended.
 
 .. literalinclude:: ../_static/example_msms.py
     :language: python
-    :lines: 27-29
+    :lines: 32-34
 
 Now prepare the figure...
 
 .. literalinclude:: ../_static/example_msms.py
     :language: python
-    :lines: 31-35
+    :lines: 36-40
 
 ... plot the real spectrum:
 
 .. literalinclude:: ../_static/example_msms.py
     :language: python
-    :lines: 36-37
+    :lines: 41-42
 
 ... calculate and plot the theoretical spectrum, and show everything:
 
 .. literalinclude:: ../_static/example_msms.py
     :language: python
-    :lines: 38-43
+    :lines: 43-48
 
 You will see something like this:
 
