@@ -14,7 +14,7 @@
    With some file-like objects, mode cannot be easily deduced without consuming some of the data.
    You will now see more warnings in case `use_index` is not explicitly passed to :py:func:`read` and reading mode is not obvious.
    There will also be warnings if `use_index` is specified but the file is opened in the wrong mode.
-   To avoid all of this, youy are encouraged to instantiate parser classes directly,
+   To avoid all of this, you are encouraged to instantiate parser classes directly,
    or explicitly specify `use_index` to :py:func:`read` in all corner cases.
 
 4.3.2
