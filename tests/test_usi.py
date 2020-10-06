@@ -7,8 +7,6 @@ import unittest
 from itertools import product
 import operator as op
 
-import numpy as np
-
 from pyteomics.usi import USI, proxi
 
 
@@ -30,9 +28,13 @@ class PROXITest(unittest.TestCase):
         usi_str = "mzspec:MSV000085202:210320_SARS_CoV_2_T:scan:131256"
         response = proxi(usi_str, backend='peptide_atlas')
 
-        assert usi_proxi_data.keys() <= response.keys()
-        assert np.allclose(response['m/z array'] - usi_proxi_data['m/z array'], 0)
-        assert np.allclose(response['intensity array'] - usi_proxi_data['intensity array'], 0)
+        assert set(usi_proxi_data.keys()) <= set(response.keys())
+
+        for a, b in zip(response['m/z array'], usi_proxi_data['m/z array']):
+            self.assertAlmostEqual(a, b, 3)
+
+        for a, b in zip(response['intensity array'], usi_proxi_data['intensity array']):
+            self.assertAlmostEqual(a, b, 3)
 
 
 
