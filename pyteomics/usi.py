@@ -12,6 +12,17 @@ reconstruct them.
 One use-case for USI is to request spectrum information from a `PROXI <http://www.psidev.info/proxi>`
 service host. PROXI services are available from several of the major national proteomics data hosts,
 including MassIVE, PeptideAtlas, PRIDE, and jPOST.
+
+
+Data access
+-----------
+
+  :py:class:`USI` for representing Universal Spectrum Identifiers. Call :meth:`USI.parse` to parse a USI
+  string.
+
+  :py:func:`proxi` to request a USI from a remote service. Provides access to the PeptideAtlas, MassIVE,
+  PRIDE and jPOST hosts.
+
 """
 import json
 from collections import namedtuple
@@ -60,7 +71,19 @@ class USI(namedtuple("USI", ['protocol', 'dataset', 'datafile', 'scan_identifier
 
     @classmethod
     def parse(cls, usi):
-        return cls(*_usi_parser(usi))
+        '''Parse a USI string into a :class:`USI` object.
+
+        Parameters
+        ----------
+        usi: str
+            The USI string to parse
+
+        Returns
+        -------
+        USI
+        '''
+        return cls(*_usi_parser(str(usi)))
+
 
 def _usi_parser(usi):
     tokens = usi.split(":", 5)
