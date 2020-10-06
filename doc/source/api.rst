@@ -26,6 +26,7 @@ Contents:
    api/tandem
    api/mzid
    api/mztab
+   api/usi
    api/featurexml
    api/trafoxml
    api/idxml
