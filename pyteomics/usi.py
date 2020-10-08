@@ -4,12 +4,12 @@ usi - Universal Spectrum Identifier (USI) parser and minimal PROXI client
 
 Summary
 -------
-`USI <http://www.psidev.info/usi>` is a standardized method of referencing a specific
+`USI <http://www.psidev.info/usi>`_ is a standardized method of referencing a specific
 spectrum in a dataset, possibly attached to an interpretation. This module includes a
 :class:`USI` type which can represent these constructs, :meth:`~USI.parse` them and
 reconstruct them.
 
-One use-case for USI is to request spectrum information from a `PROXI <http://www.psidev.info/proxi>`
+One use-case for USI is to request spectrum information from a `PROXI <http://www.psidev.info/proxi>`_
 service host. PROXI services are available from several of the major national proteomics data hosts,
 including MassIVE, PeptideAtlas, PRIDE, and jPOST.
 
