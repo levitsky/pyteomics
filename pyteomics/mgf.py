@@ -382,16 +382,6 @@ class MGF(MGFBase, aux.FileReader):
                 spectrum['params']['title'] = title
                 return spectrum
 
-#TODO DELETE BEFORE COMMIT  
-    # @aux._keepstate_method
-    # def get_spectrum_by_scan(self, scan):
-    #     for line in self._source:
-    #         sline = line.strip()
-    #         if sline[:5] == 'SCANS' and sline.split('=', 1)[1].strip() == str(scan):
-    #             spectrum = self._read_spectrum()
-    #             #spectrum['params']['scans'] = scan
-    #             return spectrum
-
     def __getitem__(self, key):
         return self.get_spectrum(key)
 
