@@ -6,8 +6,6 @@
         Chain :py:func:`read` for several files.
         Keyword arguments are passed to the :py:func:`read` function.
 
-        Parameters
-        ----------
-        files : iterable
-            Iterable of file names or file objects.
+        :param files: Iterable of file names or file objects.
+        :type files: iterable
 

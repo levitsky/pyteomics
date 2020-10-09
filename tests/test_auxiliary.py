@@ -4,6 +4,8 @@ from itertools import count
 import operator as op
 import numpy as np
 import pandas as pd
+import tempfile
+
 from os import path
 import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
@@ -12,6 +14,7 @@ from pyteomics import tandem
 
 psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase,
             np.arange(0.01, 0.062, 0.001)))
+
 
 class QvalueTest(unittest.TestCase):
     key = staticmethod(op.itemgetter(0))
@@ -185,6 +188,7 @@ class QvalueTest(unittest.TestCase):
         with tandem.TandemXML('test.t.xml') as psms:
             q1 = aux.qvalues(psms, key=op.itemgetter('expect'), is_decoy=tandem.is_decoy)
         self.assertTrue(np.allclose(q0['q'], q1['q']))
+
 
 class FilterTest(unittest.TestCase):
     key = staticmethod(op.itemgetter(0))
@@ -738,6 +742,7 @@ class FilterTest(unittest.TestCase):
             f1 = list(f)
         self.assertEqual(len(f1), 21)
 
+
 class FDRTest(unittest.TestCase):
 
     is_decoy = staticmethod(lambda x: x[1].islower())
@@ -788,7 +793,8 @@ class FDRTest(unittest.TestCase):
     def test_sigma_fdr(self):
         self.assertAlmostEqual(aux.sigma_fdr(psms, is_decoy=self.is_decoy), 0.28263343)
 
-class RegressionTests(unittest.TestCase):
+
+class RegressionTest(unittest.TestCase):
     x = [1, 2, 3]
     y = [3, 5, 7]
     a = 2
@@ -853,7 +859,8 @@ class RegressionTests(unittest.TestCase):
         with self.assertRaises(aux.PyteomicsError):
             aux.linear_regression_perpendicular(self.x)
 
-class OffsetIndexTests(unittest.TestCase):
+
+class OffsetIndexTest(unittest.TestCase):
     def setUp(self):
         self.sequence = [(str(i), i) for i in range(10)]
         self.index = aux.OffsetIndex(self.sequence)
@@ -878,6 +885,39 @@ class OffsetIndexTests(unittest.TestCase):
         self.assertEqual(self.index.between('3', '1'), ['1', '2', '3'])
         self.assertEqual(self.index.between(None, '3'), ['0', '1', '2', '3'])
         self.assertEqual(self.index.between('8', None), ['8', '9'])
+
+
+class UseIndexTest(unittest.TestCase):
+    def _check_file_object(self, fo, value):
+        self.assertEqual(aux._check_use_index(fo, None, None), value)
+
+    def test_textfile(self):
+        with open('test.fasta') as f:
+            self._check_file_object(f, False)
+
+    def test_binfile(self):
+        with open('test.mgf', 'rb') as f:
+            self._check_file_object(f, True)
+
+    def test_tmpfile_text(self):
+        with tempfile.TemporaryFile(mode='r') as f:
+            self._check_file_object(f, False)
+
+    def test_tmpfile_bin(self):
+        with tempfile.TemporaryFile(mode='wb') as f:
+            self._check_file_object(f, True)
+
+    def test_stringio(self):
+        try:
+            from io import StringIO
+        except ImportError:
+            from StringIO import StringIO
+        with StringIO(u'test') as f:
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter('always')
+                aux._check_use_index(f, None, None)
+                self.assertEqual(len(w), 1)
+                self.assertIs(w[0].category, UserWarning)
 
 
 import warnings

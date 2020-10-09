@@ -1,24 +1,27 @@
-# This is written in Python 2 for simplicity
-# Can be done forward-compatible easily, though
 from pyteomics import mgf, pepxml, mass
 import os
-from urllib import urlretrieve
+from urllib.request import urlopen, Request
 import pylab
 
 # get the files
 for fname in ('mgf', 'pep.xml'):
     if not os.path.isfile('example.' + fname):
-        urlretrieve('http://packages.python.org/pyteomics/_downloads/example.'
-                + fname, 'example.' + fname)
+        headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11'}
+        url = 'http://pyteomics.readthedocs.io/en/latest/_static/example.' + fname
+        request = Request(url, None, headers)
+        target_name = 'example.' + fname
+        with urlopen(request) as response, open(target_name, 'wb') as fout:
+            print('Downloading ' + target_name + '...')
+            fout.write(response.read())
 
 def fragments(peptide, types=('b', 'y'), maxcharge=1):
     """
-    The function generates all possible m/z for fragments of types 
+    The function generates all possible m/z for fragments of types
     `types` and of charges from 1 to `maxharge`.
     """
-    for i in xrange(1, len(peptide)-1):
+    for i in range(1, len(peptide)-1):
         for ion_type in types:
-            for charge in xrange(1, maxcharge+1):
+            for charge in range(1, maxcharge+1):
                 if ion_type[0] in 'abc':
                     yield mass.fast_mass(
                             peptide[:i], ion_type=ion_type, charge=charge)
@@ -29,6 +32,7 @@ def fragments(peptide, types=('b', 'y'), maxcharge=1):
 with mgf.read('example.mgf') as spectra, pepxml.read('example.pep.xml') as psms:
     spectrum = next(spectra)
     psm = next(psms)
+
 pylab.figure()
 pylab.title('Theoretical and experimental spectra for '
         + psm['search_hit'][0]['peptide'])

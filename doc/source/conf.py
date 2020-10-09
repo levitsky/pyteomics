@@ -40,6 +40,7 @@ sys.path.insert(0, pyteomics_path)
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 
 extensions = [
+              'sphinx.ext.napoleon',
               'sphinx.ext.autodoc',
               'sphinx.ext.autosummary',
               'sphinx.ext.viewcode',
@@ -50,7 +51,6 @@ extensions = [
               'matplotlib.sphinxext.plot_directive',
               # 'matplotlib.sphinxext.only_directives',
               'matplotlib.sphinxext.mathmpl',
-              'numpydoc',
               'sphinxcontrib.googleanalytics',
               'sphinx_sitemap',
              ]
@@ -75,7 +75,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Pyteomics documentation'
-copyright = u'2011-2019, Lev Levitsky, Anton Goloborodko, Mikhail Gorshkov'
+copyright = u'2011-2020, Lev Levitsky, Anton Goloborodko, Mikhail Gorshkov'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -155,7 +155,7 @@ html_title = "%s v%s" % (project, release)
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = [] #['_static']
+html_static_path = ['_static']
 
 # If not '', a 'Last updated on:' timestamp is inserted at every page bottom,
 # using the given strftime format.
@@ -284,7 +284,7 @@ def skip(app, what, name, obj, skip, options):
         return False
     return skip
 
-autodoc_default_flags = ['members', 'inherited-members', 'show-inheritance']
+autodoc_default_options = {'members': None, 'inherited-members': None, 'show-inheritance': None}
 
 def setup(app):
     app.connect('autodoc-skip-member', skip)

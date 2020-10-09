@@ -114,6 +114,7 @@ from . import auxiliary as aux
 
 Protein = namedtuple('Protein', ('description', 'sequence'))
 
+
 class FASTABase(object):
     """Abstract base class for FASTA file parsers.
     Can be used for type checking.
@@ -244,9 +245,9 @@ class IndexedFASTA(FASTABase, aux.TaskMappingMixin, aux.IndexedTextReader):
         block_size : int or None, optional, keyword only
             Number of bytes to consume at once.
         delimiter : str or None, optional, keyword only
-            Overrides the FASTA record delimiter (default is ``'\n>'``).
+            Overrides the FASTA record delimiter (default is ``'\\n>'``).
         label : str or None, optional, keyword only
-            Overrides the FASTA record label pattern. Default is ``'^[\n]?>(.*)'``.
+            Overrides the FASTA record label pattern. Default is ``'^[\\n]?>(.*)'``.
         label_group : int or str, optional, keyword only
             Overrides the matched group used as key in the byte offset index.
             This in combination with `label` can be used to extract fields from headers.
@@ -768,6 +769,7 @@ def decoy_sequence(sequence, mode='reverse', **kwargs):
             raise aux.PyteomicsError('Unsupported decoy mode: {}'.format(mode))
     return fmode(sequence, **kwargs)
 
+
 @aux._file_reader()
 def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
              ignore_comments=False, parser=None, **kwargs):
@@ -867,10 +869,12 @@ def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
         write(entries, output)
         return output.file
 
+
 # auxiliary functions for parsing of FASTA headers
 def _split_pairs(s):
     return dict(map(lambda x: x.strip(), x.split('='))
             for x in re.split(r' (?=\w+=)', s.strip()))
+
 
 def _intify(d, keys):
     for k in keys:
@@ -887,9 +891,11 @@ std_parsers = {'uniprot': (UniProt, IndexedUniProt), 'uniref': (UniRef, IndexedU
 formats are those described at
 `UniProt help page <http://www.uniprot.org/help/fasta-headers>`_."""
 
+
 _std_mixins = {'uniprot': UniProtMixin, 'uniref': UniRefMixin,
         'uniparc': UniParcMixin, 'unimes': UniMesMixin, 'spd': SPDMixin,
         'ncbi': NCBIMixin, 'refseq': RefSeqMixin}
+
 
 def parse(header, flavor='auto', parsers=None):
     """Parse the FASTA header and return a nice dictionary.

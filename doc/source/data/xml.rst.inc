@@ -340,7 +340,7 @@ idXML
 **idXML** is an OpenMS format for peptide identifications. It is supported in :py:mod:`pyteomics.openms.idxml`.
 It partially supports indexing (protein information can be indexed and extracted with `retrieve_refs`).
 
-The regular iterative parsing is done through :py:func:`read` or :py:class:`IDXML`, and :py:class:`pandas.DataFrame`s
+The regular iterative parsing is done through :py:func:`read` or :py:class:`IDXML`, and :py:class:`pandas.DataFrame`
 can be created as well.
 
 

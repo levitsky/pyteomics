@@ -1,6 +1,8 @@
+# place this file in the same directory as example files
 import pylab
 from pyteomics import tandem, pepxml, mzid, auxiliary as aux, pylab_aux as pa
 import pandas as pd
+import numpy as np
 
 pylab.figure()
 with tandem.read('example.t.xml') as tf:
@@ -31,16 +33,14 @@ amanda = pd.read_table('example_output.csv', skiprows=1)
 morph_filt = aux.filter(morpheus, fdr=0.01, key='Morpheus Score', reverse=True,
                        is_decoy='Decoy?')
 
-pylab.figure()
 morph_filt.plot(x='Retention Time (minutes)' , y='Precursor Mass (Da)', kind='scatter')
 
 amanda['isDecoy'] = [all(s.startswith('DECOY') for s in prot.split(';')) for prot in amanda['Protein Accessions']]
 amanda_filt = aux.filter(amanda[amanda['Rank'] == 1], key='Weighted Probability', is_decoy='isDecoy', fdr=0.01)
 
-amanda_pep = amanda_filt.sort('Weighted Probability').groupby('Sequence').first()
-morph_pep = morph_filt.sort('Q-Value (%)').groupby('Base Peptide Sequence').first()
+amanda_pep = amanda_filt.sort_values('Weighted Probability').groupby('Sequence').first()
+morph_pep = morph_filt.sort_values('Q-Value (%)').groupby('Base Peptide Sequence').first()
 
 inter = amanda_pep.join(morph_pep, how='inner', lsuffix='[amanda]', rsuffix='[morpheus]')
-pylab.figure()
 inter.plot('Amanda Score', 'Morpheus Score', kind='hexbin', gridsize=10)
 pylab.show()

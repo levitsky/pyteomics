@@ -65,18 +65,23 @@ import numpy as np
 from .auxiliary import linear_regression, PyteomicsError
 from . import parser, mass
 
+
 def plot_line(a, b, xlim=None, *args, **kwargs):
     """Plot a line y = a * x + b.
 
     Parameters
     ----------
-    a, b : float
-        The slope and intercept of the line.
+    a : float
+        The slope of the line.
+    b : float
+        The intercept of the line.
     xlim : tuple, optional
         Minimal and maximal values of `x`. If not given, :py:func:`pylab.xlim`
         will be called.
-
-    *args, **kwargs : passed to :py:func:`pylab.plot` after `x` and `y` values.
+    *args
+        Passed to :py:func:`pylab.plot` after `x` and `y` values.
+    **kwargs
+        Passed to :py:func:`pylab.plot`.
 
     Returns
     -------
@@ -88,13 +93,16 @@ def plot_line(a, b, xlim=None, *args, **kwargs):
                [a * xlim[0] + b, a * xlim[1] + b],
                *args, **kwargs)
 
+
 def scatter_trend(x, y=None, **kwargs):
     """Make a scatter plot with a linear regression.
 
     Parameters
     ----------
-    x, y : array_like of float
-        1-D arrays of floats. If `y` is omitted, `x` must be a 2-D array of shape (N, 2).
+    x : array_like of float
+        1-D array of floats. If `y` is omitted, `x` must be a 2-D array of shape (N, 2).
+    y : array_like of float, optional
+        1-D arrays of floats. If `y` is omitted or :py:const:`None`, `x` must be a 2-D array of shape (N, 2).
     plot_trend : bool, optional
         If :py:const:`True` then plot a trendline (default).
     plot_sigmas : bool, optional
@@ -179,6 +187,7 @@ def scatter_trend(x, y=None, **kwargs):
         legend = None
     return sc, line, s_lines, legend
 
+
 def plot_function_3d(x, y, function, **kwargs):
     """Plot values of a function of two variables in 3D.
 
@@ -188,21 +197,28 @@ def plot_function_3d(x, y, function, **kwargs):
 
     Parameters
     ----------
-    x, y : array_like of float
-        The plotting range.
+    x : array_like of float
+        The plotting range on X axis.
+    y : array_like of float
+        The plotting range on Y axis.
     function : function
         The function to plot.
-    plot_type : {'surface', 'wireframe', 'scatter', 'contour', 'contourf'}
+    plot_type : {'surface', 'wireframe', 'scatter', 'contour', 'contourf'}, keyword only, optional
         The type of a plot, see
         `scipy cookbook <http://www.scipy.org/Cookbook/Matplotlib/mplot3D>`_
         for examples. The default value is 'surface'.
     num_contours : int
         The number of contours to plot, 50 by default.
-    xlabel, ylabel, zlabel : str, optional
-        The axes labels. Empty by default.
-    title : str, optional
+    xlabel : str, keyword only, optional
+        The X axis label. Empty by default.
+    ylabel : str, keyword only, optional
+        The Y axis label. Empty by default.
+    zlabel : str, keyword only, optional
+        The Z axis label. Empty by default.
+    title : str, keyword only, optional
         The title. Empty by default.
-    **kwargs : passed to the respective plotting function.
+    **kwargs
+        Passed to the respective plotting function.
     """
     import mpl_toolkits.mplot3d.axes3d as pylab3d
     ax = pylab3d.Axes3D(pylab.gcf())
@@ -240,6 +256,7 @@ def plot_function_3d(x, y, function, **kwargs):
     else:
         raise PyteomicsError('Unknown plot type: {}'.format(plot_type))
 
+
 def plot_function_contour(x, y, function, **kwargs):
     """Make a contour plot of a function of two variables.
 
@@ -257,7 +274,8 @@ def plot_function_contour(x, y, function, **kwargs):
         The axes labels. Empty by default.
     title : str, optional
         The title. Empty by default.
-    **kwargs : passed to :py:func:`pylab.contour` or :py:func:`pylab.contourf`.
+    **kwargs
+        Passed to :py:func:`pylab.contour` or :py:func:`pylab.contourf`.
     """
     pylab.xlabel(kwargs.pop('xlabel', ''))
     pylab.ylabel(kwargs.pop('ylabel', ''))
@@ -277,6 +295,7 @@ def plot_function_contour(x, y, function, **kwargs):
         pylab.contour(X, Y, Z, num_contours,
                 cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
 
+
 def plot_qvalue_curve(qvalues, *args, **kwargs):
     """
     Plot a curve with q-values on the X axis and corresponding PSM number
@@ -286,13 +305,16 @@ def plot_qvalue_curve(qvalues, *args, **kwargs):
     ----------
     qvalues : array-like
         An array of q-values for sorted PSMs.
-    xlabel : str, optional
+    xlabel : str, keyword only, optional
         Label for the X axis. Default is "q-value".
-    ylabel : str, optional
+    ylabel : str, keyword only, optional
         Label for the Y axis. Default is "# of PSMs".
-    title : str, optional
+    title : str, keyword only, optional
         The title. Empty by default.
-    *args, **kwargs : will be given to :py:func:`pylab.plot` after `x` and `y`.
+    *args
+        Given to :py:func:`pylab.plot` after `x` and `y`.
+    **kwargs
+        Given to :py:func:`pylab.plot`.
 
     Returns
     -------
@@ -302,6 +324,7 @@ def plot_qvalue_curve(qvalues, *args, **kwargs):
     pylab.ylabel(kwargs.pop('ylabel', '# of PSMs'))
     pylab.title(kwargs.pop('title', ''))
     return pylab.plot(qvalues, 1+np.arange(qvalues.size), *args, **kwargs)
+
 
 def plot_spectrum(spectrum, centroided=True, *args, **kwargs):
     """
@@ -315,13 +338,16 @@ def plot_spectrum(spectrum, centroided=True, *args, **kwargs):
     centroided : bool, optional
         If :py:const:`True` (default), peaks of the spectrum are plotted using :py:func:`pylab.bar`.
         If :py:const:`False`, the arrays are simply plotted using :py:func:`pylab.plot`.
-    xlabel : str, optional
+    xlabel : str, keyword only, optional
         Label for the X axis. Default is "m/z".
-    ylabel : str, optional
+    ylabel : str, keyword only, optional
         Label for the Y axis. Default is "intensity".
-    title : str, optional
+    title : str, keyword only, optional
         The title. Empty by default.
-    *args, **kwargs : will be given to :py:func:`pylab.plot` or :py:func:`pylab.bar` (depending on `centroided`).
+    *args
+        Given to :py:func:`pylab.plot` or :py:func:`pylab.bar` (depending on `centroided`).
+    **kwargs
+        Given to :py:func:`pylab.plot` or :py:func:`pylab.bar` (depending on `centroided`).
     """
     pylab.xlabel(kwargs.pop('xlabel', 'm/z'))
     pylab.ylabel(kwargs.pop('ylabel', 'intensity'))
@@ -346,29 +372,32 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
         A modX sequence.
     centroided : bool, optional
         Passed to :py:func:`plot_spectrum`.
-    types : Container, optional
+    types : Container, keyword only, optional
         Ion types to be considered for annotation. Default is `('b', 'y')`.
-    maxcharge : int, optional
+    maxcharge : int, keyword only, optional
         Maximum charge state for fragment ions to be considered. Default is `1`.
-    colors : dict, optional
+    colors : dict, keyword only, optional
         Keys are ion types, values are colors to plot the annotated peaks with. Defaults to a red-blue scheme.
-    ftol : float, optional
+    ftol : float, keyword only, optional
         A fixed m/z tolerance value for peak matching. Alternative to `rtol`.
-    rtol : float, optional
+    rtol : float, keyword only, optional
         A relative m/z error for peak matching. Default is 10 ppm.
-    adjust_text : bool, optional
+    adjust_text : bool, keyword only, optional
         Adjust the overlapping text annotations using :py:mod:`adjustText`.
-    text_kw : dict, optional
+    text_kw : dict, keyword only, optional
         Keyword arguments for :py:func:`pylab.text`.
-    adjust_kw : dict, optional
+    adjust_kw : dict, keyword only, optional
         Keyword argyuments for `:py:func:`adjust_text`.
-    ion_comp : dict, optional
+    ion_comp : dict, keyword only, optional
         A dictionary defining definitions of ion compositions to override :py:const:`pyteomics.mass.std_ion_comp`.
-    mass_data : dict, optional
+    mass_data : dict, keyword only, optional
         A dictionary of element masses to override :py:const:`pyteomics.mass.nist_mass`.
-    aa_mass : dict, optional
+    aa_mass : dict, keyword only, optional
         A dictionary of amino acid residue masses.
-    *args, **kwargs : passed to :py:func:`plot_spectrum`.
+    *args
+        Passed to :py:func:`plot_spectrum`.
+    **kwargs
+        Passed to :py:func:`plot_spectrum`.
     """
     types = kwargs.pop('types', ('b', 'y'))
     maxcharge = kwargs.pop('maxcharge', 1)

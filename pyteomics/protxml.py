@@ -218,7 +218,7 @@ def DataFrame(*args, **kwargs):
 
     Parameters
     ----------
-    sep : str or None, optional
+    sep : str or None, keyword only, optional
         Some values related to protein groups are variable-length lists.
         If `sep` is a :py:class:`str`, they will be packed into single string using
         this delimiter. If `sep` is :py:const:`None`, they are kept as lists. Default is
@@ -227,7 +227,11 @@ def DataFrame(*args, **kwargs):
     pd_kwargs : dict, optional
         Keyword arguments passed to the :py:class:`pandas.DataFrame` constructor.
 
-    *args, **kwargs : passed to :py:func:`chain`.
+    *args
+        Passed to :py:func:`chain`.
+
+    **kwargs
+        Passed to :py:func:`chain`.
 
     Returns
     -------
@@ -259,6 +263,7 @@ def DataFrame(*args, **kwargs):
                         yield out
     return pd.DataFrame(gen_items(), **pd_kwargs)
 
+
 def filter_df(*args, **kwargs):
     """Read protXML files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.
     Positional arguments can be protXML files or DataFrames.
@@ -269,15 +274,17 @@ def filter_df(*args, **kwargs):
 
     Parameters
     ----------
-    key : str / iterable / callable, optional
+    key : str / iterable / callable, keyword only, optional
         Default is 'probability'.
-    is_decoy : str / iterable / callable, optional
+    is_decoy : str / iterable / callable, keyword only, optional
         Default is to check that "protein_name" starts with `'DECOY_'`.
-    reverse : bool, optional
+    reverse : bool, keyword only, optional
         Should be :py:const:`True` if higher score is better.
         Default is :py:const:`True` (because the default key is 'probability').
-
-    *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+    *args
+        Passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+    **kwargs
+        Passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
 
     Returns
     -------

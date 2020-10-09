@@ -330,9 +330,12 @@ def DataFrame(*args, **kwargs):
 
     Parameters
     ----------
-    *args, **kwargs : passed to :py:func:`chain`
+    *args
+        Passed to :py:func:`chain`.
+    **kwargs
+        Passed to :py:func:`chain`.
 
-    sep : str or None, optional
+    sep : str or None, keyword only, optional
         Some values related to PSMs (such as protein information) are variable-length
         lists. If `sep` is a :py:class:`str`, they will be packed into single string using
         this delimiter. If `sep` is :py:const:`None`, they are kept as lists. Default is
@@ -401,11 +404,14 @@ def filter_df(*args, **kwargs):
 
     Parameters
     ----------
-    key : str / iterable / callable, optional
+    key : str / iterable / callable, keyword only, optional
         Default is 'mascot:expectation value'.
-    is_decoy : str / iterable / callable, optional
+    is_decoy : str / iterable / callable, keyword only, optional
         Default is 'isDecoy'.
-    *args, **kwargs : passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+    *args
+        Passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+    **kwargs
+        Passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
 
     Returns
     -------

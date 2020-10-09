@@ -467,8 +467,10 @@ def get_spectrum(source, title, *args, **kwargs):
         File to read from.
     title : str
         Spectrum title.
-
-    The rest of the arguments are the same as for :py:func:`read`.
+    *args
+        Given to :py:func:`read`.
+    **kwargs
+        Given to :py:func:`read`.
 
     Returns
     -------
