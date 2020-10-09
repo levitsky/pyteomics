@@ -21,7 +21,8 @@ class MGFTest(unittest.TestCase):
     def setUp(self):
         self.path = 'test.mgf'
         self.header = mgf.read_header(self.path)
-        self.spectra = list(mgf.read(self.path))
+        with mgf.read(self.path) as f:
+            self.spectra = list(f)
         self.tmpfile = tempfile.TemporaryFile(mode='r+')
         mgf.write(header=self.header, spectra=self.spectra, output=self.tmpfile)
         self.tmpfile.seek(0)
@@ -33,6 +34,8 @@ class MGFTest(unittest.TestCase):
         self.tmpfile.close()
         self.path_annotated = 'test_annotated.mgf'
         self.header_annotated = mgf.read_header(self.path_annotated)
+        with mgf.read(self.path_annotated, read_ions=True) as f:
+            self.spectra_annotated = list(f)
 
     def test_read(self):
         for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
@@ -67,8 +70,24 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(data.mgf_spectra_short_no_charges, list(reader))
 
     def test_read_with_ions(self):
-        with mgf.read(self.path_annotated, read_ions=True) as reader:
-            for spec_data, spec_read in zip(data.mgf_spectra_annotated_long, list(reader)):
+        for spec_data, spec_read in zip(data.mgf_spectra_annotated_long, list(self.spectra_annotated)):
+            # Check that the spectra have the same dict keys
+            self.assertEqual(spec_data.keys(), spec_read.keys())
+            for key in spec_data.keys():
+                if type(spec_data[key]) == dict:
+                    self.assertDictEqual(spec_data[key], spec_read[key])
+                else:
+                    np.testing.assert_array_equal(spec_data[key], spec_read[key])
+
+    def test_read_write_with_ions(self):
+        formats = ['{:.6f} {:.6f} {}', '%.6f %.6f %s']
+        for use_numpy in range(2):
+            with tempfile.TemporaryFile(mode='r+') as f:
+                mgf.write(self.spectra_annotated, f, write_ions=True, use_numpy=use_numpy,
+                    fragment_format=formats[use_numpy])
+                f.seek(0)
+                spectra = list(mgf.read(f, read_ions=True))
+            for spec_data, spec_read in zip(data.mgf_spectra_annotated_long, spectra):
                 # Check that the spectra have the same dict keys
                 self.assertEqual(spec_data.keys(), spec_read.keys())
                 for key in spec_data.keys():

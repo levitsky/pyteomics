@@ -75,6 +75,7 @@ import itertools as it
 import sys
 from . import auxiliary as aux
 
+
 class MGFBase(object):
     """Abstract mixin class representing an MGF file. Subclasses implement different approaches to parsing."""
     _comments = set('#;!/')
@@ -90,7 +91,6 @@ class MGFBase(object):
     _array_keys = ['m/z array', 'intensity array', 'charge array', 'ion array']
     _array_keys_unicode = [u'm/z array', u'intensity array', u'charge array', u'ion array']
     encoding = None
-
 
     def __init__(self, source=None, **kwargs):
         """Create an MGF file object, set MGF-specific parameters.
@@ -135,7 +135,7 @@ class MGFBase(object):
             raise aux.PyteomicsError('numpy is required for array conversion')
         self._read_charges = kwargs.pop('read_charges', True)
         self._read_ions = kwargs.pop('read_ions', False)
-        #Make sure no charges are read if ions are read
+        # Make sure no charges are read if ions are read
         if self._read_ions:
             self._read_charges = False
         dtype = kwargs.pop('dtype', None)
@@ -144,7 +144,6 @@ class MGFBase(object):
             self._read_header()
         else:
             self._header = None
-
 
     def parse_precursor_charge(self, charge_text, list_only=False):
         return aux._parse_charge(charge_text, list_only=list_only)
@@ -227,10 +226,10 @@ class MGFBase(object):
                 return out
 
             else:
-                if '=' in sline: # spectrum-specific parameters!
+                if '=' in sline:  # spectrum-specific parameters!
                     l = sline.split('=', 1)
                     params[l[0].lower()] = l[1].strip()
-                else: # this must be a peak list
+                else:  # this must be a peak list
                     l = sline.split()
                     try:
                         masses.append(float(l[0]))
@@ -274,11 +273,9 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
         A property used for accessing spectra by retention time.
     """
     delimiter = 'BEGIN IONS'
-    
-    
 
-    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True, 
-        read_ions=False, dtype=None, encoding='utf-8', index_by_scans=False, _skip_index=False, **kwargs):
+    def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
+            read_ions=False, dtype=None, encoding='utf-8', index_by_scans=False, _skip_index=False, **kwargs):
         self.label = r'SCANS=(\d+)\s*' if index_by_scans else r'TITLE=([^\n]*\S)\s*'
         super(IndexedMGF, self).__init__(source, parser_func=self._read, pass_file=False, args=(), kwargs={},
             use_header=use_header, convert_arrays=convert_arrays, read_charges=read_charges,
@@ -305,7 +302,7 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
     def _read_header(self):
         try:
             first = next(v for v in self._offset_index.values())[0]
-        except StopIteration: # the index is empty, no spectra in file
+        except StopIteration:  # the index is empty, no spectra in file
             first = -1
         header_lines = self.read(first).decode(self.encoding).split('\n')
         return self._read_header_lines(header_lines)
@@ -355,9 +352,9 @@ class MGF(MGFBase, aux.FileReader):
     """
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
-        read_ions=False, dtype=None, encoding=None):
+            read_ions=False, dtype=None, encoding=None):
         super(MGF, self).__init__(source, mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={},
-            encoding=encoding, use_header=use_header, convert_arrays=convert_arrays, read_charges=read_charges, 
+            encoding=encoding, use_header=use_header, convert_arrays=convert_arrays, read_charges=read_charges,
             read_ions=read_ions, dtype=dtype)
         # self.encoding = encoding
 
@@ -516,30 +513,33 @@ def read_header(source):
 
 _default_key_order = ['title', 'pepmass', 'rtinseconds', 'charge']
 
+
 def _pepmass_repr(k, pepmass):
     outstr = k.upper() + '='
-    if not isinstance(pepmass, (str, int, float)): # assume iterable
+    if not isinstance(pepmass, (str, int, float)):  # assume iterable
         try:
             outstr += ' '.join(str(x) for x in pepmass if x is not None)
         except TypeError:
-            raise aux.PyteomicsError(
-                    'Cannot handle parameter: PEPMASS = {}'.format(pepmass))
+            raise aux.PyteomicsError('Cannot handle parameter: PEPMASS = {}'.format(pepmass))
     else:
         outstr += str(pepmass)
     return outstr
 
+
 def _charge_repr(k, charge):
     return '{}={}'.format(k.upper(), aux._parse_charge(str(charge)))
+
 
 def _default_repr(key, val):
     return '{}={}'.format(key.upper(), val)
 
+
 _default_value_formatters = {'pepmass': _pepmass_repr, 'charge': _charge_repr}
 
+
 @aux._file_writer()
-def write(spectra, output=None, header='', key_order=_default_key_order,
-    fragment_format=None, write_charges=True, write_ions=False, use_numpy=None,
-    param_formatters=_default_value_formatters):
+def write(spectra, output=None, header='', key_order=_default_key_order, fragment_format=None,
+        write_charges=True, write_ions=False, use_numpy=None, param_formatters=_default_value_formatters):
     """
     Create a file in MGF format.
 
@@ -577,10 +577,11 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
 
     write_ions : bool, optional
         If :py:const:`False`, fragment ions from 'ion array' will not be written.
+        If :py:const:`True`, then `write_charges` is set to :py:const:`False`.
         Default is :py:const:`False`.
 
     fragment_format : str, optional
-        Format string for m/z, intensity and charge of a fragment. Useful to set
+        Format string for m/z, intensity and charge (or ion annotation) of a fragment. Useful to set
         the number of decimal places, e.g.:
         ``fragment_format='%.4f %.0f'``. Default is ``'{} {} {}'``.
 
@@ -639,10 +640,13 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
         fragment_format = '{} {} {}'
         np_format_2 = '%.5f %.1f'
         np_format_3 = '%.5f %.1f %d'
+        np_format_i = '%.5f %.1f %s'
     else:
-        np_format_2 = np_format_3 = fragment_format
+        np_format_2 = np_format_3 = np_format_i = fragment_format
     format_str = fragment_format + '\n'
 
+    if write_ions:
+        write_charges = False
     if use_numpy is None:
         use_numpy = not write_charges
 
@@ -659,9 +663,8 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
             head_str = '\n'.join(header)
         head_dict = {}
         for line in head_lines:
-            if not line.strip() or any(
-                line.startswith(c) for c in MGF._comments):
-               continue
+            if not line.strip() or any(line.startswith(c) for c in MGF._comments):
+                continue
             l = line.split('=')
             if len(l) == 2:
                 head_dict[l[0].lower()] = l[1].strip()
@@ -697,7 +700,7 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
                     X[:, 0] = spectrum['m/z array']
                     X[:, 1] = spectrum['intensity array']
                     X[:, 2] = spectrum['ion array']
-                    np.savetxt(output, X, fmt=np_format_3)
+                    np.savetxt(output, X, fmt=np_format_i)
                 else:
                     success = False
             else:
@@ -706,7 +709,9 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
             if not success:
                 for m, i, c in zip(spectrum['m/z array'],
                         spectrum['intensity array'],
-                        spectrum.get('charge array', it.cycle((None,)))):
+                        spectrum.get('charge array', it.cycle((None,))) if write_charges else
+                            spectrum.get('ion array', it.cycle((None,))) if write_ions else
+                            it.cycle((None,))):
                     output.write(format_str.format(
                         m, i,
                         (c if c not in nones else '')))
@@ -714,5 +719,6 @@ def write(spectra, output=None, header='', key_order=_default_key_order,
             raise aux.PyteomicsError("'m/z array' and 'intensity array' must be present in all spectra.")
         output.write('END IONS\n\n')
     return output
+
 
 chain = aux._make_chain(read, 'read')
