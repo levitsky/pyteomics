@@ -275,28 +275,32 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
     delimiter = 'BEGIN IONS'
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
-            read_ions=False, dtype=None, encoding='utf-8', index_by_scans=False, _skip_index=False, **kwargs):
+                 dtype=None, encoding='utf-8', index_by_scans=False, read_ions=False, _skip_index=False, **kwargs):
         self.label = r'SCANS=(\d+)\s*' if index_by_scans else r'TITLE=([^\n]*\S)\s*'
         super(IndexedMGF, self).__init__(source, parser_func=self._read, pass_file=False, args=(), kwargs={},
-            use_header=use_header, convert_arrays=convert_arrays, read_charges=read_charges,
-            read_ions=read_ions, dtype=dtype, encoding=encoding, _skip_index=_skip_index, **kwargs)
+                                         use_header=use_header, convert_arrays=convert_arrays,
+                                         read_charges=read_charges,
+                                         dtype=dtype, encoding=encoding, read_ions=read_ions, _skip_index=_skip_index,
+                                         **kwargs)
 
     def __reduce_ex__(self, protocol):
         return (self.__class__,
-            (self._source_init, False, self._convert_arrays, self._read_charges,
-                self._read_ions, self._dtype_dict, self.encoding, True),
-            self.__getstate__())
+                (self._source_init, False, self._convert_arrays, self._read_charges,
+                 self._dtype_dict, self.encoding, True),
+                self.__getstate__())
 
     def __getstate__(self):
         state = super(IndexedMGF, self).__getstate__()
         state['use_header'] = self._use_header
         state['header'] = self._header
+        state['read_ions'] = self._read_ions
         return state
 
     def __setstate__(self, state):
         super(IndexedMGF, self).__setstate__(state)
         self._header = state['header']
         self._use_header = state['use_header']
+        self._read_ions = state['read_ions']
 
     @aux._keepstate_method
     def _read_header(self):
