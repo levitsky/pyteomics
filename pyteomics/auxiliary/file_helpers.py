@@ -244,11 +244,11 @@ class IndexedReaderMixin(NoOpBaseReader):
         index = self.default_index
         if index is None:
             raise PyteomicsError('Access by ID requires building an offset index.')
-        offsets = index[str(elem_id)]
+        offsets = index[elem_id]
         return self._item_from_offsets(offsets)
 
     def get_by_ids(self, ids):
-        return [self.get_by_id(str(key)) for key in ids]
+        return [self.get_by_id(key) for key in ids]
 
     def get_by_index(self, i):
         try:
