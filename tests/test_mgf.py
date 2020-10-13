@@ -160,6 +160,10 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(data.mgf_spectra_long[1], f.get_spectrum(key))
         self.assertEqual(data.mgf_spectra_long[1], mgf.get_spectrum(self.path, key))
 
+    def test_key_access_ions(self):
+        with mgf.IndexedMGF(self.path_annotated, read_ions=True) as f:
+            np.testing.assert_array_equal(f['RAEYWENYPPAH||3']['ion array'], self.spectra_annotated[1]['ion array'])
+
     def test_read_list(self):
         key = ['Spectrum 2', 'Spectrum 1']
         with mgf.IndexedMGF(self.path) as f:
