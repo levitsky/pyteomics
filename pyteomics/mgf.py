@@ -322,7 +322,7 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
             yield spectrum
 
     def get_spectrum(self, key):
-        return self.get_by_id(str(key))
+        return self.get_by_id(key)
 
     def _get_time(self, spectrum):
         try:
