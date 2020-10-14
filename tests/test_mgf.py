@@ -1,7 +1,9 @@
 import os
 import numpy as np
 import pyteomics
+
 pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
+
 import tempfile
 import unittest
 import pickle
@@ -11,13 +13,16 @@ from collections import OrderedDict
 from pyteomics import mgf, auxiliary as aux
 import data
 
+
 class MGFTest(unittest.TestCase):
     maxDiff = None
     _encoding = 'utf-8'
+
     def setUp(self):
         self.path = 'test.mgf'
         self.header = mgf.read_header(self.path)
-        self.spectra = list(mgf.read(self.path))
+        with mgf.read(self.path) as f:
+            self.spectra = list(f)
         self.tmpfile = tempfile.TemporaryFile(mode='r+')
         mgf.write(header=self.header, spectra=self.spectra, output=self.tmpfile)
         self.tmpfile.seek(0)
@@ -27,6 +32,10 @@ class MGFTest(unittest.TestCase):
         self.spectra2 = list(tmpreader)
         self.ns = len(self.spectra)
         self.tmpfile.close()
+        self.path_annotated = 'test_annotated.mgf'
+        self.header_annotated = mgf.read_header(self.path_annotated)
+        with mgf.read(self.path_annotated, read_ions=True) as f:
+            self.spectra_annotated = list(f)
 
     def test_read(self):
         for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
@@ -45,9 +54,9 @@ class MGFTest(unittest.TestCase):
     def test_read_decoding(self):
         for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
             self.assertEqual(data.mgf_spectra_long_decoded,
-                list(func(self.path, encoding=self._encoding)))
+                             list(func(self.path, encoding=self._encoding)))
             self.assertEqual(data.mgf_spectra_short_decoded,
-                list(func(self.path, False, encoding=self._encoding)))
+                             list(func(self.path, False, encoding=self._encoding)))
             with func(self.path, encoding=self._encoding) as reader:
                 self.assertEqual(data.mgf_spectra_long_decoded, list(reader))
             with func(self.path, False, encoding=self._encoding) as reader:
@@ -59,6 +68,33 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(data.mgf_spectra_long_no_charges, list(reader))
         with mgf.read(self.path, False, read_charges=False) as reader:
             self.assertEqual(data.mgf_spectra_short_no_charges, list(reader))
+
+    def test_read_with_ions(self):
+        for spec_data, spec_read in zip(data.mgf_spectra_annotated_long, list(self.spectra_annotated)):
+            # Check that the spectra have the same dict keys
+            self.assertEqual(spec_data.keys(), spec_read.keys())
+            for key in spec_data.keys():
+                if type(spec_data[key]) == dict:
+                    self.assertDictEqual(spec_data[key], spec_read[key])
+                else:
+                    np.testing.assert_array_equal(spec_data[key], spec_read[key])
+
+    def test_read_write_with_ions(self):
+        formats = ['{:.6f} {:.6f} {}', '%.6f %.6f %s']
+        for use_numpy in range(2):
+            with tempfile.TemporaryFile(mode='r+') as f:
+                mgf.write(self.spectra_annotated, f, write_ions=True, use_numpy=use_numpy,
+                    fragment_format=formats[use_numpy])
+                f.seek(0)
+                spectra = list(mgf.read(f, read_ions=True))
+            for spec_data, spec_read in zip(data.mgf_spectra_annotated_long, spectra):
+                # Check that the spectra have the same dict keys
+                self.assertEqual(spec_data.keys(), spec_read.keys())
+                for key in spec_data.keys():
+                    if type(spec_data[key]) == dict:
+                        self.assertDictEqual(spec_data[key], spec_read[key])
+                    else:
+                        np.testing.assert_array_equal(spec_data[key], spec_read[key])
 
     def test_read_array_conversion(self):
         with mgf.read(self.path, convert_arrays=0) as reader:
@@ -82,7 +118,7 @@ class MGFTest(unittest.TestCase):
         for s, s2 in zip(self.spectra, self.spectra2):
             self.assertEqual(set(s), set(s2))
             self.assertEqual(set(s),
-                    {'intensity array', 'm/z array', 'params', 'charge array'})
+                             {'intensity array', 'm/z array', 'params', 'charge array'})
 
     def test_readwrite_params(self):
         for s, s2 in zip(self.spectra, self.spectra2):
@@ -96,18 +132,18 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(al, len(self.spectra2[i]['intensity array']))
             for j in range(al):
                 self.assertEqual(self.spectra[i]['m/z array'][j],
-                        self.spectra2[i]['m/z array'][j])
+                                 self.spectra2[i]['m/z array'][j])
                 self.assertEqual(self.spectra[i]['intensity array'][j],
-                        self.spectra2[i]['intensity array'][j])
+                                 self.spectra2[i]['intensity array'][j])
 
     def test_readwrite_msms(self):
         for i in range(self.ns):
             al = len(self.spectra[i]['m/z array'])
             for j in range(al):
                 self.assertEqual(self.spectra[i]['m/z array'][j],
-                        self.spectra2[i]['m/z array'][j])
+                                 self.spectra2[i]['m/z array'][j])
                 self.assertEqual(self.spectra[i]['intensity array'][j],
-                        self.spectra2[i]['intensity array'][j])
+                                 self.spectra2[i]['intensity array'][j])
 
     def test_read_dtype(self):
         dtypes = {'m/z array': np.float32, 'intensity array': np.int32}
@@ -123,6 +159,10 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(data.mgf_spectra_long[1], f[key])
             self.assertEqual(data.mgf_spectra_long[1], f.get_spectrum(key))
         self.assertEqual(data.mgf_spectra_long[1], mgf.get_spectrum(self.path, key))
+
+    def test_key_access_ions(self):
+        with mgf.IndexedMGF(self.path_annotated, read_ions=True) as f:
+            np.testing.assert_array_equal(f['RAEYWENYPPAH||3']['ion array'], self.spectra_annotated[1]['ion array'])
 
     def test_read_list(self):
         key = ['Spectrum 2', 'Spectrum 1']
