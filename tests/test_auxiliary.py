@@ -922,11 +922,6 @@ class UseIndexTest(unittest.TestCase):
 
 
 class VersionTest(unittest.TestCase):
-    def test_version_works(self):
-        try:
-            version.version()
-        except Exception as e:
-            self.fail('version() raised an exception: {!r}'.format(e))
 
     def test_short_version(self):
         self.assertEqual(version._VersionInfo('1.2'), ('1', '2', None, None, None))
