@@ -1,8 +1,10 @@
 4.4.dev
 -------
 
-New module :py:mod:`pyteomics.usi` implements a minimal Universal Spectrum Identifier parser and PROXI client
+ - New module :py:mod:`pyteomics.usi` implements a minimal Universal Spectrum Identifier parser and PROXI client
 (`#11 <https://github.com/levitsky/pyteomics/pull/11>`_).
+
+ - Support peak annotations in MGF (`#12 <https://github.com/levitsky/pyteomics/pull/12>`_ by Julian Müller).
 
 
 4.3.3
