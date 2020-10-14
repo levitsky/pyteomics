@@ -15,5 +15,5 @@ class _VersionInfo(namedtuple('_VersionInfo', ('major', 'minor', 'micro', 'relea
         return 'Pyteomics version {}'.format(self._version_str)
 
 
-def version():
-    return _VersionInfo(__version__)
+version_info = _VersionInfo(__version__)
+version = __version__
