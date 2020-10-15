@@ -6,6 +6,8 @@
 
  - Support peak annotations in MGF (`#12 <https://github.com/levitsky/pyteomics/pull/12>`_ by Julian Müller).
 
+ - Provide version information in :py:mod:`pyteomics.version` (`#14 <https://github.com/levitsky/pyteomics/pull/14>`_).
+
 
 4.3.3
 -----

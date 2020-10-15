@@ -34,3 +34,4 @@ Contents:
    api/pylab_aux
    api/xml
    api/auxiliary
+   api/version
