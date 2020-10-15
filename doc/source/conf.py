@@ -82,7 +82,8 @@ copyright = u'2011-2020, Lev Levitsky, Anton Goloborodko, Mikhail Gorshkov'
 # built documents.
 #
 # The short X.Y version.
-version = open('../../VERSION').readline().strip(' \n\t')
+from pyteomics import version as ver
+version = ver.__version__
 # The full version, including alpha/beta/rc tags.
 release = version
 

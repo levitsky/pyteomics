@@ -6,17 +6,35 @@ setup.py file for pyteomics
 
 from setuptools import setup
 import re
+import os
 
-with open('VERSION') as v:
-    version = next(v).strip()
+
+# from https://packaging.python.org/guides/single-sourcing-package-version/
+
+def read(rel_path):
+    here = os.path.abspath(os.path.dirname(__file__))
+    with open(os.path.join(here, rel_path), 'r') as fp:
+        return fp.read()
+
+
+def get_version(rel_path):
+    for line in read(rel_path).splitlines():
+        if line.startswith('__version__'):
+            delim = '"' if '"' in line else "'"
+            return line.split(delim)[1]
+    else:
+        raise RuntimeError("Unable to find version string.")
+
+
 with open('README.rst') as r, open('INSTALL') as i:
     long_description = re.sub(r':py:\w+:`([^`]+)`',
             lambda m: '**{}**'.format(m.group(1)),
             ''.join(r) + '\n' + ''.join(i))
 
+
 setup(
     name               = 'pyteomics',
-    version            = version,
+    version            = get_version('pyteomics/version.py'),
     description        = 'A framework for proteomics data analysis.',
     long_description   = long_description,
     author             = 'Anton Goloborodko & Lev Levitsky',

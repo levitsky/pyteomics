@@ -11,6 +11,7 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics import auxiliary as aux
 from pyteomics import tandem
+from pyteomics import version
 
 psms = list(zip(count(), string.ascii_uppercase + string.ascii_lowercase,
             np.arange(0.01, 0.062, 0.001)))
@@ -918,6 +919,21 @@ class UseIndexTest(unittest.TestCase):
                 aux._check_use_index(f, None, None)
                 self.assertEqual(len(w), 1)
                 self.assertIs(w[0].category, UserWarning)
+
+
+class VersionTest(unittest.TestCase):
+
+    def test_short_version(self):
+        self.assertEqual(version._VersionInfo('1.2'), ('1', '2', None, None, None))
+
+    def test_longer_version(self):
+        self.assertEqual(version._VersionInfo('1.2.3'), ('1', '2', '3', None, None))
+
+    def test_short_dev_version(self):
+        self.assertEqual(version._VersionInfo('1.2dev3'), ('1', '2', None, 'dev', '3'))
+
+    def test_longer_dev_version(self):
+        self.assertEqual(version._VersionInfo('1.2.3dev4'), ('1', '2', '3', 'dev', '4'))
 
 
 import warnings
