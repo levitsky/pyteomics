@@ -175,7 +175,7 @@ def scatter_trend(x, y=None, **kwargs):
         s_lines = []
         sigma_kwargs = kwargs.get('sigma_kwargs', {'color': 'red', 'linestyle': 'dashed'})
         for i in kwargs.get('sigma_values', range(-3, 4)):
-            s_lines.append(plot_line(a, b + i*stderr, xlim, **sigma_kwargs))
+            s_lines.append(plot_line(a, b + i * stderr, xlim, **sigma_kwargs))
     else:
         s_lines = None
 
@@ -323,7 +323,7 @@ def plot_qvalue_curve(qvalues, *args, **kwargs):
     pylab.xlabel(kwargs.pop('xlabel', 'q-value'))
     pylab.ylabel(kwargs.pop('ylabel', '# of PSMs'))
     pylab.title(kwargs.pop('title', ''))
-    return pylab.plot(qvalues, 1+np.arange(qvalues.size), *args, **kwargs)
+    return pylab.plot(qvalues, 1 + np.arange(qvalues.size), *args, **kwargs)
 
 
 def plot_spectrum(spectrum, centroided=True, *args, **kwargs):
@@ -387,9 +387,9 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
     text_kw : dict, keyword only, optional
         Keyword arguments for :py:func:`pylab.text`.
     adjust_kw : dict, keyword only, optional
-        Keyword argyuments for `:py:func:`adjust_text`.
+        Keyword argyuments for :py:func:`adjust_text`.
     ion_comp : dict, keyword only, optional
-        A dictionary defining definitions of ion compositions to override :py:const:`pyteomics.mass.std_ion_comp`.
+        A dictionary defining ion compositions to override :py:const:`pyteomics.mass.std_ion_comp`.
     mass_data : dict, keyword only, optional
         A dictionary of element masses to override :py:const:`pyteomics.mass.nist_mass`.
     aa_mass : dict, keyword only, optional
@@ -429,14 +429,14 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
     maxpeak = spectrum['intensity array'].max()
     mz, names = {}, {}
     for ion in types:
-        for charge in range(1, maxcharge+1):
+        for charge in range(1, maxcharge + 1):
             if ion[0] in 'abc':
                 for i in range(2, n):
                     mz.setdefault(ion, []).append(mass.fast_mass2(parsed[:i] + [parser.std_cterm],
                         aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
-                    names.setdefault(ion, []).append(ion[0] + str(i-1) + ion[1:])
+                    names.setdefault(ion, []).append(ion[0] + str(i - 1) + ion[1:])
             else:
-                for i in range(1, n-1):
+                for i in range(1, n - 1):
                     mz.setdefault(ion, []).append(mass.fast_mass2([parser.std_nterm] + parsed[n-(i+1):],
                         aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
                     names.setdefault(ion, []).append(ion[0] + str(i) + ion[1:])
