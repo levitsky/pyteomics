@@ -6,6 +6,7 @@ from pyteomics import parser
 from string import ascii_uppercase as uppercase
 import random
 
+
 class ParserTest(unittest.TestCase):
     def setUp(self):
         self.simple_sequences = [''.join(random.choice(uppercase) for i in range(
@@ -23,20 +24,18 @@ class ParserTest(unittest.TestCase):
 
     def test_parse(self):
         self.assertEqual(
-                [('P',), ('E',), ('P',), ('T',), ('I',), ('D',), ('E',)],
-                parser.parse('PEPTIDE', split=True))
+            [('P',), ('E',), ('P',), ('T',), ('I',), ('D',), ('E',)],
+            parser.parse('PEPTIDE', split=True))
         self.assertEqual(['P', 'E', 'P', 'T', 'I', 'D', 'E'],
-                parser.parse('H-PEPTIDE'))
+            parser.parse('H-PEPTIDE'))
         for seq in ['PEPTIDE', 'H-PEPTIDE', 'PEPTIDE-OH', 'H-PEPTIDE-OH']:
             self.assertEqual(['H-', 'P', 'E', 'P', 'T', 'I', 'D', 'E', '-OH'],
                 parser.parse(seq, show_unmodified_termini=True))
         self.assertEqual(['T', 'E', 'pS', 'T', 'oxM'],
                 parser.parse('TEpSToxM', labels=parser.std_labels + ['pS', 'oxM']))
         self.assertEqual(
-                [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',),
-                    ('z', 'E', '-OH')],
-                parser.parse(
-                    'zPEPzTIDzE', True, True, labels=parser.std_labels+['z']))
+            [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',), ('z', 'E', '-OH')],
+            parser.parse('zPEPzTIDzE', True, True, labels=parser.std_labels + ['z']))
 
     def test_tostring(self):
         for seq in self.simple_sequences:
@@ -54,11 +53,10 @@ class ParserTest(unittest.TestCase):
         for seq in self.simple_sequences:
             comp = parser.amino_acid_composition(seq, term_aa=True, labels=uppercase)
             comp_default = parser.amino_acid_composition(seq, labels=uppercase)
-            self.assertEqual(1, comp['nterm'+seq[0]])
+            self.assertEqual(1, comp['nterm' + seq[0]])
             if len(seq) > 1:
-                self.assertEqual(1, comp['cterm'+seq[-1]])
-            self.assertEqual(sum(comp_default.values()),
-                             sum(comp.values()))
+                self.assertEqual(1, comp['cterm' + seq[-1]])
+            self.assertEqual(sum(comp_default.values()), sum(comp.values()))
 
     def test_cleave(self):
         self.assertEqual(parser._cleave('PEPTIDEKS', parser.expasy_rules['trypsin']), ['PEPTIDEK', 'S'])
@@ -84,44 +82,30 @@ class ParserTest(unittest.TestCase):
                 self.assertTrue(len(elem) >= ml)
 
     def test_num_sites(self):
-        self.assertEqual(
-                parser.num_sites('RKCDE', 'K'), 1)
-        self.assertEqual(
-                parser.num_sites('RKCDE', 'E'), 0)
-        self.assertEqual(
-                parser.num_sites('RKCDE', 'R'), 1)
-        self.assertEqual(
-                parser.num_sites('RKCDE', 'Z'), 0)
+        self.assertEqual(parser.num_sites('RKCDE', 'K'), 1)
+        self.assertEqual(parser.num_sites('RKCDE', 'E'), 0)
+        self.assertEqual(parser.num_sites('RKCDE', 'R'), 1)
+        self.assertEqual(parser.num_sites('RKCDE', 'Z'), 0)
 
     def test_isoforms_simple(self):
         self.assertEqual(
-                set(parser.isoforms('PEPTIDE',
-                    variable_mods={'xx': ['A', 'B', 'P', 'E']})),
-                {'PEPTIDE', 'PEPTIDxxE', 'PExxPTIDE', 'PExxPTIDxxE', 'PxxEPTIDE',
-                     'PxxEPTIDxxE', 'PxxExxPTIDE', 'PxxExxPTIDxxE', 'xxPEPTIDE',
-                     'xxPEPTIDxxE', 'xxPExxPTIDE', 'xxPExxPTIDxxE', 'xxPxxEPTIDE',
-                     'xxPxxEPTIDxxE', 'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE'})
+            set(parser.isoforms('PEPTIDE', variable_mods={'xx': ['A', 'B', 'P', 'E']})),
+            {
+                'PEPTIDE', 'PEPTIDxxE', 'PExxPTIDE', 'PExxPTIDxxE', 'PxxEPTIDE',
+                'PxxEPTIDxxE', 'PxxExxPTIDE', 'PxxExxPTIDxxE', 'xxPEPTIDE',
+                'xxPEPTIDxxE', 'xxPExxPTIDE', 'xxPExxPTIDxxE', 'xxPxxEPTIDE',
+                'xxPxxEPTIDxxE', 'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE'
+            })
 
     def test_isoforms_universal(self):
-        self.assertEqual(
-                set(parser.isoforms('PEPTIDE',
-                    variable_mods={'xx-': True})),
-                {'PEPTIDE', 'xx-PEPTIDE'})
-        self.assertEqual(
-                set(parser.isoforms('PEPTIDE',
-                    variable_mods={'-xx': True})),
-                {'PEPTIDE', 'PEPTIDE-xx'})
+        self.assertEqual(set(parser.isoforms('PEPTIDE', variable_mods={'xx-': True})), {'PEPTIDE', 'xx-PEPTIDE'})
+        self.assertEqual(set(parser.isoforms('PEPTIDE', variable_mods={'-xx': True})), {'PEPTIDE', 'PEPTIDE-xx'})
         for seq in self.simple_sequences:
-            self.assertEqual(
-                    sum(1 for _ in parser.isoforms(seq,
-                        variable_mods={'x': True})),
-                    2**len(seq))
+            self.assertEqual(sum(1 for _ in parser.isoforms(seq, variable_mods={'x': True})), 2**len(seq))
 
     def test_isoforms_terminal(self):
-        self.assertEqual(
-                set(parser.isoforms('PEPTIDE',
-                    variable_mods={'xx': ['ntermP'], 'yy-': 'P'})),
-                {'PEPTIDE', 'xxPEPTIDE', 'yy-PEPTIDE', 'yy-xxPEPTIDE'})
+        self.assertEqual(set(parser.isoforms('PEPTIDE', variable_mods={'xx': ['ntermP'], 'yy-': 'P'})),
+            {'PEPTIDE', 'xxPEPTIDE', 'yy-PEPTIDE', 'yy-xxPEPTIDE'})
 
     def test_isoforms_len(self):
         for j in range(50):
@@ -132,13 +116,13 @@ class ParserTest(unittest.TestCase):
             forms = sum(1 for x in modseqs)
             pp = parser.parse(peptide, labels=self.extlabels)
             N = 0
-            if pp[0] =='N': N += 1
-            if pp[-1] == 'C': N += 1
+            if pp[0] == 'N':
+                N += 1
+            if pp[-1] == 'C':
+                N += 1
             for p in modseqs:
-                self.assertEqual(len(pp),
-                        parser.length(p, labels=self.extlabels))
-            self.assertEqual(forms, (3**pp.count('A')) *
-                    (2**(pp.count('X')+pp.count('C'))) * 2**N)
+                self.assertEqual(len(pp), parser.length(p, labels=self.extlabels))
+            self.assertEqual(forms, (3**pp.count('A')) * (2 ** (pp.count('X') + pp.count('C'))) * 2 ** N)
 
     def test_isoforms_maxmods(self):
         for j in range(50):
@@ -146,8 +130,7 @@ class ParserTest(unittest.TestCase):
             M = random.randint(1, 10)
             peptide = ''.join([random.choice(self.labels) for _ in range(L)])
             modseqs = parser.isoforms(peptide, variable_mods=self.potential,
-                    labels=self.labels,
-                    max_mods=M, format='split')
+                    labels=self.labels, max_mods=M, format='split')
             pp = parser.parse(peptide, labels=self.extlabels, split=True)
             for ms in modseqs:
                 self.assertEqual(len(pp), len(ms))
@@ -165,7 +148,6 @@ class ParserTest(unittest.TestCase):
                 self.assertFalse(parser.fast_valid(bad, labels=self.labels))
                 self.assertFalse(parser.valid(bad, labels=self.labels))
 
-
     def test_valid(self):
         for j in range(50):
             L = random.randint(1, 10)
@@ -179,6 +161,7 @@ class ParserTest(unittest.TestCase):
                     bad = s.replace(aa, 'Z')
                     self.assertFalse(parser.fast_valid(bad, labels=self.labels))
                     self.assertFalse(parser.valid(bad, labels=self.labels))
+
 
 if __name__ == '__main__':
     import doctest
