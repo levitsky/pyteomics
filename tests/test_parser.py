@@ -97,6 +97,10 @@ class ParserTest(unittest.TestCase):
                 'xxPxxEPTIDxxE', 'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE'
             })
 
+    def test_isoforms_simple_2(self):
+        self.assertEqual(set(parser.isoforms('PEPTIDE', variable_mods={'x': 'T', 'y': 'T'})),
+            {'PEPTIDE', 'PEPxTIDE', 'PEPyTIDE'})
+
     def test_isoforms_universal(self):
         self.assertEqual(set(parser.isoforms('PEPTIDE', variable_mods={'xx-': True})), {'PEPTIDE', 'xx-PEPTIDE'})
         self.assertEqual(set(parser.isoforms('PEPTIDE', variable_mods={'-xx': True})), {'PEPTIDE', 'PEPTIDE-xx'})
@@ -110,19 +114,14 @@ class ParserTest(unittest.TestCase):
     def test_isoforms_len(self):
         for j in range(50):
             L = random.randint(1, 10)
-            peptide = ''.join([random.choice(self.labels) for _ in range(L)])
-            modseqs = parser.isoforms(peptide, variable_mods=self.potential,
-                    fixed_mods=self.constant, labels=self.labels)
-            forms = sum(1 for x in modseqs)
+            peptide = ''.join(random.choice(self.labels) for _ in range(L))
+            modseqs = list(parser.isoforms(peptide, variable_mods=self.potential,
+                    fixed_mods=self.constant, labels=self.labels))
             pp = parser.parse(peptide, labels=self.extlabels)
-            N = 0
-            if pp[0] == 'N':
-                N += 1
-            if pp[-1] == 'C':
-                N += 1
+            N = (pp[0] == 'N') + (pp[-1] == 'C')
             for p in modseqs:
                 self.assertEqual(len(pp), parser.length(p, labels=self.extlabels))
-            self.assertEqual(forms, (3**pp.count('A')) * (2 ** (pp.count('X') + pp.count('C'))) * 2 ** N)
+            self.assertEqual(len(modseqs), (3 ** pp.count('A')) * (2 ** (pp.count('X') + pp.count('C') + N)))
 
     def test_isoforms_maxmods(self):
         for j in range(50):

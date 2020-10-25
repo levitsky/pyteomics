@@ -789,11 +789,12 @@ def isoforms(sequence, **kwargs):
         return len(group) + i, group[i]
 
     def apply_mod(label, mod):
-        # `label` is assumed to be a tuple (see split option of parse)
+        # `label` is assumed to be a tuple (see split option of `parse`)
         # unmodified termini are assumed shown
-        # if the modification is not applicable, `label` is returned
+        # if the modification is not applicable, `None` is returned
         group = list(label)
         m = main(group)[0]
+        c = True  # whether the change is applied in the end
         if m == 0 and not is_term_mod(mod):
             group.insert(0, mod)
         elif mod[0] == '-' and (group[-1] == std_cterm or (group[-1][0] == '-' and override)):
@@ -801,14 +802,25 @@ def isoforms(sequence, **kwargs):
         elif mod[-1] == '-' and (group[0] == std_nterm or (group[0][-1] == '-' and override)):
             group[0] = mod
         elif not is_term_mod(mod):
-            if m and not group[m - 1][-1] == '-':
+            if m and group[m - 1][-1] != '-':
                 if override:
                     group[m - 1] = mod
+                else:
+                    c = False
             else:
                 group.insert(m, mod)
-        return tuple(group)
+        else:
+            c = False
+        if c:
+            return tuple(group)
 
     variable_mods = kwargs.get('variable_mods', {})
+    varmods_term, varmods_non_term = [], []
+    for m, r in sorted(variable_mods.items()):
+        if is_term_mod(m):
+            varmods_term.append((m, r))
+        else:
+            varmods_non_term.append((m, r))
     fixed_mods = kwargs.get('fixed_mods', {})
     parse_kw = {}
     if 'labels' in kwargs:
@@ -827,34 +839,51 @@ def isoforms(sequence, **kwargs):
 
     # Create a list of possible states for each group
     # Start with N-terminal mods and regular mods on the N-terminal residue
-    second = set(apply_mod(parsed[0], m) for m, r in variable_mods.items()
-                if (r is True or main(parsed[0])[1] in r or 'nterm' + main(parsed[0])[1] in r or (
-                    len(parsed) == 1 and 'cterm' + main(parsed[0])[1] in r)) and not is_term_mod(m)
-                ).union([parsed[0]])
-    first = it.chain((apply_mod(group, mod) for group in second
-            for mod, res in variable_mods.items()
-        if (mod.endswith('-') or (mod.startswith('-') and len(parsed) == 1))
-        and (res is True or main(group)[1] in res)), second)
-    states = [[parsed[0]] + list(set(first).difference({parsed[0]}))]
+    states = [[parsed[0]]]
+    m0 = main(parsed[0])[1]
+    for m, r in varmods_non_term:
+        if r is True or m0 in r or 'nterm' + m0 in r or len(parsed) == 1 and 'cterm' + m0 in r:
+            applied = apply_mod(parsed[0], m)
+            if applied is not None:
+                states[0].append(applied)
+    more_states = []
+    for m, r in varmods_term:
+        if r is True or m0 in r:
+            if m[-1] == '-' or len(parsed) == 1:
+                for group in states[0]:
+                    applied = apply_mod(group, m)
+                    if applied is not None:
+                        more_states.append(applied)
+    states[0].extend(more_states)
 
     # Continue with regular mods
-    states.extend([group] + list(set(
-        apply_mod(group, mod) for mod in variable_mods if (
-            variable_mods[mod] is True or group[-1] in variable_mods[mod]) and not is_term_mod(mod)
-                                    ).difference({group}))
-        for group in parsed[1:-1])
+    for group in parsed[1:-1]:
+        gstates = [group]
+        for m, r in varmods_non_term:
+            if r is True or group[-1] in r:
+                applied = apply_mod(group, m)
+                if applied is not None:
+                    gstates.append(applied)
+        states.append(gstates)
 
     # Finally add C-terminal mods and regular mods on the C-terminal residue
     if len(parsed) > 1:
-        second = set(apply_mod(parsed[-1], m) for m, r in variable_mods.items()
-                    if (r is True or main(parsed[-1])[1] in r or 'cterm' + main(parsed[-1])[1] in r)
-                    and not is_term_mod(m)
-                ).union((parsed[-1],))
-        first = it.chain((apply_mod(group, mod) for group in second
-                for mod, res in variable_mods.items()
-            if mod.startswith('-') and (
-                res is True or main(group)[1] in res)), second)
-        states.append([parsed[-1]] + list(set(first).difference({parsed[-1]})))
+        states.append([parsed[-1]])
+        m1 = main(parsed[-1])[1]
+        for m, r in varmods_non_term:
+            if r is True or m1 in r or 'cterm' + m1 in r or len(parsed) == 1 and 'nterm' + m1 in r:
+                applied = apply_mod(parsed[-1], m)
+                if applied is not None:
+                    states[-1].append(applied)
+        more_states = []
+        for m, r in varmods_term:
+            if r is True or m1 in r:
+                if m[0] == '-' or len(parsed) == 1:
+                    for group in states[-1]:
+                        applied = apply_mod(group, m)
+                        if applied is not None:
+                            more_states.append(applied)
+        states[-1].extend(more_states)
 
     sites = [s for s in enumerate(states) if len(s[1]) > 1]
     if max_mods is None or max_mods > len(sites):
