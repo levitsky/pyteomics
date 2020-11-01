@@ -832,10 +832,10 @@ def isoforms(sequence, **kwargs):
     format_ = kwargs.get('format', 'str')
 
     # Apply fixed modifications
-    for cmod in fixed_mods:
+    for cmod, res in fixed_mods.items():
         for i, group in enumerate(parsed):
-            if fixed_mods[cmod] is True or main(group)[1] in fixed_mods[cmod]:
-                parsed[i] = apply_mod(group, cmod)
+            if res is True or main(group)[1] in res:
+                parsed[i] = apply_mod(group, cmod) or parsed[i]
 
     # Create a list of possible states for each group
     # Start with N-terminal mods and regular mods on the N-terminal residue

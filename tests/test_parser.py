@@ -94,6 +94,11 @@ class ParserTest(unittest.TestCase):
             'PxxExxPTIDxxE', 'xxPEPTIDE', 'xxPEPTIDxxE', 'xxPExxPTIDE', 'xxPExxPTIDxxE', 'xxPxxEPTIDE',
             'xxPxxEPTIDxxE', 'xxPxxExxPTIDE', 'xxPxxExxPTIDxxE'])
 
+    def test_isoforms_fixed_simple(self):
+        self.assertEqual(
+            list(parser.isoforms('PEPTIDE', fixed_mods={'n-': True, '-c': True, 'x': ['P', 'T']})),
+            ['n-xPExPxTIDE-c'])
+
     def test_isoforms_simple_2(self):
         self.assertEqual(list(parser.isoforms('PEPTIDE', variable_mods={'x': 'T', 'y': 'T'})),
             ['PEPTIDE', 'PEPxTIDE', 'PEPyTIDE'])
