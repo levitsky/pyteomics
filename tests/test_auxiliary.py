@@ -892,6 +892,11 @@ class UseIndexTest(unittest.TestCase):
     def _check_file_object(self, fo, value):
         self.assertEqual(aux._check_use_index(fo, None, None), value)
 
+    def test_str_name(self):
+        for ui in [False, True]:
+            for default in [False, True]:
+                self.assertEqual(aux._check_use_index('test.mgf', ui, default), ui)
+
     def test_textfile(self):
         with open('test.fasta') as f:
             self._check_file_object(f, False)

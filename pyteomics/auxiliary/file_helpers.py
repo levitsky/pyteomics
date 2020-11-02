@@ -49,6 +49,7 @@ except ImportError:
 
 from . import PyteomicsError
 
+
 def _keepstate(func):
     """Decorator to help keep the position in open files passed as
     positional arguments to functions"""
@@ -129,12 +130,13 @@ class _file_obj(object):
     def __iter__(self):
         return iter(self.file)
 
+
 class NoOpBaseReader(object):
     def __init__(self, *args, **kwargs):
         pass
 
-class IteratorContextManager(NoOpBaseReader):
 
+class IteratorContextManager(NoOpBaseReader):
     def __init__(self, *args, **kwargs):
         self._func = kwargs.pop('parser_func')
         self._args = args
@@ -216,6 +218,7 @@ class FileReader(IteratorContextManager):
         if attr == '_source':
             raise AttributeError
         return getattr(self._source, attr)
+
 
 def remove_bom(bstr):
     return bstr.replace(codecs.BOM_LE, b'').lstrip(b"\x00")
@@ -326,7 +329,7 @@ class RTLocator():
         best_id = None
 
         if time == float('inf'):
-            scan =  self._reader.get_by_id(scan_ids[-1])
+            scan = self._reader.get_by_id(scan_ids[-1])
             return scan_ids[-1], scan, self._reader._get_time(scan)
 
         while hi != lo:
@@ -471,7 +474,7 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
 
     def _read_lines_from_offsets(self, start, end):
         self._source.seek(start)
-        lines = self._source.read(end-start).decode(self.encoding).split('\n')
+        lines = self._source.read(end - start).decode(self.encoding).split('\n')
         return lines
 
 
@@ -618,6 +621,7 @@ class WritableIndex(object):
 class OffsetIndex(OrderedDict, WritableIndex):
     '''An augmented OrderedDict that formally wraps getting items by index
     '''
+
     def __init__(self, *args, **kwargs):
         super(OffsetIndex, self).__init__(*args, **kwargs)
         self._index_sequence = None
@@ -712,7 +716,7 @@ class OffsetIndex(OrderedDict, WritableIndex):
         else:
             stop_index = len(keys) - 1
         if start is None or stop is None:
-            pass # won't switch indices
+            pass  # won't switch indices
         else:
             start_index, stop_index = min(start_index, stop_index), max(start_index, stop_index)
 
@@ -878,10 +882,10 @@ def _make_chain(reader, readername, full_output=False):
 
 def _check_use_index(source, use_index, default):
     try:
-        if isinstance(source, basestring):
-            return default
         if use_index is not None:
             use_index = bool(use_index)
+        if isinstance(source, basestring):
+            return use_index if use_index is not None else default
         seekable = True
         if hasattr(source, 'seekable'):
             if not source.seekable():
@@ -920,6 +924,7 @@ class FileReadingProcess(mp.Process):
 
     The reader class must support the :py:meth:`__getitem__` dict-like lookup.
     """
+
     def __init__(self, reader_spec, target_spec, qin, qout, args_spec, kwargs_spec):
         super(FileReadingProcess, self).__init__(name='pyteomics-map-worker')
         self.reader_spec = reader_spec
@@ -949,12 +954,14 @@ class FileReadingProcess(mp.Process):
     def is_done(self):
         return self._done_flag.is_set()
 
+
 try:
     _NPROC = mp.cpu_count()
 except NotImplementedError:
     _NPROC = 4
 _QUEUE_TIMEOUT = 4
 _QUEUE_SIZE = int(1e7)
+
 
 class TaskMappingMixin(NoOpBaseReader):
     def __init__(self, *args, **kwargs):
@@ -1061,7 +1068,6 @@ class TaskMappingMixin(NoOpBaseReader):
 
         serialized = self._build_worker_spec(target, args, kwargs)
 
-
         in_queue = mp.Queue(self._queue_size)
         out_queue = mp.Queue(self._queue_size)
 
@@ -1096,7 +1102,6 @@ class TaskMappingMixin(NoOpBaseReader):
         """
 
         return iter(self._offset_index.keys())
-
 
 
 class ChainBase(object):
