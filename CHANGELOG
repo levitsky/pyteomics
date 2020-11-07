@@ -11,6 +11,8 @@
  - Make the order of isoforms reproducible in :py:func:`pyteomics.parser.isoforms`
    (`#15 <https://github.com/levitsky/pyteomics/issues/15>`_).
 
+ - Rename `types` keyword argument to `ion_types` in :py:func:`pyteomics.pylab_aux.annotate_spectrum`.
+
  - Fix `#16 <https://github.com/levitsky/pyteomics/issues/16>`_, a bug introduced in 4.3.3.
 
 

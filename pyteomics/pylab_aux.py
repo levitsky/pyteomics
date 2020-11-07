@@ -372,7 +372,7 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
         A modX sequence.
     centroided : bool, optional
         Passed to :py:func:`plot_spectrum`.
-    types : Container, keyword only, optional
+    ion_types : Container, keyword only, optional
         Ion types to be considered for annotation. Default is `('b', 'y')`.
     maxcharge : int, keyword only, optional
         Maximum charge state for fragment ions to be considered. Default is `1`.
@@ -399,7 +399,7 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
     **kwargs
         Passed to :py:func:`plot_spectrum`.
     """
-    types = kwargs.pop('types', ('b', 'y'))
+    types = kwargs.pop('ion_types', ('b', 'y'))
     maxcharge = kwargs.pop('maxcharge', 1)
     aa_mass = kwargs.pop('aa_mass', mass.std_aa_mass)
     mass_data = kwargs.pop('mass_data', mass.nist_mass)
