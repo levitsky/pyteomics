@@ -1,5 +1,5 @@
-4.4.dev
--------
+4.4
+---
 
  - New module :py:mod:`pyteomics.usi` implements a minimal Universal Spectrum Identifier parser and PROXI client
    (`#11 <https://github.com/levitsky/pyteomics/pull/11>`_ by Joshua Klein).
