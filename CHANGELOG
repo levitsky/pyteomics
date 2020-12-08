@@ -1,3 +1,9 @@
+dev
+---
+
+Further tweaked behavior of :py:func:`pyteomics.auxiliary.file_helpers._check_use_index`, which is responsible for
+handling of `use_index` in :py:func:`read` functions in parser modules.
+
 4.4
 ---
 

@@ -310,6 +310,7 @@ def roc_curve(source):
 
     return roc_curve
 
+
 # chain = aux._make_chain(read, 'read')
 chain = aux.ChainBase._make_chain(read)
 
@@ -334,15 +335,15 @@ def _is_decoy_prefix(psm, prefix='DECOY_'):
     return all(protein['protein'].startswith(prefix)
             for protein in psm['search_hit'][0]['proteins'])
 
+
 def _is_decoy_suffix(psm, suffix='_DECOY'):
     return all(protein['protein'].endswith(suffix)
             for protein in psm['search_hit'][0]['proteins'])
 
-is_decoy = _is_decoy_prefix
 
+is_decoy = _is_decoy_prefix
 fdr = aux._make_fdr(_is_decoy_prefix, _is_decoy_suffix)
-_key = lambda x: min(
-    sh['search_score']['expect'] for sh in x['search_hit'])
+_key = lambda x: min(sh['search_score']['expect'] for sh in x['search_hit'])
 qvalues = aux._make_qvalues(chain, _is_decoy_prefix, _is_decoy_suffix, _key)
 filter = aux._make_filter(chain, _is_decoy_prefix, _is_decoy_suffix, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter', True)
