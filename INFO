@@ -26,7 +26,8 @@ Additional, third-party packages extending the Pyteomics functionality can be in
 Feedback & Support
 ------------------
 
-Please email to pyteomics@googlegroups.com with any questions about Pyteomics.
-You are welcome to use the Github
-`issue tracker <https://github.com/levitsky/pyteomics/issues>`_
-to report bugs, request features, etc.
+Your questions and suggestions are welcome at:
+
+  - pyteomics@googlegroups.com mailing list;
+  - *(new!)* `Pyteomics Discussions page <https://github.com/levitsky/pyteomics/discussions>`_ on Github;
+  - Github `issue tracker <https://github.com/levitsky/pyteomics/issues>`_ (for bugs, feature requests, etc.)
