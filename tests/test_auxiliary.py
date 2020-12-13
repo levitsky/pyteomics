@@ -889,8 +889,27 @@ class OffsetIndexTest(unittest.TestCase):
 
 
 class UseIndexTest(unittest.TestCase):
+    class MockFile:
+        def __init__(self, seekable, mode):
+            if mode is not None:
+                self.mode = mode
+            if seekable is not None:
+                self._seekable = seekable
+
+        def seekable(self):
+            return getattr(self, '_seekable', None)
+
     def _check_file_object(self, fo, value):
-        self.assertEqual(aux._check_use_index(fo, None, None), value)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            result = aux._check_use_index(fo, None, None)
+            self.assertEqual(len(w), 0)
+        self.assertEqual(result, value)
+
+    def test_str_name(self):
+        for ui in [False, True]:
+            for default in [False, True]:
+                self.assertEqual(aux._check_use_index('test.mgf', ui, default), ui)
 
     def test_textfile(self):
         with open('test.fasta') as f:
@@ -919,6 +938,38 @@ class UseIndexTest(unittest.TestCase):
                 aux._check_use_index(f, None, None)
                 self.assertEqual(len(w), 1)
                 self.assertIs(w[0].category, UserWarning)
+
+    def test_error_not_seekable(self):
+        source = UseIndexTest.MockFile(False, 'rb')
+        self.assertRaises(aux.PyteomicsError, aux._check_use_index, source, None, None)
+
+    def test_warning_not_seekable(self):
+        source = UseIndexTest.MockFile(False, 'r')
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            aux._check_use_index(source, True, None)
+            self.assertEqual(len(w), 1)
+            self.assertIs(w[0].category, UserWarning)
+            self.assertIn('is not seekable', str(w[0].message))
+
+    def test_warning_wrong_mode(self):
+        for m in ['rb', 'r']:
+            source = UseIndexTest.MockFile(True, m)
+            with warnings.catch_warnings(record=True) as w:
+                warnings.simplefilter('always')
+                aux._check_use_index(source, 'b' not in m, None)
+                self.assertEqual(len(w), 1)
+                self.assertIs(w[0].category, UserWarning)
+                self.assertIn('Setting `use_index` to {}'.format('b' in m), str(w[0].message))
+
+    def test_warning_no_mode(self):
+        source = UseIndexTest.MockFile(None, None)
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter('always')
+            aux._check_use_index(source, True, None)
+            self.assertEqual(len(w), 1)
+            self.assertIs(w[0].category, UserWarning)
+            self.assertIn('Could not check mode', str(w[0].message))
 
 
 class VersionTest(unittest.TestCase):

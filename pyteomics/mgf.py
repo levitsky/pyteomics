@@ -543,7 +543,7 @@ _default_value_formatters = {'pepmass': _pepmass_repr, 'charge': _charge_repr}
 
 @aux._file_writer()
 def write(spectra, output=None, header='', key_order=_default_key_order, fragment_format=None,
-        write_charges=True, write_ions=False, use_numpy=None, param_formatters=_default_value_formatters):
+    write_charges=True, write_ions=False, use_numpy=None, param_formatters=_default_value_formatters):
     """
     Create a file in MGF format.
 

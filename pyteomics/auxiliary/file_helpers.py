@@ -49,13 +49,13 @@ except ImportError:
 
 from . import PyteomicsError
 
+
 def _keepstate(func):
     """Decorator to help keep the position in open files passed as
     positional arguments to functions"""
     @wraps(func)
     def wrapped(*args, **kwargs):
-        positions = [getattr(arg, 'seek', None) and
-                     getattr(arg, 'tell', type(None))() for arg in args]
+        positions = [getattr(arg, 'seek', None) and getattr(arg, 'tell', type(None))() for arg in args]
         for arg, pos in zip(args, positions):
             if pos is not None:
                 arg.seek(0)
@@ -129,12 +129,13 @@ class _file_obj(object):
     def __iter__(self):
         return iter(self.file)
 
+
 class NoOpBaseReader(object):
     def __init__(self, *args, **kwargs):
         pass
 
-class IteratorContextManager(NoOpBaseReader):
 
+class IteratorContextManager(NoOpBaseReader):
     def __init__(self, *args, **kwargs):
         self._func = kwargs.pop('parser_func')
         self._args = args
@@ -216,6 +217,7 @@ class FileReader(IteratorContextManager):
         if attr == '_source':
             raise AttributeError
         return getattr(self._source, attr)
+
 
 def remove_bom(bstr):
     return bstr.replace(codecs.BOM_LE, b'').lstrip(b"\x00")
@@ -326,7 +328,7 @@ class RTLocator():
         best_id = None
 
         if time == float('inf'):
-            scan =  self._reader.get_by_id(scan_ids[-1])
+            scan = self._reader.get_by_id(scan_ids[-1])
             return scan_ids[-1], scan, self._reader._get_time(scan)
 
         while hi != lo:
@@ -471,7 +473,7 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
 
     def _read_lines_from_offsets(self, start, end):
         self._source.seek(start)
-        lines = self._source.read(end-start).decode(self.encoding).split('\n')
+        lines = self._source.read(end - start).decode(self.encoding).split('\n')
         return lines
 
 
@@ -618,6 +620,7 @@ class WritableIndex(object):
 class OffsetIndex(OrderedDict, WritableIndex):
     '''An augmented OrderedDict that formally wraps getting items by index
     '''
+
     def __init__(self, *args, **kwargs):
         super(OffsetIndex, self).__init__(*args, **kwargs)
         self._index_sequence = None
@@ -712,7 +715,7 @@ class OffsetIndex(OrderedDict, WritableIndex):
         else:
             stop_index = len(keys) - 1
         if start is None or stop is None:
-            pass # won't switch indices
+            pass  # won't switch indices
         else:
             start_index, stop_index = min(start_index, stop_index), max(start_index, stop_index)
 
@@ -878,36 +881,48 @@ def _make_chain(reader, readername, full_output=False):
 
 def _check_use_index(source, use_index, default):
     try:
-        if isinstance(source, basestring):
-            return default
         if use_index is not None:
             use_index = bool(use_index)
-        seekable = True
-        if hasattr(source, 'seekable'):
-            if not source.seekable():
-                use_index = False
-                seekable = False
-        if hasattr(source, 'mode'):
-            ui = 'b' in source.mode
-            if use_index is not None and ui != use_index:
-                warnings.warn('use_index is {}, but the file mode is {}. '
-                    'Setting use_index to {}'.format(use_index, source.mode, ui))
-            use_index = ui
 
-        if use_index and not seekable:
-            warnings.warn('Cannot use indexing as {} is not seekable. Setting `use_index` to False.'.format(source))
-            use_index = False
+        # if a file name is given, do not override anything; short-circuit
+        if isinstance(source, basestring):
+            return use_index if use_index is not None else default
+
+        # collect information on source
+        if hasattr(source, 'seekable'):
+            seekable = source.seekable()
+        else:
+            seekable = None
+
+        if hasattr(source, 'mode'):
+            binary = 'b' in source.mode
+        else:
+            binary = None
+
+        # now check for conflicts
+        if seekable is False:
+            if binary:
+                raise PyteomicsError('Cannot work with non-seekable file in binary mode: {}.'.format(source))
+            if use_index:
+                warnings.warn('Cannot use indexing as {} is not seekable. Setting `use_index` to False.'.format(source))
+                use_index = False
+        elif binary is not None:
+            if use_index is not None and binary != use_index:
+                warnings.warn('use_index is {}, but the file mode is {}. '
+                    'Setting `use_index` to {}'.format(use_index, source.mode, binary))
+            use_index = binary
+        else:
+            warnings.warn('Could not check mode on {}. Specify `use_index` explicitly to avoid errors.'.format(source))
 
         if use_index is not None:
             return use_index
 
-        warnings.warn('Could not check mode on {}. '
-            'Specify `use_index` explicitly to avoid errors.'.format(source))
         return default
 
+    except PyteomicsError:
+        raise
     except Exception as e:
-        warnings.warn('Could not check mode on {}. Reason: {!r}. '
-            'Specify `use_index` explicitly to avoid errors.'.format(source, e))
+        warnings.warn('Could not check mode on {}. Reason: {!r}. Specify `use_index` explicitly to avoid errors.'.format(source, e))
         if use_index is not None:
             return use_index
         return default
@@ -920,6 +935,7 @@ class FileReadingProcess(mp.Process):
 
     The reader class must support the :py:meth:`__getitem__` dict-like lookup.
     """
+
     def __init__(self, reader_spec, target_spec, qin, qout, args_spec, kwargs_spec):
         super(FileReadingProcess, self).__init__(name='pyteomics-map-worker')
         self.reader_spec = reader_spec
@@ -949,12 +965,14 @@ class FileReadingProcess(mp.Process):
     def is_done(self):
         return self._done_flag.is_set()
 
+
 try:
     _NPROC = mp.cpu_count()
 except NotImplementedError:
     _NPROC = 4
 _QUEUE_TIMEOUT = 4
 _QUEUE_SIZE = int(1e7)
+
 
 class TaskMappingMixin(NoOpBaseReader):
     def __init__(self, *args, **kwargs):
@@ -1061,7 +1079,6 @@ class TaskMappingMixin(NoOpBaseReader):
 
         serialized = self._build_worker_spec(target, args, kwargs)
 
-
         in_queue = mp.Queue(self._queue_size)
         out_queue = mp.Queue(self._queue_size)
 
@@ -1096,7 +1113,6 @@ class TaskMappingMixin(NoOpBaseReader):
         """
 
         return iter(self._offset_index.keys())
-
 
 
 class ChainBase(object):
