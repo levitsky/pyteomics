@@ -745,6 +745,16 @@ class ByteCountingXMLScanner(_file_obj):
     Inheris from :py:class:`pyteomics.auxiliary._file_obj` to support the object-oriented
     :py:func:`_keep_state` interface.
     """
+    entities = {
+        'quot': '"',
+        'amp': '&',
+        'apos': "'",
+        'lt': '<',
+        'gt': '>',
+    }
+
+    xml_entity_pattern = re.compile(r"&({});".format('|'.join(entities.keys())))
+
     def __init__(self, source, indexed_tags, block_size=1000000):
         """
         Parameters
@@ -825,6 +835,28 @@ class ByteCountingXMLScanner(_file_obj):
                 yield i, match.group(1), dict(attrs.findall(line))
             i += len(line)
 
+    def _entity_sub_cb(self, match):
+        ent = match.group(1)
+        return self.entities[ent]
+
+    def replace_entities(self, key):
+        '''Replace XML entities in a string with their character representation
+
+        Uses the minimal mapping of XML entities pre-defined for all XML documents and
+        does not attempt to deal with external DTD defined entities. This mapping is found
+        in :attr:`entities`.
+
+        Parameters
+        ----------
+        key : str
+            The string to substitute
+
+        Returns
+        -------
+        str
+        '''
+        return self.xml_entity_pattern.sub(self._entity_sub_cb, key)
+
     @_keepstate
     def build_byte_index(self, lookup_id_key_mapping=None):
         """
@@ -855,8 +887,10 @@ class ByteCountingXMLScanner(_file_obj):
         indices = HierarchicalOffsetIndex()
         g = self._generate_offsets()
         for offset, offset_type, attrs in g:
-            indices[offset_type.decode('utf-8')][
-                attrs[lookup_id_key_mapping[offset_type]].decode('utf-8')] = offset
+            k = attrs[lookup_id_key_mapping[offset_type]].decode('utf-8')
+            if '&' in k:
+                k = self.replace_entities(k)
+            indices[offset_type.decode('utf-8')][k] = offset
         return indices
 
     @classmethod
