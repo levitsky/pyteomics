@@ -1,11 +1,14 @@
-dev
----
+4.4.1 beta 1
+------------
 
  - Further tweaked behavior of :py:func:`pyteomics.auxiliary.file_helpers._check_use_index`, which is responsible for
    handling of `use_index` in :py:func:`read` functions in parser modules.
 
  - Also, check out the `Pyteomics Discussions page <https://github.com/levitsky/pyteomics/discussions>`_!
    You can use it to share your thoughts, ask questions, discuss coding practices, etc.
+
+ - Fix indexing when element identifiers contain XML-escaped characters
+   (`#20 <https://github.com/levitsky/pyteomics/pull/20>`_ by Joshua Klein).
 
 4.4
 ---
