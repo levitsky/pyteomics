@@ -324,7 +324,8 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
     def get_spectrum(self, key):
         return self.get_by_id(key)
 
-    def _get_time(self, spectrum):
+    @staticmethod
+    def _get_time(spectrum):
         try:
             return spectrum['params']['rtinseconds']
         except KeyError:
