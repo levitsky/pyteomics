@@ -40,7 +40,7 @@ See also
 Dependencies
 ------------
 
-This module requires :py:mod:`matplotlib`.
+This module requires :py:mod:`matplotlib`. Optional dependencies: :py:mod:`adjustText`.
 
 -------------------------------------------------------------------------------
 
@@ -76,8 +76,7 @@ def plot_line(a, b, xlim=None, *args, **kwargs):
     b : float
         The intercept of the line.
     xlim : tuple, optional
-        Minimal and maximal values of `x`. If not given, :py:func:`pylab.xlim`
-        will be called.
+        Minimal and maximal values of `x`. If not given, :py:func:`pylab.xlim` will be called.
     *args
         Passed to :py:func:`pylab.plot` after `x` and `y` values.
     **kwargs
@@ -88,10 +87,9 @@ def plot_line(a, b, xlim=None, *args, **kwargs):
     out : matplotlib.lines.Line2D
         The line object.
     """
-    if xlim is None: xlim = pylab.xlim()
-    return pylab.plot([xlim[0], xlim[1]],
-               [a * xlim[0] + b, a * xlim[1] + b],
-               *args, **kwargs)
+    if xlim is None:
+        xlim = pylab.xlim()
+    return pylab.plot([xlim[0], xlim[1]], [a * xlim[0] + b, a * xlim[1] + b], *args, **kwargs)
 
 
 def scatter_trend(x, y=None, **kwargs):
@@ -361,44 +359,7 @@ def plot_spectrum(spectrum, centroided=True, *args, **kwargs):
     return pylab.plot(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
 
 
-def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
-    """Plot a spectrum and annotate matching fragment peaks.
-
-    Parameters
-    ----------
-    spectrum : dict
-        A spectrum as returned by Pyteomics parsers. Needs to have 'm/z array' and 'intensity array' keys.
-    peptide : str
-        A modX sequence.
-    centroided : bool, optional
-        Passed to :py:func:`plot_spectrum`.
-    ion_types : Container, keyword only, optional
-        Ion types to be considered for annotation. Default is `('b', 'y')`.
-    maxcharge : int, keyword only, optional
-        Maximum charge state for fragment ions to be considered. Default is `1`.
-    colors : dict, keyword only, optional
-        Keys are ion types, values are colors to plot the annotated peaks with. Defaults to a red-blue scheme.
-    ftol : float, keyword only, optional
-        A fixed m/z tolerance value for peak matching. Alternative to `rtol`.
-    rtol : float, keyword only, optional
-        A relative m/z error for peak matching. Default is 10 ppm.
-    adjust_text : bool, keyword only, optional
-        Adjust the overlapping text annotations using :py:mod:`adjustText`.
-    text_kw : dict, keyword only, optional
-        Keyword arguments for :py:func:`pylab.text`.
-    adjust_kw : dict, keyword only, optional
-        Keyword argyuments for :py:func:`adjust_text`.
-    ion_comp : dict, keyword only, optional
-        A dictionary defining ion compositions to override :py:const:`pyteomics.mass.std_ion_comp`.
-    mass_data : dict, keyword only, optional
-        A dictionary of element masses to override :py:const:`pyteomics.mass.nist_mass`.
-    aa_mass : dict, keyword only, optional
-        A dictionary of amino acid residue masses.
-    *args
-        Passed to :py:func:`plot_spectrum`.
-    **kwargs
-        Passed to :py:func:`plot_spectrum`.
-    """
+def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     types = kwargs.pop('ion_types', ('b', 'y'))
     maxcharge = kwargs.pop('maxcharge', 1)
     aa_mass = kwargs.pop('aa_mass', mass.std_aa_mass)
@@ -408,6 +369,7 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
     std_colors.update({i: 'blue' for i in 'abc'})
     colors = kwargs.pop('colors', std_colors)
     ftol = kwargs.pop('ftol', None)
+    centroided = kwargs.pop('centroided', True)
     if ftol is None:
         rtol = kwargs.pop('rtol', 1e-5)
     text_kw = kwargs.pop('text_kw', dict(ha='center', clip_on=True, backgroundcolor='#ffffff99'))
@@ -437,7 +399,7 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
                     names.setdefault(ion, []).append(ion[0] + str(i - 1) + ion[1:])
             else:
                 for i in range(1, n - 1):
-                    mz.setdefault(ion, []).append(mass.fast_mass2([parser.std_nterm] + parsed[n-(i+1):],
+                    mz.setdefault(ion, []).append(mass.fast_mass2([parser.std_nterm] + parsed[n - (i + 1):],
                         aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
                     names.setdefault(ion, []).append(ion[0] + str(i) + ion[1:])
     texts = []
@@ -458,4 +420,57 @@ def annotate_spectrum(spectrum, peptide, centroided=True, *args, **kwargs):
     if adjust:
         adjust_text(texts, **adjust_kw)
     kwargs.setdefault('zorder', -1)
-    plot_spectrum(spectrum, centroided, *args, **kwargs)
+    return plot_spectrum(spectrum, centroided, *args, **kwargs)
+
+
+_annotation_backends = {
+    'default': _default_annotate_spectrum,
+}
+
+
+def annotate_spectrum(spectrum, peptide, *args, **kwargs):
+    """Plot a spectrum and annotate matching fragment peaks.
+
+    Parameters
+    ----------
+    spectrum : dict
+        A spectrum as returned by Pyteomics parsers. Needs to have 'm/z array' and 'intensity array' keys.
+    peptide : str
+        A modX sequence.
+    backend : str, keyword only, optional
+        One of `{'default',}`.
+    ion_types : Container, keyword only, optional
+        Ion types to be considered for annotation. Default is `('b', 'y')`.
+    maxcharge : int, keyword only, optional
+        Maximum charge state for fragment ions to be considered. Default is `1`.
+    colors : dict, keyword only, optional
+        Keys are ion types, values are colors to plot the annotated peaks with. Defaults to a red-blue scheme.
+    ftol : float, keyword only, optional
+        A fixed m/z tolerance value for peak matching. Alternative to `rtol`.
+    rtol : float, keyword only, optional
+        A relative m/z error for peak matching. Default is 10 ppm.
+    text_kw : dict, keyword only, optional
+        Keyword arguments for :py:func:`pylab.text`.
+    ion_comp : dict, keyword only, optional
+        A dictionary defining ion compositions to override :py:const:`pyteomics.mass.std_ion_comp`.
+    mass_data : dict, keyword only, optional
+        A dictionary of element masses to override :py:const:`pyteomics.mass.nist_mass`.
+    aa_mass : dict, keyword only, optional
+        A dictionary of amino acid residue masses.
+    *args
+        Passed to the plotting backend.
+    **kwargs
+        Passed to the plotting backend.
+    centroided : bool, keyword only, optional
+        Passed to :py:func:`plot_spectrum`. Only works with `default` backend.
+    adjust_text : bool, keyword only, optional
+        Adjust the overlapping text annotations using :py:mod:`adjustText`. Only works with `default` backend.
+    adjust_kw : dict, keyword only, optional
+        Keyword arguments for :py:func:`adjust_text`. Only works with `default` backend.
+    """
+    bname = kwargs.pop('backend', 'default')
+    backend = _annotation_backends.get(bname)
+    if backend is None:
+        raise PyteomicsError('Unknown backend name: {}. Should be one of: {}.'.format(
+            bname, '; '.join(_annotation_backends)))
+    return backend(spectrum, peptide, *args, **kwargs)
