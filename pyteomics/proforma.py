@@ -39,6 +39,16 @@ from six import add_metaclass
 
 from pyteomics import parser
 from pyteomics.mass import Composition
+from pyteomics.auxiliary import PyteomicsError
+from pyteomics.mass import Unimod
+
+
+class ProFormaError(PyteomicsError):
+    def __init__(self, message, index=None, parser_state=None, **kwargs):
+        super(ProFormaError, self).__init__(PyteomicsError, message, index, parser_state)
+        self.message = message
+        self.index = index
+        self.parser_state = parser_state
 
 
 class PrefixSavingMeta(type):
@@ -119,7 +129,7 @@ class TagBase(object):
         else:
             label = part
         if self.group_id:
-            label = '%s%s' % (label, self.group_id)
+            label = '%s|%s' % (label, self.group_id)
         return '%s' % label
 
     def __repr__(self):
@@ -204,24 +214,113 @@ class MassModification(TagBase):
         return '%0.4f' % self.value
 
 
+class ModificationResolver(object):
+    def __init__(self, name, *args, **kwargs):
+        self.name = name
+
+    def resolve(self, name=None, id=None, **kwargs):
+        raise NotImplementedError()
+
+    def __call__(self, name=None, id=None, **kwargs):
+        return self.resolve(name, id, **kwargs)
+
+
+class UnimodResolver(ModificationResolver):
+    def __init__(self, *args, **kwargs):
+        super(UnimodResolver, self).__init__("unimod", *args, **kwargs)
+        self._database = kwargs.get("database" )
+
+    @property
+    def database(self):
+        if not self._database:
+            self._database = Unimod()
+        return self._database
+
+    def resolve(self, name=None, id=None, **kwargs):
+        if name is not None:
+            defn = self.database.by_title(name)
+            if not defn:
+                defn = self.database.by_name(name)
+            if not defn:
+                raise KeyError(name)
+        elif id is not None:
+            defn = self.database.by_id(id)
+            if not defn:
+                raise KeyError(id)
+        else:
+            raise ValueError("Must provide one of `name` or `id`")
+        return {
+            'composition': defn['composition'],
+            'name': defn['title'],
+            'id': defn['record_id'],
+            'mass': defn['mono_mass'],
+            'provider': self.name
+        }
+
+
 class ModificationBase(TagBase):
     '''A base class for all modification tags with marked prefixes.
     '''
 
     _tag_type = None
-    __slots__ = ()
+    __slots__ = ('_definition', )
 
     def __init__(self, value, extra=None, group_id=None):
         super(ModificationBase, self).__init__(
             self._tag_type, value, extra, group_id)
+        self._definition = None
+
+    @property
+    def definition(self):
+        if self._definition is None:
+            self._definition = self.resolve()
+        return self._definition
+
+    @property
+    def mass(self):
+        return self.definition['mass']
+
+    @property
+    def composition(self):
+        return self.definition.get('composition')
+
+    @property
+    def id(self):
+        return self.definition.get('id')
+
+    @property
+    def name(self):
+        return self.definition.get('name')
+
+    @property
+    def provider(self):
+        return self.definition.get('provider')
+
+    def _populate_from_definition(self, definition):
+        self._definition = definition
 
     def _format_main(self):
         return "{self.prefix_name}:{self.value}".format(self=self)
 
+    def _parse_identifier(self):
+        tokens = self.value.split(":", 1)
+        if len(tokens) > 1:
+            value = tokens[1]
+        else:
+            value = self.value
+        if value.isdigit():
+            id = int(value)
+            name = None
+        else:
+            name = value
+            id = None
+        return name, id
+
     def resolve(self):
         '''Find the term and return it's properties
         '''
-        raise NotImplementedError()
+        keys = self._parse_identifier()
+        return self.resolver(*keys)
 
 
 class FormulaModification(ModificationBase):
@@ -236,7 +335,8 @@ class FormulaModification(ModificationBase):
         composition = Composition(formula=''.join(self.value.split(" ")))
         return {
             "mass": composition.mass(),
-            "composition": composition
+            "composition": composition,
+            "name": self.value
         }
 
 
@@ -246,25 +346,10 @@ class GlycanModification(ModificationBase):
     _tag_type = TagTypeEnum.glycan
 
 
-class GenericModification(TagBase):
-    __slots__ = ()
-
-    def __init__(self, value, extra=None, group_id=None):
-        super(GenericModification, self).__init__(
-            TagTypeEnum.generic, value, extra, group_id)
-
-    def _format_main(self):
-        return self.value
-
-    def resolve(self):
-        '''Find the term, searching through all available vocabularies and
-        return the first match's properties
-        '''
-        raise NotImplementedError()
-
-
 class UnimodModification(ModificationBase):
     __slots__ = ()
+
+    resolver = UnimodResolver()
 
     prefix_name = "UNIMOD"
     short_prefix = "U"
@@ -293,6 +378,33 @@ class XLMODModification(ModificationBase):
     prefix_name = "XLMOD"
     # short_prefix = 'XL'
     _tag_type = TagTypeEnum.xlmod
+
+
+class GenericModification(ModificationBase):
+    __slots__ = ()
+    _tag_type = TagTypeEnum.generic
+
+    def __init__(self, value, extra=None, group_id=None):
+        super(GenericModification, self).__init__(
+            value, extra, group_id)
+
+    def _format_main(self):
+        return self.value
+
+    def resolve(self):
+        '''Find the term, searching through all available vocabularies and
+        return the first match's properties
+        '''
+        keys = self._parse_identifier()
+        defn = None
+        try:
+            defn = UnimodModification.resolver(*keys)
+        except KeyError:
+            pass
+        if defn is not None:
+            return defn
+        raise KeyError(keys)
+
 
 
 def split_tags(tokens):
@@ -524,9 +636,9 @@ class TaggedInterval(object):
         return "{self.__class__.__name__}({self.start}, {self.end}, {self.tag})".format(self=self)
 
 
-class TagParser(object):
-    '''A parser which accumulates tokens until it is asked to parse them into
-    :class:`TagBase` instances.
+class TokenBuffer(object):
+    '''A token buffer that wraps the accumulation and reset logic
+    of a list of :class:`str` objects.
 
     Implements a subset of the Sequence protocol.
 
@@ -534,19 +646,9 @@ class TagParser(object):
     ----------
     buffer: list
         The list of tokens accumulated since the last parsing.
-    group_ids: set
-        The set of all group IDs that have been produced so far.
     '''
-
-    def __init__(self, initial=None, group_ids=None):
-        if initial:
-            self.buffer = list(initial)
-        else:
-            self.buffer = []
-        if group_ids:
-            self.group_ids = set(group_ids)
-        else:
-            self.group_ids = set()
+    def __init__(self, initial=None):
+        self.buffer = list(initial or [])
 
     def append(self, c):
         '''Append a new character to the buffer.
@@ -576,6 +678,53 @@ class TagParser(object):
         return len(self.buffer)
 
     def process(self):
+        value = self.buffer
+        self.reset()
+        return value
+
+    def __call__(self):
+        return self.process()
+
+
+class NumberParser(TokenBuffer):
+    '''A buffer which accumulates tokens until it is asked to parse them into
+    :class:`int` instances.
+
+    Implements a subset of the Sequence protocol.
+
+    Attributes
+    ----------
+    buffer: list
+        The list of tokens accumulated since the last parsing.
+    '''
+    def process(self):
+        value = int(''.join(self))
+        self.reset()
+        return  value
+
+
+class TagParser(TokenBuffer):
+    '''A buffer which accumulates tokens until it is asked to parse them into
+    :class:`TagBase` instances.
+
+    Implements a subset of the Sequence protocol.
+
+    Attributes
+    ----------
+    buffer: list
+        The list of tokens accumulated since the last parsing.
+    group_ids: set
+        The set of all group IDs that have been produced so far.
+    '''
+
+    def __init__(self, initial=None, group_ids=None):
+        super(TagParser, self).__init__(initial)
+        if group_ids:
+            self.group_ids = set(group_ids)
+        else:
+            self.group_ids = set()
+
+    def process(self):
         '''Parse the content of the internal buffer, clear the buffer,
         and return the parsed tag.
 
@@ -601,7 +750,10 @@ class ParserStateEnum(Enum):
     interval_tag = 7
     tag_after_sequence = 8
     stable_isotope = 9
-
+    post_tag_before = 10
+    unlocalized_count = 11
+    post_global = 12
+    post_global_aa = 13
     done = 999
 
 
@@ -615,6 +767,10 @@ SEQ = ParserStateEnum.sequence
 TAG = ParserStateEnum.tag_in_sequence
 INTERVAL_TAG = ParserStateEnum.interval_tag
 TAG_AFTER = ParserStateEnum.tag_after_sequence
+POST_TAG_BEFORE = ParserStateEnum.post_tag_before
+UNLOCALIZED_COUNT = ParserStateEnum.unlocalized_count
+POST_GLOBAL = ParserStateEnum.post_global
+POST_GLOBAL_AA = ParserStateEnum.post_global_aa
 DONE = ParserStateEnum.done
 
 VALID_AA = set("QWERTYIPASDFGHKLCVNM")
@@ -659,6 +815,8 @@ def parse_proforma(sequence):
     current_aa = None
     current_tag = TagParser()
     current_interval = None
+    current_unlocalized_count = NumberParser()
+    current_aa_targets = TokenBuffer()
 
     while i < n:
         c = sequence[i]
@@ -676,7 +834,8 @@ def parse_proforma(sequence):
                 current_aa = c
                 state = SEQ
             else:
-                raise Exception("Error In State {state}, unexpected {c} found at index {i}".format(**locals()))
+                raise ProFormaError(
+                    "Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
         elif state == SEQ:
             if c in VALID_AA:
                 positions.append((current_aa, current_tag.process() if current_tag else None))
@@ -688,22 +847,22 @@ def parse_proforma(sequence):
                 current_interval = TaggedInterval(len(positions) + 1)
             elif c == ')':
                 if current_interval is None:
-                    raise Exception("Error In State {state}, unexpected {c} found at index {i}".format(**locals()))
+                    raise ProFormaError("Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
                 else:
                     current_interval.end = len(positions) + 1
                     if i >= n or sequence[i] != '[':
-                        raise Exception("Missing Interval Tag")
+                        raise ProFormaError("Missing Interval Tag", i, state)
                     i += 1
                     depth = 1
                     state = INTERVAL_TAG
             elif c == '-':
                 state = TAG_AFTER
                 if i >= n or sequence[i] != '[':
-                    raise Exception("Missing Interval Tag")
+                    raise ProFormaError("Missing Interval Tag", i, state)
                 i += 1
                 depth = 1
             else:
-                raise Exception("Error In State {state}, unexpected {c} found at index {i}".format(**locals()))
+                raise ProFormaError("Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
         elif state == TAG or state == TAG_BEFORE or state == TAG_AFTER or state == GLOBAL:
             if c == '[':
                 depth += 1
@@ -714,62 +873,26 @@ def parse_proforma(sequence):
                     if state == TAG:
                         state = SEQ
                     elif state == TAG_BEFORE:
-                        if i < n:
-                            cnext = sequence[i]
-                            if cnext == '?':
-                                unlocalized_modifications.append(current_tag.process())
-                                i += 1
-                            elif cnext == '-':
-                                n_term = current_tag.process()
-                                i += 1
-                            else:
-                                i += 1
-                                raise Exception("Error In State {state}, unexpected {cnext} found at index {i}".format(**locals()))
-
-                        state = BEFORE
+                        state = POST_TAG_BEFORE
                     elif state == TAG_AFTER:
                         c_term = current_tag.process()
                         state = DONE
                     elif state == GLOBAL:
-                        # Gobble the rest of the global tag inline to avoid spawning
-                        # a whole new state.
-                        if i < n:
-                            c = sequence[i]
-                            i += 1
-                            if c != '@':
-                                raise Exception(
-                                    ("Error In State {state}, fixed modification detected without "
-                                    "target amino acids found at index {i}").format(**locals()))
-                            end = 0
-                            targets = []
-                            while i < n:
-                                c = sequence[i]
-                                i += 1
-                                if c in VALID_AA:
-                                    targets.append(c)
-                                elif c == ',':
-                                    pass
-                                elif '>':
-                                    break
-                            else:
-                                raise Exception(
-                                    ("Error In State {state}, unclosed fixed modification rule").format(**locals()))
-
-                        fixed_modifications.append(
-                            ModificationRule(current_tag.process(), targets))
-                        state = BEFORE
+                        state = POST_GLOBAL
             else:
                 current_tag.append(c)
         elif state == FIXED:
             if c == '[':
                 state = GLOBAL
             else:
+                # Do validation here
                 state = ISOTOPE
                 current_tag.append(c)
         elif state == ISOTOPE:
             if c != '>':
                 current_tag.append(c)
             else:
+                # Not technically a tag, but exploits the current buffer
                 isotopes.append(StableIsotope(''.join(current_tag)))
                 current_tag.reset()
                 state = BEFORE
@@ -797,10 +920,58 @@ def parse_proforma(sequence):
                     state = SEQ
             else:
                 current_tag.append(c)
+        elif state == POST_TAG_BEFORE:
+            if c == '?':
+                unlocalized_modifications.append(current_tag.process())
+                state = BEFORE
+            elif c == '-':
+                n_term = current_tag.process()
+                state = BEFORE
+            elif c == '^':
+                state = UNLOCALIZED_COUNT
+            else:
+                raise ProFormaError(
+                    "Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
+        elif state == UNLOCALIZED_COUNT:
+            if c.isdigit():
+                current_unlocalized_count.append(c)
+            elif c == '[':
+                state = TAG_BEFORE
+                depth = 1
+                tag = current_tag.process()
+                multiplicity = current_unlocalized_count.process()
+                for i in range(multiplicity):
+                    unlocalized_modifications.append(tag)
+            elif c == '?':
+                state = BEFORE
+                tag = current_tag.process()
+                multiplicity = current_unlocalized_count.process()
+                for i in range(multiplicity):
+                    unlocalized_modifications.append(tag)
+            else:
+                raise ProFormaError(
+                    "Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
+        elif state == POST_GLOBAL:
+            if c == '@':
+                state = POST_GLOBAL_AA
+            else:
+                raise ProFormaError(
+                    ("Error In State {state}, fixed modification detected without "
+                     "target amino acids found at index {i}").format(**locals()), i, state)
+        elif state == POST_GLOBAL_AA:
+            if c in VALID_AA:
+                current_aa_targets.append(c)
+            elif c == '>':
+                fixed_modifications.append(
+                    ModificationRule(current_tag.process(), current_aa_targets.process()))
+                state = BEFORE
+            else:
+                raise ProFormaError(
+                    ("Error In State {state}, unclosed fixed modification rule").format(**locals()), i, state)
         else:
-            raise Exception("Error In State {state}, unexpected {c} found at index {i}".format(**locals()))
+            raise ProFormaError("Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
     if state in (ISOTOPE, TAG, TAG_AFTER, TAG_BEFORE, LABILE, ):
-        raise Exception("Error In State {state}, unclosed group reached end of string!".format(**locals()))
+        raise ProFormaError("Error In State {state}, unclosed group reached end of string!".format(**locals()), i, state)
     if current_aa:
         positions.append((current_aa, current_tag.process() if current_tag else None))
     return positions, {
@@ -811,5 +982,5 @@ def parse_proforma(sequence):
         'fixed_modifications': fixed_modifications,
         'intervals': intervals,
         'isotopes': isotopes,
-        'group_ids': list(current_tag.group_ids)
+        'group_ids': sorted(current_tag.group_ids)
     }
