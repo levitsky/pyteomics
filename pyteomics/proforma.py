@@ -27,7 +27,8 @@ The primary interface is through :func:`parse_proforma`:
 '''
 
 import re
-from collections import namedtuple, defaultdict
+from collections import namedtuple, defaultdict, deque
+from functools import partial
 
 try:
     from enum import Enum
@@ -38,9 +39,21 @@ except ImportError:
 from six import add_metaclass
 
 from pyteomics import parser
-from pyteomics.mass import Composition
-from pyteomics.auxiliary import PyteomicsError
+from pyteomics.mass import Composition, std_aa_mass
+from pyteomics.auxiliary import PyteomicsError, BasicComposition
 from pyteomics.mass import Unimod
+
+# To eventually be implemented with pyteomics port?
+try:
+    from psims.controlled_vocabulary.controlled_vocabulary import (load_psimod, load_xlmod, load_gno, obo_cache)
+except ImportError:
+    def _needs_psims(name):
+        raise ImportError("Loading %s requires the `psims` library. To access it, please install `psims" % name)
+
+    load_psimod = partial(_needs_psims, 'PSIMOD')
+    load_xlmod = partial(_needs_psims, 'XLMOD')
+    load_gno = partial(_needs_psims, 'GNO')
+    obo_cache = None
 
 
 class ProFormaError(PyteomicsError):
@@ -155,7 +168,20 @@ class TagBase(object):
         return out
 
 
-class PositionLabelTag(TagBase):
+class GroupLabelBase(TagBase):
+    __slots__ = ()
+
+    def __str__(self):
+        part = self._format_main()
+        if self.extra:
+            rest = [str(e) for e in self.extra]
+            label = '|'.join([part] + rest)
+        else:
+            label = part
+        return '%s' % label
+
+
+class PositionLabelTag(GroupLabelBase):
     '''A tag to mark that a position is involved in a group in some way, but does
     not imply any specific semantics.
     '''
@@ -167,10 +193,10 @@ class PositionLabelTag(TagBase):
             TagTypeEnum.position_label, group_id, extra, group_id)
 
     def _format_main(self):
-        return "#{self.group_id}".format(self=self)
+        return "{self.group_id}".format(self=self)
 
 
-class LocalizationMarker(TagBase):
+class LocalizationMarker(GroupLabelBase):
     '''A tag to mark a particular localization site
     '''
     __slots__ = ()
@@ -181,7 +207,7 @@ class LocalizationMarker(TagBase):
             TagTypeEnum.localization_marker, float(value), extra, group_id)
 
     def _format_main(self):
-        return "#{self.group_id}({self.value!f})".format(self=self)
+        return "{self.group_id}({self.value:.4g})".format(self=self)
 
 
 class InformationTag(TagBase):
@@ -211,12 +237,29 @@ class MassModification(TagBase):
             TagTypeEnum.massmod, float(value), extra, group_id)
 
     def _format_main(self):
-        return '%0.4f' % self.value
+        if self.value >= 0:
+            return ('+%0.4g' % self.value).rstrip('0').rstrip('.')
+        else:
+            return ('%0.4g' % self.value).rstrip('0').rstrip('.')
+
+    @property
+    def mass(self):
+        return self.value
 
 
 class ModificationResolver(object):
     def __init__(self, name, *args, **kwargs):
         self.name = name
+        self._database = None
+
+    def load_database(self):
+        raise NotImplementedError()
+
+    @property
+    def database(self):
+        if not self._database:
+            self._database = self.load_database()
+        return self._database
 
     def resolve(self, name=None, id=None, **kwargs):
         raise NotImplementedError()
@@ -228,13 +271,10 @@ class ModificationResolver(object):
 class UnimodResolver(ModificationResolver):
     def __init__(self, *args, **kwargs):
         super(UnimodResolver, self).__init__("unimod", *args, **kwargs)
-        self._database = kwargs.get("database" )
+        self._database = kwargs.get("database")
 
-    @property
-    def database(self):
-        if not self._database:
-            self._database = Unimod()
-        return self._database
+    def load_database(self):
+        return Unimod()
 
     def resolve(self, name=None, id=None, **kwargs):
         if name is not None:
@@ -256,6 +296,71 @@ class UnimodResolver(ModificationResolver):
             'mass': defn['mono_mass'],
             'provider': self.name
         }
+
+
+class PSIModResolver(ModificationResolver):
+    def __init__(self, *args, **kwargs):
+        super(PSIModResolver, self).__init__('psimod', *args, **kwargs)
+        self._database = kwargs.get("database")
+
+    def load_database(self):
+        return load_psimod()
+
+    def resolve(self, name=None, id=None, **kwargs):
+        if name is None:
+            defn = self.database[name]
+        elif id is None:
+            defn = self.database['MOD:{:05d}'.format(id)]
+        else:
+            raise ValueError("Must provide one of `name` or `id`")
+        mass = float(defn.DiffMono.strip()[1:-1])
+        composition = Composition(defn.DiffFormula.strip()[1:-1].replace(" ", ''))
+        return {
+            'mass': mass,
+            'composition': composition,
+            'name': defn.name,
+            'id': defn.id,
+            'provider': self.name
+        }
+
+
+class XLMODResolver(ModificationResolver):
+    def __init__(self, *args, **kwargs):
+        super(XLMODResolver, self).__init__('xlmod', *args, **kwargs)
+        self._database = kwargs.get("database")
+
+    def load_database(self):
+        return load_psimod()
+
+    def resolve(self, name=None, id=None, **kwargs):
+        if name is None:
+            defn = self.database[name]
+        elif id is None:
+            defn = self.database['XLMOD:{:05d}'.format(id)]
+        else:
+            raise ValueError("Must provide one of `name` or `id`")
+        mass = float(defn['monoIsotopicMass'])
+        if 'deadEndFormula' in defn:
+            composition = Composition(defn['deadEndFormula'].replace(" ", '').replace("D", "H[2]"))
+        elif 'bridgeFormula' in defn:
+            composition = Composition(
+                defn['bridgeFormula'].replace(" ", '').replace("D", "H[2]"))
+        return {
+            'mass': mass,
+            'composition': composition,
+            'name': defn.name,
+            'id': defn.id,
+            'provider': self.name
+        }
+
+
+class GNOResolver(ModificationResolver):
+    def __init__(self, *args, **kwargs):
+        super(GNOResolver, self).__init__('gnome', *args, **kwargs)
+        self._database = kwargs.get("database")
+
+    def load_database(self):
+        return load_gno()
 
 
 class ModificationBase(TagBase):
@@ -331,7 +436,6 @@ class FormulaModification(ModificationBase):
     def resolve(self):
         # The handling of fixed isotopes is wrong here as Pyteomics uses a different
         # convention.
-        from pyteomics.mass import Composition
         composition = Composition(formula=''.join(self.value.split(" ")))
         return {
             "mass": composition.mass(),
@@ -344,6 +448,44 @@ class GlycanModification(ModificationBase):
     prefix_name = "Glycan"
 
     _tag_type = TagTypeEnum.glycan
+
+    valid_monosaccharides = {
+        "Hex": (162.0528, Composition("C6H10O5")),
+        "HexNAc": (203.0793, Composition("C6H13N1O5")),
+        "HexS": (242.009, Composition("C8H10O8S1")),
+        "HexP": (242.0191, Composition("C6H11O8P1")),
+        "HexNAcS": (283.0361, Composition("C8H13N1O8S1")),
+        "dHex": (146.0579, Composition("C6H10O4")),
+        "NeuAc": (291.0954, Composition("C11H17N1O8")),
+        "NeuGc": (307.0903, Composition("C11H17N1O9")),
+        "Pen": (132.0422, Composition("C5H8O4")),
+        "Fuc": (146.0579, Composition("C6H10O4"))
+    }
+
+    tokenizer = re.compile(r"([A-Za-z]+)\s*(\d*)\s*")
+
+    def resolve(self):
+        composite = BasicComposition()
+        for tok, cnt in self.tokenizer.findall(self.value):
+            if cnt:
+                cnt = int(cnt)
+            else:
+                cnt = 1
+            if tok not in self.valid_monosaccharides:
+                raise ValueError(f"{tok!r} is not a valid monosaccharide name")
+            composite[tok] += cnt
+        mass = 0
+        chemcomp = Composition()
+        for key, cnt in composite.items():
+            m, c = self.valid_monosaccharides[key]
+            mass += m * cnt
+            chemcomp += c * cnt
+        return {
+            "mass": mass,
+            "composition": chemcomp,
+            "name": self.value,
+            "monosaccharides": composite
+        }
 
 
 class UnimodModification(ModificationBase):
@@ -358,6 +500,8 @@ class UnimodModification(ModificationBase):
 
 class PSIModModification(ModificationBase):
     __slots__ = ()
+
+    resolver = PSIModResolver()
 
     prefix_name = "MOD"
     short_prefix = 'M'
@@ -374,6 +518,8 @@ class GNOmeModification(ModificationBase):
 
 class XLMODModification(ModificationBase):
     __slots__ = ()
+
+    resolver = XLMODResolver()
 
     prefix_name = "XLMOD"
     # short_prefix = 'XL'
@@ -406,7 +552,6 @@ class GenericModification(ModificationBase):
         raise KeyError(keys)
 
 
-
 def split_tags(tokens):
     '''Split a token array into discrete sets of tag
     tokens.
@@ -434,7 +579,15 @@ def split_tags(tokens):
     out = []
     for i, start in enumerate(starts):
         end = ends[i]
-        out.append(tokens[start:end])
+        tag = tokens[start:end]
+        if len(tag) == 0:
+            continue
+        # Short circuit on INFO tags which can't be broken
+        # if (tag[0] == 'i' and tag[:5] == ['i', 'n', 'f', 'o', ':']) or (tag[0] == 'I' and tag[:5] == ['I', 'N', 'F', 'O', ':']):
+        #     tag = tokens[start:]
+        #     out.append(tag)
+        #     break
+        out.append(tag)
     return out
 
 
@@ -566,7 +719,7 @@ class ModificationRule(object):
 
     def __str__(self):
         targets = ','.join(self.targets)
-        return "<{self.modification_tag}@{targets}>".format(self=self, targets=targets)
+        return "<[{self.modification_tag}]@{targets}>".format(self=self, targets=targets)
 
     def __repr__(self):
         return "{self.__class__.__name__}({self.modification_tag!r}, {self.targets})".format(self=self)
@@ -790,7 +943,7 @@ def parse_proforma(sequence):
 
     Returns
     -------
-    parsed_sequence: list
+    parsed_sequence: list[tuple[str, TagBase]]
         The (amino acid: str, TagBase or None) pairs denoting the positions along the primary sequence
     modifiers: dict
         A mapping listing the labile modifications, fixed modifications, stable isotopes, unlocalized
@@ -970,10 +1123,10 @@ def parse_proforma(sequence):
                     ("Error In State {state}, unclosed fixed modification rule").format(**locals()), i, state)
         else:
             raise ProFormaError("Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
-    if state in (ISOTOPE, TAG, TAG_AFTER, TAG_BEFORE, LABILE, ):
-        raise ProFormaError("Error In State {state}, unclosed group reached end of string!".format(**locals()), i, state)
     if current_aa:
         positions.append((current_aa, current_tag.process() if current_tag else None))
+    if state in (ISOTOPE, TAG, TAG_AFTER, TAG_BEFORE, LABILE, ):
+        raise ProFormaError("Error In State {state}, unclosed group reached end of string!".format(**locals()), i, state)
     return positions, {
         'n_term': n_term,
         'c_term': c_term,
@@ -984,3 +1137,110 @@ def parse_proforma(sequence):
         'isotopes': isotopes,
         'group_ids': sorted(current_tag.group_ids)
     }
+
+
+def to_proforma(sequence, n_term=None, c_term=None, unlocalized_modifications=None,
+                labile_modifications=None, fixed_modifications=None, intervals=None,
+                isotopes=None, group_ids=None):
+    '''Convert a sequence plus modifiers into formatted text following the
+    ProForma specification.
+
+    Parameters
+    ----------
+    sequence : list[tuple[str, TagBase]]
+        The primary sequence of the peptidoform/proteoform to render
+    n_term : Optional[TagBase]
+        The N-terminal modification, if any.
+    c_term : Optional[TagBase]
+        The C-terminal modification, if any.
+    unlocalized_modifications : Optional[list[TagBase]]
+        Any modifications which aren't assigned to a specific location.
+    labile_modifications : Optional[list[TagBase]]
+        Any labile modifications
+    fixed_modifications : Optional[list[ModificationRule]]
+        Any fixed modifications
+    intervals : Optional[list[TaggedInterval]]
+        A list of modified intervals, if any
+    isotopes : Optional[list[StableIsotope]]
+        Any global stable isotope labels applied
+    group_ids : Optional[list[str]]
+        Any group identifiers. This parameter is currently not used.
+
+    Returns
+    -------
+    str
+    '''
+    primary = deque(['{0!s}[{1!s}]'.format(*p) if p[1] else p[0] for p in sequence])
+    if intervals:
+        for iv in sorted(intervals, key=lambda x: x.start):
+            primary[iv.start] = '(' + primary[iv.start]
+            primary[iv.end - 1] = '{0!s})[{1!s}]'.format(primary[iv.end - 1], iv.tag)
+    if n_term:
+        primary.appendleft("[{!s}]-".format(n_term))
+    if c_term:
+        primary.append('-[{!s}]'.format(c_term))
+    if labile_modifications:
+        primary.extendleft(['{{{!s}}}'.format(m) for m in labile_modifications])
+    if unlocalized_modifications:
+        primary.appendleft("?")
+        primary.extendleft(['[{!s}]'.format(m) for m in unlocalized_modifications])
+    if isotopes:
+        primary.extendleft(['{!s}'.format(m) for m in isotopes])
+    if fixed_modifications:
+        primary.extendleft(['{!s}'.format(m) for m in fixed_modifications])
+    return ''.join(primary)
+
+
+class ProForma(object):
+    def __init__(self, sequence, properties):
+        self.sequence = sequence
+        self.properties = properties
+
+    def __str__(self):
+        return to_proforma(self.sequence, **self.properties)
+
+    def __repr__(self):
+        return "{self.__class__.__name__}({self.sequence}, {self.properties})".format(self=self)
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            return self.__class__(self.sequence[i], self.properties)
+        else:
+            return self.sequence[i]
+
+    @classmethod
+    def parse(cls, string):
+        return cls(*parse_proforma(string))
+
+    @property
+    def mass(self):
+        mass = 0.0
+
+        fixed_modifications = self.properties['fixed_modifications']
+        fixed_rules = {}
+        for rule in fixed_modifications:
+            for aa in rule.targets:
+                fixed_rules[aa] = rule.modification_tag.mass
+
+        for position in self.sequence:
+            aa = position[0]
+            mass += std_aa_mass[aa]
+            if aa in fixed_rules:
+                mass += fixed_rules[aa]
+            tag = position[1]
+            if tag:
+                try:
+                    mass += tag.mass
+                except (AttributeError, KeyError):
+                    continue
+        for mod in self.properties['labile_modifications']:
+            mass += mod.mass
+        for mod in self.properties['unlocalized_modifications']:
+            mass += mod.mass
+        for iv in self.properties['intervals']:
+            try:
+                mass += iv.tag.mass
+            except (AttributeError, KeyError):
+                continue
+        return mass
+
