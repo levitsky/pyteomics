@@ -189,7 +189,7 @@ class MzTab(_MzTabParserBase):
         self._table_format = table_format
         self._init_tables()
         self._parse()
-        self._determine_schema_version
+        self._determine_schema_version()
         self._transform_tables()
         
 
