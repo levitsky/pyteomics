@@ -18,7 +18,7 @@ class MzTabTest(unittest.TestCase):
     def test_iter(self):
         reader = mztab.MzTab(self.path)
         tables = list(reader)
-        self.assertEqual(len(tables), 6)
+        self.assertEqual(len(tables), 4)
         [self.assertEqual(len(t), 2) for t in tables]
 
     def test_getitem(self):

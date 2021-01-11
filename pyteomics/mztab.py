@@ -189,7 +189,9 @@ class MzTab(_MzTabParserBase):
         self._table_format = table_format
         self._init_tables()
         self._parse()
+        self._determine_schema_version
         self._transform_tables()
+        
 
     @property
     def table_format(self):
@@ -284,12 +286,15 @@ class MzTab(_MzTabParserBase):
             raise KeyError(key)
 
     def __iter__(self):
-        yield 'PRT', self.protein_table
-        yield 'PEP', self.peptide_table
-        yield 'PSM', self.spectrum_match_table
-        yield 'SML', self.small_molecule_table
-        yield 'SMF', self.small_molecule_feature_table
-        yield 'SME', self.small_molecule_evidence_table
+        if self.variant == "P": 
+            yield 'PRT', self.protein_table
+            yield 'PEP', self.peptide_table
+            yield 'PSM', self.spectrum_match_table
+            yield 'SML', self.small_molecule_table
+        elif self.variant == "M": 
+            yield 'SML', self.small_molecule_table
+            yield 'SMF', self.small_molecule_feature_table
+            yield 'SME', self.small_molecule_evidence_table
 
     def _init_tables(self):
         self.protein_table = _MzTabTable("protein")
@@ -360,6 +365,13 @@ class MzTab(_MzTabParserBase):
                 self.small_molecule_feature_table.add(tokens[1:])
             elif tokens[0] == "SME":
                 self.small_molecule_evidence_table.add(tokens[1:])
+
+    def _determine_schema_version(self):
+        version_parsed, variant = re.search(r"(?P<schema_version>\d+.\d+.\d+)(?:-(?P<schema_variant>[MP]))?", self.version).groups()
+        if variant is None:
+            variant = "P"
+        self.num_version = [int(v) for v in version_parsed.split(".")]
+        self.variant = variant
 
     def keys(self):
         return OrderedDict(self).keys()
