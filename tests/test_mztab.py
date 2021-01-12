@@ -8,7 +8,7 @@ from pyteomics import mztab
 class MzTabTest(unittest.TestCase):
 
     path_mztab1 = 'test.mztab'
-    path_mztab2 = 'test_mztab2'
+    path_mztab2 = 'test_mztab2.mztab'
 
     def test_metadata(self):
         reader_mztab1 = mztab.MzTab(self.path_mztab1)
