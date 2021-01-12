@@ -19,7 +19,7 @@ class MzTabTest(unittest.TestCase):
         reader_mztab2 = mztab.MzTab(self.path_mztab2)
         self.assertEqual(len(reader_mztab2.metadata), 61)
         value_from_mztab2 = reader_mztab2.metadata['sample_processing[1]']
-        self.assertEqual(value_from_mztab2, 'MSIO, MSIO:0000148, high performance liquid chromatography')
+        self.assertEqual(value_from_mztab2, 'high performance liquid chromatography')
 
 
     def test_iter(self):
