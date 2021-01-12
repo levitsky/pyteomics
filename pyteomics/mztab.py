@@ -200,14 +200,15 @@ class MzTab(_MzTabParserBase):
     @property
     def version(self):
         return self.metadata['mzTab-version']
+        
 
     @property
     def mode(self):
-        return self.metadata['mzTab-mode']
+        return self.metadata.get('mzTab-mode', "")
 
     @property
     def type(self):
-        return self.metadata['mzTab-type']
+        return self.metadata.get('mzTab-type', "")
 
     def collapse_properties(self, proplist):
         '''Collapse a flat property list into a hierchical structure.
