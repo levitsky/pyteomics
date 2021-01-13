@@ -1,4 +1,4 @@
-4.4.1 beta 2
+4.4.1 beta 3
 ------------
 
  - Further tweaked behavior of :py:func:`pyteomics.auxiliary.file_helpers._check_use_index`, which is responsible for
