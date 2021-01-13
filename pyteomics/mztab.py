@@ -191,7 +191,6 @@ class MzTab(_MzTabParserBase):
         self._parse()
         self._determine_schema_version()
         self._transform_tables()
-        
 
     @property
     def table_format(self):
@@ -200,15 +199,26 @@ class MzTab(_MzTabParserBase):
     @property
     def version(self):
         return self.metadata['mzTab-version']
-        
 
     @property
     def mode(self):
-        return self.metadata.get('mzTab-mode', "")
+        return self.metadata.get('mzTab-mode')
 
     @property
     def type(self):
-        return self.metadata.get('mzTab-type', "")
+        return self.metadata.get('mzTab-type')
+
+    @property
+    def id(self):
+        return self.metadata.get('mzTab-ID')
+
+    @property
+    def title(self):
+        return self.metadata.get('title')
+
+    @property
+    def description(self):
+        return self.metadata.get('description')
 
     def collapse_properties(self, proplist):
         '''Collapse a flat property list into a hierchical structure.
@@ -287,12 +297,12 @@ class MzTab(_MzTabParserBase):
             raise KeyError(key)
 
     def __iter__(self):
-        if self.variant == "P": 
+        if self.variant == "P":
             yield 'PRT', self.protein_table
             yield 'PEP', self.peptide_table
             yield 'PSM', self.spectrum_match_table
             yield 'SML', self.small_molecule_table
-        elif self.variant == "M": 
+        elif self.variant == "M":
             yield 'SML', self.small_molecule_table
             yield 'SMF', self.small_molecule_feature_table
             yield 'SME', self.small_molecule_evidence_table
