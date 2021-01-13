@@ -7,24 +7,43 @@ from pyteomics import mztab
 
 class MzTabTest(unittest.TestCase):
 
-    path = 'test.mztab'
+    path_mztab1 = 'test.mztab'
+    path_mztab2 = 'test_mztab2.mztab'
 
-    def test_metadata(self):
-        reader = mztab.MzTab(self.path)
-        self.assertEqual(len(reader.metadata), 208)
-        value = reader.metadata['fixed_mod[1]']
-        self.assertEqual(value, 'CHEMMOD:57.0214637236')
+    def test_metadata_mztab1(self):
+        reader_mztab1 = mztab.MzTab(self.path_mztab1)
+        self.assertEqual(len(reader_mztab1.metadata), 208)
+        value_from_mztab1 = reader_mztab1.metadata['fixed_mod[1]']
+        self.assertEqual(value_from_mztab1, 'CHEMMOD:57.0214637236')
 
-    def test_iter(self):
-        reader = mztab.MzTab(self.path)
-        tables = list(reader)
+    def test_metadata_mztab2(self):
+        reader_mztab2 = mztab.MzTab(self.path_mztab2)
+        self.assertEqual(len(reader_mztab2.metadata), 61)
+        value_from_mztab2 = reader_mztab2.metadata['sample_processing[1]']
+        self.assertEqual(value_from_mztab2, 'high performance liquid chromatography')
+
+    def test_iter_mztab1(self):
+        reader_mztab1 = mztab.MzTab(self.path_mztab1)
+        tables = list(reader_mztab1)
         self.assertEqual(len(tables), 4)
         [self.assertEqual(len(t), 2) for t in tables]
 
-    def test_getitem(self):
-        reader = mztab.MzTab(self.path)
-        table = reader['psm']
+    def test_iter_mztab2(self):
+        reader_mztab2 = mztab.MzTab(self.path_mztab2)
+        tables = list(reader_mztab2)
+        self.assertEqual(len(tables), 3)
+        [self.assertEqual(len(t), 2) for t in tables]
+
+    def test_getitem_mztab1(self):
+        reader_mztab1 = mztab.MzTab(self.path_mztab1)
+        table = reader_mztab1['psm']
         self.assertIsInstance(table, mztab.pd.DataFrame)
+
+    def test_getitem_mztab2(self):
+        reader_mztab2 = mztab.MzTab(self.path_mztab2)
+        table = reader_mztab2['sme']
+        self.assertIsInstance(table, mztab.pd.DataFrame)
+
 
 if __name__ == '__main__':
     unittest.main()

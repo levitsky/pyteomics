@@ -5,13 +5,13 @@ mztab - mzTab file reader
 Summary
 -------
 
-`mzTab <http://www.psidev.info/mztab>`_  is one of the standards
+`mzTab <https://github.com/HUPO-PSI/mzTab>`_  is one of the standards
 developed by the Proteomics Informatics working group of the HUPO Proteomics
 Standard Initiative.
 
 This module provides a way to read mzTab files into a collection of
 :py:class:`pandas.DataFrame` instances in memory, along with a mapping
-of the file-level metadata.
+of the file-level metadata. MzTab specifications 1.0 and 2.0 are supported.
 
 Data access
 -----------
@@ -189,6 +189,7 @@ class MzTab(_MzTabParserBase):
         self._table_format = table_format
         self._init_tables()
         self._parse()
+        self._determine_schema_version()
         self._transform_tables()
 
     @property
@@ -201,11 +202,23 @@ class MzTab(_MzTabParserBase):
 
     @property
     def mode(self):
-        return self.metadata['mzTab-mode']
+        return self.metadata.get('mzTab-mode')
 
     @property
     def type(self):
-        return self.metadata['mzTab-type']
+        return self.metadata.get('mzTab-type')
+
+    @property
+    def id(self):
+        return self.metadata.get('mzTab-ID')
+
+    @property
+    def title(self):
+        return self.metadata.get('title')
+
+    @property
+    def description(self):
+        return self.metadata.get('description')
 
     def collapse_properties(self, proplist):
         '''Collapse a flat property list into a hierchical structure.
@@ -276,20 +289,31 @@ class MzTab(_MzTabParserBase):
             return self.protein_table
         if key in ('sml', ):
             return self.small_molecule_table
+        if key in ('smf', ):
+            return self.small_molecule_feature_table
+        if key in ('sme', ):
+            return self.small_molecule_evidence_table
         else:
             raise KeyError(key)
 
     def __iter__(self):
-        yield 'PRT', self.protein_table
-        yield 'PEP', self.peptide_table
-        yield 'PSM', self.spectrum_match_table
-        yield 'SML', self.small_molecule_table
+        if self.variant == "P":
+            yield 'PRT', self.protein_table
+            yield 'PEP', self.peptide_table
+            yield 'PSM', self.spectrum_match_table
+            yield 'SML', self.small_molecule_table
+        elif self.variant == "M":
+            yield 'SML', self.small_molecule_table
+            yield 'SMF', self.small_molecule_feature_table
+            yield 'SME', self.small_molecule_evidence_table
 
     def _init_tables(self):
         self.protein_table = _MzTabTable("protein")
         self.peptide_table = _MzTabTable("peptide")
         self.spectrum_match_table = _MzTabTable('psm')
         self.small_molecule_table = _MzTabTable('small molecule')
+        self.small_molecule_feature_table = _MzTabTable('small molecule feature')
+        self.small_molecule_evidence_table = _MzTabTable('small molecule evidence')
 
     def _transform_tables(self):
         if self._table_format == DATA_FRAME_FORMAT:
@@ -297,16 +321,22 @@ class MzTab(_MzTabParserBase):
             self.peptide_table = self.peptide_table.as_df()
             self.spectrum_match_table = self.spectrum_match_table.as_df('PSM_ID')
             self.small_molecule_table = self.small_molecule_table.as_df()
+            self.small_molecule_feature_table = self.small_molecule_feature_table.as_df()
+            self.small_molecule_evidence_table = self.small_molecule_evidence_table.as_df()
         elif self._table_format in (DICT_FORMAT, dict):
             self.protein_table = self.protein_table.as_dict()
             self.peptide_table = self.peptide_table.as_dict()
             self.spectrum_match_table = self.spectrum_match_table.as_dict()
             self.small_molecule_table = self.small_molecule_table.as_dict()
+            self.small_molecule_feature_table = self.small_molecule_feature_table.as_dict()
+            self.small_molecule_evidence_table = self.small_molecule_evidence_table.as_dict()
         elif callable(self._table_format):
             self.protein_table = self._table_format(self.protein_table)
             self.peptide_table = self._table_format(self.peptide_table)
             self.spectrum_match_table = self._table_format(self.spectrum_match_table)
             self.small_molecule_table = self._table_format(self.small_molecule_table)
+            self.small_molecule_feature_table = self._table_format(self.small_molecule_feature_table)
+            self.small_molecule_evidence_table = self._table_format(self.small_molecule_evidence_table)
 
     def _parse(self):
         for i, line in enumerate(self.file):
@@ -329,6 +359,10 @@ class MzTab(_MzTabParserBase):
                 self.spectrum_match_table.header = tokens[1:]
             elif tokens[0] == "SMH":
                 self.small_molecule_table.header = tokens[1:]
+            elif tokens[0] == "SFH":
+                self.small_molecule_feature_table.header = tokens[1:]
+            elif tokens[0] == "SEH":
+                self.small_molecule_evidence_table.header = tokens[1:]
             # rows
             elif tokens[0] == "PRT":
                 self.protein_table.add(tokens[1:])
@@ -338,6 +372,17 @@ class MzTab(_MzTabParserBase):
                 self.spectrum_match_table.add(tokens[1:])
             elif tokens[0] == "SML":
                 self.small_molecule_table.add(tokens[1:])
+            elif tokens[0] == "SMF":
+                self.small_molecule_feature_table.add(tokens[1:])
+            elif tokens[0] == "SME":
+                self.small_molecule_evidence_table.add(tokens[1:])
+
+    def _determine_schema_version(self):
+        version_parsed, variant = re.search(r"(?P<schema_version>\d+.\d+.\d+)(?:-(?P<schema_variant>[MP]))?", self.version).groups()
+        if variant is None:
+            variant = "P"
+        self.num_version = [int(v) for v in version_parsed.split(".")]
+        self.variant = variant
 
     def keys(self):
         return OrderedDict(self).keys()
