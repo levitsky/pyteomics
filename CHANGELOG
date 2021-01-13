@@ -1,4 +1,4 @@
-4.4.1 beta 1
+4.4.1 beta 2
 ------------
 
  - Further tweaked behavior of :py:func:`pyteomics.auxiliary.file_helpers._check_use_index`, which is responsible for
@@ -9,6 +9,8 @@
 
  - Fix indexing when element identifiers contain XML-escaped characters
    (`#20 <https://github.com/levitsky/pyteomics/pull/20>`_ by Joshua Klein).
+
+ - Add support for MzTab 2.0 (`#22 <https://github.com/levitsky/pyteomics/pull/22>`_ by @annalefarova).
 
 4.4
 ---

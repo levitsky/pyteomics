@@ -5,13 +5,13 @@ mztab - mzTab file reader
 Summary
 -------
 
-`mzTab <http://www.psidev.info/mztab>`_  is one of the standards
+`mzTab <https://github.com/HUPO-PSI/mzTab>`_  is one of the standards
 developed by the Proteomics Informatics working group of the HUPO Proteomics
 Standard Initiative.
 
 This module provides a way to read mzTab files into a collection of
 :py:class:`pandas.DataFrame` instances in memory, along with a mapping
-of the file-level metadata.
+of the file-level metadata. MzTab specifications 1.0 and 2.0 are supported.
 
 Data access
 -----------
