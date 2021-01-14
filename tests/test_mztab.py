@@ -22,6 +22,14 @@ class MzTabTest(unittest.TestCase):
         value_from_mztab2 = reader_mztab2.metadata['sample_processing[1]']
         self.assertEqual(value_from_mztab2, 'high performance liquid chromatography')
 
+    def test_metadata_variant_P(self):
+        reader_mztab1 = mztab.MzTab(self.path_mztab1)
+        self.assertEqual(reader_mztab1.variant, 'P')
+
+    def test_metadata_variant_M(self):
+        reader_mztab2 = mztab.MzTab(self.path_mztab2)
+        self.assertEqual(reader_mztab2.variant, 'M')
+
     def test_iter_mztab1(self):
         reader_mztab1 = mztab.MzTab(self.path_mztab1)
         tables = list(reader_mztab1)
