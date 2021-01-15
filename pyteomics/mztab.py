@@ -88,26 +88,84 @@ class MetadataPropertyAnnotator(type):
     and descriptor binding.
 
     Uses a list of strings or 3-tuples from :attr:`__metadata_properties__` to
-    bind :class:`MetadataBackedProperty` onto the class during its creation.
+    bind :class:`MetadataBackedProperty` or :class:`MetadataBackedCollection`
+    onto the class during its creation.
+
+    The specification for a property is a tuple of three values:
+        1. The metadata key to fetch
+        2. The property name to expose on the object
+        3. The variant(s) which require this metadata key be present
+
+    :obj:`("mzTab-version", "version", ("M", "P"))` would be interpreted as
+    Expose a property "version" on instances which serves the key "mzTab-version"
+    from the instance's :attr:`metadata`, and raise an error if it is absent in
+    the "M" or "P" variants.
+
+    Alternatively a specification may be a single string which will be interpreted
+    as the metadata key, and used to generate the property name replacing all '-'
+    with '_' and assumed to be optional in all variants.
+
+    If a metadata key ends with "[]" the property is assumed to be a collection. mzTab
+    makes heavy use of "<collection_name>[<index>]..." keys to define groups of homogenous
+    object types, often with per-element attributes.
+
+    .. example::
+
+        variable_mod[1]    CHEMMOD:15.9949146221
+        variable_mod[1]-site  M
+        variable_mod[1]-position    Anywhere
+        variable_mod[2]    CHEMMOD:42.0105646863
+        variable_mod[2]-site  N-term
+        variable_mod[2]-position Protein N-term
+
+    A specification :obj:`("variable_mod[]", "variable_mods", ())` would create a property
+    that returns:
+
+    .. code-block:: python
+
+        >>>instance.variable_mods
+        Group([(1,
+                    {'name': 'CHEMMOD:15.9949146221',
+                     'position': 'Anywhere',
+                     'site': 'M'}),
+                (2,
+                    {'name': 'CHEMMOD:42.0105646863',
+                     'position': 'Protein N-term',
+                     'site': 'N-term'})])
+
+    For precise description of the property collection algorithm, see
+    :meth:`~_MzTabParserBase.collapse_properties` and
+    :meth:`~_MzTabParserBase.gather`.
     '''
     def __new__(mcls, name, bases, attrs):
         props = attrs.get('__metadata_properties__', [])
+        inherit_props = attrs.get("__inherit_metadata_properties__", True)
         # Gather from parent classes so we can use inheritance for overriding this
         # behavior too.
-        for base in bases:
-            props.extend(getattr(base, '__metadata_properties__', []))
+        if inherit_props:
+            for base in bases:
+                props.extend(getattr(base, '__metadata_properties__', []))
         for prop in props:
+            # If the property definition is a single string, interpret the specification
+            # as the property name, and apply some simple normalization to make it a valid
+            # Python attribute name and assume the property is always optional.
             if isinstance(prop, str):
                 prop_name = prop
                 attr_name = prop_name.replace("mzTab-", '').replace('-', '_')
                 variant_required = None
             else:
+                # Otherwise unpack the triple
                 prop_name, attr_name, variant_required = prop
-            # attach the new descriptor to the class definition to be
+            # Attach the new descriptor to the class definition to be created. These descriptors
+            # will then be used when instances of that class try to get/set those attribute names.
             if prop_name.endswith('[]'):
+                # If the property name ends with "[]", then we're dealing with a collection so
+                # use the :class:`MetadataBackedCollection` descriptor
                 attrs[attr_name] = MetadataBackedCollection(
                     prop_name[:-2], variant_required=variant_required)
             else:
+                # Otherwise it is a scalar-valued property, using the :class:`MetadataBackedProperty`
+                # descriptor
                 attrs[attr_name] = MetadataBackedProperty(
                     prop_name, variant_required=variant_required)
         return super(MetadataPropertyAnnotator, mcls).__new__(mcls, name, bases, attrs)
