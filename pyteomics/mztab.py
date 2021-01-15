@@ -27,7 +27,7 @@ except ImportError:
     pd = None
 
 
-from collections import OrderedDict, defaultdict
+from collections import OrderedDict
 
 from pyteomics.auxiliary import _file_obj
 from pyteomics.auxiliary import cvstr
@@ -42,6 +42,7 @@ def _require_pandas():
 
 class MetadataBackedProperty(object):
     '''Our descriptor type which uses the instance's metadata attribute to carry its values'''
+
     def __init__(self, name, variant_required=None):
         self.name = name
         self.variant_required = variant_required
@@ -340,8 +341,8 @@ DATA_FRAME_FORMAT = 'df'
 DICT_FORMAT = 'dict'
 RAW_FORMAT = 'raw'
 
-
 PATH_PARSER = re.compile(r"([^\[]+)\[(\d+)\]_?")
+
 
 def extract_path(path):
     '''Parse `key[index]_next_key[next_index]...` sequences into
@@ -405,7 +406,6 @@ class Group(OrderedDict):
         value = self.__class__()
         self[key] = value
         return value
-
 
 
 @add_metaclass(MetadataPropertyAnnotator)
