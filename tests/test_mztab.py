@@ -52,6 +52,30 @@ class MzTabTest(unittest.TestCase):
         table = reader_mztab2['sme']
         self.assertIsInstance(table, mztab.pd.DataFrame)
 
+    def test_keys_values_items(self):
+        reader_mztab2 = mztab.MzTab(self.path_mztab2, table_format='dict')
+        keys = list(reader_mztab2.keys())
+        self.assertEqual(keys, [k for k, v in reader_mztab2])
+        values = list(reader_mztab2.values())
+        self.assertEqual(values, [v for k, v in reader_mztab2])
+        items = list(reader_mztab2.items())
+        self.assertEqual(items, list(reader_mztab2))
+
+    def test_generated_accessors(self):
+        reader = mztab.MzTab(self.path_mztab1)
+        self.assertEqual(reader.mode, 'Complete')
+        self.assertEqual(reader.version, '1.0.0')
+        self.assertEqual(reader.software, {1: ('MaxQuant', '1.6.3.4')})
+        ms_runs = reader.ms_runs
+        self.assertEqual(len(ms_runs), 63)
+        self.assertEqual(
+            sorted(ms_runs[1].items()),
+            [
+                ('format', 'Andromeda:apl file format'),
+                ('id_format', 'scan number only nativeID format'),
+                ('location', 'file://c:/users/jklein/projects/msv000080527_abelin2017/combined/andromeda/allspectra.hcd.ftms.secpep.sil0_0.apl'),
+             ])
+
 
 if __name__ == '__main__':
     unittest.main()
