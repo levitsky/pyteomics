@@ -20,7 +20,6 @@ Data access
 """
 
 import re
-
 try:
     import pandas as pd
 except ImportError:
@@ -90,7 +89,8 @@ class MetadataPropertyAnnotator(type):
 
     Uses a list of strings or 3-tuples from :attr:`__metadata_properties__` to
     bind :class:`MetadataBackedProperty` or :class:`MetadataBackedCollection`
-    onto the class during its creation.
+    onto the class during its creation. If any base classes have a
+    :class:`__metadata_properties__` attribute, it will be added
 
     The specification for a property is a tuple of three values:
         1. The metadata key to fetch
@@ -146,7 +146,13 @@ class MetadataPropertyAnnotator(type):
         if inherit_props:
             for base in bases:
                 props.extend(getattr(base, '__metadata_properties__', []))
-        for prop in props:
+
+        keys = set(attrs)
+
+        # Iterate in reverse to ensure that classes nearer to the new classes override
+        # more basal classes, ending with the new class to make sure overrides are
+        # applied.
+        for prop in reversed(props):
             # If the property definition is a single string, interpret the specification
             # as the property name, and apply some simple normalization to make it a valid
             # Python attribute name and assume the property is always optional.
@@ -159,6 +165,8 @@ class MetadataPropertyAnnotator(type):
                 prop_name, attr_name, variant_required = prop
             # Attach the new descriptor to the class definition to be created. These descriptors
             # will then be used when instances of that class try to get/set those attribute names.
+            if attr_name in keys:
+                continue
             if prop_name.endswith('[]'):
                 # If the property name ends with "[]", then we're dealing with a collection so
                 # use the :class:`MetadataBackedCollection` descriptor
@@ -263,10 +271,12 @@ class _MzTabParserBase(object):
             if '[' in key:
                 k, ix = key.split('[', 1)
                 if '[' in ix:
+                    # If we have multiple [ in a key, we are dealing with a path
                     path = extract_path(key)
                     for k, ix in path[:-1]:
                         store = gathered[k]
                         store = store[int(ix)]
+                    k, ix = path[-1]
                     store[k][int(ix)] = props
 
                 else:

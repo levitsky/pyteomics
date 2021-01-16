@@ -76,6 +76,13 @@ class MzTabTest(unittest.TestCase):
                 ('location', 'file://c:/users/jklein/projects/msv000080527_abelin2017/combined/andromeda/allspectra.hcd.ftms.secpep.sil0_0.apl'),
              ])
 
+    def test_override(self):
+        class OverridingMzTab(mztab.MzTab):
+            def mode(self):
+                return super(OverridingMzTab, self).mode
+        reader = OverridingMzTab(self.path_mztab1)
+        self.assertEqual(reader.mode(), 'Complete')
+
 
 if __name__ == '__main__':
     unittest.main()
