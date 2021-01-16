@@ -89,8 +89,7 @@ class MetadataPropertyAnnotator(type):
 
     Uses a list of strings or 3-tuples from :attr:`__metadata_properties__` to
     bind :class:`MetadataBackedProperty` or :class:`MetadataBackedCollection`
-    onto the class during its creation. If any base classes have a
-    :class:`__metadata_properties__` attribute, it will be added
+    onto the class during its creation.
 
     The specification for a property is a tuple of three values:
         1. The metadata key to fetch
@@ -137,6 +136,11 @@ class MetadataPropertyAnnotator(type):
     For precise description of the property collection algorithm, see
     :meth:`~_MzTabParserBase.collapse_properties` and
     :meth:`~_MzTabParserBase.gather`.
+
+    If any base classes have a :attr:`__metadata_properties__` attribute, it will
+    also be included unless :attr:`__inherit_metadata_properties__` is set to
+    :const:`False`. Any names explicitly set by the current class override this
+    automatic property generation.
     '''
     def __new__(mcls, name, bases, attrs):
         props = attrs.get('__metadata_properties__', [])
