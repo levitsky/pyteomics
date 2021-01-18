@@ -554,6 +554,9 @@ class MzTab(_MzTabParserBase):
         'df' will use pd.DataFrame instances. 'dict' will create
         a dictionary of dictionaries for each table. A callable
         will be called on each raw _MzTabTable object
+
+    Additional components of :attr:`metadata` are exposed as properties, returning
+    single values or aggregated collections of objects.
     """
 
     __metadata_properties__ = [
