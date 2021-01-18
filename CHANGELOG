@@ -1,3 +1,9 @@
+4.4.2 beta 1
+------------
+
+ - Extend the :py:mod:`pyteomics.mztab.MzTab` parser with auto-generated properties. Almost all metadata entities are
+   now exposed as properties on the parser object (`#23 <https://github.com/levitsky/pyteomics/pull/23>`_ by Joshua Klein).
+
 4.4.1
 -----
 
