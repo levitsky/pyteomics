@@ -302,7 +302,8 @@ class MzML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.Mult
                     del info[k]
                     info.pop('id', None)
 
-    def _get_time(self, scan):
+    @staticmethod
+    def _get_time(scan):
         return scan['scanList']['scan'][0]['scan start time']
 
 

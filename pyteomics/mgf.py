@@ -145,13 +145,16 @@ class MGFBase(object):
         else:
             self._header = None
 
-    def parse_precursor_charge(self, charge_text, list_only=False):
+    @staticmethod
+    def parse_precursor_charge(charge_text, list_only=False):
         return aux._parse_charge(charge_text, list_only=list_only)
 
-    def parse_peak_charge(self, charge_text, list_only=False):
+    @staticmethod
+    def parse_peak_charge(charge_text, list_only=False):
         return aux._parse_charge(charge_text, list_only=False)
 
-    def parse_peak_ion(self, ion_text):
+    @staticmethod
+    def parse_peak_ion(ion_text):
         return aux._parse_ion(ion_text)
 
     @property
@@ -247,6 +250,13 @@ class MGFBase(object):
     def get_spectrum(self, title):
         raise NotImplementedError()
 
+    @staticmethod
+    def _get_time(spectrum):
+        try:
+            return spectrum['params']['rtinseconds']
+        except KeyError:
+            raise aux.PyteomicsError('RT information not found.')
+
 
 class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.IndexSavingTextReader):
     """
@@ -323,12 +333,6 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
 
     def get_spectrum(self, key):
         return self.get_by_id(key)
-
-    def _get_time(self, spectrum):
-        try:
-            return spectrum['params']['rtinseconds']
-        except KeyError:
-            raise aux.PyteomicsError('RT information not found.')
 
 
 class MGF(MGFBase, aux.FileReader):

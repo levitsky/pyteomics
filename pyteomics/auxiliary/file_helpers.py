@@ -377,7 +377,8 @@ class TimeOrderedIndexedReaderMixin(IndexedReaderMixin):
         super(TimeOrderedIndexedReaderMixin, self).__init__(*args, **kwargs)
         self._time = RTLocator(self)
 
-    def _get_time(self, scan):
+    @staticmethod
+    def _get_time(scan):
         raise NotImplementedError
 
 

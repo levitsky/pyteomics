@@ -220,5 +220,6 @@ class MzmlTest(unittest.TestCase):
         record = aux.BinaryDataArrayTransformer()._make_record(encoded, 'MS-Numpress positive integer compression followed by zlib compression', data.dtype)
         self.assertTrue(np.allclose(data, record.decode(), atol=0.6))
 
+
 if __name__ == '__main__':
     unittest.main()

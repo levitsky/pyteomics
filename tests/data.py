@@ -214,7 +214,7 @@ pepxml_results = [
                                   {'protein': 'BL_ORD_ID:154629',
                                    'protein_descr': 'sp|Q99676|ZN184_HUMAN Zinc finger protein 184 OS=Homo sapiens GN=ZNF184 PE=1 SV=4:reversed'}],
                      'tot_num_ions': 44}],
-     'spectrum': ' Cmpd 24, +MSn(1085.6886), 1.2 min.23.23.3',
+     'spectrum': '"Cmpd 24, +MSn(1085.6886), 1.2 min.23.23.3"',
      'start_scan': 23}]
 
 mzid_spectra = {(False, False): [{'id': 'SEQ_spec1',

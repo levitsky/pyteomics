@@ -374,7 +374,7 @@
          </search_hit>
       </search_result>
       </spectrum_query>
-    <spectrum_query spectrum=" Cmpd 24, +MSn(1085.6886), 1.2 min.23.23.3" start_scan="23" end_scan="23" precursor_neutral_mass="3254.044921875" assumed_charge="3" index="3">
+    <spectrum_query spectrum="&quot;Cmpd 24, +MSn(1085.6886), 1.2 min.23.23.3&quot;" start_scan="23" end_scan="23" precursor_neutral_mass="3254.044921875" assumed_charge="3" index="3">
       <search_result>
         <search_hit hit_rank="1" peptide="DQQFDSSSSMALEDCGEETNCQSDFK" peptide_prev_aa="R" peptide_next_aa="I" protein="BL_ORD_ID:125453" num_tot_proteins="1" num_matched_ions="3" tot_num_ions="50" calc_neutral_pep_mass="3254.04711914062" massdiff="-0.002197265625" is_rejected="0" protein_descr="sp|O43149|ZZEF1_HUMAN Zinc finger ZZ-type and EF-hand domain-containing protein 1 OS=Homo sapiens GN=ZZEF1 PE=1 SV=6:reversed">
           <modification_info modified_peptide="DQQFDS[166]S[166]SS[166]MALEDCGEETNCQSDFK">
