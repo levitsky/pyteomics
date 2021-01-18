@@ -17,6 +17,7 @@ Data access
 -----------
 
   :py:class:`MzTab` - a class representing a single mzTab file
+
 """
 
 import re
@@ -45,6 +46,7 @@ class MetadataBackedProperty(object):
     def __init__(self, name, variant_required=None):
         self.name = name
         self.variant_required = variant_required
+        self.__doc__ = self.build_docstring()
 
     def __repr__(self):
         return "{self.__class__.__name__}(name={self.name!r}, variant_required={self.variant_required})".format(self=self)
@@ -65,11 +67,33 @@ class MetadataBackedProperty(object):
     def __delete__(self, obj):
         del obj.metadata[self.name]
 
+    def build_docstring(self):
+        doc = '''Accesses the {self.name!r} key in the :attr:`metadata` mapping attached
+to this object.
+'''
+        if self.variant_required:
+            if len(self.variant_required) > 1:
+                plural = 's'
+            else:
+                plural = ''
+            requires = ' or '.join(['-%s' % v for v in self.variant_required])
+            doc += '''
+This key must be present when the file is of {requires} variant{plural}.
+        '''.format(requires=requires, plural=plural)
+        doc += '''
+Returns
+-------
+object
+        '''
+        doc = doc.format(self=self)
+        return doc
+
 
 class MetadataBackedCollection(object):
     def __init__(self, name, variant_required=None):
         self.name = name
         self.variant_required = variant_required
+        self.__doc__ = self.build_docstring()
 
     def __get__(self, obj, objtype=None):
         if obj is None and objtype is not None:
@@ -81,6 +105,30 @@ class MetadataBackedCollection(object):
             raise AttributeError("{0} is missing from a mzTab-\"{1}\" document where it is required!".format(
                 self.name, obj.variant))
         return value
+
+    def build_docstring(self):
+        doc = '''Accesses the {self.name!r} key group gathered in the :attr:`metadata` mapping attached
+to this object.
+
+This group is dynamically generated on each access and may be expensive for repeated use.
+'''
+        if self.variant_required:
+            if len(self.variant_required) > 1:
+                plural = 's'
+            else:
+                plural = ''
+            requires = ' or '.join(['-%s' % v for v in self.variant_required])
+            doc += '''
+This key must be present when the file is of {requires} variant{plural}.
+        '''.format(requires=requires, plural=plural)
+        doc += '''
+Returns
+-------
+:class:`~.Group`
+        '''
+        doc = doc.format(self=self)
+        return doc
+
 
 
 class MetadataPropertyAnnotator(type):
@@ -109,7 +157,7 @@ class MetadataPropertyAnnotator(type):
     makes heavy use of "<collection_name>[<index>]..." keys to define groups of homogenous
     object types, often with per-element attributes.
 
-    .. example::
+    .. code-block::
 
         variable_mod[1]    CHEMMOD:15.9949146221
         variable_mod[1]-site  M
@@ -179,8 +227,9 @@ class MetadataPropertyAnnotator(type):
             else:
                 # Otherwise it is a scalar-valued property, using the :class:`MetadataBackedProperty`
                 # descriptor
-                attrs[attr_name] = MetadataBackedProperty(
+                prop = attrs[attr_name] = MetadataBackedProperty(
                     prop_name, variant_required=variant_required)
+
         return super(MetadataPropertyAnnotator, mcls).__new__(mcls, name, bases, attrs)
 
 
