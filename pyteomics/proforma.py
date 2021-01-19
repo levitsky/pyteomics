@@ -36,12 +36,11 @@ except ImportError:
     # Python 2 doesn't have a builtin Enum type
     Enum = object
 
-from six import add_metaclass
 
 from pyteomics import parser
-from pyteomics.mass import Composition, std_aa_mass
+from pyteomics.mass import Composition, std_aa_mass, Unimod
 from pyteomics.auxiliary import PyteomicsError, BasicComposition
-from pyteomics.mass import Unimod
+from pyteomics.auxiliary.utils import add_metaclass
 
 # To eventually be implemented with pyteomics port?
 try:
@@ -54,6 +53,10 @@ except ImportError:
     load_xlmod = partial(_needs_psims, 'XLMOD')
     load_gno = partial(_needs_psims, 'GNO')
     obo_cache = None
+
+
+std_aa_mass = std_aa_mass.copy()
+std_aa_mass['X'] = 0
 
 
 class ProFormaError(PyteomicsError):
@@ -142,7 +145,7 @@ class TagBase(object):
         else:
             label = part
         if self.group_id:
-            label = '%s|%s' % (label, self.group_id)
+            label = '%s%s' % (label, self.group_id)
         return '%s' % label
 
     def __repr__(self):
@@ -167,6 +170,10 @@ class TagBase(object):
                 out.append(e)
         return out
 
+    @classmethod
+    def parse(cls, buffer):
+        return process_tag_tokens(buffer)
+
 
 class GroupLabelBase(TagBase):
     __slots__ = ()
@@ -189,8 +196,9 @@ class PositionLabelTag(GroupLabelBase):
 
     def __init__(self, value=None, extra=None, group_id=None):
         assert group_id is not None
+        value = group_id
         super(PositionLabelTag, self).__init__(
-            TagTypeEnum.position_label, group_id, extra, group_id)
+            TagTypeEnum.position_label, value, extra, group_id)
 
     def _format_main(self):
         return "{self.group_id}".format(self=self)
@@ -230,17 +238,24 @@ class MassModification(TagBase):
 
     The value of a :class:`MassModification` is always a :class:`float`
     '''
-    __slots__ = ()
+    __slots__ = ('_significant_figures', )
+
+    prefix_name = "Obs"
 
     def __init__(self, value, extra=None, group_id=None):
+        if isinstance(value, str):
+            sigfigs = len(value.split('.')[-1].rstrip('0'))
+        else:
+            sigfigs = 4
+        self._significant_figures = sigfigs
         super(MassModification, self).__init__(
             TagTypeEnum.massmod, float(value), extra, group_id)
 
     def _format_main(self):
         if self.value >= 0:
-            return ('+%0.4g' % self.value).rstrip('0').rstrip('.')
+            return ('+{0:0.{1}f}'.format(self.value, self._significant_figures)).rstrip('0').rstrip('.')
         else:
-            return ('%0.4g' % self.value).rstrip('0').rstrip('.')
+            return ('{0:0.{1}f}'.format(self.value, self._significant_figures)).rstrip('0').rstrip('.')
 
     @property
     def mass(self):
@@ -248,7 +263,7 @@ class MassModification(TagBase):
 
 
 class ModificationResolver(object):
-    def __init__(self, name, *args, **kwargs):
+    def __init__(self, name, **kwargs):
         self.name = name
         self._database = None
 
@@ -269,8 +284,8 @@ class ModificationResolver(object):
 
 
 class UnimodResolver(ModificationResolver):
-    def __init__(self, *args, **kwargs):
-        super(UnimodResolver, self).__init__("unimod", *args, **kwargs)
+    def __init__(self, **kwargs):
+        super(UnimodResolver, self).__init__("unimod", **kwargs)
         self._database = kwargs.get("database")
 
     def load_database(self):
@@ -299,8 +314,8 @@ class UnimodResolver(ModificationResolver):
 
 
 class PSIModResolver(ModificationResolver):
-    def __init__(self, *args, **kwargs):
-        super(PSIModResolver, self).__init__('psimod', *args, **kwargs)
+    def __init__(self, **kwargs):
+        super(PSIModResolver, self).__init__('psimod', **kwargs)
         self._database = kwargs.get("database")
 
     def load_database(self):
@@ -325,8 +340,8 @@ class PSIModResolver(ModificationResolver):
 
 
 class XLMODResolver(ModificationResolver):
-    def __init__(self, *args, **kwargs):
-        super(XLMODResolver, self).__init__('xlmod', *args, **kwargs)
+    def __init__(self, **kwargs):
+        super(XLMODResolver, self).__init__('xlmod', **kwargs)
         self._database = kwargs.get("database")
 
     def load_database(self):
@@ -353,14 +368,41 @@ class XLMODResolver(ModificationResolver):
             'provider': self.name
         }
 
-
+# TODO: Implement resolve walking up the graph to get the mass. Can't really
+# get any more information without glypy/glyspace interaction
 class GNOResolver(ModificationResolver):
-    def __init__(self, *args, **kwargs):
-        super(GNOResolver, self).__init__('gnome', *args, **kwargs)
+    def __init__(self, **kwargs):
+        super(GNOResolver, self).__init__('gnome', **kwargs)
         self._database = kwargs.get("database")
 
     def load_database(self):
         return load_gno()
+
+
+class GenericResolver(ModificationResolver):
+
+    def __init__(self, resolvers, **kwargs):
+        super(GenericResolver, self).__init__('generic', **kwargs)
+        self.resolvers = list(resolvers)
+
+    def load_database(self):
+        return None
+
+    def resolve(self, name=None, id=None, **kwargs):
+        defn = None
+        for resolver in self.resolvers:
+            try:
+                defn = resolver(name=name, id=id, **kwargs)
+            except (KeyError):
+                continue
+        if defn is None:
+            if name is None:
+                raise KeyError(id)
+            elif id is None:
+                raise KeyError(name)
+            else:
+                raise ValueError("Must provide one of `name` or `id`")
+        return defn
 
 
 class ModificationBase(TagBase):
@@ -451,8 +493,8 @@ class GlycanModification(ModificationBase):
 
     valid_monosaccharides = {
         "Hex": (162.0528, Composition("C6H10O5")),
-        "HexNAc": (203.0793, Composition("C6H13N1O5")),
-        "HexS": (242.009, Composition("C8H10O8S1")),
+        "HexNAc": (203.0793, Composition("C8H13N1O5")),
+        "HexS": (242.009, Composition("C6H10O8S1")),
         "HexP": (242.0191, Composition("C6H11O8P1")),
         "HexNAcS": (283.0361, Composition("C8H13N1O8S1")),
         "dHex": (146.0579, Composition("C6H10O4")),
@@ -463,6 +505,10 @@ class GlycanModification(ModificationBase):
     }
 
     tokenizer = re.compile(r"([A-Za-z]+)\s*(\d*)\s*")
+
+    @property
+    def monosaccharides(self):
+        return self.definition.get('monosaccharides')
 
     def resolve(self):
         composite = BasicComposition()
@@ -511,6 +557,8 @@ class PSIModModification(ModificationBase):
 class GNOmeModification(ModificationBase):
     __slots__ = ()
 
+    resolver = GNOResolver()
+
     prefix_name = "GNO"
     # short_prefix = 'G'
     _tag_type = TagTypeEnum.gnome
@@ -529,6 +577,12 @@ class XLMODModification(ModificationBase):
 class GenericModification(ModificationBase):
     __slots__ = ()
     _tag_type = TagTypeEnum.generic
+    resolver = GenericResolver([
+        UnimodModification.resolver,
+        PSIModModification.resolver,
+        XLMODModification.resolver,
+        GNOmeModification.resolver,
+    ])
 
     def __init__(self, value, extra=None, group_id=None):
         super(GenericModification, self).__init__(
