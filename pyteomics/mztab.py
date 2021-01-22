@@ -744,8 +744,8 @@ class MzTab(_MzTabParserBase):
                 self.small_molecule_evidence_table.add(tokens[1:])
 
     def _determine_schema_version(self):
-        version_parsed, variant = re.search(r"(?P<schema_version>\d+.\d+.\d+)(?:-(?P<schema_variant>[MP]))?", self.version).groups()
-        if variant is None:
+        version_parsed, _, variant = str(self.version).partition("-")
+        if variant is None or (variant != "M" and variant != "P"):
             variant = "P"
         self.num_version = [int(v) for v in version_parsed.split(".")]
         self.variant = variant
