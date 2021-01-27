@@ -1,4 +1,4 @@
-4.4.2 beta 2
+4.4.2 beta 3
 ------------
 
  - Extend the :py:class:`pyteomics.mztab.MzTab` parser with auto-generated properties. Almost all metadata entities are
@@ -6,6 +6,8 @@
 
  - Fix the version parsing in :py:mod:`pyteomics.mztab` to support shorter vMzTab version strings
    (`#24 <https://github.com/levitsky/pyteomics/pull/24>`_ by Donavan See).
+
+ - Tweak the :py:class:`pyteomics.pepxml.PepXML` parser to present some values that were previously reported as None.
 
 4.4.1
 -----
