@@ -46,6 +46,8 @@ these classes working in concert.
 """
 
 import re
+import warnings
+
 try:
     import pandas as pd
 except ImportError:
@@ -584,7 +586,7 @@ class MzTab(_MzTabParserBase):
     """
 
     __metadata_properties__ = [
-        ('mzTab-version', 'version', 'MP'),
+        ('mzTab-version', 'version', ()),
         ('mzTab-mode', 'mode', 'P'),
         ('mzTab-type', 'type', 'P'),
         ('mzTab-ID', 'id', 'M'),
@@ -744,7 +746,16 @@ class MzTab(_MzTabParserBase):
                 self.small_molecule_evidence_table.add(tokens[1:])
 
     def _determine_schema_version(self):
-        version_parsed, variant = re.search(r"(?P<schema_version>\d+(?:\.\d+(?:\.\d+)?)?)(?:-(?P<schema_variant>[MP]))?", str(self.version)).groups()
+        if self.version is not None:
+            version = str(self.version)
+        else:
+            warnings.warn("The mzTab-version metadata header was missing. Assuming the schema version is 1.0.0")
+            version = "1.0.0"
+            self.version = version
+        match = re.search(r"(?P<schema_version>\d+(?:\.\d+(?:\.\d+)?)?)(?:-(?P<schema_variant>[MP]))?", version)
+        if match is None:
+            raise ValueError("mzTab-version does not match the expected pattern: %r" % version)
+        version_parsed, variant = match.groups()
         if variant is None:
             variant = "P"
         self.num_version = [int(v) for v in version_parsed.split(".")]
