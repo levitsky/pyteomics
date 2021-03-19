@@ -77,7 +77,7 @@ Data
   :py:data:`std_labels` - a list of all standard sequence
   elements, amino acid residues and terminal modifications.
 
-  :py:data:`expasy_rules` - a dict with the regular expressions of
+  :py:data:`expasy_rules` and :py:data:`psims_rules` - two dicts with the regular expressions of
   cleavage rules for the most popular proteolytic enzymes.
 
 -------------------------------------------------------------------------------
@@ -101,7 +101,7 @@ Data
 import re
 from collections import deque
 import itertools as it
-from .auxiliary import PyteomicsError, memoize, BasicComposition
+from .auxiliary import PyteomicsError, memoize, BasicComposition, cvstr, cvquery
 
 std_amino_acids = ['Q', 'W', 'E', 'R', 'T', 'Y', 'I', 'P', 'A', 'S',
                    'D', 'F', 'G', 'H', 'K', 'L', 'C', 'V', 'N', 'M']
@@ -544,7 +544,7 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False, exce
             will not work as expected.
 
     rule : str or compiled regex
-        A key present in :py:const:`expasy_rules` or a
+        A key present in :py:data:`expasy_rules`, :py:data:`psims_rules` (or an MS ontology accession) or a
         `regular expression <https://docs.python.org/library/re.html#regular-expression-syntax>`_
         describing the site of cleavage. It is recommended
         to design the regex so that it matches only the residue whose C-terminal
@@ -583,7 +583,9 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False, exce
     True
     >>> cleave('AKAKBK', 'trypsin', 0) == {'AK', 'BK'}
     True
-    >>> cleave('GKGKYKCK', expasy_rules['trypsin'], 2) == \
+    >>> cleave('AKAKBK', 'MS:1001251', 0) == {'AK', 'BK'}
+    True
+    >>> cleave('GKGKYKCK', 'Trypsin/P', 2) == \
     {'CK', 'GKYK', 'YKCK', 'GKGK', 'GKYKCK', 'GK', 'GKGKYK', 'YK'}
     True
 
@@ -595,7 +597,12 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False, exc
     """Like :py:func:`cleave`, but the result is a list. Refer to
     :py:func:`cleave` for explanation of parameters.
     """
-    rule = expasy_rules.get(rule, rule)
+    if rule in expasy_rules:
+        rule = expasy_rules[rule]
+    elif rule in psims_rules:
+        rule = psims_rules[rule]
+    elif rule in _psims_index:
+        rule = _psims_index[rule]
     exception = expasy_rules.get(exception, exception)
     peptides = []
     ml = missed_cleavages + 2
@@ -713,6 +720,43 @@ exception=parser.expasy_rules['trypsin_exception'])
         {'PEPTIDKDE'}
 """
 
+
+psims_rules = {
+    cvstr('2-iodobenzoate', 'MS:1001918'): r'(?<=W)',
+    cvstr('Arg-C', 'MS:1001303'): r'(?<=R)(?!P)',
+    cvstr('Asp-N', 'MS:1001304'): r'(?=[BD])',
+    cvstr('Asp-N ambic', 'MS:1001305'): r'(?=[DE])',
+    cvstr('CNBr', 'MS:1001307'): r'(?<=M)',
+    cvstr('Chymotrypsin', 'MS:1001306'): r'(?<=[FYWL])(?!P)',
+    cvstr('Formic acid', 'MS:1001308'): r'((?<=D))|((?=D))',
+    cvstr('Lys-C', 'MS:1001309'): r'(?<=K)(?!P)',
+    cvstr('Lys-C/P', 'MS:1001310'): r'(?<=K)',
+    cvstr('PepsinA', 'MS:1001311'): r'(?<=[FL])',
+    cvstr('TrypChymo', 'MS:1001312'): r'(?<=[FYWLKR])(?!P)',
+    cvstr('Trypsin', 'MS:1001251'): r'(?<=[KR])(?!P)',
+    cvstr('Trypsin/P', 'MS:1001313'): r'(?<=[KR])',
+    cvstr('V8-DE', 'MS:1001314'): r'(?<=[BDEZ])(?!P)',
+    cvstr('V8-E', 'MS:1001315'): r'(?<=[EZ])(?!P)',
+    cvstr('glutamyl endopeptidase', 'MS:1001917'): r'(?<=[^E]E)',
+    cvstr('leukocyte elastase', 'MS:1001915'): r'(?<=[ALIV])(?!P)',
+    cvstr('proline endopeptidase', 'MS:1001916'): r'(?<=[HKR]P)(?!P)',
+}
+"""
+This dict contains regular expressions for cleavage rules of the most
+popular proteolytic enzymes. The rules were taken from the PSI `MS ontology
+<http://purl.obolibrary.org/obo/MS_1001045>`_.
+
+You can use names or accessions to access the rules.
+Use :py:func:`pyteomics.auxiliary.cvquery` for accession access::
+
+    >>> from pyteomics.auxiliary import cvquery
+    >>> from pyteomics.parser import psims_rules
+    >>> cvquery(psims_rules, 'MS:1001918')
+    '(?<=W)'
+
+"""
+
+_psims_index = cvquery(psims_rules)
 
 def isoforms(sequence, **kwargs):
     """

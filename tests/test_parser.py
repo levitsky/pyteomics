@@ -61,6 +61,7 @@ class ParserTest(unittest.TestCase):
     def test_cleave(self):
         self.assertEqual(parser._cleave('PEPTIDEKS', parser.expasy_rules['trypsin']), ['PEPTIDEK', 'S'])
         self.assertEqual(parser._cleave('PEPTIDEKS', 'trypsin'), ['PEPTIDEK', 'S'])
+        self.assertEqual(parser._cleave('PEPTIDEKS', 'Trypsin'), ['PEPTIDEK', 'S'])
         for seq in self.simple_sequences:
             for elem in parser.cleave(
                     seq, 'trypsin', int(random.uniform(1, 10))):
