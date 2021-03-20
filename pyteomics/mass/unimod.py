@@ -44,15 +44,15 @@ from . import mass
 model_registry = set()
 
 
-class SubclassRegistringDeclarativeMeta(DeclarativeMeta):
+class SubclassRegisteringDeclarativeMeta(DeclarativeMeta):
     def __new__(cls, name, parents, attrs):
-        new_type = super(SubclassRegistringDeclarativeMeta,
+        new_type = super(SubclassRegisteringDeclarativeMeta,
                          cls).__new__(cls, name, parents, attrs)
         model_registry.add(new_type)
         return new_type
 
 
-Base = declarative_base(metaclass=SubclassRegistringDeclarativeMeta)
+Base = declarative_base(metaclass=SubclassRegisteringDeclarativeMeta)
 
 _unimod_xml_download_url = 'http://www.unimod.org/xml/unimod_tables.xml'
 
