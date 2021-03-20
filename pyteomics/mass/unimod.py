@@ -29,7 +29,7 @@ import warnings
 import re
 
 from lxml import etree
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from sqlalchemy.orm import relationship, backref, object_session
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy import (Numeric, Unicode,
@@ -41,7 +41,18 @@ from sqlalchemy.orm import sessionmaker
 
 from . import mass
 
-Base = declarative_base()
+model_registry = set()
+
+
+class SubclassRegistringDeclarativeMeta(DeclarativeMeta):
+    def __new__(cls, name, parents, attrs):
+        new_type = super(SubclassRegistringDeclarativeMeta,
+                         cls).__new__(cls, name, parents, attrs)
+        model_registry.add(new_type)
+        return new_type
+
+
+Base = declarative_base(metaclass=SubclassRegistringDeclarativeMeta)
 
 _unimod_xml_download_url = 'http://www.unimod.org/xml/unimod_tables.xml'
 
@@ -650,13 +661,11 @@ def load(doc_path, output_path='sqlite://'):
     engine = create_engine(output_path)
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine, autoflush=False)()
-    with warnings.catch_warnings():
-        warnings.simplefilter('ignore', category=sa_exc.SAWarning)
-        for model in Base._decl_class_registry.values():
-            if hasattr(model, '_tag_name') and hasattr(model, 'from_tag'):
-                for tag in tree.iterfind('.//' + model._tag_name):
-                    session.add(model.from_tag(tag))
-            session.commit()
+    for model in model_registry:
+        if hasattr(model, '_tag_name') and hasattr(model, 'from_tag'):
+            for tag in tree.iterfind('.//' + model._tag_name):
+                session.add(model.from_tag(tag))
+        session.commit()
     return session
 
 
