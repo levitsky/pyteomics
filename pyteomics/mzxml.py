@@ -222,6 +222,7 @@ class MzXML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.Mul
     def _get_time(self, scan):
         return scan['retentionTime']
 
+
 def read(source, read_schema=False, iterative=True, use_index=False, dtype=None, huge_tree=False):
     """Parse `source` and iterate through spectra.
 

@@ -1,4 +1,4 @@
-4.4.2 beta 4
+4.4.2 beta 5
 ------------
 
  - Add cleavage rules from `MS ontology <http://purl.obolibrary.org/obo/MS_1001045>`_ as
@@ -12,6 +12,8 @@
    (`#24 <https://github.com/levitsky/pyteomics/pull/24>`_ by Donavan See).
 
  - Tweak the :py:class:`pyteomics.pepxml.PepXML` parser to present some values that were previously reported as None.
+
+ - Fix compatibility with :py:mod:`SQLAlchemy` 1.4 (`#32 <https://github.com/levitsky/pyteomics/pull/32>`_ by Joshya Klein).
 
 4.4.1
 -----
