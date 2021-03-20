@@ -97,6 +97,7 @@ This module requires :py:mod:`lxml`.
 from lxml import etree
 from . import xml, auxiliary as aux, _schema_defaults
 
+
 class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for pepXML files."""
     file_format = 'pepXML'
@@ -109,7 +110,7 @@ class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
     _default_id_attr = 'spectrum'
     _structures_to_flatten = {'search_score_summary', 'modification_info'}
     # attributes which contain unconverted values
-    _convert_items = {'float':  {'calc_neutral_pep_mass', 'massdiff',
+    _convert_items = {'float': {'calc_neutral_pep_mass', 'massdiff',
             'probability', 'variable', 'static'},
         'int': {'start_scan', 'end_scan', 'index', 'num_matched_peptides'},
         'bool': {'is_rejected'},
@@ -123,13 +124,9 @@ class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
             name = xml._local_name(element)
         rec = kwargs.pop('recursive', None)
         if name == self._root_element:
-            info = self._get_info(element, ename=name,
-                    recursive=(rec if rec is not None else False),
-                    **kwargs)
+            info = self._get_info(element, ename=name, recursive=(rec if rec is not None else False), **kwargs)
         else:
-            info = self._get_info(element, ename=name,
-                    recursive=(rec if rec is not None else True),
-                    **kwargs)
+            info = self._get_info(element, ename=name, recursive=(rec if rec is not None else True), **kwargs)
 
         def safe_float(s):
             try:
@@ -137,7 +134,7 @@ class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
             except ValueError:
                 if s.startswith('+-0'):
                     return 0
-                return None
+                return s
 
         converters = {'float': safe_float, 'int': int,
                 'bool': lambda x: x.lower() in {'1', 'true'},
