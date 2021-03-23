@@ -224,6 +224,13 @@ class JPOSTBackend(_PROXIBackend):
         kwargs.pop("version", None)
 
 
+class ProteomeExchangeBackend(_PROXIBackend):
+    _url_template = 'http://proteomecentral.proteomexchange.org/api/proxi/v{version}/spectra?resultType=full&usi={usi!s}'
+
+    def __init__(self, **kwargs):
+
+        super(ProteomeExchangeBackend, self).__init__(
+            'ProteomeExchange', self._url_template, **kwargs)
 
 _proxies = {
     "peptide_atlas": PeptideAtlasBackend,
