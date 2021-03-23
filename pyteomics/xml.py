@@ -1230,8 +1230,16 @@ class Iterfind(TaskMappingMixin):
     def __iter__(self):
         return self
 
+    def _yield_from_index(self):
+        for key in self._task_map_iterator():
+            yield self.parser.get_by_id(key, **self.config)
+
     def _make_iterator(self):
-        return self.parser._iterfind_impl(self.tag_name, **self.config)
+        if self.is_indexed:
+            return self._yield_from_index()
+        else:
+            return self.parser._iterfind_impl(self.tag_name, **self.config)
+
 
     def __next__(self):
         if self._iterator is None:
@@ -1240,6 +1248,12 @@ class Iterfind(TaskMappingMixin):
 
     def next(self):
         return self.__next__()
+
+    @property
+    def is_indexed(self):
+        if self.parser.index is not None:
+            return self.tag_name in self.parser.index
+        return False
 
     def _task_map_iterator(self):
         """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
