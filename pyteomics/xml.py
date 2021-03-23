@@ -1251,8 +1251,11 @@ class Iterfind(TaskMappingMixin):
 
     @property
     def is_indexed(self):
-        if self.parser.index is not None:
-            return self.tag_name in self.parser.index
+        if hasattr(self.parser, 'index'):
+            if self.parser.index is not None:
+                index = self.parser.index
+                if isinstance(index, HierarchicalOffsetIndex):
+                    return bool(self.tag_name in index and index[self.tag_name])
         return False
 
     def _task_map_iterator(self):
