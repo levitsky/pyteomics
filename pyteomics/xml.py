@@ -1144,6 +1144,27 @@ class IndexedXML(IndexedReaderMixin, XML):
     def __len__(self):
         return len(self._offset_index[self._default_iter_tag])
 
+    def iterfind(self, path, **kwargs):
+        """Parse the XML and yield info on elements with specified local
+        name or by specified "XPath".
+
+        Parameters
+        ----------
+        path : str
+            Element name or XPath-like expression. The path is very close to
+            full XPath syntax, but local names should be used for all elements in the path.
+            They will be substituted with local-name() checks, up to the (first) predicate.
+            The path can be absolute or "free". Please don't specify namespaces.
+        **kwargs : passed to :py:meth:`self._get_info_smart`.
+
+        Returns
+        -------
+        out : iterator
+        """
+        if path in self._indexed_tags and self._use_index:
+            return IndexedIterfind(self, path, **kwargs)
+        return Iterfind(self, path, **kwargs)
+
 
 class MultiProcessingXML(IndexedXML, TaskMappingMixin):
     """XML reader that feeds indexes to external processes
@@ -1212,7 +1233,7 @@ class ArrayConversionMixin(BinaryDataArrayTransformer):
         return self._convert_array(key, array)
 
 
-class Iterfind(TaskMappingMixin):
+class Iterfind(object):
     def __init__(self, parser, tag_name, **kwargs):
         self.parser = parser
         self.tag_name = tag_name
@@ -1230,16 +1251,8 @@ class Iterfind(TaskMappingMixin):
     def __iter__(self):
         return self
 
-    def _yield_from_index(self):
-        for key in self._task_map_iterator():
-            yield self.parser.get_by_id(key, **self.config)
-
     def _make_iterator(self):
-        if self.is_indexed:
-            return self._yield_from_index()
-        else:
-            return self.parser._iterfind_impl(self.tag_name, **self.config)
-
+        return self.parser._iterfind_impl(self.tag_name, **self.config)
 
     def __next__(self):
         if self._iterator is None:
@@ -1258,6 +1271,22 @@ class Iterfind(TaskMappingMixin):
                     return bool(self.tag_name in index and index[self.tag_name])
         return False
 
+    def reset(self):
+        self._iterator = None
+        self.parser.reset()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        self.reset()
+
+    def map(self *args,**kwargs):
+        raise NotImplementedError("This query isn't indexed, it cannot be mapped with multiprocessing")
+
+
+class IndexedIterfind(TaskMappingMixin, Iterfind):
+
     def _task_map_iterator(self):
         """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
         queue used by :meth:`map`
@@ -1271,12 +1300,12 @@ class Iterfind(TaskMappingMixin):
     def _get_reader_for_worker_spec(self):
         return self.parser
 
-    def reset(self):
-        self._iterator = None
-        self.parser.reset()
+    def _yield_from_index(self):
+        for key in self._task_map_iterator():
+            yield self.parser.get_by_id(key, **self.config)
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *args, **kwargs):
-        self.reset()
+    def _make_iterator(self):
+        if self.is_indexed:
+            return self._yield_from_index()
+        warnings.warn("Non-indexed iterator created from %r" % (self, ))
+        return super(IndexedIterfind, self)._make_iterator()
