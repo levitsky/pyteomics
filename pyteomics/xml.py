@@ -1287,6 +1287,10 @@ class Iterfind(object):
 
 class IndexedIterfind(TaskMappingMixin, Iterfind):
 
+    def __init__(self, parser, tag_name, **kwargs):
+        TaskMappingMixin.__init__(self, **kwargs)
+        Iterfind.__init__(self, parser, tag_name, **kwargs)
+
     def _task_map_iterator(self):
         """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
         queue used by :meth:`map`
