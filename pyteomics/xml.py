@@ -1281,7 +1281,7 @@ class Iterfind(object):
     def __exit__(self, *args, **kwargs):
         self.reset()
 
-    def map(self *args,**kwargs):
+    def map(self, *args,**kwargs):
         raise NotImplementedError("This query isn't indexed, it cannot be mapped with multiprocessing")
 
 
