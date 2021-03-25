@@ -1295,9 +1295,6 @@ class Iterfind(object):
             return self._get_by_slice(i)
         return self._get_by_index(i)
 
-    def __len__(self):
-        raise NotImplementedError()
-
 
 class IndexedIterfind(TaskMappingMixin, Iterfind):
 
