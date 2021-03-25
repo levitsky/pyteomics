@@ -32,6 +32,7 @@ import socket
 from traceback import format_exc
 import warnings
 from collections import OrderedDict, namedtuple
+from itertools import islice
 from lxml import etree
 import numpy as np
 
@@ -1264,11 +1265,6 @@ class Iterfind(object):
 
     @property
     def is_indexed(self):
-        if hasattr(self.parser, 'index'):
-            if self.parser.index is not None:
-                index = self.parser.index
-                if isinstance(index, HierarchicalOffsetIndex):
-                    return bool(self.tag_name in index and index[self.tag_name])
         return False
 
     def reset(self):
@@ -1283,6 +1279,24 @@ class Iterfind(object):
 
     def map(self, *args,**kwargs):
         raise NotImplementedError("This query isn't indexed, it cannot be mapped with multiprocessing")
+
+    def _get_by_index(self, idx):
+        self.reset()
+        value = next(islice(self, idx, idx + 1))
+        return value
+
+    def _get_by_slice(self, slc):
+        self.reset()
+        value = list(islice(self, slc.start, slc.stop, slc.step))
+        return value
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            return self._get_by_slice(i)
+        return self._get_by_index(i)
+
+    def __len__(self):
+        raise NotImplementedError()
 
 
 class IndexedIterfind(TaskMappingMixin, Iterfind):
@@ -1299,7 +1313,11 @@ class IndexedIterfind(TaskMappingMixin, Iterfind):
         -------
         :class:`Iteratable`
         """
-        return iter(self.parser.index[self.tag_name])
+        return iter(self._index)
+
+    @property
+    def _index(self):
+        return self.parser.index[self.tag_name]
 
     def _get_reader_for_worker_spec(self):
         return self.parser
@@ -1313,3 +1331,26 @@ class IndexedIterfind(TaskMappingMixin, Iterfind):
             return self._yield_from_index()
         warnings.warn("Non-indexed iterator created from %r" % (self, ))
         return super(IndexedIterfind, self)._make_iterator()
+
+    @property
+    def is_indexed(self):
+        if hasattr(self.parser, 'index'):
+            if self.parser.index is not None:
+                index = self.parser.index
+                if isinstance(index, HierarchicalOffsetIndex):
+                    return bool(self.tag_name in index and index[self.tag_name])
+        return False
+
+    def _get_by_index(self, idx):
+        index = self._index
+        key = index.from_index(idx)
+        return self.parser.get_by_id(key)
+
+    def _get_by_slice(self, slc):
+        index = self._index
+        keys = index.from_slice(slc)
+        return self.parser.get_by_ids(keys)
+
+    def __len__(self):
+        index = self._index
+        return len(index)
