@@ -1,9 +1,12 @@
-4.4.2 beta 5
-------------
+4.4.2
+-----
 
  - Add cleavage rules from `MS ontology <http://purl.obolibrary.org/obo/MS_1001045>`_ as
    :py:data:`pyteomics.parser.psims_rules`. :py:func:`pyteomics.parser.cleave` now understands keys and accessions from
    :py:data:`psims_rules` as rules.
+
+ - Improve mzIdentML parser performance (and possibly others in some cases) by relying more on offset indexes
+   (`#34 <https://github.com/levitsky/pyteomics/pull/34>`_ by Joshua Klein).
 
  - Extend the :py:class:`pyteomics.mztab.MzTab` parser with auto-generated properties. Almost all metadata entities are
    now exposed as properties on the parser object (`#23 <https://github.com/levitsky/pyteomics/pull/23>`_ by Joshua Klein).
