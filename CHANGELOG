@@ -16,7 +16,7 @@
 
  - Tweak the :py:class:`pyteomics.pepxml.PepXML` parser to present some values that were previously reported as None.
 
- - Fix compatibility with :py:mod:`SQLAlchemy` 1.4 (`#32 <https://github.com/levitsky/pyteomics/pull/32>`_ by Joshya Klein).
+ - Fix compatibility with :py:mod:`SQLAlchemy` 1.4 (`#32 <https://github.com/levitsky/pyteomics/pull/32>`_ by Joshua Klein).
 
 4.4.1
 -----
