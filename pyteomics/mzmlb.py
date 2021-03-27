@@ -166,8 +166,10 @@ class ExternalDataMzML(_MzML):
         length = int(info['external array length'])
         array = self._external_data_registry.get(array_name, length, offset)
 
-        # Assume linear compression for now, this *should* have been encoded properly as CV param
-        array = linear_predict(array, copy=False)
+        if "linear prediction" in info:
+            array = linear_predict(array, copy=False)
+        elif "delta prediction" in info:
+            array = delta_predict(array, copy=False)
 
         if len(result) == 1:
             name = next(iter(result))
