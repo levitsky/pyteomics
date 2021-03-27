@@ -53,6 +53,21 @@ from pyteomics.auxiliary.file_helpers import HierarchicalOffsetIndex, TaskMappin
 
 
 def delta_predict(data, copy=True):
+    '''Reverse the lossy transformation of the delta compression
+    helper.
+
+    Parameters
+    ----------
+    data : :class:`numpy.ndarray`
+        The data to transform
+    copy : bool
+        Whether to make a copy of the data array or transform it in-place.
+
+    Returns
+    -------
+    :class:`numpy.ndarray`
+        The transformed data array
+    '''
     if copy:
         out = data.copy()
     else:
@@ -68,7 +83,15 @@ def linear_predict(data, copy=True):
 
     Parameters
     ----------
+    data : :class:`numpy.ndarray`
+        The data to transform
+    copy : bool
+        Whether to make a copy of the data array or transform it in-place.
 
+    Returns
+    -------
+    :class:`numpy.ndarray`
+        The transformed data array
     '''
     if copy:
         out = data.copy()
@@ -192,6 +215,8 @@ class MzMLb(TaskMappingMixin):
         20(1), 172–183. https://doi.org/10.1021/acs.jproteome.0c00192
     '''
     _default_iter_tag = ExternalDataMzML._default_iter_tag
+
+    file_format = "mzMLb"
 
     def __init__(self, path, hdfargs=None, mzmlargs=None, **kwargs):
         if hdfargs is None:
@@ -329,6 +354,12 @@ class MzMLb(TaskMappingMixin):
         :class:`Iteratable`
         """
         return iter(self.index[self._default_iter_tag])
+
+    def reset(self):
+        self._mzml_parser.reset()
+
+    def seek(self, offset, whence=0):
+        self._mzml_parser.seek(offset, whence)
 
 
 def read(source, dtype=None):
