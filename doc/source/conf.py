@@ -51,8 +51,8 @@ extensions = [
               'matplotlib.sphinxext.plot_directive',
               # 'matplotlib.sphinxext.only_directives',
               'matplotlib.sphinxext.mathmpl',
-              'sphinxcontrib.googleanalytics',
-              'sphinx_sitemap',
+            #   'sphinxcontrib.googleanalytics',
+            #   'sphinx_sitemap',
              ]
 
 site_url = 'https://pyteomics.readthedocs.io/en/latest/'
