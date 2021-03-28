@@ -161,7 +161,10 @@ class ExternalDataMzML(_MzML):
 
     def _handle_binary(self, info, **kwargs):
         result = super(ExternalDataMzML, self)._handle_binary(info, **kwargs)
-        array_name = info['external dataset']
+        try:
+            array_name = info['external HDF5 dataset']
+        except KeyError:
+            array_name = info['external dataset']
         offset = int(info['external offset'])
         length = int(info['external array length'])
         array = self._external_data_registry.get(array_name, length, offset)
@@ -220,7 +223,7 @@ class MzMLb(TaskMappingMixin):
 
     file_format = "mzMLb"
 
-    def __init__(self, path, hdfargs=None, mzmlargs=None, **kwargs):
+    def __init__(self, path, hdfargs=None, mzmlargs=None, allow_updates=False, **kwargs):
         if hdfargs is None:
             hdfargs = {}
         if mzmlargs is None:
@@ -230,7 +233,8 @@ class MzMLb(TaskMappingMixin):
         self.path = path
         self._hdfargs = hdfargs
         self._mzmlargs = mzmlargs
-        self.handle = h5py.File(self.path, 'r', **hdfargs)
+        self._allow_updates = allow_updates
+        self.handle = h5py.File(self.path, 'r+' if self._allow_updates else 'r', **hdfargs)
         self.schema_version = self.handle['mzML'].attrs.get('version')
         self._check_compressor()
 
@@ -308,7 +312,7 @@ class MzMLb(TaskMappingMixin):
         return iter(self._mzml_parser)
 
     def __reduce__(self):
-        return self.__class__, (self.path, self._hdfargs, self._mzmlargs)
+        return self.__class__, (self.path, self._hdfargs, self._mzmlargs, self._allow_updates)
 
     def close(self):
         self.handle.close()
