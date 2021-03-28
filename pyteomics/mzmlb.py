@@ -169,9 +169,11 @@ class ExternalDataMzML(_MzML):
         length = int(info['external array length'])
         array = self._external_data_registry.get(array_name, length, offset)
 
-        if "linear prediction" in info:
+        # The zlib compression in these two terms happens automatically  during HDF5 encoding and
+        # the reader needn't even know about it.
+        if "linear prediction" in info or "truncation, linear prediction and zlib compression" in info:
             array = linear_predict(array, copy=False)
-        elif "delta prediction" in info:
+        elif "delta prediction" in info or "truncation, delta prediction and zlib compression":
             array = delta_predict(array, copy=False)
 
         if len(result) == 1:
@@ -197,6 +199,8 @@ class ExternalArrayRegistry(object):
 
 class MzMLb(TaskMappingMixin):
     '''A parser for mzMLb [1]
+
+    Provides an identical interface to :class:`~pyteomics.mzml.MzML`
 
     Attributes
     ----------
@@ -282,6 +286,18 @@ class MzMLb(TaskMappingMixin):
         return index
 
     def get_by_id(self, id):
+        """Parse the file and return the element with `id` attribute equal
+        to `elem_id`. Returns :py:const:`None` if no such element is found.
+
+        Parameters
+        ----------
+        elem_id : str
+            The value of the `id` attribute to match.
+
+        Returns
+        -------
+        out : :py:class:`dict` or :py:const:`None`
+        """
         return self._mzml_parser.get_by_id(id)
 
     def get_by_ids(self, ids):
@@ -361,11 +377,17 @@ class MzMLb(TaskMappingMixin):
         """
         return iter(self.index[self._default_iter_tag])
 
+    def read(self, n=-1):
+        return self._mzml_parser.read(n)
+
     def reset(self):
         self._mzml_parser.reset()
 
     def seek(self, offset, whence=0):
         self._mzml_parser.seek(offset, whence)
+
+    def tell(self):
+        return self._mzml_parser.tell()
 
 
 def read(source, dtype=None):
