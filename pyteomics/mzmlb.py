@@ -154,6 +154,8 @@ class HDF5ByteBuffer(io.RawIOBase):
 
 class ExternalDataMzML(_MzML):
     '''An MzML parser that reads data arrays from an external provider.
+
+    This is an implementation detail of :class:`MzMLb`.
     '''
     def __init__(self, *args, **kwargs):
         self._external_data_registry = kwargs.pop("external_data_registry", None)
@@ -173,7 +175,7 @@ class ExternalDataMzML(_MzML):
         # the reader needn't even know about it.
         if "linear prediction" in info or "truncation, linear prediction and zlib compression" in info:
             array = linear_predict(array, copy=False)
-        elif "delta prediction" in info or "truncation, delta prediction and zlib compression":
+        elif "delta prediction" in info or "truncation, delta prediction and zlib compression" in info:
             array = delta_predict(array, copy=False)
 
         if len(result) == 1:
@@ -186,6 +188,8 @@ class ExternalDataMzML(_MzML):
 
 class ExternalArrayRegistry(object):
     '''Read chunks out of a single long array
+
+    This is an implementation detail of :class:`MzMLb`
     '''
     def __init__(self, registry):
         self.registry = registry
@@ -227,7 +231,8 @@ class MzMLb(TaskMappingMixin):
 
     file_format = "mzMLb"
 
-    def __init__(self, path, hdfargs=None, mzmlargs=None, allow_updates=False, **kwargs):
+    def __init__(self, path, hdfargs=None, mzmlargs=None, allow_updates=False,
+                 use_index=True, **kwargs):
         if hdfargs is None:
             hdfargs = {}
         if mzmlargs is None:
@@ -327,6 +332,12 @@ class MzMLb(TaskMappingMixin):
     def __iter__(self):
         return iter(self._mzml_parser)
 
+    def __next__(self):
+        return next(self._mzml_parser)
+
+    def next(self):
+        return self.__next__()
+
     def __reduce__(self):
         return self.__class__, (self.path, self._hdfargs, self._mzmlargs, self._allow_updates)
 
@@ -388,6 +399,30 @@ class MzMLb(TaskMappingMixin):
 
     def tell(self):
         return self._mzml_parser.tell()
+
+    def get_dataset(self, name):
+        '''Get an HDF5 dataset by its name or path relative to
+        the root node.
+
+        .. warning::
+            Because this accesses HDF5 data directly, it may be possible to mutate
+            the underlying file if :attr:`allow_updates` is :const:`True`.
+
+        Parameters
+        ----------
+        name : :class:`str`
+            The dataset name or path.
+
+        Returns
+        -------
+        :class:`h5py.Dataset` or :class:`h5py.Group`
+
+        Raises
+        ------
+        KeyError :
+            The name is not found.
+        '''
+        return self.handle[name]
 
 
 def read(source, dtype=None):

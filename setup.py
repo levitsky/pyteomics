@@ -32,6 +32,16 @@ with open('README.rst') as r, open('INSTALL') as i:
             ''.join(r) + '\n' + ''.join(i))
 
 
+extras_require = {'XML': ['lxml', 'numpy'],
+                  'TDA': ['numpy'],
+                  'graphics': ['matplotlib'],
+                  'DF': ['pandas'],
+                  'Unimod': ['lxml', 'sqlalchemy'],
+                  'numpress': ['pynumpress'],
+                  'mzMLb': ['h5py', 'hdf5plugin']}
+extras_require['all'] = sum(extras_require.values(), [])
+
+
 setup(
     name               = 'pyteomics',
     version            = get_version('pyteomics/version.py'),
@@ -48,12 +58,7 @@ setup(
                           'Mailing List' : 'https://groups.google.com/group/pyteomics',
                          },
     namespace_packages = ['pyteomics'],
-    extras_require     = {'XML': ['lxml', 'numpy'],
-                          'TDA': ['numpy'],
-                          'graphics': ['matplotlib'],
-                          'DF': ['pandas'],
-                          'Unimod': ['lxml', 'sqlalchemy'],
-                          'numpress': ['pynumpress']},
+    extras_require     = extras_require,
     classifiers        = ['Intended Audience :: Science/Research',
                           'Programming Language :: Python :: 2.7',
                           'Programming Language :: Python :: 3',
