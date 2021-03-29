@@ -85,6 +85,17 @@ class USI(namedtuple("USI", ['protocol', 'dataset', 'datafile', 'scan_identifier
         return cls(*_usi_parser(str(usi)))
 
 
+def cast_numeric(value):
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        return float(value)
+    except ValueError:
+        return value
+
+
 def _usi_parser(usi):
     tokens = usi.split(":", 5)
     protocol = tokens[0]
@@ -176,7 +187,13 @@ class _PROXIBackend(object):
             data_collection = data
             data = data_collection[0]
         result = {}
-        result['attributes'] = data.pop('attributes', {})
+        result['attributes'] = data.pop('attributes', [])
+        for attrib in result['attributes']:
+            if 'value' in attrib and attrib['value'][0].isdigit():
+                try:
+                    attrib['value'] = cast_numeric(attrib['value'])
+                except TypeError:
+                    continue
         result['m/z array'] = coerce_array(data.pop('mzs', []))
         result['intensity array'] = coerce_array(data.pop('intensities', []))
         for key, value in data.items():
@@ -237,9 +254,15 @@ _proxies = {
     "massive": MassIVEBackend,
     "pride": PRIDEBackend,
     "jpost": JPOSTBackend,
+    'proteome_exchange': ProteomeExchangeBackend,
 }
 
-def proxi(usi, backend='peptide_atlas', **kwargs):
+default_backend = 'peptide_atlas'
+# The Proteome Exchange backend is a special server running an aggregation service
+# for all the other providers.
+
+
+def proxi(usi, backend=default_backend, **kwargs):
     '''Retrieve a ``USI`` from a `PROXI <http://www.psidev.info/proxi>`.
 
     Parameters
