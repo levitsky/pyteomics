@@ -1,6 +1,18 @@
-'''A simple ProForma lexer
+'''
+proforma - Proteoform and Peptidoform Notation
+==============================================
 
-The primary interface is through :func:`parse_proforma`:
+ProForma is a notation for defining modified amino acid sequences using
+a set of controlled vocabularies, as well as encoding uncertain or partial
+information about localization. See `ProForma specification <https://www.psidev.info/proforma>`_
+for more up-to-date information.
+
+Strictly speaking, this implementation supports ProForma v2.
+
+Data Access
+-----------
+
+:py:func:`parse_proforma` - The primary interface for parsing ProForma strings.
 
     >>> parse_proforma("EM[Oxidation]EVT[#g1(0.01)]S[#g1(0.09)]ES[Phospho#g1(0.90)]PEK")
         ([('E', None),
@@ -24,6 +36,14 @@ The primary interface is through :func:`parse_proforma`:
           'isotopes': [],
           'group_ids': ['#g1']})
 
+:py:func:`to_proforma` - Format a sequence and set of properties as ProForma text.
+
+
+Classes
+-------
+
+:py:class:`ProForma` - An object oriented version of the parsing and formatting code,
+coupled with minimal information about mass and position data.
 '''
 
 import re
