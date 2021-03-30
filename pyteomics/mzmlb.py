@@ -202,7 +202,7 @@ class ExternalArrayRegistry(object):
 
 
 class MzMLb(TaskMappingMixin):
-    '''A parser for mzMLb [1]
+    '''A parser for mzMLb [1]_
 
     Provides an identical interface to :class:`~pyteomics.mzml.MzML`
 
