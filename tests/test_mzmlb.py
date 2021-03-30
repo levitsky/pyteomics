@@ -16,7 +16,6 @@ except ImportError as err:
     reason = err
 
 
-@unittest.skipIf(MzMLb is None, reason)
 class MzMLbTest(unittest.TestCase):
     maxDiff = None
     path = 'test.mzMLb'
