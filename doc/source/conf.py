@@ -49,7 +49,7 @@ extensions = [
               'sphinx.ext.todo',
               'sphinx.ext.imgmath',
               'matplotlib.sphinxext.plot_directive',
-              'matplotlib.sphinxext.only_directives',
+             #  'matplotlib.sphinxext.only_directives',
               'matplotlib.sphinxext.mathmpl',
               'sphinxcontrib.googleanalytics',
               'sphinx_sitemap',
