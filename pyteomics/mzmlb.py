@@ -41,15 +41,20 @@ References
 
 import io
 import warnings
+import logging
+from collections import namedtuple
 
 import h5py
 try:
+    logging.getLogger("hdf5plugin").addHandler(logging.NullHandler())
     import hdf5plugin
 except ImportError:
     hdf5plugin = None
 
+import numpy as np
+
 from pyteomics.mzml import MzML as _MzML
-from pyteomics.auxiliary.file_helpers import HierarchicalOffsetIndex, TaskMappingMixin
+from pyteomics.auxiliary.file_helpers import HierarchicalOffsetIndex, TaskMappingMixin, TimeOrderedIndexedReaderMixin
 
 
 def delta_predict(data, copy=True):
@@ -152,6 +157,18 @@ class HDF5ByteBuffer(io.RawIOBase):
         return dat
 
 
+class external_array_slice(namedtuple('external_array_slice',
+                           ['array_name', 'offset', 'length', 'source', 'transform', 'key', 'dtype'])):
+    def decode(self):
+        """Decode :attr:`data` into a numerical array
+
+        Returns
+        -------
+        np.ndarray
+        """
+        return self.source._decode_record(self)
+
+
 class ExternalDataMzML(_MzML):
     '''An MzML parser that reads data arrays from an external provider.
 
@@ -161,28 +178,72 @@ class ExternalDataMzML(_MzML):
         self._external_data_registry = kwargs.pop("external_data_registry", None)
         super(ExternalDataMzML, self).__init__(*args, **kwargs)
 
+    def _make_record(self, array_name, offset, length, transform, name, dtype):
+        return external_array_slice(array_name, offset, length, self, transform, name, dtype)
+
+    def _transform_array(self, array, transform):
+        if transform is None:
+            return array
+        elif "linear prediction" == transform:
+            return linear_predict(array, copy=False)
+        elif "delta prediction" == transform:
+            return delta_predict(array, copy=False)
+        else:
+            raise ValueError("Transformation not recognized")
+
+    def _retrieve_external_array(self, array_name, length, offset):
+        array = self._external_data_registry.get(array_name, length, offset)
+        return array
+
+    def decode_data_array(self, array_name, offset, length, transform=None, dtype=np.float64):
+        array = self._retrieve_external_array(array_name, length, offset)
+        array = self._transform_array(array, transform)
+        return array
+
+    def _decode_record(self, record):
+        array = self.decode_data_array(
+            record.array_name, record.offset, record.length, record.transform, record.dtype)
+        return self._finalize_record_conversion(array, record)
+
     def _handle_binary(self, info, **kwargs):
-        result = super(ExternalDataMzML, self)._handle_binary(info, **kwargs)
+        if not self.decode_binary:
+            self.decode_binary = True
+            # Binary decoding works totally differently here, not supporting the previous signatures
+            # that the parent method will use. Pretend we are decoding because it is a no-op in the
+            # parent method.
+            result = super(ExternalDataMzML, self)._handle_binary(info, **kwargs)
+            self.decode_binary = False
+        else:
+            result = super(ExternalDataMzML, self)._handle_binary(info, **kwargs)
         try:
             array_name = info['external HDF5 dataset']
         except KeyError:
             array_name = info['external dataset']
         offset = int(info['external offset'])
         length = int(info['external array length'])
-        array = self._external_data_registry.get(array_name, length, offset)
 
-        # The zlib compression in these two terms happens automatically  during HDF5 encoding and
-        # the reader needn't even know about it.
+        transform = None
+        # The zlib compression in these two terms happens automatically during HDF5 encoding and
+        # the reader needn't even know about it. Need an example of how Numpress will be signaled.
         if "linear prediction" in info or "truncation, linear prediction and zlib compression" in info:
-            array = linear_predict(array, copy=False)
+            transform = 'linear prediction'
         elif "delta prediction" in info or "truncation, delta prediction and zlib compression" in info:
-            array = delta_predict(array, copy=False)
+            transform = 'delta prediction'
+
+        if not self.decode_binary:
+            name = self._detect_array_name(info)
+            result[name] = self._make_record(
+                array_name, offset, length, transform, name,
+                self._external_data_registry.dtype_of(array_name))
+            return result
+
+        array = self._retrieve_external_array(array_name, length, offset)
 
         if len(result) == 1:
             name = next(iter(result))
         else:
             name = self._detect_array_name(info)
-        result[name] = array
+        result[name] = self._convert_array(name, array)
         return result
 
 
@@ -197,11 +258,14 @@ class ExternalArrayRegistry(object):
     def get(self, array_name, length, offset=0):
         return self.registry[array_name][offset:offset + length]
 
+    def dtype_of(self, array_name):
+        return self.registry[array_name].dtype
+
     def __call__(self, array_name, length, offset=0):
         return self.get(array_name, length, offset)
 
 
-class MzMLb(TaskMappingMixin):
+class MzMLb(TimeOrderedIndexedReaderMixin, TaskMappingMixin):
     '''A parser for mzMLb [1]_
 
     Provides an identical interface to :class:`~pyteomics.mzml.MzML`
@@ -370,9 +434,8 @@ class MzMLb(TaskMappingMixin):
     def default_index(self):
         return self._mzml_parser.default_index
 
-    @property
-    def time(self):
-        return self._mzml_parser.time
+    def _get_time(self, scan):
+        return self._mzml_parser._get_time(scan)
 
     @property
     def mzml_parser(self):
