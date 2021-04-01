@@ -32,6 +32,7 @@ import socket
 from traceback import format_exc
 import warnings
 from collections import OrderedDict, namedtuple
+from itertools import islice
 from lxml import etree
 import numpy as np
 
@@ -1144,6 +1145,27 @@ class IndexedXML(IndexedReaderMixin, XML):
     def __len__(self):
         return len(self._offset_index[self._default_iter_tag])
 
+    def iterfind(self, path, **kwargs):
+        """Parse the XML and yield info on elements with specified local
+        name or by specified "XPath".
+
+        Parameters
+        ----------
+        path : str
+            Element name or XPath-like expression. The path is very close to
+            full XPath syntax, but local names should be used for all elements in the path.
+            They will be substituted with local-name() checks, up to the (first) predicate.
+            The path can be absolute or "free". Please don't specify namespaces.
+        **kwargs : passed to :py:meth:`self._get_info_smart`.
+
+        Returns
+        -------
+        out : iterator
+        """
+        if path in self._indexed_tags and self._use_index:
+            return IndexedIterfind(self, path, **kwargs)
+        return Iterfind(self, path, **kwargs)
+
 
 class MultiProcessingXML(IndexedXML, TaskMappingMixin):
     """XML reader that feeds indexes to external processes
@@ -1212,7 +1234,7 @@ class ArrayConversionMixin(BinaryDataArrayTransformer):
         return self._convert_array(key, array)
 
 
-class Iterfind(TaskMappingMixin):
+class Iterfind(object):
     def __init__(self, parser, tag_name, **kwargs):
         self.parser = parser
         self.tag_name = tag_name
@@ -1241,18 +1263,9 @@ class Iterfind(TaskMappingMixin):
     def next(self):
         return self.__next__()
 
-    def _task_map_iterator(self):
-        """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
-        queue used by :meth:`map`
-
-        Returns
-        -------
-        :class:`Iteratable`
-        """
-        return iter(self.parser.index[self.tag_name])
-
-    def _get_reader_for_worker_spec(self):
-        return self.parser
+    @property
+    def is_indexed(self):
+        return False
 
     def reset(self):
         self._iterator = None
@@ -1263,3 +1276,78 @@ class Iterfind(TaskMappingMixin):
 
     def __exit__(self, *args, **kwargs):
         self.reset()
+
+    def map(self, *args,**kwargs):
+        raise NotImplementedError("This query isn't indexed, it cannot be mapped with multiprocessing")
+
+    def _get_by_index(self, idx):
+        self.reset()
+        value = next(islice(self, idx, idx + 1))
+        return value
+
+    def _get_by_slice(self, slc):
+        self.reset()
+        value = list(islice(self, slc.start, slc.stop, slc.step))
+        return value
+
+    def __getitem__(self, i):
+        if isinstance(i, slice):
+            return self._get_by_slice(i)
+        return self._get_by_index(i)
+
+
+class IndexedIterfind(TaskMappingMixin, Iterfind):
+
+    def __init__(self, parser, tag_name, **kwargs):
+        TaskMappingMixin.__init__(self, **kwargs)
+        Iterfind.__init__(self, parser, tag_name, **kwargs)
+
+    def _task_map_iterator(self):
+        """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
+        queue used by :meth:`map`
+
+        Returns
+        -------
+        :class:`Iteratable`
+        """
+        return iter(self._index)
+
+    @property
+    def _index(self):
+        return self.parser.index[self.tag_name]
+
+    def _get_reader_for_worker_spec(self):
+        return self.parser
+
+    def _yield_from_index(self):
+        for key in self._task_map_iterator():
+            yield self.parser.get_by_id(key, **self.config)
+
+    def _make_iterator(self):
+        if self.is_indexed:
+            return self._yield_from_index()
+        warnings.warn("Non-indexed iterator created from %r" % (self, ))
+        return super(IndexedIterfind, self)._make_iterator()
+
+    @property
+    def is_indexed(self):
+        if hasattr(self.parser, 'index'):
+            if self.parser.index is not None:
+                index = self.parser.index
+                if isinstance(index, HierarchicalOffsetIndex):
+                    return bool(self.tag_name in index and index[self.tag_name])
+        return False
+
+    def _get_by_index(self, idx):
+        index = self._index
+        key = index.from_index(idx)
+        return self.parser.get_by_id(key)
+
+    def _get_by_slice(self, slc):
+        index = self._index
+        keys = index.from_slice(slc)
+        return self.parser.get_by_ids(keys)
+
+    def __len__(self):
+        index = self._index
+        return len(index)
