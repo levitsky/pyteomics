@@ -54,7 +54,7 @@ except ImportError:
 import numpy as np
 
 from pyteomics.mzml import MzML as _MzML
-from pyteomics.auxiliary.file_helpers import HierarchicalOffsetIndex, TaskMappingMixin, TimeOrderedIndexedReaderMixin
+from pyteomics.auxiliary.file_helpers import HierarchicalOffsetIndex, TaskMappingMixin, TimeOrderedIndexedReaderMixin, FileReader
 
 
 def delta_predict(data, copy=True):
@@ -506,3 +506,8 @@ def read(source, dtype=None):
     """
     reader = MzMLb(source, dtype=dtype)
     return reader
+
+
+# The MzMLb class is detatched from the normal :class:`FileReader`-based inheritance tree,
+# this grafts it back on for :func:`isinstance` and :func:`issubclass` tests at least.
+FileReader.register(MzMLb)

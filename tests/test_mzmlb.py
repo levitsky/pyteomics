@@ -15,6 +15,8 @@ except ImportError as err:
     MzMLb = read = None
     reason = err
 
+from pyteomics.auxiliary import FileReader
+
 
 class MzMLbTest(unittest.TestCase):
     maxDiff = None
@@ -45,6 +47,9 @@ class MzMLbTest(unittest.TestCase):
             spectrum = next(reader)
             self.assertEqual(
                 spectrum['id'], 'controllerType=0 controllerNumber=1 scan=1')
+
+    def test_registered_filereader(self):
+        self.assertTrue(issubclass(MzMLb, FileReader))
 
 
 if __name__ == '__main__':
