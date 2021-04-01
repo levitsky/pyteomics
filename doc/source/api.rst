@@ -18,6 +18,7 @@ Contents:
    api/peff
    api/mzml
    api/mzxml
+   api/mzmlb
    api/mgf
    api/ms1
    api/ms2

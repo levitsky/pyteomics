@@ -1,3 +1,7 @@
+Unreleased
+----------
+ - Add support for mzMLb (`#35 <https://github.com/levitsky/pyteomics/pull/35>`_ by Joshua Klein)
+
 4.4.2
 -----
 
