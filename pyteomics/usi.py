@@ -27,6 +27,14 @@ Data access
 import json
 from collections import namedtuple
 
+import threading
+import multiprocessing
+
+try:
+    from multiprocessing.dummy import Pool as ThreadPool
+except ImportError:
+    ThreadPool = None
+
 try:
     from urllib2 import Request, urlopen
 except ImportError:
@@ -248,6 +256,75 @@ class ProteomeExchangeBackend(_PROXIBackend):
 
         super(ProteomeExchangeBackend, self).__init__(
             'ProteomeExchange', self._url_template, **kwargs)
+
+
+class PROXIAggregator(object):
+    '''Aggregate across requests across multiple PROXI servers.
+
+    Attributes
+    ----------
+    backends : :class:`dict` mapping :class:`str` to :class:`_PROXIBackend`
+        The backend servers to query. Defaults to the set of all available backends.
+    n_threads : int
+        The number of threads to run concurrently to while making requests. Defaults
+        to the number of servers to query.
+    timeout : float
+        The number of seconds to wait for a response.
+
+    '''
+    def __init__(self, backends=None, n_threads=None, timeout=15, **kwargs):
+        if backends is None:
+            backends = {k: v() for k, v in _proxies.items()}
+        if n_threads is None:
+            n_threads = len(backends)
+
+        self.timeout = timeout
+        self.backends = backends
+        self.n_threads = n_threads
+        self.pool = None
+        self.lock = threading.RLock()
+
+    def _init_pool(self):
+        if ThreadPool is None:
+            return False
+        if self.pool is not None:
+            return True
+        with self.lock:
+            if self.pool is None:
+                self.pool = ThreadPool(self.n_threads)
+        return True
+
+    def _fetch_usi(self, usi):
+        use_pool = self._init_pool()
+        agg = []
+        if use_pool:
+            for backend in self.backends.values():
+                result = self.pool.apply_async(backend.get, (usi, ))
+                agg.append((backend, result))
+            tmp = []
+            for backend, res in agg:
+                try:
+                    res = res.get(self.timeout)
+                    tmp.append((backend, res))
+                except (multiprocessing.TimeoutError, Exception) as err:
+                    tmp.append((backend, err))
+            agg = tmp
+        else:
+            for backend in self.backends.values():
+                try:
+                    agg.append(backend, backend.get(usi))
+                except Exception as err:
+                    agg.append((backend, err))
+                    continue
+        return agg
+
+    def get(self, usi):
+        agg = self._fetch_usi(usi)
+        return agg
+
+    def __call__(self, usi):
+        return self.get(usi)
+
 
 _proxies = {
     "peptide_atlas": PeptideAtlasBackend,
