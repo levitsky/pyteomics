@@ -4,8 +4,6 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 
 import unittest
-from itertools import product
-import operator as op
 
 from pyteomics.usi import USI, proxi
 
