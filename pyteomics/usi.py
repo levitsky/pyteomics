@@ -323,23 +323,26 @@ class PROXIAggregator(object):
                     continue
         return agg
 
-    def coalesce(self, responses):
-        '''Coalesce responses from disparate servers into a single spectrum representation.
+    def coalesce(self, responses, method='first'):
+        '''Merge responses from disparate servers into a single spectrum representation.
+
+        The merging process will use the first of every array encountered, and all unique
+        attributes.
 
         Parameters
         ----------
         responses : list
-            A list of response values, pairs or (:class:`_PROXIBackend` and either :class:`dict` or :class:`Exception`)
+            A list of response values, pairs (:class:`_PROXIBackend` and either
+            :class:`dict` or :class:`Exception`).
+        method : str
+            The name of the coalescence technique to use. Currently only "first" is
+            supported.
 
         Returns
         -------
         result : :class:`dict`
             The coalesced spectrum
-
         '''
-        arrays = {}
-        attributes = defaultdict(list)
-
         def collapse_attribute(values):
             try:
                 acc = list(set(v['value'] for v in values))
@@ -415,6 +418,7 @@ default_backend = 'peptide_atlas'
 AGGREGATOR_KEY = "aggregator"
 AGGREGATOR = PROXIAggregator()
 
+
 def proxi(usi, backend=default_backend, **kwargs):
     '''Retrieve a ``USI`` from a `PROXI <http://www.psidev.info/proxi>`.
 
@@ -425,7 +429,10 @@ def proxi(usi, backend=default_backend, **kwargs):
     backend : str or :class:`Callable`
         Either the name of a PROXI host (peptide_atlas, massive, pride, jpost, or aggregator),
         or a callable object (which :class:`_PROXIBackend` instances are) which will be used
-        to resolve the USI.
+        to resolve the USI. The "aggregator" backend will use a :class:`PROXIAggregator` instance
+        which will request the same USI from all the registered servers and attempt to merge their
+        responses into a single whole. See :meth:`PROXIAggregator.coalesce` for more details on the
+        merging process.
     **kwargs:
         extra arguments passed when constructing the backend by name.
 
@@ -439,7 +446,7 @@ def proxi(usi, backend=default_backend, **kwargs):
             backend = AGGREGATOR
         else:
             backend = _proxies[backend](**kwargs)
-    elif isinstance(backend, type) and issubclass(backend, _PROXIBackend):
+    elif isinstance(backend, type) and issubclass(backend, (_PROXIBackend, PROXIAggregator)):
         backend = backend(**kwargs)
     elif callable(backend):
         backend = backend
