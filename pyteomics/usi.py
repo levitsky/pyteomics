@@ -25,10 +25,11 @@ Data access
 
 """
 import json
-from collections import namedtuple
-
+import warnings
 import threading
 import multiprocessing
+
+from collections import namedtuple, defaultdict
 
 try:
     from multiprocessing.dummy import Pool as ThreadPool
@@ -261,6 +262,9 @@ class ProteomeExchangeBackend(_PROXIBackend):
 class PROXIAggregator(object):
     '''Aggregate across requests across multiple PROXI servers.
 
+    Will attempt to coalesce responses from responding servers into a single spectrum
+    representation.
+
     Attributes
     ----------
     backends : :class:`dict` mapping :class:`str` to :class:`_PROXIBackend`
@@ -298,17 +302,18 @@ class PROXIAggregator(object):
         use_pool = self._init_pool()
         agg = []
         if use_pool:
-            for backend in self.backends.values():
-                result = self.pool.apply_async(backend.get, (usi, ))
-                agg.append((backend, result))
-            tmp = []
-            for backend, res in agg:
-                try:
-                    res = res.get(self.timeout)
-                    tmp.append((backend, res))
-                except (multiprocessing.TimeoutError, Exception) as err:
-                    tmp.append((backend, err))
-            agg = tmp
+            with self.lock:
+                for backend in self.backends.values():
+                    result = self.pool.apply_async(backend.get, (usi, ))
+                    agg.append((backend, result))
+                tmp = []
+                for backend, res in agg:
+                    try:
+                        res = res.get(self.timeout)
+                        tmp.append((backend, res))
+                    except (multiprocessing.TimeoutError, Exception) as err:
+                        tmp.append((backend, err))
+                agg = tmp
         else:
             for backend in self.backends.values():
                 try:
@@ -318,9 +323,80 @@ class PROXIAggregator(object):
                     continue
         return agg
 
+    def coalesce(self, responses):
+        '''Coalesce responses from disparate servers into a single spectrum representation.
+
+        Parameters
+        ----------
+        responses : list
+            A list of response values, pairs or (:class:`_PROXIBackend` and either :class:`dict` or :class:`Exception`)
+
+        Returns
+        -------
+        result : :class:`dict`
+            The coalesced spectrum
+
+        '''
+        arrays = {}
+        attributes = defaultdict(list)
+
+        def collapse_attribute(values):
+            try:
+                acc = list(set(v['value'] for v in values))
+            except TypeError:
+                acc = []
+                for v in values:
+                    if v['value'] not in acc:
+                        acc.append(v['value'])
+
+            result = []
+            template = values[0].copy()
+            for v in acc:
+                t = template.copy()
+                t['value'] = v
+                result.append(t)
+            return result
+
+        arrays = {}
+        attributes = defaultdict(list)
+
+        found = []
+        error = []
+
+        for backend, response in responses:
+            if isinstance(response, Exception):
+                error.append((backend.name, (response)))
+                continue
+            else:
+                found.append(backend.name)
+            for array_name in ('m/z array', 'intensity array'):
+                if array_name not in arrays:
+                    arrays[array_name] = response[array_name]
+                else:
+                    array = response[array_name]
+                    if len(array) != len(arrays[array_name]):
+                        warnings.warn("Length mismatch from %s for %s" %
+                            (backend.name, array_name))
+                        arrays[array_name] = max((array, arrays[array_name]), key=len)
+                    elif not np.allclose(array, arrays[array_name]):
+                        warnings.warn("Value mismatch from %s for %s" %
+                            (backend.name, array_name))
+            for attr in response['attributes']:
+                attributes[attr.get('accession', attr.get('name'))].append(attr)
+
+        finalized_attributes = []
+        for k, v in attributes.items():
+            finalized_attributes.extend(collapse_attribute(v))
+
+        result = {"responders": found, 'errors': error, 'attributes': finalized_attributes}
+        result.update(arrays)
+        if 'm/z array' not in result:
+            raise ValueError("No valid responses found")
+        return result
+
     def get(self, usi):
         agg = self._fetch_usi(usi)
-        return agg
+        return self.coalesce(agg)
 
     def __call__(self, usi):
         return self.get(usi)
@@ -335,9 +411,9 @@ _proxies = {
 }
 
 default_backend = 'peptide_atlas'
-# The Proteome Exchange backend is a special server running an aggregation service
-# for all the other providers.
 
+AGGREGATOR_KEY = "aggregator"
+AGGREGATOR = PROXIAggregator()
 
 def proxi(usi, backend=default_backend, **kwargs):
     '''Retrieve a ``USI`` from a `PROXI <http://www.psidev.info/proxi>`.
@@ -347,8 +423,8 @@ def proxi(usi, backend=default_backend, **kwargs):
     usi : str or :class:`USI`
         The universal spectrum identifier to request.
     backend : str or :class:`Callable`
-        Either the name of a PROXI host (peptide_atlas, massive, pride, or jpost), or a
-        callable object (which :class:`_PROXIBackend` instances are) which will be used
+        Either the name of a PROXI host (peptide_atlas, massive, pride, jpost, or aggregator),
+        or a callable object (which :class:`_PROXIBackend` instances are) which will be used
         to resolve the USI.
     **kwargs:
         extra arguments passed when constructing the backend by name.
@@ -359,8 +435,11 @@ def proxi(usi, backend=default_backend, **kwargs):
         The spectrum as represented by the requested PROXI host.
     '''
     if isinstance(backend, str):
-        backend = _proxies[backend](**kwargs)
-    elif issubclass(backend, _PROXIBackend):
+        if backend == AGGREGATOR_KEY:
+            backend = AGGREGATOR
+        else:
+            backend = _proxies[backend](**kwargs)
+    elif isinstance(backend, type) and issubclass(backend, _PROXIBackend):
         backend = backend(**kwargs)
     elif callable(backend):
         backend = backend
