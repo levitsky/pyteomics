@@ -25,7 +25,16 @@ Data access
 
 """
 import json
-from collections import namedtuple
+import warnings
+import threading
+import multiprocessing
+
+from collections import namedtuple, defaultdict
+
+try:
+    from multiprocessing.dummy import Pool as ThreadPool
+except ImportError:
+    ThreadPool = None
 
 try:
     from urllib2 import Request, urlopen
@@ -42,6 +51,8 @@ except ImportError:
 
     def coerce_array(array_data):
         return [float(v) for v in array_data]
+
+from .auxiliary import PyteomicsError
 
 
 class USI(namedtuple("USI", ['protocol', 'dataset', 'datafile', 'scan_identifier_type', 'scan_identifier', 'interpretation'])):
@@ -83,6 +94,17 @@ class USI(namedtuple("USI", ['protocol', 'dataset', 'datafile', 'scan_identifier
         USI
         '''
         return cls(*_usi_parser(str(usi)))
+
+
+def cast_numeric(value):
+    try:
+        return int(value)
+    except ValueError:
+        pass
+    try:
+        return float(value)
+    except ValueError:
+        return value
 
 
 def _usi_parser(usi):
@@ -176,7 +198,13 @@ class _PROXIBackend(object):
             data_collection = data
             data = data_collection[0]
         result = {}
-        result['attributes'] = data.pop('attributes', {})
+        result['attributes'] = data.pop('attributes', [])
+        for attrib in result['attributes']:
+            if 'value' in attrib and attrib['value'][0].isdigit():
+                try:
+                    attrib['value'] = cast_numeric(attrib['value'])
+                except TypeError:
+                    continue
         result['m/z array'] = coerce_array(data.pop('mzs', []))
         result['intensity array'] = coerce_array(data.pop('intensities', []))
         for key, value in data.items():
@@ -224,15 +252,176 @@ class JPOSTBackend(_PROXIBackend):
         kwargs.pop("version", None)
 
 
+class ProteomeExchangeBackend(_PROXIBackend):
+    _url_template = 'http://proteomecentral.proteomexchange.org/api/proxi/v{version}/spectra?resultType=full&usi={usi!s}'
+
+    def __init__(self, **kwargs):
+
+        super(ProteomeExchangeBackend, self).__init__(
+            'ProteomeExchange', self._url_template, **kwargs)
+
+
+class PROXIAggregator(object):
+    '''Aggregate across requests across multiple PROXI servers.
+
+    Will attempt to coalesce responses from responding servers into a single spectrum
+    representation.
+
+    Attributes
+    ----------
+    backends : :class:`dict` mapping :class:`str` to :class:`_PROXIBackend`
+        The backend servers to query. Defaults to the set of all available backends.
+    n_threads : int
+        The number of threads to run concurrently to while making requests. Defaults
+        to the number of servers to query.
+    timeout : float
+        The number of seconds to wait for a response.
+
+    '''
+    def __init__(self, backends=None, n_threads=None, timeout=15, **kwargs):
+        if backends is None:
+            backends = {k: v() for k, v in _proxies.items()}
+        if n_threads is None:
+            n_threads = len(backends)
+
+        self.timeout = timeout
+        self.backends = backends
+        self.n_threads = n_threads
+        self.pool = None
+        self.lock = threading.RLock()
+
+    def _init_pool(self):
+        if ThreadPool is None:
+            return False
+        if self.pool is not None:
+            return True
+        with self.lock:
+            if self.pool is None:
+                self.pool = ThreadPool(self.n_threads)
+        return True
+
+    def _fetch_usi(self, usi):
+        use_pool = self._init_pool()
+        agg = []
+        if use_pool:
+            with self.lock:
+                for backend in self.backends.values():
+                    result = self.pool.apply_async(backend.get, (usi, ))
+                    agg.append((backend, result))
+                tmp = []
+                for backend, res in agg:
+                    try:
+                        res = res.get(self.timeout)
+                        tmp.append((backend, res))
+                    except (multiprocessing.TimeoutError, Exception) as err:
+                        tmp.append((backend, err))
+                agg = tmp
+        else:
+            for backend in self.backends.values():
+                try:
+                    agg.append(backend, backend.get(usi))
+                except Exception as err:
+                    agg.append((backend, err))
+                    continue
+        return agg
+
+    def coalesce(self, responses, method='first'):
+        '''Merge responses from disparate servers into a single spectrum representation.
+
+        The merging process will use the first of every array encountered, and all unique
+        attributes.
+
+        Parameters
+        ----------
+        responses : list
+            A list of response values, pairs (:class:`_PROXIBackend` and either
+            :class:`dict` or :class:`Exception`).
+        method : str
+            The name of the coalescence technique to use. Currently only "first" is
+            supported.
+
+        Returns
+        -------
+        result : :class:`dict`
+            The coalesced spectrum
+        '''
+        def collapse_attribute(values):
+            try:
+                acc = list(set(v['value'] for v in values))
+            except TypeError:
+                acc = []
+                for v in values:
+                    if v['value'] not in acc:
+                        acc.append(v['value'])
+
+            result = []
+            template = values[0].copy()
+            for v in acc:
+                t = template.copy()
+                t['value'] = v
+                result.append(t)
+            return result
+
+        arrays = {}
+        attributes = defaultdict(list)
+
+        found = []
+        error = []
+
+        for backend, response in responses:
+            if isinstance(response, Exception):
+                error.append((backend.name, (response)))
+                continue
+            else:
+                found.append(backend.name)
+            for array_name in ('m/z array', 'intensity array'):
+                if array_name not in arrays:
+                    arrays[array_name] = response[array_name]
+                else:
+                    array = response[array_name]
+                    if len(array) != len(arrays[array_name]):
+                        warnings.warn("Length mismatch from %s for %s" %
+                            (backend.name, array_name))
+                        arrays[array_name] = max((array, arrays[array_name]), key=len)
+                    elif not np.allclose(array, arrays[array_name]):
+                        warnings.warn("Value mismatch from %s for %s" %
+                            (backend.name, array_name))
+            for attr in response['attributes']:
+                attributes[attr.get('accession', attr.get('name'))].append(attr)
+
+        finalized_attributes = []
+        for k, v in attributes.items():
+            finalized_attributes.extend(collapse_attribute(v))
+
+        result = {"responders": found, 'errors': error, 'attributes': finalized_attributes}
+        result.update(arrays)
+        if 'm/z array' not in result:
+            raise ValueError("No valid responses found")
+        return result
+
+    def get(self, usi):
+        agg = self._fetch_usi(usi)
+        return self.coalesce(agg)
+
+    def __call__(self, usi):
+        return self.get(usi)
+
 
 _proxies = {
     "peptide_atlas": PeptideAtlasBackend,
     "massive": MassIVEBackend,
     "pride": PRIDEBackend,
     "jpost": JPOSTBackend,
+    'proteome_exchange': ProteomeExchangeBackend,
 }
 
-def proxi(usi, backend='peptide_atlas', **kwargs):
+default_backend = 'peptide_atlas'
+
+AGGREGATOR_KEY = "aggregator"
+AGGREGATOR = PROXIAggregator()
+
+
+def proxi(usi, backend=default_backend, **kwargs):
     '''Retrieve a ``USI`` from a `PROXI <http://www.psidev.info/proxi>`.
 
     Parameters
@@ -240,9 +429,12 @@ def proxi(usi, backend='peptide_atlas', **kwargs):
     usi : str or :class:`USI`
         The universal spectrum identifier to request.
     backend : str or :class:`Callable`
-        Either the name of a PROXI host (peptide_atlas, massive, pride, or jpost), or a
-        callable object (which :class:`_PROXIBackend` instances are) which will be used
-        to resolve the USI.
+        Either the name of a PROXI host (peptide_atlas, massive, pride, jpost, or aggregator),
+        or a callable object (which :class:`_PROXIBackend` instances are) which will be used
+        to resolve the USI. The "aggregator" backend will use a :class:`PROXIAggregator` instance
+        which will request the same USI from all the registered servers and attempt to merge their
+        responses into a single whole. See :meth:`PROXIAggregator.coalesce` for more details on the
+        merging process.
     **kwargs:
         extra arguments passed when constructing the backend by name.
 
@@ -252,11 +444,16 @@ def proxi(usi, backend='peptide_atlas', **kwargs):
         The spectrum as represented by the requested PROXI host.
     '''
     if isinstance(backend, str):
-        backend = _proxies[backend](**kwargs)
-    elif issubclass(backend, _PROXIBackend):
+        if backend == AGGREGATOR_KEY:
+            backend = AGGREGATOR
+        elif backend in _proxies:
+            backend = _proxies[backend](**kwargs)
+        else:
+            raise PyteomicsError("Unknown PROXI backend name: {}.".format(backend))
+    elif isinstance(backend, type) and issubclass(backend, (_PROXIBackend, PROXIAggregator)):
         backend = backend(**kwargs)
     elif callable(backend):
         backend = backend
     else:
-        raise TypeError("Unrecognized backend type")
+        raise TypeError("Unrecognized backend type: {0.__name__}".format(type(backend)))
     return backend(usi)
