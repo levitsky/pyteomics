@@ -52,6 +52,8 @@ except ImportError:
     def coerce_array(array_data):
         return [float(v) for v in array_data]
 
+from .auxiliary import PyteomicsError
+
 
 class USI(namedtuple("USI", ['protocol', 'dataset', 'datafile', 'scan_identifier_type', 'scan_identifier', 'interpretation'])):
     '''Represent a Universal Spectrum Identifier (USI).
@@ -444,12 +446,14 @@ def proxi(usi, backend=default_backend, **kwargs):
     if isinstance(backend, str):
         if backend == AGGREGATOR_KEY:
             backend = AGGREGATOR
-        else:
+        elif backend in _proxies:
             backend = _proxies[backend](**kwargs)
+        else:
+            raise PyteomicsError("Unknown PROXI backend name: {}.".format(backend))
     elif isinstance(backend, type) and issubclass(backend, (_PROXIBackend, PROXIAggregator)):
         backend = backend(**kwargs)
     elif callable(backend):
         backend = backend
     else:
-        raise TypeError("Unrecognized backend type")
+        raise TypeError("Unrecognized backend type: {0.__name__}".format(type(backend)))
     return backend(usi)
