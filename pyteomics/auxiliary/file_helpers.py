@@ -9,7 +9,7 @@ import multiprocessing as mp
 import threading
 import warnings
 import os
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 
 try:
     basestring

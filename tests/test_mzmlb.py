@@ -1,8 +1,5 @@
 import unittest
-from itertools import product
 import os
-import shutil
-import tempfile
 import pickle
 import pyteomics
 from io import BytesIO
