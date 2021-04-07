@@ -246,16 +246,81 @@ class ExternalDataMzML(_MzML):
         result[name] = self._convert_array(name, array)
         return result
 
+    def reset(self):
+        super(ExternalDataMzML, self).reset()
+        self._external_data_registry.clear()
+
+
+class chunk_interval_cache_record(namedtuple("chunk_interval_cache_record", ("start", "end", "array"))):
+    def contains(self, start, end):
+        if self.start <= start:
+            if end < self.end:
+                return True
+        return False
+
+    def get(self, start, end):
+        return self.array[start - self.start:end - self.start]
+
+    def __eq__(self, other):
+        return self.start == other.start and self.end == other.end
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash(self.start)
+
+
 
 class ExternalArrayRegistry(object):
     '''Read chunks out of a single long array
 
     This is an implementation detail of :class:`MzMLb`
+
+    Attributes
+    ----------
+    registry : Mapping
+        A mapping from array name to the out-of-core array object.
+    chunk_size : int
+        The number of entries to chunk together and keep in memory.
+    chunk_cache : dict
+        A mapping from array name to cached array blocks.
     '''
-    def __init__(self, registry):
+    def __init__(self, registry, chunk_size=None):
+        if chunk_size is None:
+            chunk_size = 2 ** 20
+        else:
+            chunk_size = int(chunk_size)
         self.registry = registry
+        self.chunk_cache = {}
+        self.chunk_size = chunk_size
+
+    def clear(self):
+        self.chunk_cache.clear()
+
+    def _get_raw(self, array_name, start, end):
+        return self.registry[array_name][start:end]
+
+    def _make_cache_record(self, array_name, start, end):
+        return chunk_interval_cache_record(start, end, self._get_raw(array_name, start, end))
 
     def get(self, array_name, length, offset=0):
+        start = offset
+        end = start + length
+        try:
+            cache_record = self.chunk_cache[array_name]
+            if cache_record.contains(start, end):
+                return cache_record.get(start, end)
+            else:
+                cache_record = self._make_cache_record(
+                    array_name, start, start + max(length, self.chunk_size))
+            self.chunk_cache[array_name] = cache_record
+            return cache_record.get(start, end)
+        except KeyError:
+            cache_record = self._make_cache_record(
+                array_name, start, start + max(length, self.chunk_size))
+            self.chunk_cache[array_name] = cache_record
+            return cache_record.get(start, end)
         return self.registry[array_name][offset:offset + length]
 
     def dtype_of(self, array_name):
