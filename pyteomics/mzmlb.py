@@ -119,6 +119,16 @@ class HDF5ByteBuffer(io.RawIOBase):
         self.buffer = buffer
         self.offset = offset
         self.size = self.buffer.size
+        self.mode = 'rb'
+
+    def readable(self):
+        return True
+
+    def seekable(self):
+        return True
+
+    def isatty(self):
+        return False
 
     def seek(self, offset, whence=0):
         if whence == io.SEEK_SET:
@@ -129,6 +139,7 @@ class HDF5ByteBuffer(io.RawIOBase):
             self.offset = self.size - offset
         else:
             raise ValueError("Bad whence %r" % whence)
+        return self.offset
 
     def tell(self):
         return self.offset
@@ -136,6 +147,7 @@ class HDF5ByteBuffer(io.RawIOBase):
     def close(self):
         return
 
+    @property
     def closed(self):
         return False
 
@@ -148,6 +160,12 @@ class HDF5ByteBuffer(io.RawIOBase):
 
     def readall(self):
         return bytes(self._read(-1))
+
+    def read(self, n=-1):
+        return bytes(self._read(n))
+
+    def write(self, b):
+        raise ValueError("Read-only stream")
 
     def _read(self, n=-1):
         if n == -1:
@@ -376,7 +394,7 @@ class MzMLb(TimeOrderedIndexedReaderMixin, TaskMappingMixin):
         self.schema_version = self.handle['mzML'].attrs.get('version')
         self._check_compressor()
 
-        self._xml_buffer = HDF5ByteBuffer(self.handle['mzML'])
+        self._xml_buffer = io.BufferedReader(HDF5ByteBuffer(self.handle['mzML']))
         self._array_registry = ExternalArrayRegistry(self.handle)
         self._make_mzml_parser(mzmlargs)
 
@@ -413,7 +431,7 @@ class MzMLb(TimeOrderedIndexedReaderMixin, TaskMappingMixin):
         index = HierarchicalOffsetIndex()
         for label in [u'spectrum', u'chromatogram']:
             sub = index[label]
-            ids = bytearray(self.handle['mzML_{}Index_idRef'.format(label)]).split(b"\x00")
+            ids = bytearray(self.handle['mzML_{}Index_idRef'.format(label)][:]).split(b"\x00")
             offsets = self.handle["mzML_{}Index".format(label)][:-1]
             for i, o in enumerate(offsets):
                 sub[ids[i].decode('utf8')] = o
