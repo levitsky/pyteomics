@@ -170,7 +170,7 @@ class HDF5ByteBuffer(io.RawIOBase):
     def _read(self, n=-1):
         if n == -1:
             n = self.size + 1
-        dat = bytearray(self.buffer[self.offset:self.offset + n])
+        dat = bytearray(np.array(self.buffer[self.offset:self.offset + n]))
         self.offset += n
         return dat
 
@@ -431,7 +431,7 @@ class MzMLb(TimeOrderedIndexedReaderMixin, TaskMappingMixin):
         index = HierarchicalOffsetIndex()
         for label in [u'spectrum', u'chromatogram']:
             sub = index[label]
-            ids = bytearray(self.handle['mzML_{}Index_idRef'.format(label)][:]).split(b"\x00")
+            ids = bytearray(np.array(self.handle['mzML_{}Index_idRef'.format(label)])).split(b"\x00")
             offsets = self.handle["mzML_{}Index".format(label)][:-1]
             for i, o in enumerate(offsets):
                 sub[ids[i].decode('utf8')] = o
