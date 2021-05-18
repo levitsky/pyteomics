@@ -21,6 +21,7 @@ try:
 except ImportError:
     pynumpress = None
 
+
 def print_tree(d, indent_str=' -> ', indent_count=1):
     """Read a nested dict (with strings as keys) and print its structure.
     """
@@ -89,17 +90,20 @@ def _decode_base64_data_array(source, dtype, is_compressed):
 _default_compression_map = {
         'no compression': lambda x: x,
         'zlib compression': zlib.decompress,
-    }
+}
+
 
 def _pynumpressDecompress(decoder):
     def decode(data):
         return decoder(np.frombuffer(data, dtype=np.uint8))
     return decode
 
+
 def _zlibNumpress(decoder):
     def decode(data):
         return decoder(np.frombuffer(zlib.decompress(data), dtype=np.uint8))
     return decode
+
 
 if pynumpress:
     _default_compression_map.update(
@@ -111,6 +115,7 @@ if pynumpress:
             'MS-Numpress positive integer compression followed by zlib compression':   _zlibNumpress(pynumpress.decode_pic),
             'MS-Numpress linear prediction compression followed by zlib compression':  _zlibNumpress(pynumpress.decode_linear),
         })
+
 
 if np is not None:
     class BinaryDataArrayTransformer(object):

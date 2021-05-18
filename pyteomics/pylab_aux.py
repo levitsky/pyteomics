@@ -40,7 +40,7 @@ See also
 Dependencies
 ------------
 
-This module requires :py:mod:`matplotlib`. Optional dependencies: :py:mod:`adjustText`.
+This module requires :py:mod:`matplotlib`. Optional dependencies: :py:mod:`adjustText`, :py:mod:`spectrum_utils`.
 
 -------------------------------------------------------------------------------
 
@@ -63,7 +63,13 @@ This module requires :py:mod:`matplotlib`. Optional dependencies: :py:mod:`adjus
 import pylab
 import numpy as np
 from .auxiliary import linear_regression, PyteomicsError
-from . import parser, mass
+from . import parser, mass, mgf, mzml
+
+try:
+    import spectrum_utils.spectrum as sus
+    import spectrum_utils.plot as sup
+except ImportError:
+    sus = sup = None
 
 
 def plot_line(a, b, xlim=None, *args, **kwargs):
@@ -360,19 +366,35 @@ def plot_spectrum(spectrum, centroided=True, *args, **kwargs):
 
 
 def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
+
+    # common kwargs
     types = kwargs.pop('ion_types', ('b', 'y'))
-    maxcharge = kwargs.pop('maxcharge', 1)
     aa_mass = kwargs.pop('aa_mass', mass.std_aa_mass)
     mass_data = kwargs.pop('mass_data', mass.nist_mass)
     ion_comp = kwargs.pop('ion_comp', mass.std_ion_comp)
-    std_colors = {i: 'red' for i in 'xyz'}
-    std_colors.update({i: 'blue' for i in 'abc'})
+    std_colors = {
+        'a': '#388E3C',
+        'b': '#1976D2',
+        'c': '#00796B',
+        'x': '#7B1FA2',
+        'y': '#D32F2F',
+        'z': '#F57C00',
+    }
     colors = kwargs.pop('colors', std_colors)
     ftol = kwargs.pop('ftol', None)
-    centroided = kwargs.pop('centroided', True)
     if ftol is None:
         rtol = kwargs.pop('rtol', 1e-5)
     text_kw = kwargs.pop('text_kw', dict(ha='center', clip_on=True, backgroundcolor='#ffffff99'))
+    precursor_charge = kwargs.pop('precursor_charge', None)
+    if precursor_charge is None:
+        precursor_charge = _get_precursor_charge(spectrum)
+    if precursor_charge is None:
+        raise PyteomicsError('Could not extract precursor charge from spectrum. Please specify `precursor_charge` kwarg.')
+    maxcharge = kwargs.pop('maxcharge', max(1, precursor_charge - 1))
+    # end of common kwargs
+
+    # backend-specific kwargs
+    centroided = kwargs.pop('centroided', True)
     adjust = kwargs.pop('adjust_text', None)
     if adjust or adjust is None:
         try:
@@ -386,6 +408,8 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
         else:
             if adjust is None:
                 adjust = True
+    # end of backend-specific kwargs
+
     parsed = parser.parse(peptide, True, labels=list(aa_mass) + [parser.std_cterm, parser.std_nterm])
     n = len(parsed)
     maxpeak = spectrum['intensity array'].max()
@@ -423,8 +447,97 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     return plot_spectrum(spectrum, centroided, *args, **kwargs)
 
 
+def _get_precursor_charge(spectrum):
+    try:
+        return mgf.MGFBase.parse_precursor_charge(spectrum['params']['charge'], list_only=True)[0]
+    except (PyteomicsError, KeyError):
+        pass
+    try:
+        return spectrum['precursorList']['precursor'][0]['selectedIonList']['selectedIon'][0]['selected ion m/z']
+    except KeyError:
+        pass
+    return None
+
+
+def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
+    if sus is None:
+        raise PyteomicsError('This backend requires `spectrum_utils`.')
+
+    # common kwargs
+    types = kwargs.pop('ion_types', ('b', 'y'))
+    aa_mass = kwargs.pop('aa_mass', mass.std_aa_mass)
+
+    tol = kwargs.pop('ftol', None)
+    if tol is None:
+        tol = kwargs.pop('rtol', 1e-5) * 1e6
+        tol_mode = 'ppm'
+    else:
+        tol_mode = 'Da'
+
+    text_kw = kwargs.pop('text_kw', None)
+    precursor_charge = kwargs.pop('precursor_charge', None)
+    if precursor_charge is None:
+        precursor_charge = _get_precursor_charge(spectrum)
+    if precursor_charge is None:
+        raise PyteomicsError('Could not extract precursor charge from spectrum. Please specify `precursor_charge` kwarg.')
+    maxcharge = kwargs.pop('maxcharge', max(1, precursor_charge - 1))
+    # end of common kwargs
+
+    # backend-specific parameters
+    remove_precursor_peak = kwargs.pop('remove_precursor_peak', False)
+    mz_range = kwargs.pop('mz_range', None)
+    precursor_mz = mass.calculate_mass(peptide, aa_mass=aa_mass, charge=precursor_charge)
+
+    min_intensity = kwargs.pop('min_intensity', 0.0)
+    max_num_peaks = kwargs.pop('max_num_peaks', None)
+    scaling = kwargs.pop('scaling', None)
+    max_intensity = kwargs.pop('max_intensity', None)
+    peak_assignment = kwargs.pop('peak_assignment', 'most_intense')
+
+    spectrum = sus.MsmsSpectrum(
+        None, precursor_mz, precursor_charge, spectrum['m/z array'], spectrum['intensity array'],
+        peptide=peptide)
+    if mz_range:
+        spectrum = spectrum.set_mz_range(*mz_range)
+    if remove_precursor_peak:
+        spectrum = spectrum.remove_precursor_peak(tol, tol_mode)
+    spectrum = spectrum.filter_intensity(min_intensity=min_intensity, max_num_peaks=max_num_peaks
+        ).scale_intensity(scaling, max_intensity
+        ).annotate_peptide_fragments(tol, tol_mode, types, maxcharge, peak_assignment)
+    return spectrum
+
+
+class SpectrumUtilsColorScheme:
+    def __init__(self, colors):
+        self.colors = colors
+        self.previous_colors = sup.colors.copy()
+
+    def __enter__(self):
+        if self.colors:
+            sup.colors.update(self.colors)
+
+    def __exit__(self, *args, **kwargs):
+        sup.colors = self.previous_colors
+
+
+def _spectrum_utils_annotate_plot(spectrum, peptide, *args, **kwargs):
+
+    with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
+        spectrum = _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs)
+        return sup.spectrum(spectrum)
+
+
+def _spectrum_utils_annotate_iplot(spectrum, peptide, *args, **kwargs):
+
+    with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
+        spectrum = _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs)
+        return sup.spectrum(spectrum)
+
+
 _annotation_backends = {
     'default': _default_annotate_spectrum,
+    'spectrum_utils': _spectrum_utils_annotate_plot,
+    'spectrum_utils.iplot': _spectrum_utils_annotate_iplot,
 }
 
 
@@ -438,35 +551,65 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
     peptide : str
         A modX sequence.
     backend : str, keyword only, optional
-        One of `{'default',}`.
+        One of `{'default', 'spectrum_utils', 'spectrum_utils.iplot'}`.
+        The `spectrum_utils` backend requires installing :py:mod:`spectrum_utils`.
+        The `spectrum_utils.iplot` backend requires installing :py:mod:`spectrum_utils[iplot]`.
     ion_types : Container, keyword only, optional
         Ion types to be considered for annotation. Default is `('b', 'y')`.
+    precursor_charge : str, keyword only, optional
+        If not specified, an attempt is made to extract it from `spectrum`.
     maxcharge : int, keyword only, optional
-        Maximum charge state for fragment ions to be considered. Default is `1`.
+        Maximum charge state for fragment ions to be considered. Default is `precursor_charge - 1`.
     colors : dict, keyword only, optional
-        Keys are ion types, values are colors to plot the annotated peaks with. Defaults to a red-blue scheme.
+        Keys are ion types, values are colors to plot the annotated peaks with. Default depends on backend.
     ftol : float, keyword only, optional
         A fixed m/z tolerance value for peak matching. Alternative to `rtol`.
     rtol : float, keyword only, optional
         A relative m/z error for peak matching. Default is 10 ppm.
     text_kw : dict, keyword only, optional
         Keyword arguments for :py:func:`pylab.text`.
-    ion_comp : dict, keyword only, optional
-        A dictionary defining ion compositions to override :py:const:`pyteomics.mass.std_ion_comp`.
-    mass_data : dict, keyword only, optional
-        A dictionary of element masses to override :py:const:`pyteomics.mass.nist_mass`.
     aa_mass : dict, keyword only, optional
         A dictionary of amino acid residue masses.
     *args
         Passed to the plotting backend.
     **kwargs
         Passed to the plotting backend.
+
+
     centroided : bool, keyword only, optional
         Passed to :py:func:`plot_spectrum`. Only works with `default` backend.
+    ion_comp : dict, keyword only, optional
+        A dictionary defining ion compositions to override :py:const:`pyteomics.mass.std_ion_comp`.
+        Only works with `default` backend.
+    mass_data : dict, keyword only, optional
+        A dictionary of element masses to override :py:const:`pyteomics.mass.nist_mass`.
+        Only works with `default` backend.
     adjust_text : bool, keyword only, optional
         Adjust the overlapping text annotations using :py:mod:`adjustText`. Only works with `default` backend.
     adjust_kw : dict, keyword only, optional
         Keyword arguments for :py:func:`adjust_text`. Only works with `default` backend.
+
+
+    remove_precursor_peak : bool, keyword only, optional
+        Remove precursor peak from spectrum before annotation. Default is :p:const:`False`.
+        Only works with `spectrum_utils` backend.
+    min_intensity : float, keyword only, optional
+        Remove low-intensity peaks; this is a factor of maximum peak intensity. Default is 0 (no filtering).
+        Only works with `spectrum_utils` backend.
+    max_num_peaks : int or None, keyword only, optional
+        Remove low-intensity peaks; this is the number of peaks to keep. Default is :py:const:`None` (no filtering).
+        Only works with `spectrum_utils` backend.
+    scaling : one of `{'root', 'log', 'rank'}` or None, keyword only, optional
+        Scaling to apply to peak intensities. Only works with `spectrum_utils` backend.
+    max_intensity : float or None, keyword only, optional
+        Intensity of the most intense peak relative to which the peaks will be scaled
+        (the default is :py:const:`None`, which means that no scaling
+        relative to the most intense peak will be performed).
+        Only works with `spectrum_utils` backend.
+    peak_assignment : one of `{'most_intense', 'nearest_mz'}`, keyword only, optional
+        In case multiple peaks occur within the given mass window around a theoretical peak,
+        only a single peak will be annotated with the fragment type.
+        Default is `'most_intense'`. Only works with `spectrum_utils` backend.
     """
     bname = kwargs.pop('backend', 'default')
     backend = _annotation_backends.get(bname)
