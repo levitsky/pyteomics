@@ -245,7 +245,7 @@ class PRIDEBackend(_PROXIBackend):
 
 
 class JPOSTBackend(_PROXIBackend):
-    _url_template = 'https://repository.jpostdb.org/spectrum/?USI={usi}'
+    _url_template = 'https://repository.jpostdb.org/proxi/spectra?resultType=full&usi={usi}'
 
     def __init__(self, **kwargs):
         super(JPOSTBackend, self).__init__('jPOST', self._url_template, **kwargs)
@@ -278,17 +278,22 @@ class PROXIAggregator(object):
         The number of seconds to wait for a response.
 
     '''
-    def __init__(self, backends=None, n_threads=None, timeout=15, **kwargs):
+
+    _coalesce_resolution_methods = ("first", )
+
+    def __init__(self, backends=None, n_threads=None, timeout=15, merge=True, **kwargs):
         if backends is None:
             backends = {k: v() for k, v in _proxies.items()}
         if n_threads is None:
             n_threads = len(backends)
 
+        self.lock = threading.RLock()
+
         self.timeout = timeout
         self.backends = backends
         self.n_threads = n_threads
         self.pool = None
-        self.lock = threading.RLock()
+        self.merge = merge
 
     def _init_pool(self):
         if ThreadPool is None:
@@ -345,6 +350,9 @@ class PROXIAggregator(object):
         result : :class:`dict`
             The coalesced spectrum
         '''
+        if method not in self._coalesce_resolution_methods:
+            raise ValueError("Coalescence method %r not recognized" % (method, ))
+
         def collapse_attribute(values):
             try:
                 acc = list(set(v['value'] for v in values))
@@ -399,9 +407,51 @@ class PROXIAggregator(object):
             raise ValueError("No valid responses found")
         return result
 
+    def tag_with_source(self, responses):
+        '''Mark each response with it's source.
+
+        Parameters
+        ----------
+        responses : list
+            A list of response values, pairs (:class:`_PROXIBackend` and either
+            :class:`dict` or :class:`Exception`).
+
+        Returns
+        -------
+        result : list[dict]
+            The tagged :class:`dict` for each response.
+        '''
+        output = []
+        for backend, response in responses:
+            if isinstance(response, dict):
+                response['source'] = backend
+            else:
+                response = {
+                    "source": backend,
+                    "error": response
+                }
+            output.append(response)
+        return output
+
     def get(self, usi):
+        '''Retrieve a ``USI`` from each PROXI service over the network.
+
+        Parameters
+        ----------
+        usi : str or :class:`USI`
+            The universal spectrum identifier to retrieve.
+
+        Returns
+        -------
+        result : dict or list[dict]
+            The spectrum coalesced from all responding PROXI hosts if :attr:`merge` is :const:`True`,
+            or a list of responses marked by host.
+        '''
         agg = self._fetch_usi(usi)
-        return self.coalesce(agg)
+        if self.merge:
+            return self.coalesce(agg)
+        else:
+            return self.tag_with_source(agg)
 
     def __call__(self, usi):
         return self.get(usi)
