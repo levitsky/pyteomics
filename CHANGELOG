@@ -1,10 +1,10 @@
-4.5dev2
+4.5dev3
 -------
 
  - Add support for mzMLb (`#35 <https://github.com/levitsky/pyteomics/pull/35>`_
    and `#38 <https://github.com/levitsky/pyteomics/pull/38>`_ by Joshua Klein).
  - Add ProteomeExchange backed for PROXI requests and implement an aggregator for responses from all backends
-   (`#36 <https://github.com/levitsky/pyteomics/pull/36>`_ by Joshua Klein).
+   (`#36 <https://github.com/levitsky/pyteomics/pull/36>`_ and `#45 <https://github.com/levitsky/pyteomics/pull/45>`_ by Joshua Klein).
 
 4.4.2
 -----
