@@ -108,9 +108,15 @@ class MzIdentML(xml.MultiProcessingXML, xml.IndexSavingXML):
     _default_version = '1.1.0'
     _default_iter_tag = 'SpectrumIdentificationResult'
     _structures_to_flatten = {'Fragmentation'}
-    _indexed_tags = {'SpectrumIdentificationResult',
-        'PeptideEvidence', 'SpectrumIdentificationItem', 'SearchDatabase',
-        'DBSequence', 'SpectraData', 'Peptide'}
+    _indexed_tags = {'SpectrumIdentificationResult', 'SpectrumIdentificationItem',
+                     'SearchDatabase', 'SourceFile', 'SpectraData', 'Sample',
+                     'DBSequence',  'Peptide', 'PeptideEvidence',
+                     'Measure', 'TranslationTable', 'MassTable', 'Enzyme',
+                     'Organization', 'AnalysisSoftware', 'BibliographicReference', 'Person', 'Provider',
+                     'SpectrumIdentificationList', 'SpectrumIdentificationProtocol', 'SpectrumIdentification',
+                     'ProteinDetectionList', 'ProteinDetectionProtocol', 'ProteinDetection',
+                     'ProteinDetectionHypothesis', 'ProteinAmbiguityGroup',
+                    }
 
     _element_handlers = xml.XML._element_handlers.copy()
     _element_handlers.update({

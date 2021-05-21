@@ -9,6 +9,7 @@ import multiprocessing as mp
 import threading
 import warnings
 import os
+from abc import ABCMeta
 
 try:
     basestring
@@ -47,8 +48,8 @@ try:
 except ImportError:
     from collections import Sequence
 
-from . import PyteomicsError
-
+from .structures import PyteomicsError
+from .utils import add_metaclass
 
 def _keepstate(func):
     """Decorator to help keep the position in open files passed as
@@ -181,6 +182,7 @@ class IteratorContextManager(NoOpBaseReader):
     next = __next__
 
 
+@add_metaclass(ABCMeta)
 class FileReader(IteratorContextManager):
     """Abstract class implementing context manager protocol
     for file readers.

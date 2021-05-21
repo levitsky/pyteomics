@@ -13,7 +13,7 @@ class ComparableArray(np.ndarray):
     def __eq__(self, other):
         if not isinstance(other, np.ndarray):
             return False
-        other = np.asarray(other, dtype=np.float)
+        other = np.asarray(other, dtype=float)
         return self.shape == other.shape and np.allclose(self, other)
 
 

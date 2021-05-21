@@ -68,6 +68,15 @@ Unlike the rest of the functions and classes, :py:class:`pyteomics.mzml.PreIndex
 does not have a counterpart in :py:mod:`pyteomics.mzxml`.
 
 
+mzMLb
+~~~~~
+
+**mzMLb** is an HDF5-based format which wraps an **mzML** file and intelligently re-organizes
+it for fast random access while reducing the on-disk file size using HDF5's rich support for
+data compression. If the dependencies, :py:mod:`h5py` and :py:mod:`hdf5plugin`, are available
+:py:mod:`pyteomics.mzmlb` can be used to access the data in these files just like :py:mod:`pyteomics.mzml`
+reads **mzML** files.
+
 pepXML
 ------
 
