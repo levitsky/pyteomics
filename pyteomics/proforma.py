@@ -602,7 +602,7 @@ class GlycanModification(ModificationBase):
             else:
                 cnt = 1
             if tok not in self.valid_monosaccharides:
-                raise ValueError(f"{tok!r} is not a valid monosaccharide name")
+                raise ValueError("{tok!r} is not a valid monosaccharide name".format(**locals()))
             composite[tok] += cnt
         mass = 0
         chemcomp = Composition()
