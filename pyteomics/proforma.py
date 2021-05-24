@@ -1053,7 +1053,7 @@ class TagParser(TokenBuffer):
         return tag
 
     def process(self):
-        value = super().process()
+        value = super(TagParser, self).process()
         if not isinstance(value, list):
             value = [value]
         return value
