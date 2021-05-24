@@ -1095,7 +1095,7 @@ POST_GLOBAL_AA = ParserStateEnum.post_global_aa
 POST_INTERVAL_TAG = ParserStateEnum.post_interval_tag
 DONE = ParserStateEnum.done
 
-VALID_AA = set("QWERTYIPASDFGHKLCVNM")
+VALID_AA = set("QWERTYIPASDFGHKLCVNMX")
 
 def parse_proforma(sequence):
     '''Tokenize a ProForma sequence into a sequence of amino acid+tag positions, and a
