@@ -46,6 +46,7 @@ Classes
 coupled with minimal information about mass and position data.
 '''
 
+from pyteomics.mass.mass import calculate_mass
 import re
 import warnings
 from collections import namedtuple, defaultdict, deque
@@ -1456,12 +1457,15 @@ class ProForma(object):
                     mass += mod.mass
                 except (AttributeError, KeyError):
                     continue
+        mass += calculate_mass(formula="H")
         if self.properties.get('c_term'):
             for mod in self.properties['c_term']:
                 try:
                     mass += mod.mass
                 except (AttributeError, KeyError):
                     continue
+
+        mass += calculate_mass(formula="OH")
         for iv in self.properties['intervals']:
             try:
                 mass += iv.tag.mass
