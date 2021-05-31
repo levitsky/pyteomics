@@ -741,7 +741,6 @@ std_aa_mass = {
     'Y': 163.06333,
     'W': 186.07931,
     'O': 237.14773,
-    'U': 168.065,
 }
 """A dictionary with monoisotopic masses of the twenty standard
 amino acid residues, selenocysteine and pyrrolysine.
