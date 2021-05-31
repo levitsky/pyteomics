@@ -44,6 +44,12 @@ Classes
 
 :py:class:`ProForma` - An object oriented version of the parsing and formatting code,
 coupled with minimal information about mass and position data.
+
+Dependencies
+------------
+
+To resolve PSI-MOD, XL-MOD, and GNO identifiers, :mod:`psims` is required.
+
 '''
 
 from pyteomics.mass.mass import calculate_mass
