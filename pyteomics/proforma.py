@@ -402,7 +402,7 @@ class XLMODResolver(ModificationResolver):
         self._database = kwargs.get("database")
 
     def load_database(self):
-        return load_psimod()
+        return load_xlmod()
 
     def resolve(self, name=None, id=None, **kwargs):
         if name is not None:
