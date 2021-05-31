@@ -558,12 +558,32 @@ class ModificationBase(TagBase):
 class FormulaModification(ModificationBase):
     prefix_name = "Formula"
 
+    isotope_pattern = re.compile(r'\[(?P<isotope>\d+)(?P<element>[A-Z][a-z]*)(?P<quantity>[\-+]?\d+)\]')
     _tag_type = TagTypeEnum.formula
 
+    def _normalize_isotope_notation(self, match):
+        '''Rewrite ProForma isotope notation to Pyteomics-compatible
+        isotope notation.
+
+        Parameters
+        ----------
+        match : Match
+            The matched isotope notation string parsed by the regular expression.
+
+        Returns
+        reformatted : str
+            The re-written isotope notation
+        '''
+        parts = match.groupdict()
+        return "{element}[{isotope}]{quantity}".format(**parts)
+
     def resolve(self):
-        # The handling of fixed isotopes is wrong here as Pyteomics uses a different
-        # convention.
-        composition = Composition(formula=''.join(self.value.split(" ")))
+        normalized = ''.join(self.value.split(" "))
+        # If there is a [ character in the formula, we know there are isotopes which
+        # need to be normalized.
+        if '[' in normalized:
+            normalized = self.isotope_pattern.sub(self._normalize_isotope_notation, normalized)
+        composition = Composition(formula=normalized)
         return {
             "mass": composition.mass(),
             "composition": composition,
@@ -1199,6 +1219,7 @@ def parse_proforma(sequence):
         elif state == TAG or state == TAG_BEFORE or state == TAG_AFTER or state == GLOBAL:
             if c == '[':
                 depth += 1
+                current_tag.append(c)
             elif c == ']':
                 depth -= 1
                 if depth <= 0:
@@ -1212,6 +1233,8 @@ def parse_proforma(sequence):
                         state = DONE
                     elif state == GLOBAL:
                         state = POST_GLOBAL
+                else:
+                    current_tag.append(c)
             else:
                 current_tag.append(c)
         elif state == FIXED:
@@ -1243,11 +1266,14 @@ def parse_proforma(sequence):
         elif state == INTERVAL_TAG:
             if c == '[':
                 depth += 1
+                current_tag.append(c)
             elif c == ']':
                 depth -= 1
                 if depth <= 0:
                     state = POST_INTERVAL_TAG
                     depth = 0
+                else:
+                    current_tag.append(c)
             else:
                 current_tag.append(c)
         elif state == POST_INTERVAL_TAG:

@@ -61,6 +61,11 @@ class ProFormaTest(unittest.TestCase):
             messages.remove(tag.value)
         assert len(messages) == 0
 
+    def test_formula(self):
+        i = proforma.ProForma.parse("SEQUEN[Formula:[13C2]CH6N]CE")
+        mod = i[-3][1][0]
+        assert mod.composition == proforma.Composition(
+            {'H': 6, 'C[13]': 2, 'C': 1, 'N': 1})
 
 if __name__ == '__main__':
     unittest.main()
