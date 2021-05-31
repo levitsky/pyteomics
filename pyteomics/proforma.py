@@ -50,6 +50,50 @@ Dependencies
 
 To resolve PSI-MOD, XL-MOD, and GNO identifiers, :mod:`psims` is required.
 
+
+Compliance Levels
+-----------------
+
+1. Base Level Support
+Represents the lowest level of compliance, this level involves providing support for:
+
+    - [x] Amino acid sequences
+    - [x] Protein modifications using two of the supported CVs/ontologies: Unimod and PSI-MOD.
+    - [x] Protein modifications using delta masses (without prefixes)
+    - [x] N-terminal, C-terminal and labile modifications.
+    - [x] Ambiguity in the modification position, including support for localisation scores.
+    - [x] INFO tag.
+
+2. Additional Separate Support
+These features are independent from each other:
+
+    - [x] Unusual amino acids (O and U).
+    - [x] Ambiguous amino acids (e.g. X, B, Z). This would include support for sequence tags of known mass (using the character X).
+    - [x] Protein modifications using delta masses (using prefixes for the different CVs/ontologies).
+    - [x] Use of prefixes for Unimod (U:) and PSI-MOD (M:) names.
+    - [x] Support for the joint representation of experimental data and its interpretation.
+
+3. Top Down Extensions
+
+    - [ ] Additional CV/ontologies for protein modifications: RESID (the prefix R MUST be used for RESID CV/ontology term names)
+    - [x] Chemical formulas (this feature occurs in two places in this list).
+
+4. Cross-Linking Extensions
+
+    - [ ]  Cross-linked peptides (using the XL-MOD CV/ontology, the prefix X MUST be used for XL-MOD CV/ontology term names).
+
+5. Glycan Extensions
+
+    - [x] Additional CV/ontologies for protein modifications: GNO (the prefix G MUST be used for GNO CV/ontology term names)
+    - [x] Glycan composition.
+    - [x] Chemical formulas (this feature occurs in two places in this list).
+
+6. Spectral Support
+
+    - [ ] Charge and chimeric spectra are special cases.
+    - [x] Global modifications (e.g., every C is C13).
+
+
 '''
 
 from pyteomics.mass.mass import calculate_mass
