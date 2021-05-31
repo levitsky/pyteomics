@@ -69,7 +69,7 @@ try:
     from psims.controlled_vocabulary.controlled_vocabulary import (load_psimod, load_xlmod, load_gno, obo_cache)
 except ImportError:
     def _needs_psims(name):
-        raise ImportError("Loading %s requires the `psims` library. To access it, please install `psims" % name)
+        raise ImportError("Loading %s requires the `psims` library. To access it, please install `psims`" % name)
 
     load_psimod = partial(_needs_psims, 'PSIMOD')
     load_xlmod = partial(_needs_psims, 'XLMOD')
@@ -1096,7 +1096,7 @@ POST_GLOBAL_AA = ParserStateEnum.post_global_aa
 POST_INTERVAL_TAG = ParserStateEnum.post_interval_tag
 DONE = ParserStateEnum.done
 
-VALID_AA = set("QWERTYIPASDFGHKLCVNMX")
+VALID_AA = set("QWERTYIPASDFGHKLCVNMXUOJZB")
 
 def parse_proforma(sequence):
     '''Tokenize a ProForma sequence into a sequence of amino acid+tag positions, and a
@@ -1437,7 +1437,10 @@ class ProForma(object):
 
         for position in self.sequence:
             aa = position[0]
-            mass += std_aa_mass[aa]
+            try:
+                mass += std_aa_mass[aa]
+            except KeyError:
+                warnings.warn("%r does not have an exact mass" % (aa, ))
             if aa in fixed_rules:
                 mass += fixed_rules[aa]
             tags = position[1]
