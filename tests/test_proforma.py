@@ -7,9 +7,9 @@ pyteomics.__path__ = [path.abspath(
     path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics import proforma
 from pyteomics.proforma import (
-    ProForma, TaggedInterval, parse_proforma, MassModification,
+    ProForma, TaggedInterval, parse, MassModification,
     ModificationRule, StableIsotope, GenericModification, to_proforma,
-    )
+    obo_cache)
 
 
 class ProFormaTest(unittest.TestCase):
@@ -17,7 +17,7 @@ class ProFormaTest(unittest.TestCase):
 
     def test_complicated_short(self):
         complicated_short = r"<[Carbamidomethyl]@C><13C>[Hydroxylation]?{HexNAc}[Hex]-ST[UNIMOD:Oxidation](EPP)[+18.15]ING"
-        tokens, properties = parse_proforma(complicated_short)
+        tokens, properties = parse(complicated_short)
         assert len(tokens) == 8
         assert len(properties['n_term']) == 1
         assert properties['n_term'][0] == 'Hex'
@@ -38,7 +38,7 @@ class ProFormaTest(unittest.TestCase):
         assert str(parsed) == seq
 
     def test_error_on_nested_range(self):
-        self.assertRaises(proforma.ProFormaError, lambda: parse_proforma(
+        self.assertRaises(proforma.ProFormaError, lambda: parse(
             "PRQT(EQ(CFQR)[Carbamidomethyl]MS)[+19.0523]ISK"))
 
     def test_localization_scores(self):
@@ -66,6 +66,15 @@ class ProFormaTest(unittest.TestCase):
         mod = i[-3][1][0]
         assert mod.composition == proforma.Composition(
             {'H': 6, 'C[13]': 2, 'C': 1, 'N': 1})
+
+    def test_gnome(self):
+        gp = proforma.ProForma.parse("NEEYN[GNO:G59626AS]K")
+        self.assertAlmostEqual(gp.mass, 2709.016, 3)
+
+    def test_glycan(self):
+        gp = proforma.ProForma.parse("NEEYN[Glycan:Hex5HexNAc4NeuAc1]K")
+        self.assertAlmostEqual(gp.mass, 2709.016, 3)
+
 
 if __name__ == '__main__':
     unittest.main()

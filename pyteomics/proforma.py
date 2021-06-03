@@ -12,9 +12,9 @@ Strictly speaking, this implementation supports ProForma v2.
 Data Access
 -----------
 
-:py:func:`parse_proforma` - The primary interface for parsing ProForma strings.
+:py:func:`parse` - The primary interface for parsing ProForma strings.
 
-    >>> parse_proforma("EM[Oxidation]EVT[#g1(0.01)]S[#g1(0.09)]ES[Phospho#g1(0.90)]PEK")
+    >>> parse("EM[Oxidation]EVT[#g1(0.01)]S[#g1(0.09)]ES[Phospho#g1(0.90)]PEK")
         ([('E', None),
           ('M', GenericModification('Oxidation', None, None)),
           ('E', None),
@@ -99,7 +99,7 @@ These features are independent from each other:
 from pyteomics.mass.mass import calculate_mass
 import re
 import warnings
-from collections import namedtuple, defaultdict, deque
+from collections import deque
 from functools import partial
 
 try:
@@ -108,13 +108,10 @@ except ImportError:
     # Python 2 doesn't have a builtin Enum type
     Enum = object
 
-
-from pyteomics import parser
 from pyteomics.mass import Composition, std_aa_mass, Unimod
 from pyteomics.auxiliary import PyteomicsError, BasicComposition
 from pyteomics.auxiliary.utils import add_metaclass
 
-# To eventually be implemented with pyteomics port?
 try:
     from psims.controlled_vocabulary.controlled_vocabulary import (load_psimod, load_xlmod, load_gno, obo_cache)
 except ImportError:
@@ -126,6 +123,7 @@ except ImportError:
     load_gno = partial(_needs_psims, 'GNO')
     obo_cache = None
 
+_water_mass = calculate_mass("H2O")
 
 std_aa_mass = std_aa_mass.copy()
 std_aa_mass['X'] = 0
@@ -481,13 +479,24 @@ class GNOResolver(ModificationResolver):
     def load_database(self):
         return load_gno()
 
+    def get_mass_from_glycan_composition(self, term):
+        val = term.get('GNO:00000202')
+        if val:
+            tokens = re.findall(r"([A-Za-z0-9]+)\((\d+)\)", val)
+            mass = 0.0
+            for symbol, count in tokens:
+                mass += GlycanModification.valid_monosaccharides[symbol][0] * int(count)
+            return mass
+        return None
+
     def get_mass_from_term(self, term):
+        raw_mass = self.get_mass_from_glycan_composition(term)
         root_id = 'GNO:00000001'
         parent = term.parent()
         if isinstance(parent, list):
             parent = parent[0]
         while parent.id != root_id:
-            next_parent = term.parent()
+            next_parent = parent.parent()
             if isinstance(next_parent, list):
                 next_parent = next_parent[0]
             if next_parent.id == root_id:
@@ -496,7 +505,11 @@ class GNOResolver(ModificationResolver):
         match = self.mass_pattern.search(parent.name)
         if not match:
             return None
-        return float(match.group(1))
+        # This will have a small mass error.
+        rough_mass = float(match.group(1)) - _water_mass
+        if abs(rough_mass - raw_mass) < 1:
+            return raw_mass
+        return rough_mass
 
     def resolve(self, name=None, id=None, **kwargs):
         if name is not None:
@@ -512,6 +525,7 @@ class GNOResolver(ModificationResolver):
             "composition": None,
             "mass": self.get_mass_from_term(term)
         }
+        return rec
 
 
 class GenericResolver(ModificationResolver):
@@ -628,7 +642,7 @@ class FormulaModification(ModificationBase):
         return "{element}[{isotope}]{quantity}".format(**parts)
 
     def resolve(self):
-        normalized = ''.join(self.value.split(" "))
+        normalized = self.value.replace(' ', '')
         # If there is a [ character in the formula, we know there are isotopes which
         # need to be normalized.
         if '[' in normalized:
@@ -656,6 +670,7 @@ class GlycanModification(ModificationBase):
         "NeuAc": (291.0954, Composition("C11H17N1O8")),
         "NeuGc": (307.0903, Composition("C11H17N1O9")),
         "Pen": (132.0422, Composition("C5H8O4")),
+        "Pent": (132.0422, Composition("C5H8O4")),
         "Fuc": (146.0579, Composition("C6H10O4"))
     }
 
@@ -1168,7 +1183,7 @@ DONE = ParserStateEnum.done
 
 VALID_AA = set("QWERTYIPASDFGHKLCVNMXUOJZB")
 
-def parse_proforma(sequence):
+def parse(sequence):
     '''Tokenize a ProForma sequence into a sequence of amino acid+tag positions, and a
     mapping of sequence-spanning modifiers.
 
@@ -1499,7 +1514,7 @@ class ProForma(object):
 
     @classmethod
     def parse(cls, string):
-        return cls(*parse_proforma(string))
+        return cls(*parse(string))
 
     @property
     def mass(self):
