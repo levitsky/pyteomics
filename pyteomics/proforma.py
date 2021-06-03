@@ -1496,8 +1496,7 @@ class ProForma(object):
     def __getitem__(self, i):
         if isinstance(i, slice):
             props = self.properties.copy()
-
-            return self.__class__(self.sequence[i], self.properties)
+            return self.__class__(self.sequence[i], props)
         else:
             return self.sequence[i]
 
