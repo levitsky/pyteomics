@@ -16,14 +16,14 @@ Data Access
 
     >>> parse("EM[Oxidation]EVT[#g1(0.01)]S[#g1(0.09)]ES[Phospho#g1(0.90)]PEK")
         ([('E', None),
-          ('M', GenericModification('Oxidation', None, None)),
+          ('M', [GenericModification('Oxidation', None, None)]),
           ('E', None),
           ('V', None),
-          ('T', LocalizationMarker(0.01, None, '#g1')),
-          ('S', LocalizationMarker(0.09, None, '#g1')),
+          ('T', [LocalizationMarker(0.01, None, '#g1')]),
+          ('S', [LocalizationMarker(0.09, None, '#g1')]),
           ('E', None),
           ('S',
-          GenericModification('Phospho', [LocalizationMarker(0.9, None, '#g1')], '#g1')),
+          [GenericModification('Phospho', [LocalizationMarker(0.9, None, '#g1')], '#g1')]),
           ('P', None),
           ('E', None),
           ('K', None)],
@@ -48,7 +48,10 @@ coupled with minimal information about mass and position data.
 Dependencies
 ------------
 
-To resolve PSI-MOD, XL-MOD, and GNO identifiers, :mod:`psims` is required.
+To resolve PSI-MOD, XL-MOD, and GNO identifiers, :mod:`psims` is required. By default,
+:mod:`psims` retrieves the most recent version of each ontology from the internet, but
+includes a fall-back version to use when the network is unavailable. It can also create
+an application cache on disk
 
 
 Compliance Levels
@@ -90,7 +93,8 @@ These features are independent from each other:
 
 6. Spectral Support
 
-    - [ ] Charge and chimeric spectra are special cases.
+    - [x] Charge state and adducts
+    - [ ] Chimeric spectra are special cases.
     - [x] Global modifications (e.g., every C is C13).
 
 
@@ -108,7 +112,7 @@ except ImportError:
     # Python 2 doesn't have a builtin Enum type
     Enum = object
 
-from pyteomics.mass import Composition, std_aa_mass, Unimod
+from pyteomics.mass import Composition, std_aa_mass, Unimod, nist_mass
 from pyteomics.auxiliary import PyteomicsError, BasicComposition
 from pyteomics.auxiliary.utils import add_metaclass
 
@@ -127,6 +131,10 @@ _water_mass = calculate_mass("H2O")
 
 std_aa_mass = std_aa_mass.copy()
 std_aa_mass['X'] = 0
+
+element_symbols = set(nist_mass)
+element_symbols.remove("e*")
+element_symbols.add('e')
 
 
 class ProFormaError(PyteomicsError):
@@ -480,17 +488,64 @@ class GNOResolver(ModificationResolver):
         return load_gno()
 
     def get_mass_from_glycan_composition(self, term):
+        '''Parse the Byonic-style glycan composition from property GNO:00000202
+        to get the counts of each monosaccharide and use that to calculate mass.
+
+        The mass computed here is exact and dehydrated, distinct from the rounded-off
+        mass that :meth:`get_mass_from_term` will produce by walking up the CV term
+        hierarchy. However, not all glycan compositions are representable in GNO:00000202
+        format, so this may silently be absent or incomplete, hence the double-check in
+        :meth:`get_mass_from_term`.
+
+        Parameters
+        ----------
+        term : psims.controlled_vocabulary.Entity
+            The CV entity being parsed.
+
+        Returns
+        -------
+        mass : float or :const:`None`
+            If a glycan composition is found on the term, the computed
+            mass will be returned. Otherwise the :const:`None` is returned
+        '''
         val = term.get('GNO:00000202')
+        monosaccharides = BasicComposition()
+        composition = Composition()
         if val:
             tokens = re.findall(r"([A-Za-z0-9]+)\((\d+)\)", val)
             mass = 0.0
             for symbol, count in tokens:
-                mass += GlycanModification.valid_monosaccharides[symbol][0] * int(count)
-            return mass
-        return None
+                count = int(count)
+                try:
+                    mono_mass, mono_comp = GlycanModification.valid_monosaccharides[symbol]
+                    mass += mono_mass * count
+                    composition += mono_comp * count
+                    monosaccharides[symbol] += count
+                except KeyError:
+                    continue
+            return mass, monosaccharides, composition
+        return None, None, None
 
-    def get_mass_from_term(self, term):
-        raw_mass = self.get_mass_from_glycan_composition(term)
+    def get_mass_from_term(self, term, raw_mass):
+        '''Walk up the term hierarchy and find the mass group
+        term near the root of the tree, and return the most accurate
+        mass available for the provided term.
+
+        The mass group term's mass is rounded to two decimal places, leading
+        to relatively large errors.
+
+        Parameters
+        ----------
+        term : psims.controlled_vocabulary.Entity
+            The CV entity being parsed.
+
+        Returns
+        -------
+        mass : float or :const:`None`
+            If a root node is found along the term's lineage, computed
+            mass will be returned. Otherwise the :const:`None` is returned.
+            The mass may be
+        '''
         root_id = 'GNO:00000001'
         parent = term.parent()
         if isinstance(parent, list):
@@ -507,8 +562,11 @@ class GNOResolver(ModificationResolver):
             return None
         # This will have a small mass error.
         rough_mass = float(match.group(1)) - _water_mass
-        if abs(rough_mass - raw_mass) < 1:
+        if raw_mass is not None and abs(rough_mass - raw_mass) < 1:
             return raw_mass
+        warnings.warn(
+            ("An accurate glycan composition could not be inferred from %s. "
+             "Only a rough approximation is available.") % (term, ))
         return rough_mass
 
     def resolve(self, name=None, id=None, **kwargs):
@@ -518,12 +576,15 @@ class GNOResolver(ModificationResolver):
             term = self.database[id]
         else:
             raise ValueError("Must provide one of `name` or `id`")
+        raw_mass, monosaccharides, composition = self.get_mass_from_glycan_composition(term)
+
         rec = {
             "name":term.name,
             "id": term.id,
             "provider": self.name,
-            "composition": None,
-            "mass": self.get_mass_from_term(term)
+            "composition": composition,
+            "monosaccharides": monosaccharides,
+            "mass": self.get_mass_from_term(term, raw_mass)
         }
         return rec
 
@@ -730,8 +791,12 @@ class GNOmeModification(ModificationBase):
     resolver = GNOResolver()
 
     prefix_name = "GNO"
-    # short_prefix = 'G'
+    short_prefix = 'G'
     _tag_type = TagTypeEnum.gnome
+
+    @property
+    def monosaccharides(self):
+        return self.definition.get('monosaccharides')
 
 
 class XLMODModification(ModificationBase):
@@ -993,32 +1058,112 @@ class TaggedInterval(object):
         The starting position (inclusive) of the interval along the primary sequence
     end: int
         The ending position (exclusive) of the interval along the primary sequence
-    tag: TagBase
-        The tag being localized
+    tags: list[TagBase]
+        The tags being localized
     '''
-    __slots__ = ('start', 'end', 'tag')
+    __slots__ = ('start', 'end', 'tags')
 
-    def __init__(self, start, end=None, tag=None):
+    def __init__(self, start, end=None, tags=None):
         self.start = start
         self.end = end
-        self.tag = tag
+        self.tags = tags
 
     def __eq__(self, other):
         if other is None:
             return False
-        return self.start == other.start and self.end == other.end and self.tag == other.tag
+        return self.start == other.start and self.end == other.end and self.tags == other.tags
 
     def __ne__(self, other):
         return not self == other
 
     def __str__(self):
-        return "({self.start}-{self.end}){self.tag!r}".format(self=self)
+        return "({self.start}-{self.end}){self.tags!r}".format(self=self)
 
     def __repr__(self):
-        return "{self.__class__.__name__}({self.start}, {self.end}, {self.tag})".format(self=self)
+        return "{self.__class__.__name__}({self.start}, {self.end}, {self.tags})".format(self=self)
 
     def as_slice(self):
         return slice(self.start, self.end)
+
+    def copy(self):
+        return self.__class__(self.start, self.end, self.tags)
+
+    def _update_coordinates_sliced(self, start=None, end=None, warn_ambiguous=True):
+        if end is None:
+            qend = self.end + 1
+        else:
+            qend = end
+        if start is None:
+            qstart = self.start - 1
+        else:
+            qstart = start
+
+        # Fully contained interval
+        valid = qstart <= self.start and qend >= self.end
+
+        if not valid:
+            # Spans the beginning but not the end
+            valid = qstart <= self.start and qend > self.start
+            if valid and warn_ambiguous:
+                warnings.warn("Slice bisecting interval %s" % (self, ))
+
+        if not valid:
+            # Spans the end but not the beginning
+            valid = qstart < self.end and qend > self.end
+            if valid and warn_ambiguous:
+                warnings.warn("Slice bisecting interval %s" % (self, ))
+
+        if not valid:
+            # Contained interval
+            valid = qstart >= self.start and qend < self.end
+            if valid and warn_ambiguous:
+                warnings.warn("Slice bisecting interval %s" % (self, ))
+
+        if not valid:
+            return None
+        new = self.copy()
+        if start is not None:
+            diff = self.start - start
+            if diff < 0:
+                diff = 0
+            new.start = diff
+        if end is not None:
+            width = min(new.end, end) - self.start
+        else:
+            width = self.end - max(start, self.start)
+        new.end = new.start + width
+        return new
+
+
+class ChargeState(object):
+    '''Describes the charge and adduct types of the structure.
+
+    Attributes
+    ----------
+    charge : int
+        The total charge state as a signed number.
+    adducts : list[str]
+        Each charge carrier associated with the molecule.
+    '''
+    __slots__ = ("charge", "adducts")
+
+    def __init__(self, charge, adducts=None):
+        if adducts is None:
+            adducts = []
+        self.charge = charge
+        self.adducts = adducts
+
+    def __str__(self):
+        tokens = [str(self.charge)]
+        if self.adducts:
+            tokens.append("[")
+            tokens.append(','.join(str(adduct) for adduct in self.adducts))
+            tokens.append("]")
+        return ''.join(tokens)
+
+    def __repr__(self):
+        template = "{self.__class__.__name__}({self.charge}, {self.adducts})"
+        return template.format(self=self)
 
 
 class TokenBuffer(object):
@@ -1098,17 +1243,19 @@ class TokenBuffer(object):
 class NumberParser(TokenBuffer):
     '''A buffer which accumulates tokens until it is asked to parse them into
     :class:`int` instances.
-
-    Implements a subset of the Sequence protocol.
-
-    Attributes
-    ----------
-    buffer: list
-        The list of tokens accumulated since the last parsing.
     '''
 
     def _transform(self, value):
         return int(''.join(value))
+
+
+class StringParser(TokenBuffer):
+    '''A buffer which accumulates tokens until it is asked to parse them into
+    :class:`str` instances.
+    '''
+
+    def _transform(self, value):
+        return ''.join(value)
 
 
 class TagParser(TokenBuffer):
@@ -1161,6 +1308,14 @@ class ParserStateEnum(Enum):
     post_global = 12
     post_global_aa = 13
     post_interval_tag = 14
+    post_tag_after = 15
+    charge_state_start = 16
+    charge_state_number = 17
+    charge_state_adduct_start = 18
+    charge_state_adduct_end = 19
+    inter_chain_cross_link_start = 20
+    chimeric_start = 21
+
     done = 999
 
 
@@ -1175,10 +1330,15 @@ TAG = ParserStateEnum.tag_in_sequence
 INTERVAL_TAG = ParserStateEnum.interval_tag
 TAG_AFTER = ParserStateEnum.tag_after_sequence
 POST_TAG_BEFORE = ParserStateEnum.post_tag_before
+POST_TAG_AFTER = ParserStateEnum.post_tag_after
 UNLOCALIZED_COUNT = ParserStateEnum.unlocalized_count
 POST_GLOBAL = ParserStateEnum.post_global
 POST_GLOBAL_AA = ParserStateEnum.post_global_aa
 POST_INTERVAL_TAG = ParserStateEnum.post_interval_tag
+CHARGE_START = ParserStateEnum.charge_state_start
+CHARGE_NUMBER = ParserStateEnum.charge_state_number
+ADDUCT_START = ParserStateEnum.charge_state_adduct_start
+ADDUCT_END = ParserStateEnum.charge_state_adduct_end
 DONE = ParserStateEnum.done
 
 VALID_AA = set("QWERTYIPASDFGHKLCVNMXUOJZB")
@@ -1198,7 +1358,7 @@ def parse(sequence):
 
     Returns
     -------
-    parsed_sequence: list[tuple[str, TagBase]]
+    parsed_sequence: list[tuple[str, list[TagBase]]]
         The (amino acid: str, TagBase or None) pairs denoting the positions along the primary sequence
     modifiers: dict
         A mapping listing the labile modifications, fixed modifications, stable isotopes, unlocalized
@@ -1226,9 +1386,15 @@ def parse(sequence):
     current_unlocalized_count = NumberParser()
     current_aa_targets = TokenBuffer()
 
+    charge_buffer = None
+    adduct_buffer = None
+
+    # A mostly context free finite state machine unrolled
+    # by hand.
     while i < n:
         c = sequence[i]
         i += 1
+        # Initial state prior to sequence content
         if state == BEFORE:
             if c == '[':
                 state = TAG_BEFORE
@@ -1244,6 +1410,7 @@ def parse(sequence):
             else:
                 raise ProFormaError(
                     "Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
+        # The body of the amino acid sequence.
         elif state == SEQ:
             if c in VALID_AA:
                 positions.append((current_aa, current_tag() if current_tag else None))
@@ -1279,9 +1446,16 @@ def parse(sequence):
                     raise ProFormaError("Missing Closing Tag", i, state)
                 i += 1
                 depth = 1
+            elif c == '/':
+                state = CHARGE_START
+                charge_buffer = NumberParser()
+            elif c == '+':
+                raise ProFormaError(
+                    "Error In State {state}, {c} found at index {i}. Chimeric representation not supported".format(**locals()), i, state)
             else:
                 raise ProFormaError("Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
-        elif state == TAG or state == TAG_BEFORE or state == TAG_AFTER or state == GLOBAL:
+        # Tag parsing which rely on `current_tag` to buffer tokens.
+        elif state == TAG or state == TAG_BEFORE or state == TAG_AFTER or state == GLOBAL or state == INTERVAL_TAG:
             if c == '[':
                 depth += 1
                 current_tag.append(c)
@@ -1295,20 +1469,26 @@ def parse(sequence):
                         state = POST_TAG_BEFORE
                     elif state == TAG_AFTER:
                         c_term = current_tag()
-                        state = DONE
+                        state = POST_TAG_AFTER
                     elif state == GLOBAL:
                         state = POST_GLOBAL
+                    elif state == INTERVAL_TAG:
+                        state = POST_INTERVAL_TAG
+                        depth = 0
                 else:
                     current_tag.append(c)
             else:
                 current_tag.append(c)
+        # Handle transition to fixed modifications or isotope labeling from opening signal.
         elif state == FIXED:
             if c == '[':
                 state = GLOBAL
             else:
                 # Do validation here
                 state = ISOTOPE
+                current_tag.reset()
                 current_tag.append(c)
+        # Handle fixed isotope rules, which rely on `current_tag` to buffer tokens
         elif state == ISOTOPE:
             if c != '>':
                 current_tag.append(c)
@@ -1317,6 +1497,7 @@ def parse(sequence):
                 isotopes.append(StableIsotope(''.join(current_tag)))
                 current_tag.reset()
                 state = BEFORE
+        # Handle labile modifications, which rely on `current_tag` to buffer tokens
         elif state == LABILE:
             if c == '{':
                 depth += 1
@@ -1328,26 +1509,18 @@ def parse(sequence):
                     state = BEFORE
             else:
                 current_tag.append(c)
-        elif state == INTERVAL_TAG:
-            if c == '[':
-                depth += 1
-                current_tag.append(c)
-            elif c == ']':
-                depth -= 1
-                if depth <= 0:
-                    state = POST_INTERVAL_TAG
-                    depth = 0
-                else:
-                    current_tag.append(c)
-            else:
-                current_tag.append(c)
+        # The intermediate state between an interval tag and returning to sequence parsing.
+        # A new tag may start immediately, leading to it being appended to the interval instead
+        # instead of returning to the primary sequence. Because this state may also occur at the
+        # end of a sequence, it must also handle sequence-terminal transitions like C-terminal tags,
+        # charge states, and the like.
         elif state == POST_INTERVAL_TAG:
             if c == '[':
                 current_tag.bound()
                 state = INTERVAL_TAG
             elif c in VALID_AA:
                 current_aa = c
-                current_interval.tag = current_tag()
+                current_interval.tags = current_tag()
                 intervals.append(current_interval)
                 current_interval = None
                 state = SEQ
@@ -1357,6 +1530,17 @@ def parse(sequence):
                     raise ProFormaError("Missing Closing Tag", i, state)
                 i += 1
                 depth = 1
+            elif c == '/':
+                state = CHARGE_START
+                charge_buffer = NumberParser()
+            elif c == '+':
+                raise ProFormaError(
+                    "Error In State {state}, {c} found at index {i}. Chimeric representation not supported".format(**locals()), i, state)
+            else:
+                raise ProFormaError(
+                    "Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
+        # An intermediate state for discriminating which type of tag-before-sequence type
+        # we just finished parsing.
         elif state == POST_TAG_BEFORE:
             if c == '?':
                 unlocalized_modifications.append(current_tag()[0])
@@ -1405,8 +1589,57 @@ def parse(sequence):
             else:
                 raise ProFormaError(
                     ("Error In State {state}, unclosed fixed modification rule").format(**locals()), i, state)
+        elif state == POST_TAG_AFTER:
+            if c == '/':
+                state = CHARGE_START
+                charge_buffer = NumberParser()
+            elif c == '+':
+                raise ProFormaError(
+                    "Error In State {state}, {c} found at index {i}. Chimeric representation not supported".format(**locals()), i, state)
+        elif state == CHARGE_START:
+            if c in '+-':
+                charge_buffer.append(c)
+                state = CHARGE_NUMBER
+            elif c.isdigit():
+                charge_buffer.append(c)
+                state = CHARGE_NUMBER
+            elif c == '/':
+                state = ParserStateEnum.inter_chain_cross_link_start
+                raise ProFormaError("Inter-chain cross-linked peptides are not yet supported", i, state)
+            else:
+                raise ProFormaError(
+                    "Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
+        elif state == CHARGE_NUMBER:
+            if c.isdigit():
+                charge_buffer.append(c)
+            elif c == "[":
+                state = ADDUCT_START
+                adduct_buffer = StringParser()
+            else:
+                raise ProFormaError(
+                    "Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
+        elif state == ADDUCT_START:
+            if c.isdigit() or c in "+-" or c in element_symbols:
+                adduct_buffer.append(c)
+            elif c == ',':
+                adduct_buffer.bound()
+            elif c == ']':
+                state = ADDUCT_END
+        elif state == ADDUCT_END:
+            if c == '+':
+                raise ProFormaError(
+                    "Error In State {state}, {c} found at index {i}. Chimeric representation not supported".format(**locals()), i, state)
         else:
             raise ProFormaError("Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
+    if charge_buffer:
+        charge_number = charge_buffer()
+        if adduct_buffer:
+            adducts = adduct_buffer()
+        else:
+            adducts = None
+        charge_state = ChargeState(charge_number, adducts)
+    else:
+        charge_state = None
     if current_aa:
         positions.append((current_aa, current_tag() if current_tag else None))
     if state in (ISOTOPE, TAG, TAG_AFTER, TAG_BEFORE, LABILE, ):
@@ -1419,13 +1652,14 @@ def parse(sequence):
         'fixed_modifications': fixed_modifications,
         'intervals': intervals,
         'isotopes': isotopes,
-        'group_ids': sorted(current_tag.group_ids)
+        'group_ids': sorted(current_tag.group_ids),
+        'charge_state': charge_state
     }
 
 
 def to_proforma(sequence, n_term=None, c_term=None, unlocalized_modifications=None,
                 labile_modifications=None, fixed_modifications=None, intervals=None,
-                isotopes=None, group_ids=None):
+                isotopes=None, charge_state=None, group_ids=None):
     '''Convert a sequence plus modifiers into formatted text following the
     ProForma specification.
 
@@ -1447,6 +1681,8 @@ def to_proforma(sequence, n_term=None, c_term=None, unlocalized_modifications=No
         A list of modified intervals, if any
     isotopes : Optional[list[StableIsotope]]
         Any global stable isotope labels applied
+    charge_state : Optional[ChargeState]
+        An optional charge state value
     group_ids : Optional[list[str]]
         Any group identifiers. This parameter is currently not used.
 
@@ -1465,11 +1701,13 @@ def to_proforma(sequence, n_term=None, c_term=None, unlocalized_modifications=No
             primary[iv.start] = '(' + primary[iv.start]
 
             primary[iv.end - 1] = '{0!s})'.format(
-                primary[iv.end - 1]) + ''.join('[{!s}]'.format(t) for t in iv.tag)
+                primary[iv.end - 1]) + ''.join('[{!s}]'.format(t) for t in iv.tags)
     if n_term:
         primary.appendleft(''.join("[{!s}]".format(t) for t in n_term) + '-')
     if c_term:
         primary.append('-' + ''.join("[{!s}]".format(t) for t in c_term))
+    if charge_state:
+        primary.append("/{!s}".format(charge_state))
     if labile_modifications:
         primary.extendleft(['{{{!s}}}'.format(m) for m in labile_modifications])
     if unlocalized_modifications:
@@ -1482,10 +1720,45 @@ def to_proforma(sequence, n_term=None, c_term=None, unlocalized_modifications=No
     return ''.join(primary)
 
 
+class _ProFormaProperty(object):
+    def __init__(self, name):
+        self.name = name
+
+    def __get__(self, obj, cls):
+        return obj.properties[self.name]
+
+    def __set__(self, obj, value):
+        obj.properties[self.name] = value
+
+    def __repr__(self):
+        template = "{self.__class__.__name__}({self.name!r})"
+        return template.format(self=self)
+
+
 class ProForma(object):
+    '''Represent a parsed ProForma sequence.
+
+    Attributes
+    ----------
+    sequence : list[tuple[]]
+    '''
+
     def __init__(self, sequence, properties):
         self.sequence = sequence
         self.properties = properties
+
+    isotopes = _ProFormaProperty('isotopes')
+    charge_state = _ProFormaProperty('charge_state')
+
+    intervals = _ProFormaProperty('intervals')
+    fixed_modifications = _ProFormaProperty('fixed_modifications')
+    labile_modifications = _ProFormaProperty('labile_modifications')
+    unlocalized_modifications = _ProFormaProperty('unlocalized_modifications')
+
+    n_term = _ProFormaProperty('n_term')
+    c_term = _ProFormaProperty('c_term')
+
+    group_ids = _ProFormaProperty('group_ids')
 
     def __str__(self):
         return to_proforma(self.sequence, **self.properties)
@@ -1496,6 +1769,14 @@ class ProForma(object):
     def __getitem__(self, i):
         if isinstance(i, slice):
             props = self.properties.copy()
+            ivs = []
+            for iv in props['intervals']:
+                iv = iv._update_coordinates_sliced(
+                    i.start, i.stop)
+                if iv is None:
+                    continue
+                ivs.append(iv)
+            props['intervals'] = ivs
             return self.__class__(self.sequence[i], props)
         else:
             return self.sequence[i]
@@ -1569,8 +1850,6 @@ class ProForma(object):
     def find_tags_by_id(self, tag_id, include_position=True):
         if not tag_id.startswith("#"):
             tag_id = "#" + tag_id
-        if tag_id not in self.properties['group_ids']:
-            return []
         matches = []
         for i, (_token, tags) in enumerate(self.sequence):
             if tags:
