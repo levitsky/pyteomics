@@ -83,11 +83,26 @@ STANDARD_ARRAYS = set([
     'flow rate array',
     'pressure array',
     'temperature array',
-    'mean drift time array',
     'mean charge array',
     'resolution array',
-    'baseline array'
-])
+    'baseline array',
+    'noise array',
+    'sampled noise m/z array',
+    'sampled noise intensity array',
+    'sampled noise baseline array',
+    'ion mobility array',
+    'deconvoluted ion mobility drift time array',
+    'deconvoluted inverse reduced ion mobility array',
+    'deconvoluted ion mobility array',
+    'raw ion mobility drift time array',
+    'raw inverse reduced ion mobility array',
+    'raw ion mobility array',
+    'mean inverse reduced ion mobility array',
+    'mean ion mobility array',
+    'mean ion mobility drift time array',
+    'mass array',
+    'scanning quadrupole position lower bound m/z array',
+    'scanning quadrupole position upper bound m/z array',])
 
 
 class MzML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
@@ -141,6 +156,13 @@ class MzML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.Mult
                     is_non_standard = True
                 else:
                     candidates.append(k)
+        # A non-standard data array term key might have the name for the data array
+        # as the value.
+        has_nonstandard_name = info.get(NON_STANDARD_DATA_ARRAY)
+        if has_nonstandard_name:
+            is_non_standard = True
+            # We could short-circuit and return here
+            candidates.append(has_nonstandard_name)
         if isinstance(info.get('name'), list):
             for val in info['name']:
                 if val.endswith(' array'):
@@ -180,9 +202,13 @@ class MzML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.Mult
         # make a good choice here. We first prefer the standardized
         # arrays before falling back to just guessing.
         else:
+            candidates = set(candidates)
+            # Maybe we just have a repeated term?
+            if len(candidates) == 1:
+                return next(iter(candidates))
             warnings.warn(
                 "Multiple options for naming binary array: %r" % candidates)
-            standard_options = set(candidates) & STANDARD_ARRAYS
+            standard_options = candidates & STANDARD_ARRAYS
             if standard_options:
                 return max(standard_options, key=len)
             return max(candidates, key=len)
