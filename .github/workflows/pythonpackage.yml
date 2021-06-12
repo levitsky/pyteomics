@@ -26,8 +26,7 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install numpy
-        pip install lxml sqlalchemy pandas cython h5py hdf5plugin
-        pip install pynumpress
+        pip install -r test-requirements.txt
     - name: Run the tests
       run: |
         cd tests; find . -name 'test_*.py' -print0 | xargs -0 -n1 env PYTHONPATH=.. python
