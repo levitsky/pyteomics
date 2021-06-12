@@ -158,11 +158,9 @@ class MzML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.Mult
                     candidates.append(k)
         # A non-standard data array term key might have the name for the data array
         # as the value.
-        has_nonstandard_name = info.get(NON_STANDARD_DATA_ARRAY)
-        if has_nonstandard_name:
-            is_non_standard = True
-            # We could short-circuit and return here
-            candidates.append(has_nonstandard_name)
+        nonstandard_name = info.get(NON_STANDARD_DATA_ARRAY)
+        if nonstandard_name:
+            return nonstandard_name
         if isinstance(info.get('name'), list):
             for val in info['name']:
                 if val.endswith(' array'):
