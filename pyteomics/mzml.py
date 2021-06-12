@@ -102,7 +102,8 @@ STANDARD_ARRAYS = set([
     'mean ion mobility drift time array',
     'mass array',
     'scanning quadrupole position lower bound m/z array',
-    'scanning quadrupole position upper bound m/z array',])
+    'scanning quadrupole position upper bound m/z array',
+])
 
 
 class MzML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
