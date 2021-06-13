@@ -32,10 +32,19 @@ class ProFormaTest(unittest.TestCase):
             ProForma(tokens, properties).mass, 1210.5088, 3)
 
 
-    def test_ranges(self):
+    def test_range(self):
         seq = "PRQT(EQC[Carbamidomethyl]FQRMS)[+19.0523]ISK"
         parsed = proforma.ProForma.parse(seq)
         assert str(parsed) == seq
+        chunk = parsed[:6]
+        assert chunk.intervals
+
+    def test_ambiguous_range(self):
+        seq = "PRQT(?EQC[Carbamidomethyl]FQRMS)ISK"
+        parsed = proforma.ProForma.parse(seq)
+        assert str(parsed) == seq
+        self.assertRaises(ValueError, lambda: parsed[:6])
+
 
     def test_error_on_nested_range(self):
         self.assertRaises(proforma.ProFormaError, lambda: parse(

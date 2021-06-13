@@ -1048,9 +1048,17 @@ class StableIsotope(object):
         return "{self.__class__.__name__}({self.isotope})".format(self=self)
 
 
+class IntersectionEnum(Enum):
+    no_overlap = 0
+    full_contains_interval = 1
+    full_contained_in_interval = 2
+    start_overlap = 3
+    end_overlap = 4
+
+
 class TaggedInterval(object):
     '''Define a fixed interval over the associated sequence which contains the localization
-    of the associated tag.
+    of the associated tag or denotes a region of general sequence order ambiguity.
 
     Attributes
     ----------
@@ -1060,13 +1068,16 @@ class TaggedInterval(object):
         The ending position (exclusive) of the interval along the primary sequence
     tags: list[TagBase]
         The tags being localized
+    ambiguous : bool
+        Whether the interval is ambiguous or not
     '''
-    __slots__ = ('start', 'end', 'tags')
+    __slots__ = ('start', 'end', 'tags', 'ambiguous')
 
-    def __init__(self, start, end=None, tags=None):
+    def __init__(self, start, end=None, tags=None, ambiguous=False):
         self.start = start
         self.end = end
         self.tags = tags
+        self.ambiguous = ambiguous
 
     def __eq__(self, other):
         if other is None:
@@ -1088,6 +1099,35 @@ class TaggedInterval(object):
     def copy(self):
         return self.__class__(self.start, self.end, self.tags)
 
+    def _check_slice(self, qstart, qend, warn_ambiguous):
+        # Fully contained interval
+        valid = qstart <= self.start and qend >= self.end
+        case = IntersectionEnum.full_contained_in_interval if valid else IntersectionEnum.no_overlap
+        if not valid:
+            # Spans the beginning but not the end
+            valid = qstart <= self.start and qend > self.start
+            if valid:
+                case = IntersectionEnum.start_overlap
+                if warn_ambiguous:
+                    warnings.warn("Slice bisecting interval %s" % (self, ))
+
+        if not valid:
+            # Spans the end but not the beginning
+            valid = qstart < self.end and qend > self.end
+            if valid:
+                case = IntersectionEnum.end_overlap
+                if warn_ambiguous:
+                    warnings.warn("Slice bisecting interval %s" % (self, ))
+
+        if not valid:
+            # Contained interval
+            valid = qstart >= self.start and qend < self.end
+            if valid:
+                case = IntersectionEnum.full_contains_interval
+                if warn_ambiguous:
+                    warnings.warn("Slice bisecting interval %s" % (self, ))
+        return valid, case
+
     def _update_coordinates_sliced(self, start=None, end=None, warn_ambiguous=True):
         if end is None:
             qend = self.end + 1
@@ -1098,27 +1138,9 @@ class TaggedInterval(object):
         else:
             qstart = start
 
-        # Fully contained interval
-        valid = qstart <= self.start and qend >= self.end
-
-        if not valid:
-            # Spans the beginning but not the end
-            valid = qstart <= self.start and qend > self.start
-            if valid and warn_ambiguous:
-                warnings.warn("Slice bisecting interval %s" % (self, ))
-
-        if not valid:
-            # Spans the end but not the beginning
-            valid = qstart < self.end and qend > self.end
-            if valid and warn_ambiguous:
-                warnings.warn("Slice bisecting interval %s" % (self, ))
-
-        if not valid:
-            # Contained interval
-            valid = qstart >= self.start and qend < self.end
-            if valid and warn_ambiguous:
-                warnings.warn("Slice bisecting interval %s" % (self, ))
-
+        valid, intersection_type = self._check_slice(qstart, qend, warn_ambiguous)
+        if self.ambiguous and intersection_type not in (IntersectionEnum.full_contained_in_interval, IntersectionEnum.no_overlap):
+            raise ValueError("Cannot bisect an ambiguous interval")
         if not valid:
             return None
         new = self.copy()
@@ -1315,7 +1337,7 @@ class ParserStateEnum(Enum):
     charge_state_adduct_end = 19
     inter_chain_cross_link_start = 20
     chimeric_start = 21
-
+    interval_initial = 22
     done = 999
 
 
@@ -1328,6 +1350,7 @@ LABILE = ParserStateEnum.labile_tag
 SEQ = ParserStateEnum.sequence
 TAG = ParserStateEnum.tag_in_sequence
 INTERVAL_TAG = ParserStateEnum.interval_tag
+INTERVAL_INIT = ParserStateEnum.interval_initial
 TAG_AFTER = ParserStateEnum.tag_after_sequence
 POST_TAG_BEFORE = ParserStateEnum.post_tag_before
 POST_TAG_AFTER = ParserStateEnum.post_tag_after
@@ -1411,9 +1434,16 @@ def parse(sequence):
                 raise ProFormaError(
                     "Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
         # The body of the amino acid sequence.
-        elif state == SEQ:
+        elif state == SEQ or state == INTERVAL_INIT:
+            if state == INTERVAL_INIT:
+                state = SEQ
+                if c == '?':
+                    if current_interval is not None:
+                        current_interval.ambiguous = True
+                    continue
             if c in VALID_AA:
-                positions.append((current_aa, current_tag() if current_tag else None))
+                if current_aa is not None:
+                    positions.append((current_aa, current_tag() if current_tag else None))
                 current_aa = c
             elif c == '[':
                 state = TAG
@@ -1427,6 +1457,7 @@ def parse(sequence):
                          "Nested ranges are not yet supported by ProForma.").format(
                             **locals()), i, state)
                 current_interval = TaggedInterval(len(positions) + 1)
+                state = INTERVAL_INIT
             elif c == ')':
                 positions.append(
                     (current_aa, current_tag() if current_tag else None))
@@ -1435,11 +1466,13 @@ def parse(sequence):
                     raise ProFormaError("Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
                 else:
                     current_interval.end = len(positions)
-                    if i >= n or sequence[i] != '[':
-                        raise ProFormaError("Missing Interval Tag", i, state)
-                    i += 1
-                    depth = 1
-                    state = INTERVAL_TAG
+                    if i < n and sequence[i] == '[':
+                        i += 1
+                        depth = 1
+                        state = INTERVAL_TAG
+                    else:
+                        intervals.append(current_interval)
+                        current_interval = None
             elif c == '-':
                 state = TAG_AFTER
                 if i >= n or sequence[i] != '[':
@@ -1698,10 +1731,15 @@ def to_proforma(sequence, n_term=None, c_term=None, unlocalized_modifications=No
             primary.append(str(aa) + ''.join(['[{0!s}]'.format(t) for t in tags]))
     if intervals:
         for iv in sorted(intervals, key=lambda x: x.start):
-            primary[iv.start] = '(' + primary[iv.start]
+            if iv.ambiguous:
+                primary[iv.start] = '(?' + primary[iv.start]
+            else:
+                primary[iv.start] = '(' + primary[iv.start]
 
-            primary[iv.end - 1] = '{0!s})'.format(
-                primary[iv.end - 1]) + ''.join('[{!s}]'.format(t) for t in iv.tags)
+            terminator = '{0!s})'.format(primary[iv.end - 1])
+            if iv.tags:
+                terminator += ''.join('[{!s}]'.format(t) for t in iv.tags)
+            primary[iv.end - 1] = terminator
     if n_term:
         primary.appendleft(''.join("[{!s}]".format(t) for t in n_term) + '-')
     if c_term:
