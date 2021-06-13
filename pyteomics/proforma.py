@@ -1686,7 +1686,7 @@ def parse(sequence):
         'intervals': intervals,
         'isotopes': isotopes,
         'group_ids': sorted(current_tag.group_ids),
-        'charge_state': charge_state
+        'charge_state': charge_state,
     }
 
 
