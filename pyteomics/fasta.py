@@ -39,7 +39,8 @@ Available classes:
   :py:class:`UniMes` and :py:class:`IndexedUniMes`,
   :py:class:`UniRef` and :py:class:`IndexedUniRef`,
   :py:class:`SPD` and :py:class:`IndexedSPD`,
-  :py:class:`NCBI` and :py:class:`IndexedNCBI` - format-specific parsers.
+  :py:class:`NCBI` and :py:class:`IndexedNCBI`,
+  :py:class:`RefSeq` and :py:class:`IndexedRefSeq`, - format-specific parsers.
 
 Functions
 .........
