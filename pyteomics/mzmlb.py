@@ -12,7 +12,7 @@ Summary
 mzMLb is an HDF5 container format wrapping around the standard rich XML-format
 for raw mass spectrometry data storage. Please refer to [1]_ for more information
 about mzMLb and its features. Please refer to
-`psidev.info <http://www.psidev.info/index.php?q=node/257>`_ for the detailed
+`psidev.info <https://www.psidev.info/mzML>`_ for the detailed
 specification of the format and structure of mzML files.
 
 This module provides a minimalistic way to extract information from mzML

@@ -1,10 +1,16 @@
-4.5dev3
+4.5dev4
 -------
 
- - Add support for mzMLb (`#35 <https://github.com/levitsky/pyteomics/pull/35>`_
-   and `#38 <https://github.com/levitsky/pyteomics/pull/38>`_ by Joshua Klein).
+ - Add support for `mzMLb <https://www.biorxiv.org/content/10.1101/2020.02.13.947218v3>`_
+   (`#35 <https://github.com/levitsky/pyteomics/pull/35>`_
+   and `#38 <https://github.com/levitsky/pyteomics/pull/38>`_ by Joshua Klein)
+   with new module :py:mod:`pyteomics.mzmlb`.
  - Add ProteomeExchange backend for PROXI requests and implement an aggregator for responses from all backends
-   (`#36 <https://github.com/levitsky/pyteomics/pull/36>`_ and `#45 <https://github.com/levitsky/pyteomics/pull/45>`_ by Joshua Klein).
+   (`#36 <https://github.com/levitsky/pyteomics/pull/36>`_ and
+   `#45 <https://github.com/levitsky/pyteomics/pull/45>`_ by Joshua Klein)
+   in :py:mod:`pyteomics.usi`.
+ - Add support for `ProForma <https://www.psidev.info/proforma>`_
+   (`#37 <https://github.com/levitsky/pyteomics/pull/37>`_ by Joshua Klein).
 
 4.4.2
 -----
