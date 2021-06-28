@@ -28,6 +28,7 @@ Contents:
    api/mzid
    api/mztab
    api/usi
+   api/proforma
    api/featurexml
    api/trafoxml
    api/idxml

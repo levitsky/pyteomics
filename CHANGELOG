@@ -10,7 +10,9 @@
    `#45 <https://github.com/levitsky/pyteomics/pull/45>`_ by Joshua Klein)
    in :py:mod:`pyteomics.usi`.
  - Add support for `ProForma <https://www.psidev.info/proforma>`_
-   (`#37 <https://github.com/levitsky/pyteomics/pull/37>`_ by Joshua Klein).
+   (`#37 <https://github.com/levitsky/pyteomics/pull/37>`_ by Joshua Klein)
+   in new module :py:mod:`pyteomics.proforma`.
+
 
 4.4.2
 -----
