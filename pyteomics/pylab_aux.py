@@ -63,7 +63,7 @@ This module requires :py:mod:`matplotlib`. Optional dependencies: :py:mod:`adjus
 import pylab
 import numpy as np
 from .auxiliary import linear_regression, PyteomicsError
-from . import parser, mass, mgf, mzml
+from . import parser, mass, mgf
 
 try:
     import spectrum_utils.spectrum as sus
@@ -459,14 +459,35 @@ def _get_precursor_charge(spectrum):
     return None
 
 
-def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
+def _spectrum_utils_create_spectrum(spectrum, peptide, *args, **kwargs):
     if sus is None:
         raise PyteomicsError('This backend requires `spectrum_utils`.')
 
-    # common kwargs
-    types = kwargs.pop('ion_types', ('b', 'y'))
-    aa_mass = kwargs.pop('aa_mass', mass.std_aa_mass)
+    # backend-specific parameters
+    mz_range = kwargs.pop('mz_range', None)
 
+
+    min_intensity = kwargs.pop('min_intensity', 0.0)
+    max_num_peaks = kwargs.pop('max_num_peaks', None)
+    scaling = kwargs.pop('scaling', None)
+    max_intensity = kwargs.pop('max_intensity', None)
+    spectrum = sus.MsmsSpectrum(
+        None, kwargs.pop('precursor_mz', None), kwargs.pop('precursor_charge', None),
+        spectrum['m/z array'], spectrum['intensity array'],
+        peptide=peptide)
+    if mz_range:
+        spectrum = spectrum.set_mz_range(*mz_range)
+
+    spectrum = spectrum.filter_intensity(min_intensity=min_intensity, max_num_peaks=max_num_peaks
+        ).scale_intensity(scaling, max_intensity)
+    return spectrum
+
+
+def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
+
+    # common kwargs
+    aa_mass = kwargs.pop('aa_mass', mass.std_aa_mass)
+    types = kwargs.pop('ion_types', ('b', 'y'))
     tol = kwargs.pop('ftol', None)
     if tol is None:
         tol = kwargs.pop('rtol', 1e-5) * 1e6
@@ -474,40 +495,38 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     else:
         tol_mode = 'Da'
 
-    text_kw = kwargs.pop('text_kw', None)
+    kwargs.pop('text_kw', None)  # not used
+
     precursor_charge = kwargs.pop('precursor_charge', None)
     if precursor_charge is None:
         precursor_charge = _get_precursor_charge(spectrum)
     if precursor_charge is None:
-        raise PyteomicsError('Could not extract precursor charge from spectrum. Please specify `precursor_charge` kwarg.')
+        raise PyteomicsError('Could not extract precursor charge from spectrum. '
+            'Please specify `precursor_charge` keyword argument.')
+    precursor_mz = mass.calculate_mass(peptide, aa_mass=aa_mass, charge=precursor_charge)
     maxcharge = kwargs.pop('maxcharge', max(1, precursor_charge - 1))
     # end of common kwargs
 
     # backend-specific parameters
-    remove_precursor_peak = kwargs.pop('remove_precursor_peak', False)
-    mz_range = kwargs.pop('mz_range', None)
-    precursor_mz = mass.calculate_mass(peptide, aa_mass=aa_mass, charge=precursor_charge)
-
-    min_intensity = kwargs.pop('min_intensity', 0.0)
-    max_num_peaks = kwargs.pop('max_num_peaks', None)
-    scaling = kwargs.pop('scaling', None)
-    max_intensity = kwargs.pop('max_intensity', None)
     peak_assignment = kwargs.pop('peak_assignment', 'most_intense')
+    remove_precursor_peak = kwargs.pop('remove_precursor_peak', False)
+    annotate_mz = kwargs.pop('annotate_mz', None)
+    annotate_mz_text = kwargs.pop('annotate_mz_text', None)
 
-    spectrum = sus.MsmsSpectrum(
-        None, precursor_mz, precursor_charge, spectrum['m/z array'], spectrum['intensity array'],
-        peptide=peptide)
-    if mz_range:
-        spectrum = spectrum.set_mz_range(*mz_range)
+    spectrum = _spectrum_utils_create_spectrum(spectrum, peptide, *args,
+        precursor_mz=precursor_mz, precursor_charge=precursor_charge, **kwargs)
     if remove_precursor_peak:
         spectrum = spectrum.remove_precursor_peak(tol, tol_mode)
-    spectrum = spectrum.filter_intensity(min_intensity=min_intensity, max_num_peaks=max_num_peaks
-        ).scale_intensity(scaling, max_intensity
-        ).annotate_peptide_fragments(tol, tol_mode, types, maxcharge, peak_assignment)
+    spectrum = spectrum.annotate_peptide_fragments(tol, tol_mode, types, maxcharge, peak_assignment)
+    if annotate_mz:
+        for i, mz in enumerate(annotate_mz):
+            spectrum = spectrum.annotate_mz_fragment(mz, None, tol, tol_mode, peak_assignment,
+                annotate_mz_text[i] if annotate_mz_text else None)
     return spectrum
 
 
 class SpectrumUtilsColorScheme:
+    """Context manager that temporarily changes `spectrum_utils.plot.colors`."""
     def __init__(self, colors):
         self.colors = colors
         self.previous_colors = sup.colors.copy()
