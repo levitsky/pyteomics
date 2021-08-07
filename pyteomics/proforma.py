@@ -1628,6 +1628,9 @@ def parse(sequence):
         elif state == POST_GLOBAL_AA:
             if c in VALID_AA:
                 current_aa_targets.append(c)
+            if c == ',':
+                # the next character should be another amino acid
+                pass
             elif c == '>':
                 fixed_modifications.append(
                     ModificationRule(current_tag()[0], current_aa_targets()))
@@ -1792,6 +1795,30 @@ class ProForma(object):
     Attributes
     ----------
     sequence : list[tuple[]]
+        The list of (amino acid, tag collection) pairs making up the primary sequence of the
+        peptide.
+    isotopes : list[StableIsotope]
+        A list of any stable isotope rules that apply to this peptide
+    charge_state : int, optional
+        An optional charge state that may have been provided
+    intervals : list[Interval]
+        Any annotated intervals that contain either sequence ambiguity or a
+        tag over that interval.
+    labile_modifications : list[ModificationBase]
+        Any modifications that were parsed as labile, and may not appear at
+        any location on the peptide primary sequence.
+    unlocalized_modifications : list[ModificationBase]
+        Any modifications that were not localized but may be attached to peptide
+        sequence evidence.
+    n_term : list[ModificationBase]
+        Any modifications on the N-terminus of the peptide
+    c_term : list[ModificationBase]
+        Any modifications on the C-terminus of the peptide
+    group_ids : set
+        The collection of all groupd identifiers on this sequence.
+    mass : float
+        The computed mass for the fully modified peptide, including labile
+        and unlocalized modifications. **Does not include stable isotopes at this time**
     '''
 
     def __init__(self, sequence, properties):
@@ -1899,6 +1926,8 @@ class ProForma(object):
         return mass
 
     def find_tags_by_id(self, tag_id, include_position=True):
+        '''Find all occurrences of a particular
+        '''
         if not tag_id.startswith("#"):
             tag_id = "#" + tag_id
         matches = []
