@@ -435,8 +435,8 @@ class PSIModResolver(ModificationResolver):
             defn = self.database['MOD:{:05d}'.format(id)]
         else:
             raise ValueError("Must provide one of `name` or `id`")
-        mass = float(defn.DiffMono.strip()[1:-1])
-        composition = Composition(defn.DiffFormula.strip()[1:-1].replace(" ", ''))
+        mass = float(defn.DiffMono)
+        composition = Composition(defn.DiffFormula.strip().replace(" ", ''))
         return {
             'mass': mass,
             'composition': composition,
@@ -736,6 +736,7 @@ class GlycanModification(ModificationBase):
     }
 
     tokenizer = re.compile(r"([A-Za-z]+)\s*(\d*)\s*")
+    monomer_tokenizer = re.compile(r"|".join(sorted(valid_monosaccharides.keys(), key=len, reverse=True)))
 
     @property
     def monosaccharides(self):
@@ -749,8 +750,20 @@ class GlycanModification(ModificationBase):
             else:
                 cnt = 1
             if tok not in self.valid_monosaccharides:
-                raise ValueError("{tok!r} is not a valid monosaccharide name".format(**locals()))
-            composite[tok] += cnt
+                parts = self.monomer_tokenizer.findall(tok)
+                t = 0
+                for p in parts:
+                    if p not in self.valid_monosaccharides:
+                        break
+                    t += len(p)
+                if t != len(tok):
+                    raise ValueError("{tok!r} is not a valid monosaccharide name".format(**locals()))
+                else:
+                    for p in parts[:-1]:
+                        composite[p] += 1
+                    composite[parts[-1]] += cnt
+            else:
+                composite[tok] += cnt
         mass = 0
         chemcomp = Composition()
         for key, cnt in composite.items():
