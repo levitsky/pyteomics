@@ -38,7 +38,8 @@ extras_require = {'XML': ['lxml', 'numpy'],
                   'DF': ['pandas'],
                   'Unimod': ['lxml', 'sqlalchemy'],
                   'numpress': ['pynumpress'],
-                  'mzMLb': ['h5py', 'hdf5plugin']}
+                  'mzMLb': ['h5py', 'hdf5plugin'],
+                  'proforma': ['psims > v0.1.42']}
 extras_require['all'] = sum(extras_require.values(), [])
 
 
