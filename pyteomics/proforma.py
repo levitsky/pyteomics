@@ -1628,7 +1628,7 @@ def parse(sequence):
         elif state == POST_GLOBAL_AA:
             if c in VALID_AA:
                 current_aa_targets.append(c)
-            if c == ',':
+            elif c == ',':
                 # the next character should be another amino acid
                 pass
             elif c == '>':
