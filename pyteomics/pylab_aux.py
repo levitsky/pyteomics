@@ -504,6 +504,7 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
         raise PyteomicsError('Could not extract precursor charge from spectrum. '
             'Please specify `precursor_charge` keyword argument.')
     precursor_mz = mass.calculate_mass(peptide, aa_mass=aa_mass, charge=precursor_charge)
+
     maxcharge = kwargs.pop('maxcharge', max(1, precursor_charge - 1))
     # end of common kwargs
 
@@ -512,9 +513,14 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     remove_precursor_peak = kwargs.pop('remove_precursor_peak', False)
     annotate_mz = kwargs.pop('annotate_mz', None)
     annotate_mz_text = kwargs.pop('annotate_mz_text', None)
+    variable_mods = kwargs.get('modifications')
+    if not variable_mods:
+        clean_sequence, variable_mods = _spectrum_utils_parse_sequence(peptide, aa_mass)
+    else:
+        clean_sequence = peptide
 
-    spectrum = _spectrum_utils_create_spectrum(spectrum, peptide, *args,
-        precursor_mz=precursor_mz, precursor_charge=precursor_charge, **kwargs)
+    spectrum = _spectrum_utils_create_spectrum(spectrum, clean_sequence, *args,
+        precursor_mz=precursor_mz, precursor_charge=precursor_charge, modifications=variable_mods, **kwargs)
     if remove_precursor_peak:
         spectrum = spectrum.remove_precursor_peak(tol, tol_mode)
     spectrum = spectrum.annotate_peptide_fragments(tol, tol_mode, types, maxcharge, peak_assignment)
@@ -539,6 +545,41 @@ class SpectrumUtilsColorScheme:
         sup.colors = self.previous_colors
 
 
+class SpectrumUtilsStaticModifications:
+    """Context manager that temporarily changes `spectrum_utils` static modifications."""
+    def __init__(self, mods):
+        self.mods = mods
+        self.previous_aa_mass = sus._aa_mass
+
+    def __enter__(self):
+        if self.mods:
+            sus.reset_modifications()
+            for mod in self.mods:
+                sus.static_modification(*mod)
+
+    def __exit__(self, *args, **kwargs):
+        sup._aa_mass = self.previous_aa_mass
+
+
+def _spectrum_utils_parse_sequence(sequence, aa_mass=None):
+    if isinstance(sequence, str):
+        parsed = parser.parse(sequence, show_unmodified_termini=True)
+    else:
+        parsed = sequence
+    mods = {}
+    aa_mass = aa_mass or mass.std_aa_mass
+    if parsed[0] != parser.std_nterm:
+        mods['N-term'] = aa_mass[parsed[0]]
+    if parsed[-1] != parser.std_cterm:
+        mods['C-term'] = aa_mass[parsed[-1]]
+    clean_sequence = []
+    for i, aa in enumerate(parsed[1:-1]):
+        if len(aa) > 1:
+            mods[i] = aa_mass.get(aa, aa_mass[aa[:-1]] + aa_mass[aa[-1]])
+            clean_sequence.append(aa[-1])
+    return ''.join(clean_sequence), mods
+
+
 def _spectrum_utils_annotate_plot(spectrum, peptide, *args, **kwargs):
 
     with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
@@ -547,10 +588,10 @@ def _spectrum_utils_annotate_plot(spectrum, peptide, *args, **kwargs):
 
 
 def _spectrum_utils_annotate_iplot(spectrum, peptide, *args, **kwargs):
-
+    import spectrum_utils.iplot as supi
     with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
         spectrum = _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs)
-        return sup.spectrum(spectrum)
+        return supi.spectrum(spectrum)
 
 
 _annotation_backends = {
@@ -629,6 +670,10 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
         In case multiple peaks occur within the given mass window around a theoretical peak,
         only a single peak will be annotated with the fragment type.
         Default is `'most_intense'`. Only works with `spectrum_utils` backend.
+    modifications : dict, optional
+        A dict of variable modifications as described in
+        `spectrum_utils documentation <https://spectrum-utils.readthedocs.io/en/latest/processing.html#variable-modifications>`_.
+        You don't need to provide this if your `peptide` is a modX sequence and you supply `aa_mass`.
     """
     bname = kwargs.pop('backend', 'default')
     backend = _annotation_backends.get(bname)
