@@ -914,7 +914,7 @@ def _check_use_index(source, use_index, default):
                 warnings.warn('use_index is {}, but the file mode is {}. '
                     'Setting `use_index` to {}'.format(use_index, source.mode, binary))
             use_index = binary
-        else:
+        elif use_index is None:
             warnings.warn('Could not check mode on {}. Specify `use_index` explicitly to avoid errors.'.format(source))
 
         if use_index is not None:
@@ -925,10 +925,11 @@ def _check_use_index(source, use_index, default):
     except PyteomicsError:
         raise
     except Exception as e:
-        warnings.warn('Could not check mode on {}. Reason: {!r}. Specify `use_index` explicitly to avoid errors.'.format(source, e))
-        if use_index is not None:
-            return use_index
-        return default
+        if use_index is None:
+            warnings.warn('Could not check mode on {}. Reason: {!r}. '
+                'Specify `use_index` explicitly to avoid errors.'.format(source, e))
+            return default
+        return use_index
 
 
 class FileReadingProcess(mp.Process):
