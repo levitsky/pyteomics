@@ -966,7 +966,7 @@ class UseIndexTest(unittest.TestCase):
         source = UseIndexTest.MockFile(None, None)
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter('always')
-            aux._check_use_index(source, True, None)
+            aux._check_use_index(source, None, None)
             self.assertEqual(len(w), 1)
             self.assertIs(w[0].category, UserWarning)
             self.assertIn('Could not check mode', str(w[0].message))
