@@ -200,7 +200,7 @@ class _PROXIBackend(object):
         result = {}
         result['attributes'] = data.pop('attributes', [])
         for attrib in result['attributes']:
-            if 'value' in attrib and attrib['value'][0].isdigit():
+            if 'value' in attrib and isinstance(attrib['value'], str) and attrib['value'][0].isdigit():
                 try:
                     attrib['value'] = cast_numeric(attrib['value'])
                 except TypeError:
