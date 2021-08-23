@@ -664,7 +664,7 @@ def reverse(sequence, keep_nterm=False, keep_cterm=False):
     return sequence[:start] + sequence[start:end][::-1] + sequence[end:]
 
 
-def shuffle(sequence, keep_nterm=False, keep_cterm=False, keep_M=False, fix_aa=''):
+def shuffle(sequence, keep_nterm=False, keep_cterm=False, keep_nterm_M=False, fix_aa=''):
     """
     Create a decoy sequence by shuffling the original one.
 
@@ -678,46 +678,48 @@ def shuffle(sequence, keep_nterm=False, keep_cterm=False, keep_M=False, fix_aa='
     keep_cterm : bool, optional
         If :py:const:`True`, then the C-terminal residue will be kept.
         Default is :py:const:`False`.
-    keep_M : bool, optional
-        If :py:const:`True`, then the C-terminal methionine will be kept.
+    keep_nterm_M : bool, optional
+        If :py:const:`True`, then the N-terminal methionine will be kept.
         Default is :py:const:`False`.
-    fix_aa : str or list or tuple, optional
-        single letter codes for amino acids that should preserve their position
+    fix_aa : iterable, optional
+        Single letter codes for amino acids that should preserve their position
         during shuffling.
         Default is ''.
+
     Returns
     -------
     decoy_sequence : str
         The decoy sequence.
     """
-    #empty sequence
+
+    # empty sequence
     if len(sequence) == 0:
         return ''
     
-    #presereve the first position
-    if (keep_M and sequence[0] == 'M') or keep_nterm:
+    # presereve the first position
+    if (keep_nterm_M and sequence[0] == 'M') or keep_nterm:
         return sequence[0] + shuffle(sequence[1:], keep_cterm=keep_cterm, 
                        fix_aa=fix_aa)
     
-    #presereve the last position
+    # presereve the last position
     if keep_cterm:
         return shuffle(sequence[:-1], fix_aa=fix_aa) + sequence[-1]
     
     
-    if type(fix_aa) in [list, tuple]:
+    if not isinstance(fix_aa, str):
         fix_aa = ''.join(fix_aa)
     
     fixed = []
     position = 0
-    if len(fix_aa) > 0: #non-empty fixed list
+    if len(fix_aa) > 0:  # non-empty fixed list
         shuffled = []
         for match in re.finditer(r'[{}]'.format(fix_aa), sequence):
             fixed.append((match.start(), sequence[match.start()]))
-            shuffled += list(sequence[position:match.start()])
+            shuffled.extend(sequence[position:match.start()])
             position = match.end()
-        shuffled += list(sequence[position:])
+        shuffled.extend(sequence[position:])
         
-    else: #shuffle everything
+    else:  # shuffle everything
         shuffled = list(sequence)
     
     random.shuffle(shuffled)

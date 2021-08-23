@@ -5,6 +5,7 @@ import random
 import string
 import pickle
 import re
+from collections import Counter
 import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics import fasta
@@ -88,10 +89,14 @@ class FastaTest(unittest.TestCase):
         
         test = True
         for s in sequences:
-            aa = random.choice(string.ascii_uppercase)
-            ss = fasta.shuffle(s, fix_aa=aa)
-            self.assertEqual([_.span() for _ in re.finditer(aa, s)],
-                              [_.span() for _ in re.finditer(aa, ss)])
+            n = random.randint(1, 5)
+            fix_aa = [random.choice(string.ascii_uppercase) for _ in range(n)]
+            ss = fasta.shuffle(s, fix_aa=fix_aa)
+            self.assertEqual(len(s), len(ss))
+            self.assertEqual(Counter(s), Counter(ss))
+            for aa in fix_aa:
+                self.assertEqual([_.span() for _ in re.finditer(aa, s)],
+                                  [_.span() for _ in re.finditer(aa, ss)])
             if not all(a == b for a, b in zip(s, ss)):
                 test = False
         self.assertFalse(test)
