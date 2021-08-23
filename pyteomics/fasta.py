@@ -664,7 +664,7 @@ def reverse(sequence, keep_nterm=False, keep_cterm=False):
     return sequence[:start] + sequence[start:end][::-1] + sequence[end:]
 
 
-def shuffle(sequence, keep_nterm=False, keep_cterm=False):
+def shuffle(sequence, keep_nterm=False, keep_cterm=False, keep_nterm_M=False, fix_aa=''):
     """
     Create a decoy sequence by shuffling the original one.
 
@@ -678,22 +678,56 @@ def shuffle(sequence, keep_nterm=False, keep_cterm=False):
     keep_cterm : bool, optional
         If :py:const:`True`, then the C-terminal residue will be kept.
         Default is :py:const:`False`.
+    keep_nterm_M : bool, optional
+        If :py:const:`True`, then the N-terminal methionine will be kept.
+        Default is :py:const:`False`.
+    fix_aa : iterable, optional
+        Single letter codes for amino acids that should preserve their position
+        during shuffling.
+        Default is ''.
 
     Returns
     -------
     decoy_sequence : str
         The decoy sequence.
     """
-    start = 1 if keep_nterm else 0
-    end = len(sequence)-1 if keep_cterm else len(sequence)
-    if start == end:
-        return sequence
-    elif keep_cterm or keep_nterm:
-        return sequence[:start] + shuffle(sequence[start:end]) + sequence[end:]
 
-    modified_sequence = list(sequence)
-    random.shuffle(modified_sequence)
-    return ''.join(modified_sequence)
+    # empty sequence
+    if len(sequence) == 0:
+        return ''
+    
+    # presereve the first position
+    if (keep_nterm_M and sequence[0] == 'M') or keep_nterm:
+        return sequence[0] + shuffle(sequence[1:], keep_cterm=keep_cterm, 
+                       fix_aa=fix_aa)
+    
+    # presereve the last position
+    if keep_cterm:
+        return shuffle(sequence[:-1], fix_aa=fix_aa) + sequence[-1]
+    
+    
+    if not isinstance(fix_aa, str):
+        fix_aa = ''.join(fix_aa)
+    
+    fixed = []
+    position = 0
+    if len(fix_aa) > 0:  # non-empty fixed list
+        shuffled = []
+        for match in re.finditer(r'[{}]'.format(fix_aa), sequence):
+            fixed.append((match.start(), sequence[match.start()]))
+            shuffled.extend(sequence[position:match.start()])
+            position = match.end()
+        shuffled.extend(sequence[position:])
+        
+    else:  # shuffle everything
+        shuffled = list(sequence)
+    
+    random.shuffle(shuffled)
+    
+    for fix in fixed:
+        shuffled.insert(fix[0], fix[1])
+    
+    return ''.join(shuffled)
 
 
 def fused_decoy(sequence, decoy_mode='reverse', sep='R', **kwargs):
