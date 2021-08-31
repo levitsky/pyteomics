@@ -30,6 +30,16 @@ Data access
   single spectrum are converted to a human-readable dict. Spectra themselves are
   stored under 'm/z array' and 'intensity array' keys.
 
+Controlled Vocabularies
+~~~~~~~~~~~~~~~~~~~~~~~
+mzMLb relies on controlled vocabularies to describe its contents extensibly. See
+`Controlled Vocabulary Terms <../data.html#controlled-vocabulary-terms-in-structured-data>`_
+for more details on how they are used.
+
+Handling Time Units and Other Qualified Quantities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mzMLb contains information which may be described as using a variety of different time units.
+See `Unit Handling <../data.html#unit-handling>`_ for more information.
 
 References
 ----------

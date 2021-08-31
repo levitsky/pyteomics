@@ -58,6 +58,18 @@ Target-decoy approach
   :py:func:`qvalues` - get an array of scores and local FDR values for a PSM
   set using the target-decoy approach.
 
+Controlled Vocabularies
+~~~~~~~~~~~~~~~~~~~~~~~
+mzIdentML relies on controlled vocabularies to describe its contents extensibly. See
+`Controlled Vocabulary Terms <../data.html#controlled-vocabulary-terms-in-structured-data>`_
+for more details on how they are used.
+
+Handling Time Units and Other Qualified Quantities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mzIdentML contains information which may be described as using a variety of different time units.
+See `Unit Handling <../data.html#unit-handling>`_ for more information.
+
+
 Deprecated functions
 --------------------
 
