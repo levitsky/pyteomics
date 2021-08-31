@@ -64,7 +64,7 @@ To normalize the time unit, we can write a function like this:
 
 .. code:: python
 
-    >>> seconds = unitfloat(93.5, "seconds")
+    >>> seconds = unitfloat(93.5, "second")
     >>> minutes = in_minutes(seconds)
     >>> minutes
     1.55833
