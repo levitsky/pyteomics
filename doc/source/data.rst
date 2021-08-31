@@ -19,3 +19,7 @@ results and protein databases.
 .. include :: data/indexing.rst.inc
 
 .. include :: data/tda.rst.inc
+
+.. include :: data/controlled_vocabulary_terms.rst.inc
+
+.. include :: data/unit_handling.rst.inc

@@ -264,10 +264,18 @@ class _MappingOverAttributeProxy(object):
 
 
 class unitint(int):
+    '''Represents an integer value with a unit name.
 
+    Behaves identically to a built-in :class:`int` type.
+
+    Attributes
+    ----------
+    unit_info : :class:`str`
+        The name of the unit this value posseses.
+    '''
     def __new__(cls, value, unit_info=None):
         inst = int.__new__(cls, value)
-        inst.unit_info = (unit_info)
+        inst.unit_info = unit_info
         return inst
 
     def __reduce__(self):
@@ -283,6 +291,15 @@ class unitint(int):
 
 
 class unitfloat(float):
+    '''Represents an float value with a unit name.
+
+    Behaves identically to a built-in :class:`float` type.
+
+    Attributes
+    ----------
+    unit_info : :class:`str`
+        The name of the unit this value posseses.
+    '''
     __slots__ = ('unit_info', )
 
     def __new__(cls, value, unit_info=None):
@@ -307,6 +324,15 @@ class unitfloat(float):
 
 
 class unitstr(str):
+    '''Represents an string value with a unit name.
+
+    Behaves identically to a built-in :class:`str` type.
+
+    Attributes
+    ----------
+    unit_info : :class:`str`
+        The name of the unit this value posseses.
+    '''
     if not PY2:
         __slots__ = ("unit_info", )
 
@@ -335,7 +361,15 @@ class unitstr(str):
 
 class cvstr(str):
     '''A helper class to associate a controlled vocabullary accession
-    number with an otherwise plain :class:`str` object'''
+    number with an otherwise plain :class:`str` object
+
+    Attributes
+    ----------
+    accession : str
+        The accession number for this parameter, e.g. MS:1000040
+    unit_accession : str
+        The accession number for the unit of the value, if any
+    '''
 
     if not PY2:
         __slots__ = ('accession', 'unit_accession')
@@ -466,5 +500,5 @@ class CVQueryEngine(object):
         else:
             return self.query(data, accession)
 
-
+'''A ready-to-use instance of :class:`~.CVQueryEngine`'''
 cvquery = CVQueryEngine()

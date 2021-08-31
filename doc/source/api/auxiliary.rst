@@ -57,5 +57,6 @@ Helpers
 .. automodule :: pyteomics.auxiliary.utils
 
 .. automodule :: pyteomics.auxiliary.structures
+  :exclude-members: unitint, unitfloat, unitstr, cvstr, CVQueryEngine
 
 .. automodule :: pyteomics.auxiliary.file_helpers

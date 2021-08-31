@@ -27,6 +27,17 @@ Data access
   :py:func:`chain.from_iterable` - read multiple files at once, using an
   iterable of files.
 
+Controlled Vocabularies
+~~~~~~~~~~~~~~~~~~~~~~~
+TraML relies on controlled vocabularies to describe its contents extensibly. See
+`Controlled Vocabulary Terms <../data.html#controlled-vocabulary-terms-in-structured-data>`_
+for more details on how they are used.
+
+Handling Time Units and Other Qualified Quantities
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TraML contains information which may be described as using a variety of different time units.
+See `Unit Handling <../data.html#unit-handling>`_ for more information.
+
 Deprecated functions
 --------------------
 
