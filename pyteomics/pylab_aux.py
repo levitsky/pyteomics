@@ -474,7 +474,7 @@ def _spectrum_utils_create_spectrum(spectrum, peptide, *args, **kwargs):
     spectrum = sus.MsmsSpectrum(
         None, kwargs.pop('precursor_mz', None), kwargs.pop('precursor_charge', None),
         spectrum['m/z array'], spectrum['intensity array'],
-        peptide=peptide)
+        peptide=peptide, modifications=kwargs.pop('modifications', None))
     if mz_range:
         spectrum = spectrum.set_mz_range(*mz_range)
 
@@ -503,7 +503,7 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     if precursor_charge is None:
         raise PyteomicsError('Could not extract precursor charge from spectrum. '
             'Please specify `precursor_charge` keyword argument.')
-    precursor_mz = mass.calculate_mass(peptide, aa_mass=aa_mass, charge=precursor_charge)
+    precursor_mz = mass.fast_mass2(peptide, aa_mass=aa_mass, charge=precursor_charge)
 
     maxcharge = kwargs.pop('maxcharge', max(1, precursor_charge - 1))
     # end of common kwargs
@@ -513,7 +513,7 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     remove_precursor_peak = kwargs.pop('remove_precursor_peak', False)
     annotate_mz = kwargs.pop('annotate_mz', None)
     annotate_mz_text = kwargs.pop('annotate_mz_text', None)
-    variable_mods = kwargs.get('modifications')
+    variable_mods = kwargs.pop('modifications', None)
     if not variable_mods:
         clean_sequence, variable_mods = _spectrum_utils_parse_sequence(peptide, aa_mass)
     else:
@@ -563,7 +563,7 @@ class SpectrumUtilsStaticModifications:
 
 def _spectrum_utils_parse_sequence(sequence, aa_mass=None):
     if isinstance(sequence, str):
-        parsed = parser.parse(sequence, show_unmodified_termini=True)
+        parsed = parser.parse(sequence, show_unmodified_termini=True, labels=aa_mass, allow_unknown_modifications=True)
     else:
         parsed = sequence
     mods = {}
@@ -575,8 +575,15 @@ def _spectrum_utils_parse_sequence(sequence, aa_mass=None):
     clean_sequence = []
     for i, aa in enumerate(parsed[1:-1]):
         if len(aa) > 1:
-            mods[i] = aa_mass.get(aa, aa_mass[aa[:-1]] + aa_mass[aa[-1]])
-            clean_sequence.append(aa[-1])
+            if aa[:-1] in aa_mass:
+                mods[i] = aa_mass[aa[:-1]]
+            else:
+                try:
+                    mods[i] = aa_mass[aa] - aa_mass[aa[-1]]
+                except KeyError:
+                    raise PyteomicsError('Unknown modification mass: {0}. {0} or {1} must be in `aa_mass`.'.format(
+                        aa[:-1], aa))
+        clean_sequence.append(aa[-1])
     return ''.join(clean_sequence), mods
 
 
