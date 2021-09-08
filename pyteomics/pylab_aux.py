@@ -330,6 +330,34 @@ def plot_qvalue_curve(qvalues, *args, **kwargs):
     return pylab.plot(qvalues, 1 + np.arange(qvalues.size), *args, **kwargs)
 
 
+def _default_plot_spectrum(spectrum, centroided=True, *args, **kwargs):
+    pylab.xlabel(kwargs.pop('xlabel', 'm/z'))
+    pylab.ylabel(kwargs.pop('ylabel', 'intensity'))
+    pylab.title(kwargs.pop('title', ''))
+    if centroided:
+        kwargs.setdefault('align', 'center')
+        kwargs.setdefault('width', 0)
+        kwargs.setdefault('linewidth', 1)
+        kwargs.setdefault('edgecolor', 'k')
+        return pylab.bar(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
+    return pylab.plot(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
+
+
+def _spectrum_utils_plot(spectrum, *args, **kwargs):
+    return NotImplemented
+
+
+def _spectrum_utils_iplot(spectrum, *args, **kwargs):
+    return NotImplemented
+
+
+_plot_backends = {
+    'default': _default_plot_spectrum,
+    'spectrum_utils': _spectrum_utils_plot,
+    'spectrum_utils.iplot': _spectrum_utils_iplot,
+}
+
+
 def plot_spectrum(spectrum, centroided=True, *args, **kwargs):
     """
     Plot a spectrum, assuming it is a dictionary containing "m/z array" and "intensity array".
@@ -353,16 +381,12 @@ def plot_spectrum(spectrum, centroided=True, *args, **kwargs):
     **kwargs
         Given to :py:func:`pylab.plot` or :py:func:`pylab.bar` (depending on `centroided`).
     """
-    pylab.xlabel(kwargs.pop('xlabel', 'm/z'))
-    pylab.ylabel(kwargs.pop('ylabel', 'intensity'))
-    pylab.title(kwargs.pop('title', ''))
-    if centroided:
-        kwargs.setdefault('align', 'center')
-        kwargs.setdefault('width', 0)
-        kwargs.setdefault('linewidth', 1)
-        kwargs.setdefault('edgecolor', 'k')
-        return pylab.bar(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
-    return pylab.plot(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
+    bname = kwargs.pop('backend', 'default')
+    backend = _plot_backends.get(bname)
+    if backend is None:
+        raise PyteomicsError('Unknown backend name: {}. Should be one of: {}.'.format(
+            bname, '; '.join(_plot_backends)))
+    return backend(spectrum, *args, **kwargs)
 
 
 def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
@@ -495,7 +519,7 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     else:
         tol_mode = 'Da'
 
-    kwargs.pop('text_kw', None)  # not used
+    # kwargs.pop('text_kw', None)  # not used
 
     precursor_charge = kwargs.pop('precursor_charge', None)
     if precursor_charge is None:
@@ -575,7 +599,7 @@ def _spectrum_utils_annotate_plot(spectrum, peptide, *args, **kwargs):
 
     with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
         spectrum = _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs)
-        return sup.spectrum(spectrum)
+        return sup.spectrum(spectrum, annot_kws=kwargs.pop('text_kw'))
 
 
 def _spectrum_utils_annotate_iplot(spectrum, peptide, *args, **kwargs):
@@ -619,6 +643,8 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
         A relative m/z error for peak matching. Default is 10 ppm.
     aa_mass : dict, keyword only, optional
         A dictionary of amino acid residue masses.
+    text_kw : dict, keyword only, optional
+        Keyword arguments for :py:func:`pylab.text`.
     *args
         Passed to the plotting backend.
     **kwargs
@@ -632,8 +658,7 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
     mass_data : dict, keyword only, optional
         A dictionary of element masses to override :py:const:`pyteomics.mass.nist_mass`.
         Only works with `default` backend.
-    text_kw : dict, keyword only, optional
-        Keyword arguments for :py:func:`pylab.text`. Only works with `default` backend.
+
     adjust_text : bool, keyword only, optional
         Adjust the overlapping text annotations using :py:mod:`adjustText`. Only works with `default` backend.
     adjust_kw : dict, keyword only, optional
