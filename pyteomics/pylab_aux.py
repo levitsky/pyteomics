@@ -545,22 +545,6 @@ class SpectrumUtilsColorScheme:
         sup.colors = self.previous_colors
 
 
-class SpectrumUtilsStaticModifications:
-    """Context manager that temporarily changes `spectrum_utils` static modifications."""
-    def __init__(self, mods):
-        self.mods = mods
-        self.previous_aa_mass = sus._aa_mass
-
-    def __enter__(self):
-        if self.mods:
-            sus.reset_modifications()
-            for mod in self.mods:
-                sus.static_modification(*mod)
-
-    def __exit__(self, *args, **kwargs):
-        sup._aa_mass = self.previous_aa_mass
-
-
 def _spectrum_utils_parse_sequence(sequence, aa_mass=None):
     if isinstance(sequence, str):
         parsed = parser.parse(sequence, show_unmodified_termini=True, labels=aa_mass, allow_unknown_modifications=True)
@@ -623,7 +607,7 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
         The `spectrum_utils.iplot` backend requires installing :py:mod:`spectrum_utils[iplot]`.
     ion_types : Container, keyword only, optional
         Ion types to be considered for annotation. Default is `('b', 'y')`.
-    precursor_charge : str, keyword only, optional
+    precursor_charge : int, keyword only, optional
         If not specified, an attempt is made to extract it from `spectrum`.
     maxcharge : int, keyword only, optional
         Maximum charge state for fragment ions to be considered. Default is `precursor_charge - 1`.
@@ -633,15 +617,12 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
         A fixed m/z tolerance value for peak matching. Alternative to `rtol`.
     rtol : float, keyword only, optional
         A relative m/z error for peak matching. Default is 10 ppm.
-    text_kw : dict, keyword only, optional
-        Keyword arguments for :py:func:`pylab.text`.
     aa_mass : dict, keyword only, optional
         A dictionary of amino acid residue masses.
     *args
         Passed to the plotting backend.
     **kwargs
         Passed to the plotting backend.
-
 
     centroided : bool, keyword only, optional
         Passed to :py:func:`plot_spectrum`. Only works with `default` backend.
@@ -651,11 +632,12 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
     mass_data : dict, keyword only, optional
         A dictionary of element masses to override :py:const:`pyteomics.mass.nist_mass`.
         Only works with `default` backend.
+    text_kw : dict, keyword only, optional
+        Keyword arguments for :py:func:`pylab.text`. Only works with `default` backend.
     adjust_text : bool, keyword only, optional
         Adjust the overlapping text annotations using :py:mod:`adjustText`. Only works with `default` backend.
     adjust_kw : dict, keyword only, optional
         Keyword arguments for :py:func:`adjust_text`. Only works with `default` backend.
-
 
     remove_precursor_peak : bool, keyword only, optional
         Remove precursor peak from spectrum before annotation. Default is :p:const:`False`.
@@ -680,7 +662,13 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
     modifications : dict, optional
         A dict of variable modifications as described in
         `spectrum_utils documentation <https://spectrum-utils.readthedocs.io/en/latest/processing.html#variable-modifications>`_.
-        You don't need to provide this if your `peptide` is a modX sequence and you supply `aa_mass`.
+
+        .. note::
+            You don't need to provide this if your `peptide` is a modX sequence and you supply `aa_mass`.
+
+        .. note::
+            To apply static modifications, provide `aa_mass` with modified masses.
+
     """
     bname = kwargs.pop('backend', 'default')
     backend = _annotation_backends.get(bname)
