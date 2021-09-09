@@ -674,6 +674,13 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
         A dictionary of amino acid residue masses.
     text_kw : dict, keyword only, optional
         Keyword arguments for :py:func:`pylab.text`.
+    xlabel : str, keyword only, optional
+        Label for the X axis. Default is "m/z".
+    ylabel : str, keyword only, optional
+        Label for the Y axis. Default is "intensity".
+    title : str, keyword only, optional
+        The title. Empty by default.
+
     *args
         Passed to the plotting backend.
     **kwargs
@@ -729,6 +736,9 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
     if backend is None:
         raise PyteomicsError('Unknown backend name: {}. Should be one of: {}.'.format(
             bname, '; '.join(_annotation_backends)))
+    pylab.xlabel(kwargs.pop('xlabel', 'm/z'))
+    pylab.ylabel(kwargs.pop('ylabel', 'intensity'))
+    pylab.title(kwargs.pop('title', ''))
     return backend(spectrum, peptide, *args, **kwargs)
 
 
@@ -750,10 +760,22 @@ def mirror(spec_top, spec_bottom, peptide=None, spectrum_kws=None, ax=None, **kw
         Passed to :py:func:`spectrum_utils.plot.mirror`.
     ax : matplotlib.pyplot.Axes or None, optional
         Passed to :py:func:`spectrum_utils.plot.mirror`.
+    xlabel : str, keyword only, optional
+        Label for the X axis. Default is "m/z".
+    ylabel : str, keyword only, optional
+        Label for the Y axis. Default is "intensity".
+    title : str, keyword only, optional
+        The title. Empty by default.
+
     **kwargs : same as for :py:func:`annotate_spectrum` for `spectrum_utils` backends.
     """
 
     spec_gen = _spectrum_utils_create_spectrum if peptide is None else _spectrum_utils_annotate_spectrum
     spec_top = spec_gen(spec_top, peptide, **kwargs)
     spec_bottom = spec_gen(spec_bottom, peptide, **kwargs)
-    return sup.mirror(spec_top, spec_bottom, spectrum_kws=spectrum_kws, ax=ax)
+
+    ax = sup.mirror(spec_top, spec_bottom, spectrum_kws=spectrum_kws, ax=ax)
+    ax.set_xlabel(kwargs.pop('xlabel', 'm/z'))
+    ax.set_ylabel(kwargs.pop('ylabel', 'intensity'))
+    ax.set_title(kwargs.pop('title', ''))
+    return ax
