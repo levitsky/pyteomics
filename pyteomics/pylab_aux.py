@@ -24,6 +24,8 @@ Spectrum visualization
 
   :py:func:`annotate_spectrum` - plot and annotate peaks in MS/MS spectrum.
 
+  :py:func:`mirror` - create a mirror plot of two spectra (using :py:mod:`spectrum_utils`).
+
 FDR control
 -----------
 
@@ -728,3 +730,30 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
         raise PyteomicsError('Unknown backend name: {}. Should be one of: {}.'.format(
             bname, '; '.join(_annotation_backends)))
     return backend(spectrum, peptide, *args, **kwargs)
+
+
+def mirror(spec_top, spec_bottom, peptide=None, spectrum_kws=None, ax=None, **kwargs):
+    """Create a mirror plot of two (possible annotated) spectra using `spectrum_utils`.
+
+    .. note ::
+        Requires :py:mod:`spectrum_utils`.
+
+    Parameters
+    ----------
+    spec_top : dict
+        A spectrum as returned by Pyteomics parsers. Needs to have 'm/z array' and 'intensity array' keys.
+    spec_bottom : dict
+        A spectrum as returned by Pyteomics parsers. Needs to have 'm/z array' and 'intensity array' keys.
+    peptide : str or None, optional
+        A modX sequence. If provided, the peaks will be annotated as peptide fragments.
+    spectrum_kws : dict or None, optional
+        Passed to :py:func:`spectrum_utils.plot.mirror`.
+    ax : matplotlib.pyplot.Axes or None, optional
+        Passed to :py:func:`spectrum_utils.plot.mirror`.
+    **kwargs : same as for :py:func:`annotate_spectrum` for `spectrum_utils` backends.
+    """
+
+    spec_gen = _spectrum_utils_create_spectrum if peptide is None else _spectrum_utils_annotate_spectrum
+    spec_top = spec_gen(spec_top, peptide, **kwargs)
+    spec_bottom = spec_gen(spec_bottom, peptide, **kwargs)
+    return sup.mirror(spec_top, spec_bottom, spectrum_kws=spectrum_kws, ax=ax)
