@@ -330,11 +330,8 @@ def plot_qvalue_curve(qvalues, *args, **kwargs):
     return pylab.plot(qvalues, 1 + np.arange(qvalues.size), *args, **kwargs)
 
 
-def _default_plot_spectrum(spectrum, centroided=True, *args, **kwargs):
-    pylab.xlabel(kwargs.pop('xlabel', 'm/z'))
-    pylab.ylabel(kwargs.pop('ylabel', 'intensity'))
-    pylab.title(kwargs.pop('title', ''))
-    if centroided:
+def _default_plot_spectrum(spectrum, *args, **kwargs):
+    if kwargs.pop('centroided', True):
         kwargs.setdefault('align', 'center')
         kwargs.setdefault('width', 0)
         kwargs.setdefault('linewidth', 1)
@@ -344,11 +341,17 @@ def _default_plot_spectrum(spectrum, centroided=True, *args, **kwargs):
 
 
 def _spectrum_utils_plot(spectrum, *args, **kwargs):
-    return NotImplemented
+
+    with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
+        spectrum = _spectrum_utils_create_spectrum(spectrum, None, *args, **kwargs)
+        return sup.spectrum(spectrum)
 
 
 def _spectrum_utils_iplot(spectrum, *args, **kwargs):
-    return NotImplemented
+    import spectrum_utils.iplot as supi
+    with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
+        spectrum = _spectrum_utils_create_spectrum(spectrum, None, *args, **kwargs)
+        return supi.spectrum(spectrum)
 
 
 _plot_backends = {
@@ -358,34 +361,58 @@ _plot_backends = {
 }
 
 
-def plot_spectrum(spectrum, centroided=True, *args, **kwargs):
+def plot_spectrum(spectrum, *args, **kwargs):
     """
     Plot a spectrum, assuming it is a dictionary containing "m/z array" and "intensity array".
 
     Parameters
     ----------
     spectrum : dict
-        A dictionary, as returned by MGF, mzML or mzXML parsers.
+        A dictionary, as returned by pyteomics MS data parsers.
         Must contain "m/z array" and "intensity array" keys with decoded arrays.
-    centroided : bool, optional
-        If :py:const:`True` (default), peaks of the spectrum are plotted using :py:func:`pylab.bar`.
-        If :py:const:`False`, the arrays are simply plotted using :py:func:`pylab.plot`.
+    backend : str, keyword only, optional
+        One of `{'default', 'spectrum_utils', 'spectrum_utils.iplot'}`.
+        The `spectrum_utils` backend requires installing :py:mod:`spectrum_utils`.
+        The `spectrum_utils.iplot` backend requires installing :py:mod:`spectrum_utils[iplot]`.
     xlabel : str, keyword only, optional
         Label for the X axis. Default is "m/z".
     ylabel : str, keyword only, optional
         Label for the Y axis. Default is "intensity".
     title : str, keyword only, optional
         The title. Empty by default.
+
+    centroided : bool, keyword only, optional
+        Works only for the `default` backend.
+        If :py:const:`True` (default), peaks of the spectrum are plotted using :py:func:`pylab.bar`.
+        If :py:const:`False`, the arrays are simply plotted using :py:func:`pylab.plot`.
     *args
-        Given to :py:func:`pylab.plot` or :py:func:`pylab.bar` (depending on `centroided`).
+        When using `default` backend: given to :py:func:`pylab.plot` or :py:func:`pylab.bar` (depending on `centroided`).
     **kwargs
-        Given to :py:func:`pylab.plot` or :py:func:`pylab.bar` (depending on `centroided`).
+        When using `default` backend: given to :py:func:`pylab.plot` or :py:func:`pylab.bar` (depending on `centroided`).
+
+    min_intensity : float, keyword only, optional
+        Remove low-intensity peaks; this is a factor of maximum peak intensity. Default is 0 (no filtering).
+        Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
+    max_num_peaks : int or None, keyword only, optional
+        Remove low-intensity peaks; this is the number of peaks to keep. Default is :py:const:`None` (no filtering).
+        Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
+    scaling : one of `{'root', 'log', 'rank'}` or None, keyword only, optional
+        Scaling to apply to peak intensities. Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
+    max_intensity : float or None, keyword only, optional
+        Intensity of the most intense peak relative to which the peaks will be scaled
+        (the default is :py:const:`None`, which means that no scaling
+        relative to the most intense peak will be performed).
+        Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
     """
     bname = kwargs.pop('backend', 'default')
     backend = _plot_backends.get(bname)
     if backend is None:
         raise PyteomicsError('Unknown backend name: {}. Should be one of: {}.'.format(
             bname, '; '.join(_plot_backends)))
+
+    pylab.xlabel(kwargs.pop('xlabel', 'm/z'))
+    pylab.ylabel(kwargs.pop('ylabel', 'intensity'))
+    pylab.title(kwargs.pop('title', ''))
     return backend(spectrum, *args, **kwargs)
 
 
@@ -606,7 +633,7 @@ def _spectrum_utils_annotate_iplot(spectrum, peptide, *args, **kwargs):
     import spectrum_utils.iplot as supi
     with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
         spectrum = _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs)
-        return supi.spectrum(spectrum)
+        return supi.spectrum(spectrum, annot_kws=kwargs.pop('text_kw'))
 
 
 _annotation_backends = {
@@ -669,21 +696,21 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
         Only works with `spectrum_utils` backend.
     min_intensity : float, keyword only, optional
         Remove low-intensity peaks; this is a factor of maximum peak intensity. Default is 0 (no filtering).
-        Only works with `spectrum_utils` backend.
+        Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
     max_num_peaks : int or None, keyword only, optional
         Remove low-intensity peaks; this is the number of peaks to keep. Default is :py:const:`None` (no filtering).
-        Only works with `spectrum_utils` backend.
+        Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
     scaling : one of `{'root', 'log', 'rank'}` or None, keyword only, optional
-        Scaling to apply to peak intensities. Only works with `spectrum_utils` backend.
+        Scaling to apply to peak intensities. Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
     max_intensity : float or None, keyword only, optional
         Intensity of the most intense peak relative to which the peaks will be scaled
         (the default is :py:const:`None`, which means that no scaling
         relative to the most intense peak will be performed).
-        Only works with `spectrum_utils` backend.
+        Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
     peak_assignment : one of `{'most_intense', 'nearest_mz'}`, keyword only, optional
         In case multiple peaks occur within the given mass window around a theoretical peak,
         only a single peak will be annotated with the fragment type.
-        Default is `'most_intense'`. Only works with `spectrum_utils` backend.
+        Default is `'most_intense'`. Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
     modifications : dict, optional
         A dict of variable modifications as described in
         `spectrum_utils documentation <https://spectrum-utils.readthedocs.io/en/latest/processing.html#variable-modifications>`_.
