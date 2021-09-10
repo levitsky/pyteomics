@@ -37,23 +37,49 @@ This module requres :py:mod:`lxml`.
 --------------------------------------------------------------------------------
 """
 
-from .. import xml, auxiliary as aux, _schema_defaults
+from .. import xml, auxiliary as aux, _schema_defaults, version
 
 class FeatureXML(xml.MultiProcessingXML):
     """Parser class for featureXML files."""
     file_format = 'featureXML'
     _root_element = 'featureMap'
     _default_schema = _schema_defaults._featurexml_schema_defaults
-    _default_version = '1.6'
+    _default_version = '1.9'
     _default_iter_tag = 'feature'
     _structures_to_flatten = {}
     _indexed_tags = {'feature'}
     _schema_location_param = 'noNamespaceSchemaLocation'
 
+    _offending_keys = {'ints': {
+        ('PeptideIdentification', 'spectrum_reference'),
+        ('UnassignedPeptideIdentification', 'spectrum_reference'),
+        ('quality', 'quality')
+        }}
+    _missing_keys = {'floats': {('quality', 'quality')}}
+
     def _get_info_smart(self, element, **kw):
         kw['recursive'] = kw.get('recursive', True)
         info = self._get_info(element, **kw)
         return info
+
+    @xml._keepstate
+    def _get_schema_info(self, read_schema=True):
+        schema_info = super(FeatureXML, self)._get_schema_info(read_schema)
+        if not read_schema:
+            return schema_info
+        file_version, schema = self.version_info
+        if version._VersionInfo(file_version) < version._VersionInfo(self._default_version):
+            for k, s in self._offending_keys.items():
+                if k in schema_info:
+                    for elem in s:
+                        try:
+                            schema_info[k].remove(elem)
+                        except KeyError:
+                            pass
+            for t, s in self._missing_keys.items():
+                schema_info.setdefault(t, set()).update(s)
+        return schema_info
+
 
 def read(source, read_schema=True, iterative=True, use_index=False):
     """Parse `source` and iterate through features.
