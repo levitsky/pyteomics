@@ -1,5 +1,5 @@
-4.5dev6
--------
+4.5b1
+-----
 
  - Add support for `mzMLb <https://www.biorxiv.org/content/10.1101/2020.02.13.947218v3>`_
    (`#35 <https://github.com/levitsky/pyteomics/pull/35>`_
@@ -19,6 +19,10 @@
    `use_index` is explicitly passed (`#52 <https://github.com/levitsky/pyteomics/issues/52>`_).
  - Update the default XML schema for featureXML and fix issues with incorrectly specified data types
    (`#53 <https://github.com/levitsky/pyteomics/pull/53>`_).
+ - Add a new backend for spectrum annotation and plotting. :py:func:`pyteomics.pylab_aux.plot_spectrum` and
+   :py:func:`pyteomics.pylab_aux.annotate_spectrum` can now use
+   `spectrum_utils <https://github.com/bittremieux/spectrum_utils>`_ under the hood
+   (#43 <https://github.com/levitsky/pyteomics/pull/43>`_).
 
 
 4.4.2
