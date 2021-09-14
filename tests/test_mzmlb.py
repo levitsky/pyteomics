@@ -6,10 +6,10 @@ from io import BytesIO
 pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
 from data import mzml_spectra
 try:
-    from pyteomics.mzmlb import MzMLb, read
+    from pyteomics.mzmlb import MzMLb, read, chain
     reason = None
 except ImportError as err:
-    MzMLb = read = None
+    MzMLb = read = chain = None
     reason = err
 
 from pyteomics.auxiliary import FileReader
@@ -20,7 +20,7 @@ class MzMLbTest(unittest.TestCase):
     path = 'test.mzMLb'
 
     def test_read(self):
-        for func in [MzMLb, read, ]:
+        for func in [MzMLb, read, chain]:
             with func(self.path) as r:
                 # http://stackoverflow.com/q/14246983/1258041
                 self.assertEqual(mzml_spectra, list(r))
