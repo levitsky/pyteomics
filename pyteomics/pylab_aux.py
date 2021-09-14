@@ -415,7 +415,8 @@ def plot_spectrum(spectrum, *args, **kwargs):
 
     pylab.xlabel(kwargs.pop('xlabel', 'm/z'))
     pylab.ylabel(kwargs.pop('ylabel', 'intensity'))
-    pylab.title(kwargs.pop('title', ''))
+    if 'title' in kwargs:
+        pylab.title(kwargs.pop('title'))
     return backend(spectrum, *args, **kwargs)
 
 
@@ -426,7 +427,7 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     aa_mass = kwargs.pop('aa_mass', mass.std_aa_mass)
     mass_data = kwargs.pop('mass_data', mass.nist_mass)
     ion_comp = kwargs.pop('ion_comp', mass.std_ion_comp)
-    std_colors = {
+    colors = {
         'a': '#388E3C',
         'b': '#1976D2',
         'c': '#00796B',
@@ -434,7 +435,7 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
         'y': '#D32F2F',
         'z': '#F57C00',
     }
-    colors = kwargs.pop('colors', std_colors)
+    colors.update(kwargs.pop('colors', {}))
     ftol = kwargs.pop('ftol', None)
     if ftol is None:
         rtol = kwargs.pop('rtol', 1e-5)
@@ -499,7 +500,7 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     if adjust:
         adjust_text(texts, **adjust_kw)
     kwargs.setdefault('zorder', -1)
-    return plot_spectrum(spectrum, centroided, *args, **kwargs)
+    return plot_spectrum(spectrum, *args, **kwargs, centroided=centroided)
 
 
 def _get_precursor_charge(spectrum):
