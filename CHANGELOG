@@ -22,7 +22,7 @@
  - Add a new backend for spectrum annotation and plotting. :py:func:`pyteomics.pylab_aux.plot_spectrum` and
    :py:func:`pyteomics.pylab_aux.annotate_spectrum` can now use
    `spectrum_utils <https://github.com/bittremieux/spectrum_utils>`_ under the hood
-   (#43 <https://github.com/levitsky/pyteomics/pull/43>`_).
+   (`#43 <https://github.com/levitsky/pyteomics/pull/43>`_).
 
 
 4.4.2
