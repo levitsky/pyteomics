@@ -333,13 +333,14 @@ def plot_qvalue_curve(qvalues, *args, **kwargs):
 
 
 def _default_plot_spectrum(spectrum, *args, **kwargs):
+    ax = kwargs.pop('ax', None) or pylab.gca()
     if kwargs.pop('centroided', True):
         kwargs.setdefault('align', 'center')
         kwargs.setdefault('width', 0)
         kwargs.setdefault('linewidth', 1)
         kwargs.setdefault('edgecolor', 'k')
-        return pylab.bar(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
-    return pylab.plot(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
+        return ax.bar(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
+    return ax.plot(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
 
 
 def _spectrum_utils_plot(spectrum, *args, **kwargs):
@@ -444,6 +445,7 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     if precursor_charge is None:
         raise PyteomicsError('Could not extract precursor charge from spectrum. Please specify `precursor_charge` kwarg.')
     maxcharge = kwargs.pop('maxcharge', max(1, precursor_charge - 1))
+    ax = kwargs.get('ax', None)
     # end of common kwargs
 
     # backend-specific kwargs
@@ -488,7 +490,7 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
         else:
             match = np.where(matrix / spectrum['m/z array'] < rtol)
         pseudo_spec = {'m/z array': spectrum['m/z array'][match[1]], 'intensity array': spectrum['intensity array'][match[1]]}
-        plot_spectrum(pseudo_spec, centroided=True, edgecolor=c)
+        plot_spectrum(pseudo_spec, centroided=True, edgecolor=c, ax=ax)
         for j, i in zip(*match):
             x = spectrum['m/z array'][i]
             y = spectrum['intensity array'][i] + maxpeak * 0.02
@@ -628,14 +630,14 @@ def _spectrum_utils_annotate_plot(spectrum, peptide, *args, **kwargs):
 
     with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
         spectrum = _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs)
-        return sup.spectrum(spectrum, annot_kws=kwargs.pop('text_kw'))
+        return sup.spectrum(spectrum, annot_kws=kwargs.pop('text_kw', None), ax=kwargs.pop('ax', None))
 
 
 def _spectrum_utils_annotate_iplot(spectrum, peptide, *args, **kwargs):
     import spectrum_utils.iplot as supi
     with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
         spectrum = _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs)
-        return supi.spectrum(spectrum, annot_kws=kwargs.pop('text_kw'))
+        return supi.spectrum(spectrum, annot_kws=kwargs.pop('text_kw', None), ax=kwargs.pop('ax', None))
 
 
 _annotation_backends = {
@@ -680,6 +682,8 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
         Label for the Y axis. Default is "intensity".
     title : str, keyword only, optional
         The title. Empty by default.
+    ax : matplotlib.pyplot.Axes, keyword only, optional
+        Axes to draw the spectrum.
 
     *args
         Passed to the plotting backend.
