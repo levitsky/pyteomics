@@ -344,7 +344,7 @@ class XML(FileReader):
                     "`read_schema=False`.\n"
                     "If you think this shouldn't have happened, please "
                     "report this to\n"
-                    "http://hg.theorchromo.ru/pyteomics/issues\n"
+                    "http://github.com/levitsky/pyteomics/issues\n"
                     "".format(self, version, schema_url, format_exc()))
             ret = self._default_schema
         return ret
