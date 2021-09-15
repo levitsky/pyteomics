@@ -339,8 +339,10 @@ def _default_plot_spectrum(spectrum, *args, **kwargs):
         kwargs.setdefault('width', 0)
         kwargs.setdefault('linewidth', 1)
         kwargs.setdefault('edgecolor', 'k')
-        return ax.bar(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
-    return ax.plot(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
+        ax.bar(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
+    else:
+        ax.plot(spectrum['m/z array'], spectrum['intensity array'], *args, **kwargs)
+    return ax
 
 
 def _spectrum_utils_plot(spectrum, *args, **kwargs):
@@ -406,6 +408,10 @@ def plot_spectrum(spectrum, *args, **kwargs):
         (the default is :py:const:`None`, which means that no scaling
         relative to the most intense peak will be performed).
         Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
+
+    Returns
+    -------
+    out : matplotlib.pyplot.Axes
     """
     bname = kwargs.pop('backend', 'default')
     backend = _plot_backends.get(bname)
@@ -735,6 +741,9 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
         .. note::
             To apply static modifications, provide `aa_mass` with modified masses.
 
+    Returns
+    -------
+    out : matplotlib.pyplot.Axes
     """
     bname = kwargs.pop('backend', 'default')
     backend = _annotation_backends.get(bname)
@@ -773,6 +782,10 @@ def mirror(spec_top, spec_bottom, peptide=None, spectrum_kws=None, ax=None, **kw
         The title. Empty by default.
 
     **kwargs : same as for :py:func:`annotate_spectrum` for `spectrum_utils` backends.
+
+    Returns
+    -------
+    out : matplotlib.pyplot.Axes
     """
 
     spec_gen = _spectrum_utils_create_spectrum if peptide is None else _spectrum_utils_annotate_spectrum
