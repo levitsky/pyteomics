@@ -1,4 +1,4 @@
-4.5b2
+4.5b3
 -----
 
  - Add support for `mzMLb <https://www.biorxiv.org/content/10.1101/2020.02.13.947218v3>`_
@@ -25,6 +25,8 @@
    (`#43 <https://github.com/levitsky/pyteomics/pull/43>`_).
  - New function :py:func:`pyteomics.pylab_aux.mirror` for making a
    `spectrum_utils <https://github.com/bittremieux/spectrum_utils>`_ mirror plot.
+ - Add a warning when passing an existing file by name in writing functions.
+   The default mode for output files will change from `'a'` to `'w'` in a future version.
 
 
 4.4.2
