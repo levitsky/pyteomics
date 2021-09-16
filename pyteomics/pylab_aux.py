@@ -712,7 +712,7 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
         Keyword arguments for :py:func:`adjust_text`. Only works with `default` backend.
 
     remove_precursor_peak : bool, keyword only, optional
-        Remove precursor peak from spectrum before annotation. Default is :p:const:`False`.
+        Remove precursor peak from spectrum before annotation. Default is :py:const:`False`.
         Only works with `spectrum_utils` backend.
     min_intensity : float, keyword only, optional
         Remove low-intensity peaks; this is a factor of maximum peak intensity. Default is 0 (no filtering).

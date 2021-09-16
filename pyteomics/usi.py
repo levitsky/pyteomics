@@ -121,7 +121,6 @@ def _usi_parser(usi):
     return (protocol, dataset, datafile, scan_identifier_type, scan_identifier, interpretation)
 
 
-
 class _PROXIBackend(object):
     '''A base class for all PROXI backends to implement the gory details of HTTP requests
     and protocol parsing.
@@ -140,7 +139,7 @@ class _PROXIBackend(object):
         The URL with {} fields to populate with the USI and any other relevant options, like protocol version
         or the like.
     options: dict
-        Additional options to be used when preparing the request URL
+        Additional options to be used when preparing the request URL.
     '''
     def __init__(self, name, url_template, **kwargs):
         kwargs.setdefault('version', '0.1')
