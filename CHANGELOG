@@ -27,6 +27,8 @@
    `spectrum_utils <https://github.com/bittremieux/spectrum_utils>`_ mirror plot.
  - :py:func:`pyteomics.pylab_aux.plot_spectrum` and :py:func:`pyteomics.pylab_aux.annotate_spectrum` now
    always return :py:class:`matplotlib.pyplot.Axes`.
+ - Add a warning when passing an existing file by name in writing functions.
+   The default mode for output files will change from `'a'` to `'w'` in a future version.
 
 
 4.4.2

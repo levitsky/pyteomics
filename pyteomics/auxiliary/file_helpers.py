@@ -51,6 +51,7 @@ except ImportError:
 from .structures import PyteomicsError
 from .utils import add_metaclass
 
+
 def _keepstate(func):
     """Decorator to help keep the position in open files passed as
     positional arguments to functions"""
@@ -575,14 +576,32 @@ def _file_writer(_mode='a'):
         """
         @wraps(_func)
         def helper(*args, **kwargs):
-            m = kwargs.pop('file_mode', _mode)
+            if 'file_mode' in kwargs:
+                m = kwargs.pop('file_mode')
+                warn = False
+            else:
+                m = _mode
+                warn = True
             enc = kwargs.pop('encoding', None)
             if len(args) > 1:
-                with _file_obj(args[1], m, encoding=enc) as out:
-                    return _func(args[0], out, *args[2:], **kwargs)
+                out_arg = args[1]
             else:
-                with _file_obj(kwargs.pop('output', None), m, encoding=enc) as out:
-                    return _func(*args, output=out, **kwargs)
+                out_arg = kwargs.pop('output', None)
+
+            # warn about the change in default mode if an existing file name is given
+            if isinstance(out_arg, basestring) and warn and os.path.exists(out_arg):
+                warnings.warn("Opening an existing file in append mode. "
+                    "The default mode will change from 'a' to 'w' in a future version. "
+                    "Pass `file_mode='a'` to keep old behavior and suppress this warning.", FutureWarning)
+
+            with _file_obj(out_arg, m, encoding=enc) as out:
+                if len(args) > 1:
+                    call_args = (args[0], out) + args[2:]
+                    call_kwargs = kwargs
+                else:
+                    call_args = args
+                    call_kwargs = dict(output=out, **kwargs)
+                return _func(*call_args, **call_kwargs)
         return helper
     return decorator
 
