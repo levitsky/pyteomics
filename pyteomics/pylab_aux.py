@@ -644,7 +644,7 @@ def _spectrum_utils_annotate_iplot(spectrum, peptide, *args, **kwargs):
     import spectrum_utils.iplot as supi
     with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
         spectrum = _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs)
-        return supi.spectrum(spectrum, annot_kws=kwargs.pop('text_kw', None), ax=kwargs.pop('ax', None))
+        return supi.spectrum(spectrum, annot_kws=kwargs.pop('text_kw', None))
 
 
 _annotation_backends = {
@@ -684,13 +684,13 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
     text_kw : dict, keyword only, optional
         Keyword arguments for :py:func:`pylab.text`.
     xlabel : str, keyword only, optional
-        Label for the X axis. Default is "m/z".
+        Label for the X axis. Default is "m/z". Does not work with `spectrum_utils.iplot` backend.
     ylabel : str, keyword only, optional
-        Label for the Y axis. Default is "intensity".
+        Label for the Y axis. Default is "intensity". Does not work with `spectrum_utils.iplot` backend.
     title : str, keyword only, optional
-        The title. Empty by default.
+        The title. Empty by default. Does not work with `spectrum_utils.iplot` backend.
     ax : matplotlib.pyplot.Axes, keyword only, optional
-        Axes to draw the spectrum.
+        Axes to draw the spectrum. Does not work with `spectrum_utils.iplot` backend.
 
     *args
         Passed to the plotting backend.
