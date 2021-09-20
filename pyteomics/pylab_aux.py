@@ -750,17 +750,36 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
     if backend is None:
         raise PyteomicsError('Unknown backend name: {}. Should be one of: {}.'.format(
             bname, '; '.join(_annotation_backends)))
+
     pylab.xlabel(kwargs.pop('xlabel', 'm/z'))
     pylab.ylabel(kwargs.pop('ylabel', 'intensity'))
     pylab.title(kwargs.pop('title', ''))
     return backend(spectrum, peptide, *args, **kwargs)
 
 
+def _spectrum_utils_mirror(spec_top, spec_bottom, spectrum_kws=None, ax=None, **kwargs):
+    with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
+        ax = sup.mirror(spec_top, spec_bottom, spectrum_kws=spectrum_kws, ax=ax)
+        ax.set_xlabel(kwargs.pop('xlabel', 'm/z'))
+        ax.set_ylabel(kwargs.pop('ylabel', 'intensity'))
+        ax.set_title(kwargs.pop('title', ''))
+        return ax
+
+
+def _spectrum_utils_iplot_mirror(spec_top, spec_bottom, spectrum_kws=None, **kwargs):
+    import spectrum_utils.iplot as supi
+    with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
+        return supi.mirror(spec_top, spec_bottom, spectrum_kws=spectrum_kws)
+
+
+_mirror_backends = {
+    'spectrum_utils': _spectrum_utils_mirror,
+    'spectrum_utils.iplot': _spectrum_utils_iplot_mirror,
+}
+
+
 def mirror(spec_top, spec_bottom, peptide=None, spectrum_kws=None, ax=None, **kwargs):
     """Create a mirror plot of two (possible annotated) spectra using `spectrum_utils`.
-
-    .. note ::
-        Requires :py:mod:`spectrum_utils`.
 
     Parameters
     ----------
@@ -772,14 +791,20 @@ def mirror(spec_top, spec_bottom, peptide=None, spectrum_kws=None, ax=None, **kw
         A modX sequence. If provided, the peaks will be annotated as peptide fragments.
     spectrum_kws : dict or None, optional
         Passed to :py:func:`spectrum_utils.plot.mirror`.
+    backend : str, keyword only, optional
+        One of {'spectrum_utils', 'spectrum_utils.iplot'}. Default is 'spectrum_utils'.
+
+        .. note ::
+            Requires :py:mod:`spectrum_utils` or :py:mod:`spectrun_utils[iplot]`, respectively.
+
     ax : matplotlib.pyplot.Axes or None, optional
-        Passed to :py:func:`spectrum_utils.plot.mirror`.
+        Passed to :py:func:`spectrum_utils.plot.mirror`. Works only for the 'spectrum_utils' backend.
     xlabel : str, keyword only, optional
-        Label for the X axis. Default is "m/z".
+        Label for the X axis. Default is "m/z". Works only for the 'spectrum_utils' backend.
     ylabel : str, keyword only, optional
-        Label for the Y axis. Default is "intensity".
+        Label for the Y axis. Default is "intensity". Works only for the 'spectrum_utils' backend.
     title : str, keyword only, optional
-        The title. Empty by default.
+        The title. Empty by default. Works only for the 'spectrum_utils' backend.
 
     **kwargs : same as for :py:func:`annotate_spectrum` for `spectrum_utils` backends.
 
@@ -792,8 +817,13 @@ def mirror(spec_top, spec_bottom, peptide=None, spectrum_kws=None, ax=None, **kw
     spec_top = spec_gen(spec_top, peptide, **kwargs)
     spec_bottom = spec_gen(spec_bottom, peptide, **kwargs)
 
-    ax = sup.mirror(spec_top, spec_bottom, spectrum_kws=spectrum_kws, ax=ax)
-    ax.set_xlabel(kwargs.pop('xlabel', 'm/z'))
-    ax.set_ylabel(kwargs.pop('ylabel', 'intensity'))
-    ax.set_title(kwargs.pop('title', ''))
-    return ax
+    bname = kwargs.pop('backend', 'spectrum_utils')
+    backend = _mirror_backends.get(bname)
+    if backend is None:
+        raise PyteomicsError('Unknown backend name: {}. Should be one of: {}.'.format(
+            bname, '; '.join(_mirror_backends)))
+    backend_kw = {'spectrum_kws': spectrum_kws}
+    if bname == 'spectrum_utils':
+        backend_kw['ax'] = ax
+    backend_kw.update(kwargs)
+    return backend(spec_top, spec_bottom, **backend_kw)

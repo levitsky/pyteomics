@@ -21,7 +21,7 @@ Next, just plot the spectrum and annotate it with a single function call:
 
 .. literalinclude:: ../_static/example_annotation.py
     :language: python
-    :lines: 8-9
+    :lines: 8-10
 
 You will see a simple *spectrum_utils* annotation of the spectrum:
 
@@ -43,20 +43,21 @@ use the *modX* notation which is standard for Pyteomics:
 
 .. literalinclude:: ../_static/example_annotation.py
     :language: python
-    :lines: 11-14
+    :lines: 12-15
 
 Next, choose two spectra:
 
 .. literalinclude:: ../_static/example_annotation.py
     :language: python
-    :lines: 16-20
+    :lines: 17-21
 
 And finally, produce the image with:
 
 .. literalinclude:: ../_static/example_annotation.py
     :language: python
-    :lines: 22-25
+    :lines: 23-26
 
 Here's the result:
 
-.. image:: ../_static/example_mirror.png
+.. raw:: html
+   :file: ../_static/mirror.html
