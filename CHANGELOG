@@ -1,5 +1,5 @@
-4.5b3
------
+4.5
+---
 
  - Add support for `mzMLb <https://www.biorxiv.org/content/10.1101/2020.02.13.947218v3>`_
    (`#35 <https://github.com/levitsky/pyteomics/pull/35>`_
