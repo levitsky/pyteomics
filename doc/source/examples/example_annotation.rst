@@ -37,9 +37,12 @@ everything you can do with :py:mod:`spectrum_utils`.
 Another thing *spectrum_utils* lets you do is mirror plots. Following the `spectrum_utils documentation
 <https://spectrum-utils.readthedocs.io/en/latest/plotting.html#mirror-plot>`_, we are going to make this part more
 complex, showing more of what you can do. This example includes modified peptides and a bit of spectrum preprocessing.
+Also, this time we are going to use the `spectrum_utils.iplot` backend to produce an
+`interactive plot <https://spectrum-utils.readthedocs.io/en/latest/plotting.html#interactive-plotting>`_.
 
-To annotate the spectrum of a modified peptide, you can use the *spectrum_utils* notation, but you can also
-use the *modX* notation which is standard for Pyteomics:
+To annotate the spectrum of a modified peptide, you can use the
+`spectrum_utils notation <https://spectrum-utils.readthedocs.io/en/latest/processing.html#variable-modifications>`_,
+but you can also use the *modX* notation which is standard for Pyteomics:
 
 .. literalinclude:: ../_static/example_annotation.py
     :language: python
