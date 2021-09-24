@@ -16,7 +16,7 @@ including MassIVE, PeptideAtlas, PRIDE, and jPOST.
 .. seealso::
    LeDuc, Richard D., Eric W. Deutsch, Pierre-Alain Binz, Ryan T. Fellers, Anthony J. Cesnik,
    Joshua A. Klein, Tim Van Den Bossche, et al.
-   “Proteomics Standards Initiative's ProForma 2.0: Unifying the Encoding of Proteoforms and Peptidoforms.”
+   "Proteomics Standards Initiative's ProForma 2.0: Unifying the Encoding of Proteoforms and Peptidoforms."
    ArXiv:2109.11352 [q-Bio], September 23, 2021. http://arxiv.org/abs/2109.11352.
 
 
