@@ -192,14 +192,15 @@ class BasicComposition(defaultdict, Counter):
 
     def __mul__(self, other):
         if not isinstance(other, int):
-            raise PyteomicsError('Cannot multiply Composition by non-integer',
-                                 other)
-        return type(self)({k: v * other for k, v in self.items()})
+            raise PyteomicsError('Cannot multiply Composition by non-integer', other)
+        new = self.copy()
+        for k in self:
+            new[k] *= other
+        return new
 
     def __imul__(self, other):
         if not isinstance(other, int):
-            raise PyteomicsError('Cannot multiply Composition by non-integer',
-                                 other)
+            raise PyteomicsError('Cannot multiply Composition by non-integer', other)
         for elem in self:
             self[elem] *= other
         return self
