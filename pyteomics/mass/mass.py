@@ -569,7 +569,7 @@ def calculate_mass(*args, **kwargs):
         charge = kwargs.pop('charge', 0)
         charge_carrier = kwargs.pop('charge_carrier', None)
         composition = Composition(*args, **kwargs)
-    return composition.mass(**kwargs, charge=charge, charge_carrier=charge_carrier)
+    return composition.mass(charge=charge, charge_carrier=charge_carrier, **kwargs)
 
 
 def most_probable_isotopic_composition(*args, **kwargs):
