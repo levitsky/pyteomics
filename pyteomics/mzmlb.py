@@ -15,7 +15,7 @@ about mzMLb and its features. Please refer to
 `psidev.info <https://www.psidev.info/mzML>`_ for the detailed
 specification of the format and structure of mzML files.
 
-This module provides a minimalistic way to extract information from mzML
+This module provides a minimalistic way to extract information from mzMLb
 files. You can use the old functional interface (:py:func:`read`) or the new
 object-oriented interface (:py:class:`MzMLb` to iterate over entries in ``<spectrum>`` elements.
 :py:class:`MzMLb` also support direct indexing with spectrum IDs or indices.
@@ -29,6 +29,11 @@ Data access
   :py:func:`read` - iterate through spectra in mzMLb file. Data from a
   single spectrum are converted to a human-readable dict. Spectra themselves are
   stored under 'm/z array' and 'intensity array' keys.
+
+  :py:func:`chain` - read multiple mzMLb files at once.
+
+  :py:func:`chain.from_iterable` - read multiple files at once, using an
+  iterable of files.
 
 Controlled Vocabularies
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -65,6 +70,7 @@ import numpy as np
 
 from pyteomics.mzml import MzML as _MzML
 from pyteomics.auxiliary.file_helpers import HierarchicalOffsetIndex, TaskMappingMixin, TimeOrderedIndexedReaderMixin, FileReader
+from pyteomics import auxiliary as aux, xml
 
 
 def delta_predict(data, copy=True):
@@ -299,7 +305,6 @@ class chunk_interval_cache_record(namedtuple("chunk_interval_cache_record", ("st
         return hash(self.start)
 
 
-
 class ExternalArrayRegistry(object):
     '''Read chunks out of a single long array
 
@@ -359,9 +364,9 @@ class ExternalArrayRegistry(object):
 
 
 class MzMLb(TimeOrderedIndexedReaderMixin, TaskMappingMixin):
-    '''A parser for mzMLb [1]_
+    '''A parser for mzMLb [1]_.
 
-    Provides an identical interface to :class:`~pyteomics.mzml.MzML`
+    Provides an identical interface to :class:`~pyteomics.mzml.MzML`.
 
     Attributes
     ----------
@@ -374,7 +379,7 @@ class MzMLb(TimeOrderedIndexedReaderMixin, TaskMappingMixin):
         special behavior for retrieving the out-of-band data arrays
         from their respective storage locations.
     schema_version : str
-        The mzMLb HDF5 schema version, distinct from the mzML schema inside it
+        The mzMLb HDF5 schema version, distinct from the mzML schema inside it.
 
 
     References
@@ -587,7 +592,7 @@ def read(source, dtype=None):
     Parameters
     ----------
     source : str or file
-        A path to a target mzML file or the file object itself.
+        A path to a target mzMLb file or the file object itself.
     dtype : type or dict, optional
         dtype to convert arrays to, one for both m/z and intensity arrays or one for each key.
         If :py:class:`dict`, keys should be 'm/z array' and 'intensity array'.
@@ -604,3 +609,10 @@ def read(source, dtype=None):
 # The MzMLb class is detatched from the normal :class:`FileReader`-based inheritance tree,
 # this grafts it back on for :func:`isinstance` and :func:`issubclass` tests at least.
 FileReader.register(MzMLb)
+
+
+version_info = xml._make_version_info(MzMLb)
+
+# chain = aux._make_chain(read, 'read')
+
+chain = aux.ChainBase._make_chain(MzMLb)

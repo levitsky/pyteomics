@@ -13,6 +13,13 @@ One use-case for USI is to request spectrum information from a `PROXI <http://ww
 service host. PROXI services are available from several of the major national proteomics data hosts,
 including MassIVE, PeptideAtlas, PRIDE, and jPOST.
 
+.. seealso::
+   LeDuc, Richard D., Eric W. Deutsch, Pierre-Alain Binz, Ryan T. Fellers, Anthony J. Cesnik,
+   Joshua A. Klein, Tim Van Den Bossche, et al.
+   "Proteomics Standards Initiative's ProForma 2.0: Unifying the Encoding of Proteoforms and Peptidoforms."
+   ArXiv:2109.11352 [q-Bio], September 23, 2021. http://arxiv.org/abs/2109.11352.
+
+
 
 Data access
 -----------
@@ -121,7 +128,6 @@ def _usi_parser(usi):
     return (protocol, dataset, datafile, scan_identifier_type, scan_identifier, interpretation)
 
 
-
 class _PROXIBackend(object):
     '''A base class for all PROXI backends to implement the gory details of HTTP requests
     and protocol parsing.
@@ -140,7 +146,7 @@ class _PROXIBackend(object):
         The URL with {} fields to populate with the USI and any other relevant options, like protocol version
         or the like.
     options: dict
-        Additional options to be used when preparing the request URL
+        Additional options to be used when preparing the request URL.
     '''
     def __init__(self, name, url_template, **kwargs):
         kwargs.setdefault('version', '0.1')

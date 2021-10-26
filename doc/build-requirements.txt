@@ -3,3 +3,4 @@ sqlalchemy
 matplotlib
 git+https://github.com/KarrLab/sphinxcontrib-googleanalytics.git
 sphinx-sitemap
+h5py

@@ -1,6 +1,10 @@
 Example 2: Fragmentation
 ========================
 
+.. note::
+    Pyteomics has come a long way since this example was written.
+    Check `example 4 <example_annotation.html>`_ for new Pyteomics tools you should know about.
+
 In this example, we are going to retrieve MS/MS data from an MGF file and
 compare it to identification info we read from a pepXML file. We are going to
 compare the MS/MS spectrum in the file with the theoretical spectrum of a
