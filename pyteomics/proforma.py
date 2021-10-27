@@ -449,7 +449,8 @@ class PSIModResolver(ModificationResolver):
         else:
             raise ValueError("Must provide one of `name` or `id`")
         mass = float(defn.DiffMono)
-        composition = Composition(defn.DiffFormula.strip().replace(" ", ''))
+        diff_formula = str(defn.DiffFormula.strip().replace(" ", ''))
+        composition = Composition(diff_formula)
         return {
             'mass': mass,
             'composition': composition,
