@@ -631,6 +631,11 @@ class GenericResolver(ModificationResolver):
 
 class ModificationBase(TagBase):
     '''A base class for all modification tags with marked prefixes.
+
+    While :class:`ModificationBase` is hashable, its equality testing
+    brings in additional tag-related information. For pure modification
+    identity comparison, use :attr:`key` to get a :class:`ModificationToken`
+    free of these concerns..
     '''
 
     _tag_type = None
@@ -651,32 +656,72 @@ class ModificationBase(TagBase):
 
     @property
     def key(self):
+        '''Get a safe-to-hash-and-compare :class:`ModificationToken`
+        representing this modification without tag-like properties.
+
+        Returns
+        --------
+        ModificationToken
+        '''
         return ModificationToken(self.value, self.id, self.provider, self.__class__)
 
     @property
     def definition(self):
+        '''A :class:`dict` of properties describing this modification, given
+        by the providing controlled vocabulary. This value is cached, and
+        should not be modified.
+
+        Returns
+        -------
+        dict
+        '''
         if self._definition is None:
             self._definition = self.resolve()
         return self._definition
 
     @property
     def mass(self):
+        '''The monoisotopic mass shift this modification applies
+
+        Returns
+        -------float
+        '''
         return self.definition['mass']
 
     @property
     def composition(self):
+        '''The chemical composition shift this modification applies'''
         return self.definition.get('composition')
 
     @property
     def id(self):
+        '''The unique identifier given to this modification by its provider
+
+        Returns
+        -------
+        str or int
+        '''
         return self.definition.get('id')
 
     @property
     def name(self):
+        '''The primary name of this modification from its provider.
+
+        Returns
+        -------
+        str
+        '''
         return self.definition.get('name')
 
     @property
     def provider(self):
+        '''The name of the controlled vocabulary that provided this
+        modification.
+
+        Returns
+        -------
+        str
+        '''
         return self.definition.get('provider')
 
     def _populate_from_definition(self, definition):
@@ -893,6 +938,30 @@ class GenericModification(ModificationBase):
 
 
 class ModificationToken(object):
+    '''Describes a particular modification from a particular provider, independent
+    of a :class:`TagBase`'s state.
+
+    This class is meant to be used in place of a :class:`ModificationBase` object
+    when equality testing and hashing is desired, but do not want extra properties
+    to be involved.
+
+    :class:`ModificationToken` is comparable and hashable, and can be compared with
+    :class:`ModificationBase` subclass instances safely. It can be called to create
+    a new instance of the :class:`ModificationBase` it is equal to.
+
+    Attributes
+    ----------
+    name : str
+        The name of the modification being represented, as the user specified it.
+    id : int or str
+        Whatever unique identifier the providing controlled vocabulary gave to this
+        modification
+    provider : str
+        The name of the providing controlled vocabulary.
+    source_cls : type
+        A sub-class of :class:`ModificationBase` that will be used to fulfill this
+        token if requested, providing it a resolver.
+    '''
     __slots__ = ('name', 'id', 'provider', 'source_cls')
 
     def __init__(self, name, id, provider, source_cls):
@@ -915,6 +984,14 @@ class ModificationToken(object):
         return hash((self.id, self.provider))
 
     def __call__(self):
+        '''Create a new :class:`ModificationBase`
+        instance from the provided :attr:`name`
+        against :attr:`source_cls`'s resolver.
+
+        Returns
+        -------
+        ModificationBase
+        '''
         return self.source_cls(self.name)
 
     def __repr__(self):
