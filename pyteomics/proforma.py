@@ -103,7 +103,7 @@ These features are independent from each other:
 from pyteomics.mass.mass import calculate_mass
 import re
 import warnings
-from collections import deque
+from collections import deque, namedtuple
 from functools import partial
 
 try:
@@ -217,12 +217,16 @@ class TagBase(object):
 
     def __str__(self):
         part = self._format_main()
+        had_marker = False
         if self.extra:
-            rest = [str(e) for e in self.extra]
+            rest = []
+            for e in self.extra:
+                rest.append(str(e))
+                had_marker |= isinstance(e, GroupLabelBase) and e.group_id == self.group_id
             label = '|'.join([part] + rest)
         else:
             label = part
-        if self.group_id:
+        if self.group_id and not had_marker:
             label = '%s%s' % (label, self.group_id)
         return '%s' % label
 
@@ -377,6 +381,15 @@ class ModificationResolver(object):
     def __call__(self, name=None, id=None, **kwargs):
         return self.resolve(name, id, **kwargs)
 
+    def __eq__(self, other):
+        return self.name == other.name
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash(self.name)
+
 
 class UnimodResolver(ModificationResolver):
     def __init__(self, **kwargs):
@@ -436,7 +449,8 @@ class PSIModResolver(ModificationResolver):
         else:
             raise ValueError("Must provide one of `name` or `id`")
         mass = float(defn.DiffMono)
-        composition = Composition(defn.DiffFormula.strip().replace(" ", ''))
+        diff_formula = str(defn.DiffFormula.strip().replace(" ", ''))
+        composition = Composition(diff_formula)
         return {
             'mass': mass,
             'composition': composition,
@@ -517,7 +531,7 @@ class GNOResolver(ModificationResolver):
             for symbol, count in tokens:
                 count = int(count)
                 try:
-                    mono_mass, mono_comp = GlycanModification.valid_monosaccharides[symbol]
+                    mono_mass, mono_comp, symbol = GlycanModification.valid_monosaccharides[symbol]
                     mass += mono_mass * count
                     composition += mono_comp * count
                     monosaccharides[symbol] += count
@@ -617,6 +631,11 @@ class GenericResolver(ModificationResolver):
 
 class ModificationBase(TagBase):
     '''A base class for all modification tags with marked prefixes.
+
+    While :class:`ModificationBase` is hashable, its equality testing
+    brings in additional tag-related information. For pure modification
+    identity comparison, use :attr:`key` to get a :class:`ModificationToken`
+    free of these concerns..
     '''
 
     _tag_type = None
@@ -627,30 +646,82 @@ class ModificationBase(TagBase):
             self._tag_type, value, extra, group_id)
         self._definition = None
 
+    def __eq__(self, other):
+        if isinstance(other, ModificationToken):
+            return other == self
+        return super(ModificationBase, self).__eq__(other)
+
+    def __hash__(self):
+        return hash((self.id, self.provider))
+
+    @property
+    def key(self):
+        '''Get a safe-to-hash-and-compare :class:`ModificationToken`
+        representing this modification without tag-like properties.
+
+        Returns
+        --------
+        ModificationToken
+        '''
+        return ModificationToken(self.value, self.id, self.provider, self.__class__)
+
     @property
     def definition(self):
+        '''A :class:`dict` of properties describing this modification, given
+        by the providing controlled vocabulary. This value is cached, and
+        should not be modified.
+
+        Returns
+        -------
+        dict
+        '''
         if self._definition is None:
             self._definition = self.resolve()
         return self._definition
 
     @property
     def mass(self):
+        '''The monoisotopic mass shift this modification applies
+
+        Returns
+        -------float
+        '''
         return self.definition['mass']
 
     @property
     def composition(self):
+        '''The chemical composition shift this modification applies'''
         return self.definition.get('composition')
 
     @property
     def id(self):
+        '''The unique identifier given to this modification by its provider
+
+        Returns
+        -------
+        str or int
+        '''
         return self.definition.get('id')
 
     @property
     def name(self):
+        '''The primary name of this modification from its provider.
+
+        Returns
+        -------
+        str
+        '''
         return self.definition.get('name')
 
     @property
     def provider(self):
+        '''The name of the controlled vocabulary that provided this
+        modification.
+
+        Returns
+        -------
+        str
+        '''
         return self.definition.get('provider')
 
     def _populate_from_definition(self, definition):
@@ -716,27 +787,35 @@ class FormulaModification(ModificationBase):
         }
 
 
+monosaccharide_description = namedtuple('monosaccharide_description', ('mass', 'composition', "symbol"))
+
+
 class GlycanModification(ModificationBase):
     prefix_name = "Glycan"
 
     _tag_type = TagTypeEnum.glycan
 
     valid_monosaccharides = {
-        "Hex": (162.0528, Composition("C6H10O5")),
-        "HexNAc": (203.0793, Composition("C8H13N1O5")),
-        "HexS": (242.009, Composition("C6H10O8S1")),
-        "HexP": (242.0191, Composition("C6H11O8P1")),
-        "HexNAcS": (283.0361, Composition("C8H13N1O8S1")),
-        "dHex": (146.0579, Composition("C6H10O4")),
-        "NeuAc": (291.0954, Composition("C11H17N1O8")),
-        "NeuGc": (307.0903, Composition("C11H17N1O9")),
-        "Pen": (132.0422, Composition("C5H8O4")),
-        "Pent": (132.0422, Composition("C5H8O4")),
-        "Fuc": (146.0579, Composition("C6H10O4"))
+        "Hex": monosaccharide_description(162.0528, Composition("C6H10O5"), 'Hex'),
+        "HexNAc": monosaccharide_description(203.0793, Composition("C8H13N1O5"), 'HexNAc'),
+        "HexS": monosaccharide_description(242.009, Composition("C6H10O8S1"), 'HexS'),
+        "HexP": monosaccharide_description(242.0191, Composition("C6H11O8P1"), 'HexP'),
+        "HexNAcS": monosaccharide_description(283.0361, Composition("C8H13N1O8S1"), 'HexNAcS'),
+        "dHex": monosaccharide_description(146.0579, Composition("C6H10O4"), 'dHex'),
+        "NeuAc": monosaccharide_description(291.0954, Composition("C11H17N1O8"), 'NeuAc'),
+        "NeuGc": monosaccharide_description(307.0903, Composition("C11H17N1O9"), 'NeuGc'),
+        "Pen": monosaccharide_description(132.0422, Composition("C5H8O4"), 'Pen'),
+        "Fuc": monosaccharide_description(146.0579, Composition("C6H10O4"), 'Fuc')
     }
 
-    tokenizer = re.compile(r"([A-Za-z]+)\s*(\d*)\s*")
-    monomer_tokenizer = re.compile(r"|".join(sorted(valid_monosaccharides.keys(), key=len, reverse=True)))
+    valid_monosaccharides['Neu5Ac'] = valid_monosaccharides['NeuAc']
+    valid_monosaccharides['Neu5Gc'] = valid_monosaccharides['NeuGc']
+    valid_monosaccharides['Pent'] = valid_monosaccharides['Pen']
+    valid_monosaccharides['d-Hex'] = valid_monosaccharides['dHex']
+
+    monomer_tokenizer = re.compile(
+        r"|".join(sorted(valid_monosaccharides.keys(), key=len, reverse=True)))
+    tokenizer = re.compile(r"(%s|[A-Za-z]+)\s*(\d*)\s*" % monomer_tokenizer.pattern)
 
     @property
     def monosaccharides(self):
@@ -757,17 +836,20 @@ class GlycanModification(ModificationBase):
                         break
                     t += len(p)
                 if t != len(tok):
-                    raise ValueError("{tok!r} is not a valid monosaccharide name".format(**locals()))
+                    raise ValueError("{tok!r} is not a valid monosaccharide name".format(tok=tok))
                 else:
                     for p in parts[:-1]:
-                        composite[p] += 1
-                    composite[parts[-1]] += cnt
+                        sym = self.valid_monosaccharides[p].symbol
+                        composite[sym] += 1
+                    sym = self.valid_monosaccharides[parts[-1]].symbol
+                    composite[sym] += cnt
             else:
-                composite[tok] += cnt
+                sym = self.valid_monosaccharides[tok].symbol
+                composite[sym] += cnt
         mass = 0
         chemcomp = Composition()
         for key, cnt in composite.items():
-            m, c = self.valid_monosaccharides[key]
+            m, c, sym = self.valid_monosaccharides[key]
             mass += m * cnt
             chemcomp += c * cnt
         return {
@@ -849,14 +931,72 @@ class GenericModification(ModificationBase):
         return the first match's properties
         '''
         keys = self._parse_identifier()
-        defn = None
-        try:
-            defn = UnimodModification.resolver(*keys)
-        except KeyError:
-            pass
+        defn = self.resolver(*keys)
         if defn is not None:
             return defn
         raise KeyError(keys)
+
+
+class ModificationToken(object):
+    '''Describes a particular modification from a particular provider, independent
+    of a :class:`TagBase`'s state.
+
+    This class is meant to be used in place of a :class:`ModificationBase` object
+    when equality testing and hashing is desired, but do not want extra properties
+    to be involved.
+
+    :class:`ModificationToken` is comparable and hashable, and can be compared with
+    :class:`ModificationBase` subclass instances safely. It can be called to create
+    a new instance of the :class:`ModificationBase` it is equal to.
+
+    Attributes
+    ----------
+    name : str
+        The name of the modification being represented, as the user specified it.
+    id : int or str
+        Whatever unique identifier the providing controlled vocabulary gave to this
+        modification
+    provider : str
+        The name of the providing controlled vocabulary.
+    source_cls : type
+        A sub-class of :class:`ModificationBase` that will be used to fulfill this
+        token if requested, providing it a resolver.
+    '''
+    __slots__ = ('name', 'id', 'provider', 'source_cls')
+
+    def __init__(self, name, id, provider, source_cls):
+        self.name = name
+        self.id = id
+        self.provider = provider
+        self.source_cls = source_cls
+
+    def __eq__(self, other):
+        if other is None:
+            return False
+        if isinstance(other, (ModificationToken, ModificationBase)):
+            return self.id == other.id and self.provider == other.provider
+        return False
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash((self.id, self.provider))
+
+    def __call__(self):
+        '''Create a new :class:`ModificationBase`
+        instance from the provided :attr:`name`
+        against :attr:`source_cls`'s resolver.
+
+        Returns
+        -------
+        ModificationBase
+        '''
+        return self.source_cls(self.name)
+
+    def __repr__(self):
+        template = "{self.__class__.__name__}({self.name!r}, {self.id!r}, {self.provider!r}, {self.source_cls})"
+        return template.format(self=self)
 
 
 def split_tags(tokens):
@@ -1951,3 +2091,7 @@ class ProForma(object):
                 matches.append(('labile_modifications', lamod)
                                if include_position else lamod)
         return matches
+
+    @property
+    def tags(self):
+        return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
