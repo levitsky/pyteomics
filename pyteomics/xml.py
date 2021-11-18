@@ -1313,6 +1313,10 @@ class IndexedIterfind(TaskMappingMixin, Iterfind):
         return iter(self._index)
 
     @property
+    def _offset_index(self):
+        return self._index
+
+    @property
     def _index(self):
         return self.parser.index[self.tag_name]
 
