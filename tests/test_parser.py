@@ -71,9 +71,9 @@ class ParserTest(unittest.TestCase):
 
     def test_cleave_semi(self):
         self.assertEqual(parser._cleave('PEPTIDEKS', parser.expasy_rules['trypsin'], semi=True),
-            ['PEPTIDEK', 'P', 'PE', 'PEP', 'PEPT', 'PEPTI', 'PEPTID', 'EPTIDEK', 'PTIDEK', 'TIDEK', 'IDEK', 'DEK', 'EK', 'K', 'S'])
+            ['PEPTIDEK', 'P', 'PE', 'PEP', 'PEPT', 'PEPTI', 'PEPTID', 'PEPTIDE', 'EPTIDEK', 'PTIDEK', 'TIDEK', 'IDEK', 'DEK', 'EK', 'K', 'S'])
         self.assertEqual(parser.cleave('PEPTIDEKS', parser.expasy_rules['trypsin'], semi=True),
-            {'PEPTIDEK', 'P', 'PE', 'PEP', 'PEPT', 'PEPTI', 'PEPTID', 'EPTIDEK', 'PTIDEK', 'TIDEK', 'IDEK', 'DEK', 'EK', 'K', 'S'})
+            {'PEPTIDEK', 'P', 'PE', 'PEP', 'PEPT', 'PEPTI', 'PEPTID', 'PEPTIDE', 'EPTIDEK', 'PTIDEK', 'TIDEK', 'IDEK', 'DEK', 'EK', 'K', 'S'})
 
     def test_cleave_min_length(self):
         for seq in self.simple_sequences:

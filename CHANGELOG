@@ -1,3 +1,10 @@
+4.5.1dev1
+---------
+
+ - Add `max_length` parameter in :py:func:`pyteomics.parser.cleave`.
+ - Bugfix in :py:func:`pyteomics.parser.cleave` for `semi=True`.
+
+
 4.5
 ---
 

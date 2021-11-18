@@ -530,7 +530,7 @@ def amino_acid_composition(sequence, show_unmodified_termini=False, term_aa=Fals
 
 
 @memoize()
-def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False, exception=None):
+def cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None, semi=False, exception=None):
     """Cleaves a polypeptide sequence using a given rule.
 
     Parameters
@@ -563,6 +563,9 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False, exce
             you know what you are doing and apply :py:func:`cleave` to *modX*
             sequences.
 
+    max_length : int or None, optional
+        Maximum peptide length. Defaults to :py:const:`None`. See note above.
+
     semi : bool, optional
         Include products of semi-specific cleavage. Default is :py:const:`False`.
         This effectively cuts every peptide at every position and adds results to the output.
@@ -590,10 +593,10 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False, exce
     True
 
     """
-    return set(_cleave(sequence, rule, missed_cleavages, min_length, semi, exception))
+    return set(_cleave(sequence, rule, missed_cleavages, min_length, max_length, semi, exception))
 
 
-def _cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False, exception=None):
+def _cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None, semi=False, exception=None):
     """Like :py:func:`cleave`, but the result is a list. Refer to
     :py:func:`cleave` for explanation of parameters.
     """
@@ -610,11 +613,12 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False, exc
     cleavage_sites = deque([0], maxlen=ml)
     if min_length is None:
         min_length = 1
+    if max_length is None:
+        max_length = len(sequence)
     cl = 1
     if exception is not None:
         exceptions = {x.end() for x in re.finditer(exception, sequence)}
-    for i in it.chain([x.end() for x in re.finditer(rule, sequence)],
-                   [None]):
+    for i in it.chain([x.end() for x in re.finditer(rule, sequence)], [None]):
         if exception is not None and i in exceptions:
             continue
         cleavage_sites.append(i)
@@ -622,12 +626,13 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None, semi=False, exc
             cl += 1
         for j in trange[:cl - 1]:
             seq = sequence[cleavage_sites[j]:cleavage_sites[-1]]
-            if seq and len(seq) >= min_length:
+            lenseq = len(seq)
+            if seq and min_length <= lenseq <= max_length:
                 peptides.append(seq)
                 if semi:
-                    for k in range(min_length, len(seq) - 1):
+                    for k in range(min_length, min(lenseq, max_length)):
                         peptides.append(seq[:k])
-                    for k in range(1, len(seq) - min_length + 1):
+                    for k in range(max(1, lenseq - max_length), lenseq - min_length + 1):
                         peptides.append(seq[k:])
     return peptides
 
