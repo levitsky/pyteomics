@@ -1,9 +1,10 @@
-4.5.1dev2
+4.5.1dev3
 ---------
 
  - Add `max_length` parameter in :py:func:`pyteomics.parser.cleave`.
  - Bugfix in :py:func:`pyteomics.parser.cleave` for `semi=True`.
  - Add `regex` parameter in :py:func:`pyteomics.parser.cleave` and warn for possible typos in cleavage rule names.
+ - Return indices of peptides in :py:func:`parser._cleave`.
 
 4.5
 ---

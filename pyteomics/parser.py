@@ -601,7 +601,7 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None,
     True
 
     """
-    return set(_cleave(sequence, rule, missed_cleavages, min_length, max_length, semi, exception, regex))
+    return set(p for i, p in _cleave(sequence, rule, missed_cleavages, min_length, max_length, semi, exception, regex))
 
 
 def _cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None, semi=False, exception=None, regex=False):
@@ -630,22 +630,26 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None
     cl = 1
     if exception is not None:
         exceptions = {x.end() for x in re.finditer(exception, sequence)}
-    for i in it.chain([x.end() for x in re.finditer(rule, sequence)], [None]):
-        if exception is not None and i in exceptions:
+    for end in it.chain([x.end() for x in re.finditer(rule, sequence)], [None]):
+        if exception is not None and end in exceptions:
             continue
-        cleavage_sites.append(i)
+        cleavage_sites.append(end)
         if cl < ml:
             cl += 1
         for j in trange[:cl - 1]:
             seq = sequence[cleavage_sites[j]:cleavage_sites[-1]]
             lenseq = len(seq)
+            if end is not None:
+                start = end - lenseq
+            else:
+                start = len(sequence) - lenseq
             if seq and min_length <= lenseq <= max_length:
-                peptides.append(seq)
+                peptides.append((start, seq))
                 if semi:
                     for k in range(min_length, min(lenseq, max_length)):
-                        peptides.append(seq[:k])
+                        peptides.append((start, seq[:k]))
                     for k in range(max(1, lenseq - max_length), lenseq - min_length + 1):
-                        peptides.append(seq[k:])
+                        peptides.append((start + k, seq[k:]))
     return peptides
 
 
