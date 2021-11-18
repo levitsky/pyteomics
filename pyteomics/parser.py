@@ -101,6 +101,7 @@ Data
 import re
 from collections import deque
 import itertools as it
+import warnings
 from .auxiliary import PyteomicsError, memoize, BasicComposition, cvstr, cvquery
 
 std_amino_acids = ['Q', 'W', 'E', 'R', 'T', 'Y', 'I', 'P', 'A', 'S',
@@ -530,7 +531,7 @@ def amino_acid_composition(sequence, show_unmodified_termini=False, term_aa=Fals
 
 
 @memoize()
-def cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None, semi=False, exception=None):
+def cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None, semi=False, exception=None, regex=False):
     """Cleaves a polypeptide sequence using a given rule.
 
     Parameters
@@ -552,6 +553,9 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None,
         using `lookaround assertions
         <http://www.regular-expressions.info/lookaround.html>`_.
         :py:data:`expasy_rules` contains cleavage rules for popular cleavage agents.
+
+        .. seealso:: The `regex` argument.
+
     missed_cleavages : int, optional
         Maximum number of allowed missed cleavages. Defaults to 0.
     min_length : int or None, optional
@@ -575,6 +579,10 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None,
         or regular expression. Cleavage sites matching `rule` will be checked against `exception` and omitted
         if they match.
 
+    regex : bool, optional
+        If :py:const:`True`, the cleavage rule is always interpreted as a regex. Otherwise, a matching value
+        is looked up in :py:data:`expasy_rules` and :py:data:`psims_rules`.
+
     Returns
     -------
     out : set
@@ -593,19 +601,23 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None,
     True
 
     """
-    return set(_cleave(sequence, rule, missed_cleavages, min_length, max_length, semi, exception))
+    return set(_cleave(sequence, rule, missed_cleavages, min_length, max_length, semi, exception, regex))
 
 
-def _cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None, semi=False, exception=None):
+def _cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None, semi=False, exception=None, regex=False):
     """Like :py:func:`cleave`, but the result is a list. Refer to
     :py:func:`cleave` for explanation of parameters.
     """
-    if rule in expasy_rules:
-        rule = expasy_rules[rule]
-    elif rule in psims_rules:
-        rule = psims_rules[rule]
-    elif rule in _psims_index:
-        rule = _psims_index[rule]
+    if not regex:
+        if rule in expasy_rules:
+            rule = expasy_rules[rule]
+        elif rule in psims_rules:
+            rule = psims_rules[rule]
+        elif rule in _psims_index:
+            rule = _psims_index[rule]
+        elif re.search(r'[a-z]', rule):
+            warnings.warn('Interpreting the rule as a regular expression: {}. Did you mistype the rule? '
+                'Specify `regex=True` to silence this warning.'.format(rule))
     exception = expasy_rules.get(exception, exception)
     peptides = []
     ml = missed_cleavages + 2
