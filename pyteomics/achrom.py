@@ -436,8 +436,7 @@ def get_RCs(sequences, RTs, lcp = -0.21,
             RTs.append(0.0)
 
     # Use least square linear regression.
-    RCs, res, rank, s = np.linalg.lstsq(np.array(composition_array),
-                                           np.array(RTs))
+    RCs, res, rank, s = np.linalg.lstsq(np.array(composition_array), np.array(RTs), rcond=None)
 
     # Remove normalizing elements from the RTs vector.
     if term_aa:
