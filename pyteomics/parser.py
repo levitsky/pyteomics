@@ -37,7 +37,7 @@ Operations on polypeptide sequences
   :py:func:`amino_acid_composition` - get numbers of each amino acid
   residue in a peptide.
 
-  :py:func:`cleave` - cleave a polypeptide using a given rule of
+  :py:func:`cleave`, :py:func:`icleave`, :py:func:`xcleave` - cleave a polypeptide using a given rule of
   enzymatic digestion.
 
   :py:func:`num_sites` - count the number of cleavage sites in a sequence.
@@ -531,8 +531,11 @@ def amino_acid_composition(sequence, show_unmodified_termini=False, term_aa=Fals
 
 
 @memoize()
-def cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None, semi=False, exception=None, regex=False):
+def cleave(*args, **kwargs):
     """Cleaves a polypeptide sequence using a given rule.
+
+    .. seealso::
+        :func:`icleave` and :func:`xcleave`, which produce both peptides and their indices.
 
     Parameters
     ----------
@@ -601,12 +604,18 @@ def cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None,
     True
 
     """
-    return set(p for i, p in _cleave(sequence, rule, missed_cleavages, min_length, max_length, semi, exception, regex))
+    return set(p for i, p in icleave(*args, **kwargs))
 
 
-def _cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None, semi=False, exception=None, regex=False):
-    """Like :py:func:`cleave`, but the result is a list. Refer to
-    :py:func:`cleave` for explanation of parameters.
+def icleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None, semi=False, exception=None, regex=False):
+    """Like :py:func:`cleave`, but the result is an iterator and includes peptide indices.
+    Refer to :py:func:`cleave` for explanation of parameters.
+
+    Returns
+    -------
+    out : iterator
+        An iterator over (index, sequence) pairs.
+
     """
     if not regex:
         if rule in expasy_rules:
@@ -619,7 +628,6 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None
             warnings.warn('Interpreting the rule as a regular expression: {}. Did you mistype the rule? '
                 'Specify `regex=True` to silence this warning.'.format(rule))
     exception = expasy_rules.get(exception, exception)
-    peptides = []
     ml = missed_cleavages + 2
     trange = range(ml)
     cleavage_sites = deque([0], maxlen=ml)
@@ -644,13 +652,28 @@ def _cleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None
             else:
                 start = len(sequence) - lenseq
             if seq and min_length <= lenseq <= max_length:
-                peptides.append((start, seq))
+                yield (start, seq)
                 if semi:
                     for k in range(min_length, min(lenseq, max_length)):
-                        peptides.append((start, seq[:k]))
+                        yield (start, seq[:k])
                     for k in range(max(1, lenseq - max_length), lenseq - min_length + 1):
-                        peptides.append((start + k, seq[k:]))
-    return peptides
+                        yield (start + k, seq[k:])
+
+
+def xcleave(*args, **kwargs):
+    """Like :py:func:`icleave`, but returns a list.
+
+    Returns
+    -------
+    out : list
+        A list of (index, sequence) pairs.
+
+    Examples
+    --------
+    >>> xcleave('AKAKBK', 'trypsin', 1)
+    [(0, 'AK'), (0, 'AKAK'), (2, 'AK'), (2, 'AKBK'), (4, 'BK')]
+    """
+    return list(icleave(*args, **kwargs))
 
 
 def num_sites(sequence, rule, **kwargs):
@@ -679,7 +702,7 @@ def num_sites(sequence, rule, **kwargs):
     out : int
         Number of cleavage sites.
     """
-    return len(_cleave(sequence, rule, **kwargs)) - 1
+    return sum(1 for _ in icleave(sequence, rule, **kwargs)) - 1
 
 
 expasy_rules = {

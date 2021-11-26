@@ -59,9 +59,9 @@ class ParserTest(unittest.TestCase):
             self.assertEqual(sum(comp_default.values()), sum(comp.values()))
 
     def test_cleave(self):
-        self.assertEqual(parser._cleave('PEPTIDEKS', parser.expasy_rules['trypsin']), [(0, 'PEPTIDEK'), (8, 'S')])
-        self.assertEqual(parser._cleave('PEPTIDEKS', 'trypsin'), [(0, 'PEPTIDEK'), (8, 'S')])
-        self.assertEqual(parser._cleave('PEPTIDEKS', 'Trypsin'), [(0, 'PEPTIDEK'), (8, 'S')])
+        self.assertEqual(parser.xcleave('PEPTIDEKS', parser.expasy_rules['trypsin']), [(0, 'PEPTIDEK'), (8, 'S')])
+        self.assertEqual(parser.xcleave('PEPTIDEKS', 'trypsin'), [(0, 'PEPTIDEK'), (8, 'S')])
+        self.assertEqual(parser.xcleave('PEPTIDEKS', 'Trypsin'), [(0, 'PEPTIDEK'), (8, 'S')])
         for seq in self.simple_sequences:
             for elem in parser.cleave(
                     seq, 'trypsin', int(random.uniform(1, 10))):
@@ -70,7 +70,7 @@ class ParserTest(unittest.TestCase):
                 for elem in parser.cleave(seq, parser.expasy_rules['trypsin'], len(seq))))
 
     def test_cleave_semi(self):
-        self.assertEqual(parser._cleave('PEPTIDEKS', 'trypsin', semi=True),
+        self.assertEqual(parser.xcleave('PEPTIDEKS', 'trypsin', semi=True),
             [(0, 'PEPTIDEK'), (0, 'P'), (0, 'PE'), (0, 'PEP'), (0, 'PEPT'), (0, 'PEPTI'), (0, 'PEPTID'), (0, 'PEPTIDE'),
              (1, 'EPTIDEK'), (2, 'PTIDEK'), (3, 'TIDEK'), (4, 'IDEK'), (5, 'DEK'), (6, 'EK'), (7, 'K'), (8, 'S')])
         self.assertEqual(parser.cleave('PEPTIDEKS', parser.expasy_rules['trypsin'], semi=True),

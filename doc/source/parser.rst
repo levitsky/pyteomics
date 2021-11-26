@@ -18,6 +18,9 @@ either 0 or 2 terminal groups in a *modX* sequence.
 Sequence operations
 -------------------
 
+Parsing
+.......
+
 There are two helper functions to check if a label is in modX format or represents
 a terminal modification: :py:func:`pyteomics.parser.is_modX` and
 :py:func:`pyteomics.parser.is_term_mod`:
@@ -98,19 +101,27 @@ and returns a *dictionary* with amino acid labels as *keys* and integer numbers 
     >>> parser.amino_acid_composition('PEPTIDE')
     {'I': 1.0, 'P': 2.0, 'E': 2.0, 'T': 1.0, 'D': 1.0}
 
-:py:func:`pyteomics.parser.cleave` is a method to perform *in silico* cleavage.
-The requiered arguments are the sequence, the rule for enzyme specificity and the
+*In silico* digestion
+.....................
+
+:py:func:`pyteomics.parser.cleave` performs *in silico* cleavage.
+The required arguments are the sequence, the rule for enzyme specificity and the
 number of missed cleavages allowed (optional). :py:func:`cleave` returns a
-:py:class:`set` of product peptides.
+:py:class:`set` of product peptides; you can get original indices of peptides with :py:func:`xcleave`.
 
 .. code-block:: python
 
     >>> from pyteomics import parser
     >>> parser.cleave('AKAKBK', parser.expasy_rules['trypsin'], 0)
     {'AK', 'BK'}
+    >>> parser.xcleave('AKAKBK', 'trypsin', 0)
+    [(0, 'AK'), (2, 'AK'), (4, 'BK')]
 
-:py:data:`pyteomics.parser.expasy_rules` is a predefined :py:class:`dict` with
-the clevage rules for the most common proteases.
+:py:data:`pyteomics.parser.expasy_rules` and :py:data:`pyteomics.parser.psims_rules` are predefined :py:class:`dicts`
+with the clevage rules for the most common proteases. Their keys are recognized by :py:func:`cleave`.
+
+Variable modifications
+......................
 
 All possible modified sequences of a peptide can be obtained with
 :py:func:`pyteomics.parser.isoforms`:
