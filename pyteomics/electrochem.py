@@ -114,7 +114,11 @@ References
 from __future__ import division
 from . import parser
 from .auxiliary import PyteomicsError
-from collections import Iterable, Counter
+from collections import Counter
+try:
+    from collections.abc import Iterable
+except ImportError:
+    from collections import Iterable
 
 
 def charge(sequence, pH, **kwargs):
