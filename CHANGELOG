@@ -1,7 +1,7 @@
-4.5.2.dev1
-----------
+4.5.2
+-----
 
- - Fix ImportError on Python 3.10 in :py:mod:`pyteomics.electrochem`.
+ - Support Python 3.10.
 
 
 4.5.1
