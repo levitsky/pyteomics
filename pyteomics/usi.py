@@ -462,6 +462,11 @@ class PROXIAggregator(object):
     def __call__(self, usi):
         return self.get(usi)
 
+    def __del__(self):
+        if self.pool:
+            self.pool.close()
+            self.pool = None
+
 
 _proxies = {
     "peptide_atlas": PeptideAtlasBackend,
