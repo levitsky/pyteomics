@@ -282,12 +282,13 @@ class PROXIAggregator(object):
         to the number of servers to query.
     timeout : float
         The number of seconds to wait for a response.
-
+    ephemeral_pool : bool
+        Whether or not to tear down the thread pool between requests.
     '''
 
     _coalesce_resolution_methods = ("first", )
 
-    def __init__(self, backends=None, n_threads=None, timeout=15, merge=True, **kwargs):
+    def __init__(self, backends=None, n_threads=None, timeout=15, merge=True, ephemeral_pool=True, **kwargs):
         if backends is None:
             backends = {k: v() for k, v in _proxies.items()}
         if n_threads is None:
@@ -298,6 +299,7 @@ class PROXIAggregator(object):
         self.timeout = timeout
         self.backends = backends
         self.n_threads = n_threads
+        self.ephemeral_pool = ephemeral_pool
         self.pool = None
         self.merge = merge
 
@@ -310,6 +312,12 @@ class PROXIAggregator(object):
             if self.pool is None:
                 self.pool = ThreadPool(self.n_threads)
         return True
+
+    def _clean_up_pool(self):
+        if self.pool:
+            self.pool.close()
+            self.pool.terminate()
+            self.pool = None
 
     def _fetch_usi(self, usi):
         use_pool = self._init_pool()
@@ -327,6 +335,8 @@ class PROXIAggregator(object):
                     except (multiprocessing.TimeoutError, Exception) as err:
                         tmp.append((backend, err))
                 agg = tmp
+                if self.ephemeral_pool:
+                    self._clean_up_pool()
         else:
             for backend in self.backends.values():
                 try:
@@ -463,10 +473,7 @@ class PROXIAggregator(object):
         return self.get(usi)
 
     def __del__(self):
-        if self.pool:
-            self.pool.close()
-            self.pool = None
-
+        self._clean_up_pool()
 
 _proxies = {
     "peptide_atlas": PeptideAtlasBackend,
