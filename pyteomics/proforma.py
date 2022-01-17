@@ -187,6 +187,14 @@ class TagTypeEnum(Enum):
 _sentinel = object()
 
 
+class ModificationMassNotFoundError(ProFormaError):
+    pass
+
+
+class UnknownMonosaccharideError(ProFormaError):
+    pass
+
+
 @add_metaclass(PrefixSavingMeta)
 class TagBase(object):
     '''A base class for all tag types.
@@ -448,7 +456,10 @@ class PSIModResolver(ModificationResolver):
             defn = self.database['MOD:{:05d}'.format(id)]
         else:
             raise ValueError("Must provide one of `name` or `id`")
-        mass = float(defn.DiffMono)
+        try:
+            mass = float(defn.DiffMono)
+        except (KeyError, TypeError, ValueError):
+            raise ModificationMassNotFoundError("Could not resolve the mass of %r from %r" % ((name, id), defn))
         diff_formula = str(defn.DiffFormula.strip().replace(" ", ''))
         composition = Composition(diff_formula)
         return {
@@ -475,7 +486,10 @@ class XLMODResolver(ModificationResolver):
             defn = self.database['XLMOD:{:05d}'.format(id)]
         else:
             raise ValueError("Must provide one of `name` or `id`")
-        mass = float(defn['monoIsotopicMass'])
+        try:
+            mass = float(defn['monoIsotopicMass'])
+        except (KeyError, TypeError, ValueError):
+            raise ModificationMassNotFoundError("Could not resolve the mass of %r from %r" % ((name, id), defn))
         if 'deadEndFormula' in defn:
             composition = Composition(defn['deadEndFormula'].replace(" ", '').replace("D", "H[2]"))
         elif 'bridgeFormula' in defn:
@@ -617,7 +631,11 @@ class GenericResolver(ModificationResolver):
         for resolver in self.resolvers:
             try:
                 defn = resolver(name=name, id=id, **kwargs)
-            except (KeyError):
+                break
+            except KeyError:
+                continue
+            except ModificationMassNotFoundError:
+                warnings.warn("Could not resolve the mass for %r in %r" % ((name, id), resolver))
                 continue
         if defn is None:
             if name is None:
@@ -849,7 +867,10 @@ class GlycanModification(ModificationBase):
         mass = 0
         chemcomp = Composition()
         for key, cnt in composite.items():
-            m, c, sym = self.valid_monosaccharides[key]
+            try:
+                m, c, sym = self.valid_monosaccharides[key]
+            except KeyError:
+                raise UnknownMonosaccharideError(key)
             mass += m * cnt
             chemcomp += c * cnt
         return {
