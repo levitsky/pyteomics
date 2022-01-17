@@ -1,3 +1,8 @@
+Unreleased
+----------
+
+- Bugfix in `pyteomics.proforma.GenericModificationResolver` (`#68 <https://github.com/levitsky/pyteomics/issues/68>`_) by Joshua Klein
+
 4.5.2
 -----
 
