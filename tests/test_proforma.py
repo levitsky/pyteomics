@@ -4,8 +4,8 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(
     path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics.proforma import (
-    ProForma, TaggedInterval, parse, MassModification, ProFormaError, TagTypeEnum,
-    ModificationRule, StableIsotope, GenericModification, Composition, to_proforma,
+    PSIModModification, ProForma, TaggedInterval, parse, MassModification, ProFormaError, TagTypeEnum,
+    ModificationRule, StableIsotope, GenericModification, Composition, to_proforma, ModificationMassNotFoundError,
     obo_cache)
 
 
@@ -78,6 +78,29 @@ class ProFormaTest(unittest.TestCase):
     def test_glycan(self):
         gp = ProForma.parse("NEEYN[Glycan:Hex5HexNAc4NeuAc1]K")
         self.assertAlmostEqual(gp.mass, 2709.016, 3)
+
+
+class GenericModificationResolverTest(unittest.TestCase):
+    def test_generic_resolver(self):
+        mod = "Oxidation"
+        state = GenericModification(mod)
+        state.resolve()
+        self.assertEqual(state.provider, 'unimod')
+        self.assertAlmostEqual(state.mass, 15.994915, 3)
+
+    def test_generic_resolver_with_dangerous_synonyms(self):
+        mod = "TMT6plex"
+        state = GenericModification(mod)
+        state.resolve()
+        self.assertEqual(state.provider, 'unimod')
+        self.assertAlmostEqual(state.mass, 229.162932, 3)
+
+
+class PSIModModificationResolverTest(unittest.TestCase):
+    def test_unknown_mass(self):
+        mod = "TMT6plex"
+        state = PSIModModification(mod)
+        self.assertRaises(ModificationMassNotFoundError, lambda: state.resolve())
 
 
 if __name__ == '__main__':
