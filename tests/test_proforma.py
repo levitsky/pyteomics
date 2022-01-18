@@ -98,7 +98,7 @@ class GenericModificationResolverTest(unittest.TestCase):
 
 class PSIModModificationResolverTest(unittest.TestCase):
     def test_unknown_mass(self):
-        mod = "TMT6plex"
+        mod = "MOD:01716"  # 'TMT6plex reporter fragment'
         state = PSIModModification(mod)
         self.assertRaises(ModificationMassNotFoundError, lambda: state.resolve())
 

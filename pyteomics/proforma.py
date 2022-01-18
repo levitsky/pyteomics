@@ -460,8 +460,22 @@ class PSIModResolver(ModificationResolver):
             mass = float(defn.DiffMono)
         except (KeyError, TypeError, ValueError):
             raise ModificationMassNotFoundError("Could not resolve the mass of %r from %r" % ((name, id), defn))
-        diff_formula = str(defn.DiffFormula.strip().replace(" ", ''))
-        composition = Composition(diff_formula)
+        if defn.DiffFormula is not None:
+            composition = Composition()
+            diff_formula_tokens = defn.DiffFormula.strip().split(" ")
+            for i in range(0, len(diff_formula_tokens), 2):
+                element = diff_formula_tokens[i]
+                count = diff_formula_tokens[i + 1]
+                if count:
+                    count = int(count)
+                if element.startswith("("):
+                    j = element.index(")")
+                    isotope = element[1:j]
+                    element = "%s[%s]" % (element[j + 1:], isotope)
+                composition[element] += count
+        else:
+            composition = None
+            warnings.warn("No formula was found for %r in PSI-MOD, composition will be missing" % ((name, id), ))
         return {
             'mass': mass,
             'composition': composition,
