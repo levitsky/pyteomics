@@ -156,6 +156,16 @@ class FastaTest(unittest.TestCase):
         self.assertEqual(all_entries, self.fasta_entries_long +
                 [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long])
 
+    def test_decoy_entries(self):
+        with fasta.read(self.fasta_file) as f:
+            self.assertEqual(sorted(fasta.decoy_entries(f, decoy_only=False, prefix='PREFIX_', mode='reverse')),
+                sorted(self.fasta_entries_long + [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long]))
+
+    def test_decoy_entries_only(self):
+        with fasta.read(self.fasta_file) as f:
+            self.assertEqual(list(fasta.decoy_entries(f, decoy_only=True, prefix='PREFIX_', mode='reverse')),
+                [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long])
+
     def test_parser_uniprotkb_decoydb(self):
         header = ('sp|P27748|ACOX_RALEH Acetoin catabolism protein X OS=Ralstonia'
             ' eutropha (strain ATCC 17699 / H16 / DSM 428 / Stanier 337)'

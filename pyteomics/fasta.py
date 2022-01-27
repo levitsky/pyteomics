@@ -78,6 +78,8 @@ Decoy database generation
   :py:func:`decoy_db` - generate entries for a decoy database from a given FASTA
   database.
 
+  :py:func:`decoy_entries` - generate decoy entries for an iterator.
+
   :py:func:`decoy_chain` - a version of :py:func:`decoy_db` for multiple files.
 
   :py:func:`decoy_chain.from_iterable` - like :py:func:`decoy_chain`, but with
@@ -114,6 +116,7 @@ from . import auxiliary as aux
 
 
 Protein = namedtuple('Protein', ('description', 'sequence'))
+DECOY_PREFIX = 'DECOY_'
 
 
 class FASTABase(object):
@@ -805,8 +808,40 @@ def decoy_sequence(sequence, mode='reverse', **kwargs):
     return fmode(sequence, **kwargs)
 
 
+def decoy_entries(entries, mode='reverse', prefix=DECOY_PREFIX, decoy_only=True, **kwargs):
+    """Iterate over protein `entries` (tuples) and produce decoy entries.
+    The `entries` are only iterated once.
+
+    Parameters
+    ----------
+    entries : iterable of tuples
+        Any iterable of (description, sequence) pairs.
+    mode : str or callable, optional
+        Algorithm of decoy sequence generation. 'reverse' by default.
+        See :py:func:`decoy_sequence` for more information.
+    prefix : str, optional
+        A prefix to the protein descriptions of decoy entries. The default
+        value is `'DECOY_'`.
+    decoy_only : bool, optional
+        If set to :py:const:`True`, only the decoy entries will be written to
+        `output`. If :py:const:`False`, each consumed entry is yielded unchanged,
+        followed by its decoy couterpart.
+        :py:const:`True` by default.
+    **kwargs : given to :py:func:`decoy_sequence`.
+
+    Returns
+    -------
+    out : iterator
+        An iterator over new entries.
+    """
+    for item in entries:
+        if not decoy_only:
+            yield item
+        yield Protein(prefix + item[0], decoy_sequence(item[1], mode, **kwargs))
+
+
 @aux._file_reader()
-def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
+def decoy_db(source=None, mode='reverse', prefix=DECOY_PREFIX, decoy_only=False,
              ignore_comments=False, parser=None, **kwargs):
     """Iterate over sequences for a decoy database out of a given ``source``.
 
@@ -861,7 +896,7 @@ def decoy_db(source=None, mode='reverse', prefix='DECOY_', decoy_only=False,
 
 
 @aux._file_writer()
-def write_decoy_db(source=None, output=None, mode='reverse', prefix='DECOY_',
+def write_decoy_db(source=None, output=None, mode='reverse', prefix=DECOY_PREFIX,
         decoy_only=False, **kwargs):
     """Generate a decoy database out of a given ``source`` and write to file.
 
