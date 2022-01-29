@@ -203,12 +203,10 @@ class Composition(BasicComposition):
             show_unmodified_termini=True)
         self._from_parsed_sequence(parsed_sequence, aa_comp)
 
-    def _from_formula(self, formula, mass_data):
+    def _from_formula(self, formula):
         if not re.match(_formula, formula):
             raise PyteomicsError('Invalid formula: ' + formula)
         for elem, isotope, number in re.findall(_atom, formula):
-            if elem not in mass_data:
-                raise PyteomicsError('Unknown chemical element: ' + elem)
             self[_make_isotope_string(elem, int(isotope) if isotope else 0)] += int(number) if number else 1
 
     def _from_composition(self, comp):
@@ -267,9 +265,6 @@ class Composition(BasicComposition):
         aa_comp : dict, optional
             A dict with the elemental composition of the amino acids (the
             default value is std_aa_comp).
-        mass_data : dict, optional
-            A dict with the masses of chemical elements (the default
-            value is :py:data:`nist_mass`). It is used for formulae parsing only.
         charge : int, optional
             If not 0 then additional protons are added to the composition.
         ion_comp : dict, optional
@@ -282,7 +277,6 @@ class Composition(BasicComposition):
         defaultdict.__init__(self, int)
 
         aa_comp = kwargs.get('aa_comp', std_aa_comp)
-        mass_data = kwargs.get('mass_data', nist_mass)
 
         kw_given = self._kw_sources.intersection(kwargs)
         if len(kw_given) > 1:
@@ -291,8 +285,10 @@ class Composition(BasicComposition):
                         ', '.join(kw_given)))
         elif kw_given:
             kwa = kw_given.pop()
-            getattr(self, '_from_' + kwa)(kwargs[kwa],
-                    mass_data if kwa == 'formula' else aa_comp)
+            if kwa == 'formula':
+                self._from_formula(kwargs['formula'])
+            else:
+                getattr(self, '_from_' + kwa)(kwargs[kwa], aa_comp)
 
         # can't build from kwargs
         elif args:
@@ -303,7 +299,7 @@ class Composition(BasicComposition):
                     self._from_sequence(args[0], aa_comp)
                 except PyteomicsError:
                     try:
-                        self._from_formula(args[0], mass_data)
+                        self._from_formula(args[0])
                     except PyteomicsError:
                         raise PyteomicsError(
                                 'Could not create a Composition object from '
