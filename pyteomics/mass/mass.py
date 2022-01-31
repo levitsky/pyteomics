@@ -93,6 +93,7 @@ except ImportError:
 from datetime import datetime
 import re
 import operator
+import warnings
 
 nist_mass = _nist_mass
 """
@@ -265,14 +266,12 @@ class Composition(BasicComposition):
         aa_comp : dict, optional
             A dict with the elemental composition of the amino acids (the
             default value is std_aa_comp).
-        charge : int, optional
-            If not 0 then additional protons are added to the composition.
         ion_comp : dict, optional
             A dict with the relative elemental compositions of peptide ion
             fragments (default is :py:data:`std_ion_comp`).
         ion_type : str, optional
             If specified, then the polypeptide is considered to be in the form
-            of the corresponding ion. Do not forget to specify the charge state!
+            of the corresponding ion.
         """
         defaultdict.__init__(self, int)
 
@@ -320,13 +319,16 @@ class Composition(BasicComposition):
         if 'ion_type' in kwargs:
             self += ion_comp[kwargs['ion_type']]
 
-        # Get charge
+        # Charge is not supported in kwargs
         charge = self['H+']
         if 'charge' in kwargs:
             if charge:
                 raise PyteomicsError('Charge is specified both by the number of protons and `charge` in kwargs')
-            charge = kwargs['charge']
-            self['H+'] = charge
+            else:
+                warnings.warn('charge and charge carrier should be specified when calling mass(). '
+                    'Support for charge in Composition.__init__ will be removed in a future version.',
+                    FutureWarning)
+                self['H+'] = kwargs['charge']
 
     def mass(self, **kwargs):
         """Calculate the mass or *m/z* of a :py:class:`Composition`.
@@ -373,10 +375,15 @@ class Composition(BasicComposition):
                 mass += (amount * mass_data[element_name][isotope_num][0])
 
         # Calculate m/z if required
-        charge = kwargs.get('charge', composition['H+'])
+        charge = kwargs.get('charge')
+        if charge and not composition['H+']:
+            mass += mass_data['H+'][0][0] * charge
+        if charge and composition['H+']:
+            raise PyteomicsError('Composition contains protons and charge is explicitly specified.')
+        if charge is None and composition['H+']:
+            warnings.warn('Charge is not specified, but the Composition contains protons. Assuming m/z calculation.')
+            charge = composition['H+']
         if charge:
-            if not composition['H+']:
-                mass += mass_data['H+'][0][0] * charge
             mass /= charge
         return mass
 
@@ -498,9 +505,11 @@ def calculate_mass(*args, **kwargs):
     -------
     mass : float
     """
+    # Charge parameters must not be passed to mass(), not __init__
+    charge = kwargs.pop('charge', None)
     # Make a copy of `composition` keyword argument.
     composition = (Composition(kwargs['composition']) if 'composition' in kwargs else Composition(*args, **kwargs))
-    return composition.mass(**kwargs)
+    return composition.mass(charge=charge, **kwargs)
 
 
 def most_probable_isotopic_composition(*args, **kwargs):
