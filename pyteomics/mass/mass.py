@@ -104,6 +104,7 @@ abundant isotopes and a separate entry for undefined isotope with zero
 key, mass of the most abundant isotope and 1.0 abundance.
 """
 
+PROTON = 'H+'
 
 def _make_isotope_string(element_name, isotope_num):
     """Form a string label for an isotope."""
@@ -158,6 +159,7 @@ class Composition(BasicComposition):
     adding and subtraction.
     """
     _kw_sources = {'formula', 'sequence', 'parsed_sequence', 'split_sequence', 'composition'}
+    _carrier_spec = r"^(?P<formula>\S+?)(?:(?P<sign>[+-])(?P<charge>\d+)?)?$"
 
     def _from_parsed_sequence(self, parsed_sequence, aa_comp):
         self.clear()
@@ -330,6 +332,41 @@ class Composition(BasicComposition):
                     FutureWarning)
                 self['H+'] = kwargs['charge']
 
+    @classmethod
+    def _parse_carrier(cls, spec):
+        """Parse a charge carrier spec.
+        The spec syntax is: <formula>[+-][N]
+        <formula> is a chemical formula as supported by :py:meth:`_from_formula`.
+        [+-] is one of "+" or "-", N is a natural number (1 is assumed if omitted).
+        If both the sign and the charge are missing, the charge of this group can be
+        specified as the number of protons in `<formula>`. Otherwise, having protons
+        in `<formula>` is an error.
+
+        Returns
+        -------
+        out : tuple
+            Parsed :py:class:`Composition` and charge of the charge carrier.
+        """
+        if spec is None:
+            return cls({PROTON: 1}), 1
+        try:
+            formula, sign, charge = re.match(cls._carrier_spec, spec).groups()
+        except AttributeError:
+            raise PyteomicsError('Invalid charge carrier specification: ' + spec)
+        comp = cls(formula=formula)
+        if sign is not None and PROTON in comp:
+            raise PyteomicsError('Carrier contains protons and also has a charge specified.')
+        if sign is None:
+            # only formula is given
+            if PROTON not in comp:
+                raise PyteomicsError('Charge of the charge carrier group not specified.')
+            charge = comp[PROTON]
+        elif charge is None:
+            charge = (-1, 1)[sign == '+']
+        else:
+            charge = int(charge) * (-1, 1)[sign == '+']
+        return comp, charge
+
     def mass(self, **kwargs):
         """Calculate the mass or *m/z* of a :py:class:`Composition`.
 
@@ -340,9 +377,16 @@ class Composition(BasicComposition):
             is not averaged for elements with specified isotopes. Default is
             :py:const:`False`.
         charge : int, optional
-            If not 0 then m/z is calculated: the mass is increased
-            by the corresponding number of proton masses and divided
-            by `charge`.
+            If not 0 then m/z is calculated. See also: `charge_carrier`.
+        charge_carrier : str, optional
+            Chemical group carrying the charge. Defaults to a proton, "H+".
+            If string, must be a chemical formula, as supported by the :class:`Composition`
+            `formula` argument, except it must end with a charge formatted as "[+-][N]".
+            If N is omitted, single charge is assumed.
+            Examples of `charge_carrier`: "H+", "NH3+" (here, 3 is part of the composition, and + is a single charge),
+            "Fe+2" ("Fe" is the formula and "+2" is the charge).
+            .. note ::
+                The `charge` must be a multiple of `charge_carrier` charge.
         mass_data : dict, optional
             A dict with the masses of the chemical elements (the default
             value is :py:data:`nist_mass`).
@@ -376,8 +420,16 @@ class Composition(BasicComposition):
 
         # Calculate m/z if required
         charge = kwargs.get('charge')
+        if charge:
+            # get charge carrier mass and charge
+            carrier_comp, carrier_charge = self._parse_carrier(kwargs.get('charge_carrier'))
+            if charge % carrier_charge:
+                raise PyteomicsError('The `charge` must be a multiple of the carrier charge. Given: {} and {}'.format(
+                    charge, carrier_charge))
+            num = charge // carrier_charge
+            carrier_mass = carrier_comp.mass(mass_data=mass_data, average=average)
         if charge and not composition['H+']:
-            mass += mass_data['H+'][0][0] * charge
+            mass += carrier_mass * num
         if charge and composition['H+']:
             raise PyteomicsError('Composition contains protons and charge is explicitly specified.')
         if charge is None and composition['H+']:

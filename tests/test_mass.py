@@ -150,6 +150,11 @@ class MassTest(unittest.TestCase):
                 mass.calculate_mass(formula='ABCDE' + 'H+%d' % (charge,), mass_data=self.mass_data))
 
             self.assertEqual(
+                mass.calculate_mass(formula='ABCDE', ion_type='M', charge=charge * 2, charge_carrier='AB+2', mass_data=self.mass_data),
+                (mass.calculate_mass(formula='ABCDE', mass_data=self.mass_data) + charge * (
+                    self.mass_data['A'][0][0] + self.mass_data['B'][0][0])) / charge / 2)
+
+            self.assertEqual(
                 mass.calculate_mass(formula='ABCDE', ion_type='M', charge=charge, mass_data=self.mass_data),
                 (mass.calculate_mass(formula='ABCDE', mass_data=self.mass_data) + self.mass_data['H+'][0][0] * charge) / charge)
 
