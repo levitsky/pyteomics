@@ -155,11 +155,20 @@ class MassTest(unittest.TestCase):
                     self.mass_data['A'][0][0] + self.mass_data['B'][0][0])) / charge / 2)
 
             self.assertEqual(
+                mass.calculate_mass(formula='ABCDE', ion_type='M', charge=charge * 2, charge_carrier={'A': 1, 'B': 1},
+                    carrier_charge=2, mass_data=self.mass_data),
+                (mass.calculate_mass(formula='ABCDE', mass_data=self.mass_data) + charge * (
+                    self.mass_data['A'][0][0] + self.mass_data['B'][0][0])) / charge / 2)
+
+            self.assertEqual(
                 mass.calculate_mass(formula='ABCDE', ion_type='M', charge=charge, mass_data=self.mass_data),
                 (mass.calculate_mass(formula='ABCDE', mass_data=self.mass_data) + self.mass_data['H+'][0][0] * charge) / charge)
 
             self.assertRaises(auxiliary.PyteomicsError, mass.calculate_mass, **{'formula': 'ABCDEH+%d' % charge,
                    'ion_type': 'M', 'charge': charge, 'mass_data': self.mass_data})
+
+        self.assertRaises(auxiliary.PyteomicsError, mass.calculate_mass, **{'formula': 'ABCDE',
+                'ion_type': 'M', 'charge': 3, 'carrier_charge': 2, 'mass_data': self.mass_data})
 
         # Sanity check.
         for pep in self.random_peptides:

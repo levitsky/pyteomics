@@ -359,7 +359,7 @@ class Composition(BasicComposition):
         if sign is None:
             # only formula is given
             if PROTON not in comp:
-                raise PyteomicsError('Charge of the charge carrier group not specified.')
+                charge = None
             charge = comp[PROTON]
         elif charge is None:
             charge = (-1, 1)[sign == '+']
@@ -373,20 +373,30 @@ class Composition(BasicComposition):
         Parameters
         ----------
         average : bool, optional
-            If :py:const:`True` then the average mass is calculated. Note that mass
-            is not averaged for elements with specified isotopes. Default is
-            :py:const:`False`.
+            If :py:const:`True` then the average mass is calculated.
+            Note that mass is not averaged for elements with specified isotopes.
+            Default is :py:const:`False`.
         charge : int, optional
             If not 0 then m/z is calculated. See also: `charge_carrier`.
-        charge_carrier : str, optional
+        charge_carrier : str or dict, optional
             Chemical group carrying the charge. Defaults to a proton, "H+".
-            If string, must be a chemical formula, as supported by the :class:`Composition`
-            `formula` argument, except it must end with a charge formatted as "[+-][N]".
+            If string, must be a chemical formula, as supported by the
+            :class:`Composition` `formula` argument,
+            except it must end with a charge formatted as "[+-][N]".
             If N is omitted, single charge is assumed.
-            Examples of `charge_carrier`: "H+", "NH3+" (here, 3 is part of the composition, and + is a single charge),
+            Examples of `charge_carrier`: "H+", "NH3+"
+            (here, 3 is part of the composition, and + is a single charge),
             "Fe+2" ("Fe" is the formula and "+2" is the charge).
             .. note ::
-                The `charge` must be a multiple of `charge_carrier` charge.
+                `charge` must be a multiple of `charge_carrier` charge.
+            If dict, it is the atomic composition of the group.
+            In this case, the charge can be passed separately as `carrier_charge`
+            or it will be deduced from the number of protons in `charge_carrier`.
+        carrier_charge : int, optional
+            Charge of the charge carrier group (if `charge_carrier` is specified
+            as a composition dict).
+            .. note ::
+                `charge` must be a multiple of `charge_charge`.
         mass_data : dict, optional
             A dict with the masses of the chemical elements (the default
             value is :py:data:`nist_mass`).
@@ -422,12 +432,27 @@ class Composition(BasicComposition):
         charge = kwargs.get('charge')
         if charge:
             # get charge carrier mass and charge
-            carrier_comp, carrier_charge = self._parse_carrier(kwargs.get('charge_carrier'))
+            charge_carrier = kwargs.get('charge_carrier')
+            ccharge = kwargs.get('carrier_charge')
+            if isinstance(charge_carrier, dict):
+                carrier_comp = Composition(charge_carrier)
+                if ccharge and PROTON in carrier_comp:
+                    raise PyteomicsError('`carrier_charge` specified but the charge carrier contains protons.')
+                carrier_charge = ccharge or carrier_comp[PROTON]
+                if not carrier_charge:
+                    raise PyteomicsError('Charge carrier charge not specified.')
+            else:
+                carrier_comp, carrier_charge = self._parse_carrier(charge_carrier)
+                if carrier_charge and ccharge:
+                    raise PyteomicsError('Both `carrier_charge` and charge in carrier spec are given.')
+                carrier_charge = ccharge or carrier_charge
+                if not carrier_charge:
+                    raise PyteomicsError('Charge of the charge carrier group not specified.')
             if charge % carrier_charge:
                 raise PyteomicsError('The `charge` must be a multiple of the carrier charge. Given: {} and {}'.format(
                     charge, carrier_charge))
             num = charge // carrier_charge
-            carrier_mass = carrier_comp.mass(mass_data=mass_data, average=average)
+            carrier_mass = carrier_comp.mass(mass_data=mass_data, average=average, charge=0)
         if charge and not composition['H+']:
             mass += carrier_mass * num
         if charge and composition['H+']:
@@ -559,9 +584,11 @@ def calculate_mass(*args, **kwargs):
     """
     # Charge parameters must not be passed to mass(), not __init__
     charge = kwargs.pop('charge', None)
+    charge_carrier = kwargs.pop('charge_carrier', None)
+    carrier_charge = kwargs.pop('carrier_charge', None)
     # Make a copy of `composition` keyword argument.
     composition = (Composition(kwargs['composition']) if 'composition' in kwargs else Composition(*args, **kwargs))
-    return composition.mass(charge=charge, **kwargs)
+    return composition.mass(charge=charge, charge_carrier=charge_carrier, carrier_charge=carrier_charge, **kwargs)
 
 
 def most_probable_isotopic_composition(*args, **kwargs):
