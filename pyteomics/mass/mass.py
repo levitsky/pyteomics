@@ -406,6 +406,12 @@ class Composition(BasicComposition):
         ion_type : str, optional
             If specified, then the polypeptide is considered to be in the form
             of the corresponding ion. Do not forget to specify the charge state!
+        absolute : bool, optional
+            If :py:const:`True`, the m/z value returned will always be positive,
+            even for negatively charged ions.
+
+            .. warning::
+                Default is :py:const:`False` now, but will be changed in a future version.
 
         Returns
         -------
@@ -417,6 +423,8 @@ class Composition(BasicComposition):
         # Calculate mass
         mass = 0.0
         average = kwargs.get('average', False)
+        absolute = kwargs.get('absolute')
+
         for isotope_string, amount in composition.items():
             element_name, isotope_num = _parse_isotope_string(isotope_string)
             # Calculate average mass if required and the isotope number is
@@ -462,6 +470,11 @@ class Composition(BasicComposition):
             charge = composition['H+']
         if charge:
             mass /= charge
+        if mass < 0 and absolute is None:
+            warnings.warn('Returning a signed value. The default will change in the future.'
+                ' Specify `absolute` kwarg to suppress this warning', FutureWarning)
+        if absolute:
+            mass = abs(mass)
         return mass
 
 
@@ -582,13 +595,16 @@ def calculate_mass(*args, **kwargs):
     -------
     mass : float
     """
-    # Charge parameters must not be passed to mass(), not __init__
+    # These parameters must not be passed to mass(), not __init__
     charge = kwargs.pop('charge', None)
     charge_carrier = kwargs.pop('charge_carrier', None)
     carrier_charge = kwargs.pop('carrier_charge', None)
+    absolute = kwargs.pop('absolute', None)
     # Make a copy of `composition` keyword argument.
     composition = (Composition(kwargs['composition']) if 'composition' in kwargs else Composition(*args, **kwargs))
-    return composition.mass(charge=charge, charge_carrier=charge_carrier, carrier_charge=carrier_charge, **kwargs)
+    return composition.mass(
+        charge=charge, charge_carrier=charge_carrier, carrier_charge=carrier_charge,
+        absolute=absolute, **kwargs)
 
 
 def most_probable_isotopic_composition(*args, **kwargs):
