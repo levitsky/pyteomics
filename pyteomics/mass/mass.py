@@ -581,6 +581,25 @@ def calculate_mass(*args, **kwargs):
         If not 0 then m/z is calculated: the mass is increased
         by the corresponding number of proton masses and divided
         by `charge`.
+    charge_carrier : str or dict, optional
+        Chemical group carrying the charge. Defaults to a proton, "H+".
+        If string, must be a chemical formula, as supported by the
+        :class:`Composition` `formula` argument,
+        except it must end with a charge formatted as "[+-][N]".
+        If N is omitted, single charge is assumed.
+        Examples of `charge_carrier`: "H+", "NH3+"
+        (here, 3 is part of the composition, and + is a single charge),
+        "Fe+2" ("Fe" is the formula and "+2" is the charge).
+        .. note ::
+            `charge` must be a multiple of `charge_carrier` charge.
+        If dict, it is the atomic composition of the group.
+        In this case, the charge can be passed separately as `carrier_charge`
+        or it will be deduced from the number of protons in `charge_carrier`.
+    carrier_charge : int, optional
+        Charge of the charge carrier group (if `charge_carrier` is specified
+        as a composition dict).
+        .. note ::
+            `charge` must be a multiple of `charge_charge`.
     mass_data : dict, optional
         A dict with the masses of the chemical elements (the default
         value is :py:data:`nist_mass`).
@@ -590,6 +609,12 @@ def calculate_mass(*args, **kwargs):
     ion_type : str, optional
         If specified, then the polypeptide is considered to be in the form
         of the corresponding ion. Do not forget to specify the charge state!
+    absolute : bool, optional
+            If :py:const:`True`, the m/z value returned will always be positive,
+            even for negatively charged ions.
+
+            .. warning::
+                Default is :py:const:`False` now, but will be changed in a future version.
 
     Returns
     -------
