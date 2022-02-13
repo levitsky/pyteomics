@@ -25,7 +25,7 @@ class USITest(unittest.TestCase):
 class PROXITest(unittest.TestCase):
     def test_request(self):
         usi_str = "mzspec:MSV000085202:210320_SARS_CoV_2_T:scan:131256"
-        response = proxi(usi_str, backend='peptide_atlas')
+        response = proxi(usi_str, backend='massive')
 
         assert set(usi_proxi_data.keys()) <= set(response.keys())
 
