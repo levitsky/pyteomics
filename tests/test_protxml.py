@@ -62,7 +62,7 @@ class ProtXMLTest(unittest.TestCase):
         del kw['key']
         kw['remove_decoy'] = True
         df = protxml.DataFrame(self.path)
-        df['protein_name'] = df.protein_name.str.replace(r'DECOY_(.*)', r'\1_SUF')
+        df['protein_name'] = df.protein_name.str.replace(r'DECOY_(.*)', r'\1_SUF', regex=True)
         fdf = protxml.filter_df(df, decoy_suffix='_SUF', **kw)
         self.assertEqual(fdf.shape, (1, 17))
 
