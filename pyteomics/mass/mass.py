@@ -93,6 +93,7 @@ except ImportError:
 from datetime import datetime
 import re
 import operator
+import warnings
 
 nist_mass = _nist_mass
 """
@@ -103,6 +104,7 @@ abundant isotopes and a separate entry for undefined isotope with zero
 key, mass of the most abundant isotope and 1.0 abundance.
 """
 
+PROTON = 'H+'
 
 def _make_isotope_string(element_name, isotope_num):
     """Form a string label for an isotope."""
@@ -157,6 +159,7 @@ class Composition(BasicComposition):
     adding and subtraction.
     """
     _kw_sources = {'formula', 'sequence', 'parsed_sequence', 'split_sequence', 'composition'}
+    _carrier_spec = r"^(?P<formula>\S+?)(?:(?P<sign>[+-])(?P<charge>\d+)?)?$"
 
     def _from_parsed_sequence(self, parsed_sequence, aa_comp):
         self.clear()
@@ -203,12 +206,10 @@ class Composition(BasicComposition):
             show_unmodified_termini=True)
         self._from_parsed_sequence(parsed_sequence, aa_comp)
 
-    def _from_formula(self, formula, mass_data):
+    def _from_formula(self, formula):
         if not re.match(_formula, formula):
             raise PyteomicsError('Invalid formula: ' + formula)
         for elem, isotope, number in re.findall(_atom, formula):
-            if elem not in mass_data:
-                raise PyteomicsError('Unknown chemical element: ' + elem)
             self[_make_isotope_string(elem, int(isotope) if isotope else 0)] += int(number) if number else 1
 
     def _from_composition(self, comp):
@@ -267,22 +268,16 @@ class Composition(BasicComposition):
         aa_comp : dict, optional
             A dict with the elemental composition of the amino acids (the
             default value is std_aa_comp).
-        mass_data : dict, optional
-            A dict with the masses of chemical elements (the default
-            value is :py:data:`nist_mass`). It is used for formulae parsing only.
-        charge : int, optional
-            If not 0 then additional protons are added to the composition.
         ion_comp : dict, optional
             A dict with the relative elemental compositions of peptide ion
             fragments (default is :py:data:`std_ion_comp`).
         ion_type : str, optional
             If specified, then the polypeptide is considered to be in the form
-            of the corresponding ion. Do not forget to specify the charge state!
+            of the corresponding ion.
         """
         defaultdict.__init__(self, int)
 
         aa_comp = kwargs.get('aa_comp', std_aa_comp)
-        mass_data = kwargs.get('mass_data', nist_mass)
 
         kw_given = self._kw_sources.intersection(kwargs)
         if len(kw_given) > 1:
@@ -291,8 +286,10 @@ class Composition(BasicComposition):
                         ', '.join(kw_given)))
         elif kw_given:
             kwa = kw_given.pop()
-            getattr(self, '_from_' + kwa)(kwargs[kwa],
-                    mass_data if kwa == 'formula' else aa_comp)
+            if kwa == 'formula':
+                self._from_formula(kwargs['formula'])
+            else:
+                getattr(self, '_from_' + kwa)(kwargs[kwa], aa_comp)
 
         # can't build from kwargs
         elif args:
@@ -303,7 +300,7 @@ class Composition(BasicComposition):
                     self._from_sequence(args[0], aa_comp)
                 except PyteomicsError:
                     try:
-                        self._from_formula(args[0], mass_data)
+                        self._from_formula(args[0])
                     except PyteomicsError:
                         raise PyteomicsError(
                                 'Could not create a Composition object from '
@@ -324,13 +321,51 @@ class Composition(BasicComposition):
         if 'ion_type' in kwargs:
             self += ion_comp[kwargs['ion_type']]
 
-        # Get charge
+        # Charge is not supported in kwargs
         charge = self['H+']
         if 'charge' in kwargs:
             if charge:
                 raise PyteomicsError('Charge is specified both by the number of protons and `charge` in kwargs')
-            charge = kwargs['charge']
-            self['H+'] = charge
+            else:
+                warnings.warn('charge and charge carrier should be specified when calling mass(). '
+                    'Support for charge in Composition.__init__ will be removed in a future version.',
+                    FutureWarning)
+                self['H+'] = kwargs['charge']
+
+    @classmethod
+    def _parse_carrier(cls, spec):
+        """Parse a charge carrier spec.
+        The spec syntax is: <formula>[+-][N]
+        <formula> is a chemical formula as supported by :py:meth:`_from_formula`.
+        [+-] is one of "+" or "-", N is a natural number (1 is assumed if omitted).
+        If both the sign and the charge are missing, the charge of this group can be
+        specified as the number of protons in `<formula>`. Otherwise, having protons
+        in `<formula>` is an error.
+
+        Returns
+        -------
+        out : tuple
+            Parsed :py:class:`Composition` and charge of the charge carrier.
+        """
+        if spec is None:
+            return cls({PROTON: 1}), 1
+        try:
+            formula, sign, charge = re.match(cls._carrier_spec, spec).groups()
+        except AttributeError:
+            raise PyteomicsError('Invalid charge carrier specification: ' + spec)
+        comp = cls(formula=formula)
+        if sign is not None and PROTON in comp:
+            raise PyteomicsError('Carrier contains protons and also has a charge specified.')
+        if sign is None:
+            # only formula is given
+            if PROTON not in comp:
+                charge = None
+            charge = comp[PROTON]
+        elif charge is None:
+            charge = (-1, 1)[sign == '+']
+        else:
+            charge = int(charge) * (-1, 1)[sign == '+']
+        return comp, charge
 
     def mass(self, **kwargs):
         """Calculate the mass or *m/z* of a :py:class:`Composition`.
@@ -338,13 +373,30 @@ class Composition(BasicComposition):
         Parameters
         ----------
         average : bool, optional
-            If :py:const:`True` then the average mass is calculated. Note that mass
-            is not averaged for elements with specified isotopes. Default is
-            :py:const:`False`.
+            If :py:const:`True` then the average mass is calculated.
+            Note that mass is not averaged for elements with specified isotopes.
+            Default is :py:const:`False`.
         charge : int, optional
-            If not 0 then m/z is calculated: the mass is increased
-            by the corresponding number of proton masses and divided
-            by `charge`.
+            If not 0 then m/z is calculated. See also: `charge_carrier`.
+        charge_carrier : str or dict, optional
+            Chemical group carrying the charge. Defaults to a proton, "H+".
+            If string, must be a chemical formula, as supported by the
+            :class:`Composition` `formula` argument,
+            except it must end with a charge formatted as "[+-][N]".
+            If N is omitted, single charge is assumed.
+            Examples of `charge_carrier`: "H+", "NH3+"
+            (here, 3 is part of the composition, and + is a single charge),
+            "Fe+2" ("Fe" is the formula and "+2" is the charge).
+            .. note ::
+                `charge` must be a multiple of `charge_carrier` charge.
+            If dict, it is the atomic composition of the group.
+            In this case, the charge can be passed separately as `carrier_charge`
+            or it will be deduced from the number of protons in `charge_carrier`.
+        carrier_charge : int, optional
+            Charge of the charge carrier group (if `charge_carrier` is specified
+            as a composition dict).
+            .. note ::
+                `charge` must be a multiple of `charge_charge`.
         mass_data : dict, optional
             A dict with the masses of the chemical elements (the default
             value is :py:data:`nist_mass`).
@@ -354,6 +406,12 @@ class Composition(BasicComposition):
         ion_type : str, optional
             If specified, then the polypeptide is considered to be in the form
             of the corresponding ion. Do not forget to specify the charge state!
+        absolute : bool, optional
+            If :py:const:`True`, the m/z value returned will always be positive,
+            even for negatively charged ions.
+
+            .. warning::
+                Default is :py:const:`False` now, but will be changed in a future version.
 
         Returns
         -------
@@ -365,6 +423,8 @@ class Composition(BasicComposition):
         # Calculate mass
         mass = 0.0
         average = kwargs.get('average', False)
+        absolute = kwargs.get('absolute')
+
         for isotope_string, amount in composition.items():
             element_name, isotope_num = _parse_isotope_string(isotope_string)
             # Calculate average mass if required and the isotope number is
@@ -377,11 +437,44 @@ class Composition(BasicComposition):
                 mass += (amount * mass_data[element_name][isotope_num][0])
 
         # Calculate m/z if required
-        charge = kwargs.get('charge', composition['H+'])
+        charge = kwargs.get('charge')
         if charge:
-            if not composition['H+']:
-                mass += mass_data['H+'][0][0] * charge
+            # get charge carrier mass and charge
+            charge_carrier = kwargs.get('charge_carrier')
+            ccharge = kwargs.get('carrier_charge')
+            if isinstance(charge_carrier, dict):
+                carrier_comp = Composition(charge_carrier)
+                if ccharge and PROTON in carrier_comp:
+                    raise PyteomicsError('`carrier_charge` specified but the charge carrier contains protons.')
+                carrier_charge = ccharge or carrier_comp[PROTON]
+                if not carrier_charge:
+                    raise PyteomicsError('Charge carrier charge not specified.')
+            else:
+                carrier_comp, carrier_charge = self._parse_carrier(charge_carrier)
+                if carrier_charge and ccharge:
+                    raise PyteomicsError('Both `carrier_charge` and charge in carrier spec are given.')
+                carrier_charge = ccharge or carrier_charge
+                if not carrier_charge:
+                    raise PyteomicsError('Charge of the charge carrier group not specified.')
+            if charge % carrier_charge:
+                raise PyteomicsError('The `charge` must be a multiple of the carrier charge. Given: {} and {}'.format(
+                    charge, carrier_charge))
+            num = charge // carrier_charge
+            carrier_mass = carrier_comp.mass(mass_data=mass_data, average=average, charge=0)
+        if charge and not composition['H+']:
+            mass += carrier_mass * num
+        if charge and composition['H+']:
+            raise PyteomicsError('Composition contains protons and charge is explicitly specified.')
+        if charge is None and composition['H+']:
+            warnings.warn('Charge is not specified, but the Composition contains protons. Assuming m/z calculation.')
+            charge = composition['H+']
+        if charge:
             mass /= charge
+        if mass < 0 and absolute is None:
+            warnings.warn('Returning a signed value. The default will change in the future.'
+                ' Specify `absolute` kwarg to suppress this warning', FutureWarning)
+        if absolute:
+            mass = abs(mass)
         return mass
 
 
@@ -488,6 +581,25 @@ def calculate_mass(*args, **kwargs):
         If not 0 then m/z is calculated: the mass is increased
         by the corresponding number of proton masses and divided
         by `charge`.
+    charge_carrier : str or dict, optional
+        Chemical group carrying the charge. Defaults to a proton, "H+".
+        If string, must be a chemical formula, as supported by the
+        :class:`Composition` `formula` argument,
+        except it must end with a charge formatted as "[+-][N]".
+        If N is omitted, single charge is assumed.
+        Examples of `charge_carrier`: "H+", "NH3+"
+        (here, 3 is part of the composition, and + is a single charge),
+        "Fe+2" ("Fe" is the formula and "+2" is the charge).
+        .. note ::
+            `charge` must be a multiple of `charge_carrier` charge.
+        If dict, it is the atomic composition of the group.
+        In this case, the charge can be passed separately as `carrier_charge`
+        or it will be deduced from the number of protons in `charge_carrier`.
+    carrier_charge : int, optional
+        Charge of the charge carrier group (if `charge_carrier` is specified
+        as a composition dict).
+        .. note ::
+            `charge` must be a multiple of `charge_charge`.
     mass_data : dict, optional
         A dict with the masses of the chemical elements (the default
         value is :py:data:`nist_mass`).
@@ -497,14 +609,27 @@ def calculate_mass(*args, **kwargs):
     ion_type : str, optional
         If specified, then the polypeptide is considered to be in the form
         of the corresponding ion. Do not forget to specify the charge state!
+    absolute : bool, optional
+            If :py:const:`True`, the m/z value returned will always be positive,
+            even for negatively charged ions.
+
+            .. warning::
+                Default is :py:const:`False` now, but will be changed in a future version.
 
     Returns
     -------
     mass : float
     """
+    # These parameters must not be passed to mass(), not __init__
+    charge = kwargs.pop('charge', None)
+    charge_carrier = kwargs.pop('charge_carrier', None)
+    carrier_charge = kwargs.pop('carrier_charge', None)
+    absolute = kwargs.pop('absolute', None)
     # Make a copy of `composition` keyword argument.
     composition = (Composition(kwargs['composition']) if 'composition' in kwargs else Composition(*args, **kwargs))
-    return composition.mass(**kwargs)
+    return composition.mass(
+        charge=charge, charge_carrier=charge_carrier, carrier_charge=carrier_charge,
+        absolute=absolute, **kwargs)
 
 
 def most_probable_isotopic_composition(*args, **kwargs):
