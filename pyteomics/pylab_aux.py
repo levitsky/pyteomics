@@ -515,7 +515,7 @@ def _get_precursor_charge(spectrum):
     except (PyteomicsError, KeyError):
         pass
     try:
-        return spectrum['precursorList']['precursor'][0]['selectedIonList']['selectedIon'][0]['selected ion m/z']
+        return int(spectrum['precursorList']['precursor'][0]['selectedIonList']['selectedIon'][0]['charge state'])
     except KeyError:
         pass
     return None

@@ -44,6 +44,11 @@ class MzidTest(unittest.TestCase):
         self.assertEqual(len(mzid_spectra[(1, 1)]),
             sum(1 for _ in MzIdentML(self.path).map()))
 
+    def test_iterfind_map(self):
+        self.assertEqual(
+            len(mzid_spectra[(1, 1)]),
+            sum(1 for _ in MzIdentML(self.path).iterfind("SpectrumIdentificationResult").map()))
+
 
 if __name__ == '__main__':
     unittest.main()
