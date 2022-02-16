@@ -365,7 +365,7 @@ def filter_df(*args, **kwargs):
         if sep is not None:
             if 'decoy_suffix' in kwargs:
                 kwargs['is_decoy'] = df['protein_label'].str.split(sep).apply(
-                    lambda s: all(x.endtswith(kwargs['decoy_suffix']) for x in s))
+                    lambda s: all(x.endswith(kwargs['decoy_suffix']) for x in s))
             else:
                 kwargs['is_decoy'] = df['protein_label'].str.split(sep).apply(
                     lambda s: all(x.startswith(kwargs.get('decoy_prefix', 'DECOY_')) for x in s))
