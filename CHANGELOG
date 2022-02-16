@@ -1,4 +1,4 @@
-4.5.3dev4
+4.5.3dev5
 ---------
 
  - Fix ThreadPool shutdown and add new parameter `ephemeral_pool` in :py:class:`pyteomics.usi.PROXIAggregator`
@@ -8,6 +8,7 @@
  - New arguments `charge_carrier`, `absolute` in :py:func:`mass.calculate_mass` and
    :py:meth:`mass.Composition.mass` (`#61 <https://github.com/levitsky/pyteomics/pull/61>`_).
    Charge is now only handled in :py:meth:`Composition.mass` and not :py:meth:`Composition.__init__`.
+ - Bugfix in :py:mod:`pyteomics.tandem` (`#71 <https://github.com/levitsky/pyteomics/pull/71>`_ by @superrino130).
 
 4.5.2
 -----
