@@ -164,19 +164,19 @@ class Composition(BasicComposition):
     def _from_parsed_sequence(self, parsed_sequence, aa_comp):
         self.clear()
         comp = defaultdict(int)
-        for aa in parsed_sequence:
-            if aa in aa_comp:
-                for elem, cnt in aa_comp[aa].items():
+        for label in parsed_sequence:
+            if label in aa_comp:
+                for elem, cnt in aa_comp[label].items():
                     comp[elem] += cnt
             else:
                 try:
-                    mod, aa = parser._split_label(aa)
+                    mod, aa = parser._split_label(label)
                     for elem, cnt in chain(
                             aa_comp[mod].items(), aa_comp[aa].items()):
                         comp[elem] += cnt
 
                 except (PyteomicsError, KeyError):
-                    raise PyteomicsError('No information for %s in `aa_comp`' % aa)
+                    raise PyteomicsError('No information for %s in `aa_comp`' % label)
         self._from_composition(comp)
 
     def _from_split_sequence(self, split_sequence, aa_comp):
