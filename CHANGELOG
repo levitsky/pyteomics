@@ -1,5 +1,5 @@
-4.5.3dev5
----------
+4.5.3
+-----
 
  - Fix ThreadPool shutdown and add new parameter `ephemeral_pool` in :py:class:`pyteomics.usi.PROXIAggregator`
    (`#67 <https://github.com/levitsky/pyteomics/pull/67>`_ by Joshua Klein).
