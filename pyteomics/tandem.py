@@ -323,7 +323,11 @@ def DataFrame(*args, **kwargs):
             for k in pep_keys:
                 protein['peptide'].pop(k, None)
             info.update(protein['peptide'])
-            info['scan'] = item['support']['fragment ion mass spectrum']['note']
+            fims = item['support']['fragment ion mass spectrum']
+            try:
+                info['scan'] = fims['note']
+            except KeyError:
+                info['scan'] = fims['id']
             data.append(info)
     return pd.DataFrame(data, **pd_kwargs)
 

@@ -13,7 +13,7 @@ Constants
 
 """
 
-__version__ = '4.5.3'
+__version__ = '4.5.4a1'
 
 from collections import namedtuple
 import re
