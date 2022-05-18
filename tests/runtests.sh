@@ -93,7 +93,7 @@ else
     fi
 fi
 
-if ! [[ "$MODE" == "no-op" ]] ; then
+if [[ "$MODE" =! "no-op" ]] ; then
     total=0
     errors=0
     for key in "${!exitcodes[@]}"; do
