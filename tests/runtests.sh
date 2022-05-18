@@ -83,15 +83,17 @@ else
 fi
 
 total=0
+errors=0
 for key in "${!exitcodes[@]}"; do
+    (( total++ ))
     if [[ "${exitcodes[$key]}" != 0 ]] ; then
-        (( total++ ))
+        (( errors++ ))
         echo "ERROR: $key => exit code ${exitcodes[$key]}"
     fi
 done
 
-if [[ $total == 0 ]] ; then
-    echo "All tests complete, there were no errors."
+if [[ $errors == 0 ]] ; then
+    echo "All ${total} test runs complete, there were no errors."
 else
-    echo "All tests complete, there were ${total} errors (see above)."
+    echo "All ${total} test runs complete, there were ${errors} errors (see above)."
 fi
