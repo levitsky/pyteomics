@@ -5,6 +5,8 @@ NODEPS=0
 PREFIX_ALL="test_pyteomics_"
 PREFIX_SINGLE="test_pyteomics_single_"
 CLEAN=0
+declare -A exitcodes
+
 for i in "$@" ; do
     if [[ "$i" == "--all" ]] ; then
         MODE="all"
@@ -39,6 +41,7 @@ if [[ $MODE == "all" ]] ; then
         while read pv; do
             echo "${ROOT}/versions/${PREFIX_ALL}${pv}/bin/python" "$f"
             eval "${ROOT}/versions/${PREFIX_ALL}${pv}/bin/python" "$f"
+            exitcodes["$f + py${pv}"]=$?
         done < python-versions.txt
     done
     if [[ $CLEAN == 1 ]] ; then
@@ -55,7 +58,7 @@ else
             continue
         fi
         while read pv; do
-            if [[ $CLEAN == 1 ]] || [ ! -d "${ROOT}/versions/${PREFIX_ALL}${pv}" ]; then
+            if [[ $CLEAN == 1 ]] || [ ! -d "${ROOT}/versions/${PREFIX_SINGLE}${pv}" ]; then
                 echo "Creating environment..."
                 pyenv virtualenv -f "$pv" "${PREFIX_SINGLE}${pv}"
             fi
@@ -69,6 +72,7 @@ else
             echo "Running test..."
             echo "Executing ${ROOT}/versions/${PREFIX_SINGLE}${pv}/bin/python ${fname}"
             eval "${ROOT}/versions/${PREFIX_SINGLE}${pv}/bin/python" "${fname}"
+            exitcodes["$f + py${pv}"]=$?
             if [[ $CLEAN == 1 ]] ; then
                 echo "Deleting environment..."
                 echo pyenv virtualenv-delete -f "${PREFIX_SINGLE}${pv}"
@@ -76,4 +80,18 @@ else
             fi
         done < python-versions.txt
     done
+fi
+
+total=0
+for key in "${!exitcodes[@]}"; do
+    if [[ "${exitcodes[$key]}" != 0 ]] ; then
+        (( total++ ))
+        echo "ERROR: $key => exit code ${exitcodes[$key]}"
+    fi
+done
+
+if [[ $total == 0 ]] ; then
+    echo "All tests complete, there were no errors."
+else
+    echo "All tests complete, there were ${total} errors (see above)."
 fi
