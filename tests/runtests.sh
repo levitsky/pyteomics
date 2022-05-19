@@ -36,7 +36,6 @@ create() {
 deps() {
     eval "${ROOT}/versions/${PREFIX}${1}/bin/pip" install -U pip wheel
     eval "${ROOT}/versions/${PREFIX}${1}/bin/pip" install -U -r ../test-requirements.txt
-    eval "${ROOT}/versions/${PREFIX}${1}/bin/pip" install -U ..
 }
 
 run() {
@@ -66,6 +65,10 @@ parallel create :::: python-versions.txt
 if [[ $NODEPS == 0 ]] ; then
     echo "Installing dependencies..."
     parallel deps :::: python-versions.txt
+    while read pv; do
+        echo "${ROOT}/versions/${PREFIX}${pv}/bin/pip" install -U ..
+        eval "${ROOT}/versions/${PREFIX}${pv}/bin/pip" install -U ..
+    done < python-versions.txt
 fi
 
 if [[ $MODE == "all" ]] ; then
