@@ -1,7 +1,9 @@
-4.5.4a1
+4.5.4a2
 -------
 
  - Fix issue #74.
+ - In :func:`pyteomics.auxiliary.fdr`, raise :exc:`PyteomicsError` instead of :exc:`ZeroDivisionError` when
+   using formula 1 on input without any target PSMs.
 
 4.5.3
 -----

@@ -45,6 +45,8 @@ def _calculate_qvalues(scores, isdecoy, peps=False, **kwargs):
     """
     correction = kwargs.pop('correction', 0)
     ratio = kwargs.pop('ratio', 1)
+    if ratio == 0:
+        raise PyteomicsError('Size ratio cannot be zero!')
     remove_decoy = kwargs.get('remove_decoy', False)
     formula = kwargs.pop('formula', (2, 1)[bool(remove_decoy)])
     if formula not in {1, 2}:
@@ -73,7 +75,7 @@ def _calculate_qvalues(scores, isdecoy, peps=False, **kwargs):
                 tfalse[i] = _confidence_value(
                     correction, cumsum[i], targ[i], p)
         elif correction:
-            raise PyteomicsError('Invalid value for `correction`.')
+            raise PyteomicsError('Invalid value for `correction`: {}.'.format(correction))
 
         if formula == 1:
             q = tfalse / (ind - cumsum) / ratio
@@ -83,8 +85,7 @@ def _calculate_qvalues(scores, isdecoy, peps=False, **kwargs):
     # Make sure that q-values are equal for equal scores (conservatively)
     # and that q-values are monotonic
     for i in range(scores.size - 1, 0, -1):
-        if (scores[i] == scores[i - 1] or
-                q[i - 1] > q[i]):
+        if (scores[i] == scores[i - 1] or q[i - 1] > q[i]):
             q[i - 1] = q[i]
 
     return q
@@ -918,6 +919,8 @@ def _make_fdr(is_decoy_prefix, is_decoy_suffix):
         """
         if formula not in {1, 2}:
             raise PyteomicsError('`formula` must be either 1 or 2.')
+        if ratio == 0:
+            raise PyteomicsError('Size ratio cannot be zero!')
 
         decoy, total = _count_psms(psms, is_decoy, pep, decoy_prefix, decoy_suffix, is_decoy_prefix, is_decoy_suffix)
         if pep is not None:
@@ -932,6 +935,8 @@ def _make_fdr(is_decoy_prefix, is_decoy_suffix):
             p = 1. / (1. + ratio)
             tfalse = _confidence_value(correction, decoy, total - decoy, p)
         if formula == 1:
+            if total == decoy:
+                raise PyteomicsError('Cannot compute FDR using formula 1: no target IDs found.')
             return float(tfalse) / (total - decoy) / ratio
         return (decoy + tfalse / ratio) / total
 
