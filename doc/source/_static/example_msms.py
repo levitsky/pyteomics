@@ -1,4 +1,4 @@
-from pyteomics import mgf, pepxml, mass
+from pyteomics import mgf, pepxml, mass, pylab_aux
 import os
 from urllib.request import urlopen, Request
 import pylab
@@ -13,6 +13,18 @@ for fname in ('mgf', 'pep.xml'):
         with urlopen(request) as response, open(target_name, 'wb') as fout:
             print('Downloading ' + target_name + '...')
             fout.write(response.read())
+
+with mgf.read('example.mgf') as spectra, pepxml.read('example.pep.xml') as psms:
+    spectrum = next(spectra)
+    psm = next(psms)
+
+pylab.figure()
+pylab_aux.plot_spectrum(spectrum, title="Experimental spectrum " + spectrum['params']['title'])
+
+pylab.figure()
+pylab_aux.annotate_spectrum(spectrum, psm['search_hit'][0]['peptide'],
+    title='Annotated spectrum ' + psm['search_hit'][0]['peptide'],
+    maxcharge=psm['assumed_charge'])
 
 def fragments(peptide, types=('b', 'y'), maxcharge=1):
     """
@@ -29,20 +41,11 @@ def fragments(peptide, types=('b', 'y'), maxcharge=1):
                     yield mass.fast_mass(
                             peptide[i:], ion_type=ion_type, charge=charge)
 
-with mgf.read('example.mgf') as spectra, pepxml.read('example.pep.xml') as psms:
-    spectrum = next(spectra)
-    psm = next(psms)
+fragment_list = list(fragments(psm['search_hit'][0]['peptide'], maxcharge=psm['assumed_charge']))
+theor_spectrum = {'m/z array': fragment_list, 'intensity array': [spectrum['intensity array'].max()] * len(fragment_list)}
 
 pylab.figure()
-pylab.title('Theoretical and experimental spectra for '
-        + psm['search_hit'][0]['peptide'])
-pylab.xlabel('m/z, Th')
-pylab.ylabel('Intensity, rel. units')
-pylab.bar(spectrum['m/z array'], spectrum['intensity array'], width=0.1, linewidth=2,
-        edgecolor='black')
-theor_spectrum = list(fragments(psm['search_hit'][0]['peptide'],
-    maxcharge=psm['assumed_charge']))
-pylab.bar(theor_spectrum,
-        [spectrum['intensity array'].max()]*len(theor_spectrum),
-        width=0.1, edgecolor='red', alpha=0.7)
+pylab.title('Theoretical and experimental spectra for ' + psm['search_hit'][0]['peptide'])
+pylab_aux.plot_spectrum(spectrum, width=0.1, linewidth=2, edgecolor='black')
+pylab_aux.plot_spectrum(theor_spectrum, width=0.1, edgecolor='red', alpha=0.7)
 pylab.show()
