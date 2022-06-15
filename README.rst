@@ -10,7 +10,7 @@
     :target: https://pyteomics.readthedocs.io/
     :alt: Read the Docs (latest)
 
-.. image:: https://img.shields.io/aur/license/python-pyteomics.svg
+.. image:: https://img.shields.io/github/license/levitsky/pyteomics
     :target: https://www.apache.org/licenses/LICENSE-2.0
     :alt: Apache License
 
