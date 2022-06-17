@@ -1,10 +1,11 @@
-4.5.4a3
+4.5.4a4
 -------
 
  - Fix issue #74.
  - In :func:`pyteomics.auxiliary.fdr`, raise :exc:`PyteomicsError` instead of :exc:`ZeroDivisionError` when
    using formula 1 on input without any target PSMs.
  - Provide more accurate amino acid masses in :py:data:`mass.std_aa_mass`.
+ - Fix SyntaxError in :py:mod:`pyteomics.pylab_aux` on Python 2.7.
 
 4.5.3
 -----

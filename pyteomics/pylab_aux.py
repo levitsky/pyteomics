@@ -506,7 +506,7 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     if adjust:
         adjust_text(texts, **adjust_kw)
     kwargs.setdefault('zorder', -1)
-    return plot_spectrum(spectrum, *args, **kwargs, centroided=centroided)
+    return plot_spectrum(spectrum, *args, centroided=centroided, **kwargs)
 
 
 def _get_precursor_charge(spectrum):
