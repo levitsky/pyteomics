@@ -1,5 +1,5 @@
-4.5.4a4
--------
+4.5.4
+-----
 
  - Fix issue #74.
  - In :func:`pyteomics.auxiliary.fdr`, raise :exc:`PyteomicsError` instead of :exc:`ZeroDivisionError` when
