@@ -247,18 +247,18 @@ def iterfind(source, path, **kwargs):
         The path can be absolute or "free". Please don't specify
         namespaces.
 
-    recursive : bool, optional
+    recursive : bool, keyword only, optional
         If :py:const:`False`, subelements will not be processed when
         extracting info from elements. Default is :py:const:`True`.
 
-    iterative : bool, optional
+    iterative : bool, keyword only, optional
         Specifies whether iterative XML parsing should be used. Iterative
         parsing significantly reduces memory usage and may be just a little
         slower. When `retrieve_refs` is :py:const:`True`, however, it is
         highly recommended to disable iterative parsing if possible.
         Default value is :py:const:`True`.
 
-    read_schema : bool, optional
+    read_schema : bool, keyword only, optional
         If :py:const:`True`, attempt to extract information from the XML schema
         mentioned in the mzIdentML header. Otherwise, use default parameters.
         Not recommended without Internet connection or
@@ -354,7 +354,7 @@ def DataFrame(*args, **kwargs):
     Parameters
     ----------
     *args
-        Passed to :py:func:`chain`.
+        pepXML file names or objects. Passed to :py:func:`chain`.
 
     **kwargs
         Passed to :py:func:`chain`.
@@ -364,6 +364,23 @@ def DataFrame(*args, **kwargs):
         lists. If `sep` is a :py:class:`str`, they will be packed into single string using
         this delimiter. If `sep` is :py:const:`None`, they are kept as lists. Default is
         :py:const:`None`.
+
+    recursive : bool, keyword only, optional
+        If :py:const:`False`, subelements will not be processed when
+        extracting info from elements. Default is :py:const:`True`.
+
+    iterative : bool, keyword only, optional
+        Specifies whether iterative XML parsing should be used. Iterative
+        parsing significantly reduces memory usage and may be just a little
+        slower. When `retrieve_refs` is :py:const:`True`, however, it is
+        highly recommended to disable iterative parsing if possible.
+        Default value is :py:const:`True`.
+
+    read_schema : bool, keyword only, optional
+        If :py:const:`True`, attempt to extract information from the XML schema
+        mentioned in the mzIdentML header. Otherwise, use default parameters.
+        Not recommended without Internet connection or
+        if you don't like to get the related warnings.
 
     pd_kwargs : dict, optional
         Keyword arguments passed to the :py:class:`pandas.DataFrame` constructor.
@@ -427,20 +444,101 @@ def DataFrame(*args, **kwargs):
 
 def filter_df(*args, **kwargs):
     """Read pepXML files or DataFrames and return a :py:class:`DataFrame` with filtered PSMs.
-    Positional arguments can be pepXML files or DataFrames.
+    Positional arguments can be pepXML files or DataFrames. Keyword parameter `fdr` is also required.
+    Other parameters are optional.
 
     Requires :py:mod:`pandas`.
 
     Parameters
     ----------
+    positional args
+        pepXML file names, file objects, or DataFrames. Passed to :py:func:`DataFrame`.
+    fdr : float, keyword only, 0 <= fdr <= 1
+        Desired FDR level.
     key : str / iterable / callable, keyword only, optional
         PSM score. Default is 'expect'.
     is_decoy : str / iterable / callable, keyword only, optional
-        Default is to check if all strings in the "protein" column start with `'DECOY_'`
-    *args
-        Passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
-    **kwargs
-        Passed to :py:func:`auxiliary.filter` and/or :py:func:`DataFrame`.
+        Default is to check if all strings in the "protein" column start with `'DECOY_'`.
+    sep : str or None, keyword only, optional
+        Some values related to PSMs (such as protein information) are variable-length
+        lists. If `sep` is a :py:class:`str`, they will be packed into single string using
+        this delimiter. If `sep` is :py:const:`None`, they are kept as lists. Default is
+        :py:const:`None`.
+    reverse : bool, keyword only, optional
+        If :py:const:`True`, then PSMs are sorted in descending order,
+        i.e. the value of the key function is higher for better PSMs.
+        Default is :py:const:`False`.
+    decoy_prefix : str, optional
+        If the default `is_decoy` function works for you, this parameter specifies which
+        protein name prefix to use to detect decoy matches. If you provide your own
+        `is_decoy`, or if you specify `decoy_suffix`, this parameter has no effect.
+        Default is `"DECOY_"`.
+    decoy_suffix : str, optional
+        If the default `is_decoy` function works for you, this parameter specifies which
+        protein name suffix to use to detect decoy matches. If you provide your own
+        `is_decoy`, this parameter has no effect. Mutually exclusive with `decoy_prefix`.
+    remove_decoy : bool, keyword only, optional
+        Defines whether decoy matches should be removed from the output.
+        Default is :py:const:`True`.
+
+        .. note:: If set to :py:const:`False`, then by default the decoy
+           PSMs will be taken into account when estimating FDR. Refer to the
+           documentation of :py:func:`fdr` for math; basically, if
+           `remove_decoy` is :py:const:`True`, then formula 1 is used
+           to control output FDR, otherwise it's formula 2. This can be
+           changed by overriding the `formula` argument.
+
+    formula : int, keyword only, optional
+        Can be either 1 or 2, defines which formula should be used for FDR
+        estimation. Default is 1 if `remove_decoy` is :py:const:`True`,
+        else 2 (see :py:func:`fdr` for definitions).
+    ratio : float, keyword only, optional
+        The size ratio between the decoy and target databases. Default is
+        1. In theory, the "size" of the database is the number of
+        theoretical peptides eligible for assignment to spectra that are
+        produced by *in silico* cleavage of that database.
+    correction : int or float, keyword only, optional
+        Possible values are 0, 1 and 2, or floating point numbers between 0 and 1.
+
+        0 (default): no correction;
+
+        1: enable "+1" correction. This accounts for the probability that a false
+        positive scores better than the first excluded decoy PSM;
+
+        2: this also corrects that probability for finite size of the sample,
+        so the correction will be slightly less than "+1".
+
+        If a floating point number
+        is given, then instead of the expectation value for the number of false PSMs,
+        the confidence value is used. The value of `correction` is then interpreted as
+        desired confidence level. E.g., if correction=0.95, then the calculated q-values
+        do not exceed the "real" q-values with 95% probability.
+
+        See `this paper <http://dx.doi.org/10.1021/acs.jproteome.6b00144>`_ for further explanation.
+
+    pep : callable / array-like / iterable / str, keyword only, optional
+        If callable, a function used to determine the posterior error probability (PEP).
+        Should accept exactly one argument (PSM) and return a float.
+        If array-like, should contain float values for all given PSMs.
+        If string, it is used as a field name (PSMs must be in a record array
+        or a :py:class:`DataFrame`).
+
+        .. note:: If this parameter is given, then PEP values will be used to calculate
+           q-values. Otherwise, decoy PSMs will be used instead. This option conflicts with:
+           `is_decoy`, `remove_decoy`, `formula`, `ratio`, `correction`.
+           `key` can still be provided. Without `key`, PSMs will be sorted by PEP.
+
+    q_label : str, optional
+        Field name for q-value in the output. Default is ``'q'``.
+
+    score_label : str, optional
+        Field name for score in the output. Default is ``'score'``.
+
+    decoy_label : str, optional
+        Field name for the decoy flag in the output. Default is ``'is decoy'``.
+
+    pep_label : str, optional
+        Field name for PEP in the output. Default is ``'PEP'``.
 
     Returns
     -------
