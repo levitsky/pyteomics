@@ -56,7 +56,7 @@
  - New arguments `keep_nterm_M` and `fix_aa` in :py:func:`pyteomics.fasta.shuffle`
    (`#54 <https://github.com/levitsky/pyteomics/pull/54>`_ by Vladimir Gorshkov).
 
- - Fx for unwanted warnings in :py:func:`pyteomics.auxiliary.file_helpers._check_use_index` when
+ - Fix for unwanted warnings in :py:func:`pyteomics.auxiliary.file_helpers._check_use_index` when
    `use_index` is explicitly passed (`#52 <https://github.com/levitsky/pyteomics/issues/52>`_).
 
  - Update the default XML schema for featureXML and fix issues with incorrectly specified data types
