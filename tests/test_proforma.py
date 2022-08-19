@@ -79,6 +79,12 @@ class ProFormaTest(unittest.TestCase):
         gp = ProForma.parse("NEEYN[Glycan:Hex5HexNAc4NeuAc1]K")
         self.assertAlmostEqual(gp.mass, 2709.016, 3)
 
+    def test_c_terminal_modification(self):
+        i = ProForma.parse(
+            "[iTRAQ4plex]-EM[U:Oxidation]EVNES[Phospho]PEK[iTRAQ4plex]-[Methyl]")
+        self.assertEqual(i.c_term[0].name, "Methyl")
+        self.assertEqual(i[-1][1][0].name, "iTRAQ4plex")
+
 
 class GenericModificationResolverTest(unittest.TestCase):
     def test_generic_resolver(self):
