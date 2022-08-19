@@ -1662,6 +1662,9 @@ def parse(sequence):
                         intervals.append(current_interval)
                         current_interval = None
             elif c == '-':
+                if current_aa:
+                    positions.append((current_aa, current_tag() if current_tag else None))
+                    current_aa = None
                 state = TAG_AFTER
                 if i >= n or sequence[i] != '[':
                     raise ProFormaError("Missing Closing Tag", i, state)
