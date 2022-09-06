@@ -1,6 +1,6 @@
 lxml
 sqlalchemy
 matplotlib
-git+https://github.com/KarrLab/sphinxcontrib-googleanalytics.git
+git+https://github.com/sphinx-contrib/googleanalytics.git
 sphinx-sitemap
 h5py

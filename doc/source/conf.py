@@ -59,7 +59,7 @@ site_url = 'https://pyteomics.readthedocs.io/en/latest/'
 # Enable Google Analytics via a script from
 # http://pypi.python.org/pypi/sphinxcontrib-googleanalytics
 googleanalytics_enabled = True
-googleanalytics_id = 'UA-29285906-1'
+googleanalytics_id = 'G-0P9DXBVNL8'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
