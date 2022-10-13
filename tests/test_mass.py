@@ -62,11 +62,22 @@ class MassTest(unittest.TestCase):
                 mass.fast_mass(pep, aa_mass=self.test_aa_mass),
                 sum(pep.count(aa) * m for aa, m in self.test_aa_mass.items()) + self.mass_H * 2.0 + self.mass_O)
 
-    def test_fast_mass2(self):
+    def test_fast_mass2_no_term(self):
         for pep in self.random_peptides:
             self.assertAlmostEqual(
                 mass.fast_mass2(pep, aa_mass=self.test_aa_mass),
                 sum(pep.count(aa) * m for aa, m in self.test_aa_mass.items()) + self.mass_H * 2.0 + self.mass_O)
+
+    def test_fast_mass2_term(self):
+        for pep in self.random_peptides:
+            nterm = 'AB2C3-'
+            cterm = '-DE2F3'
+            self.assertAlmostEqual(
+                mass.fast_mass2(nterm + pep + cterm, aa_mass=self.test_aa_mass, mass_data=self.mass_data),
+                sum(pep.count(aa) * m for aa, m in self.test_aa_mass.items()) + (
+                    self.mass_data['A'][0][0] + self.mass_data['B'][0][0] * 2 + self.mass_data['C'][0][0] * 3 +
+                    self.mass_data['D'][0][0] + self.mass_data['E'][0][0] * 2 + self.mass_data['F'][0][0] * 3))
+
 
     def test_Composition_dict(self):
         # Test Composition from a dict.

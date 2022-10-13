@@ -959,8 +959,6 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
     """
     aa_mass = kwargs.get('aa_mass', std_aa_mass)
     mass_data = kwargs.get('mass_data', nist_mass)
-    aa_mass.setdefault('H-', mass_data['H'][0][0])
-    aa_mass.setdefault('-OH', mass_data['H'][0][0] + mass_data['O'][0][0])
     try:
         comp = parser.amino_acid_composition(sequence,
                 show_unmodified_termini=True,
@@ -975,6 +973,9 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
         for aa, num in comp.items():
             if aa in aa_mass:
                 mass += aa_mass[aa] * num
+            elif parser.is_term_mod(aa):
+                assert num == 1
+                mass += calculate_mass(formula=aa.strip('-'), mass_data=mass_data)
             else:
                 mod, X = parser._split_label(aa)
                 mass += (aa_mass[mod] + aa_mass[X]) * num
