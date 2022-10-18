@@ -51,7 +51,7 @@ Dependencies
 To resolve PSI-MOD, XL-MOD, and GNO identifiers, :mod:`psims` is required. By default,
 :mod:`psims` retrieves the most recent version of each ontology from the internet, but
 includes a fall-back version to use when the network is unavailable. It can also create
-an application cache on disk
+an application cache on disk.
 
 
 Compliance Levels
@@ -100,7 +100,6 @@ These features are independent from each other:
 
 '''
 
-from pyteomics.mass.mass import calculate_mass
 import re
 import warnings
 from collections import deque, namedtuple
@@ -112,9 +111,9 @@ except ImportError:
     # Python 2 doesn't have a builtin Enum type
     Enum = object
 
-from pyteomics.mass import Composition, std_aa_mass, Unimod, nist_mass
-from pyteomics.auxiliary import PyteomicsError, BasicComposition
-from pyteomics.auxiliary.utils import add_metaclass
+from .mass import Composition, std_aa_mass, Unimod, nist_mass, calculate_mass
+from .auxiliary import PyteomicsError, BasicComposition
+from .auxiliary.utils import add_metaclass
 
 try:
     from psims.controlled_vocabulary.controlled_vocabulary import (load_psimod, load_xlmod, load_gno, obo_cache)

@@ -1,7 +1,9 @@
-4.5.6a1
+4.5.6a2
 -------
 
- - Prevent :func:`pyteomics.mass.fast_mass2` from changing `aa_mass`.
+ - New function :py:func:`pyteomics.parser.to_proforma` helps convert *modX* sequences to ProForma.
+ - Fix: prevent :func:`pyteomics.mass.fast_mass2` from changing `aa_mass`.
+ - Update :py:func:`pyteomics.pylab_aux.annotate_spectrum` for compatibility with latest :py:mod:`spectrum_utils`.
 
 4.5.5
 -----

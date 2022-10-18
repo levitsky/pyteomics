@@ -65,7 +65,7 @@ This module requires :py:mod:`matplotlib`. Optional dependencies: :py:mod:`adjus
 import pylab
 import numpy as np
 from .auxiliary import linear_regression, PyteomicsError
-from . import parser, mass, mgf
+from . import parser, mass, mgf, proforma
 
 try:
     import spectrum_utils.spectrum as sus
@@ -521,22 +521,36 @@ def _get_precursor_charge(spectrum):
     return None
 
 
-def _spectrum_utils_create_spectrum(spectrum, peptide, *args, **kwargs):
+def _get_precursor_mz(spectrum):
+    try:
+        return spectrum['params']['pepmass'][0]
+    except KeyError:
+        pass
+    try:
+        return spectrum['precursorList']['precursor'][0]['selectedIonList']['selectedIon'][0]['selected ion m/z']
+    except KeyError:
+        pass
+    if 'attributes' in spectrum:
+        for attr in spectrum['attributes']:
+            if attr in {"MS:1000827", "MS:1000744", "MS:1002234"}:
+                return spectrum['attributes'][attr]
+    return None
+
+
+def _spectrum_utils_create_spectrum(spectrum, *args, **kwargs):
     if sus is None:
         raise PyteomicsError('This backend requires `spectrum_utils`.')
 
     # backend-specific parameters
     mz_range = kwargs.pop('mz_range', None)
 
-
     min_intensity = kwargs.pop('min_intensity', 0.0)
     max_num_peaks = kwargs.pop('max_num_peaks', None)
     scaling = kwargs.pop('scaling', None)
     max_intensity = kwargs.pop('max_intensity', None)
     spectrum = sus.MsmsSpectrum(
-        None, kwargs.pop('precursor_mz', None), kwargs.pop('precursor_charge', None),
-        spectrum['m/z array'], spectrum['intensity array'],
-        peptide=peptide, modifications=kwargs.pop('modifications', None))
+        'None', kwargs.pop('precursor_mz', None), kwargs.pop('precursor_charge', None),
+        spectrum['m/z array'], spectrum['intensity array'])
     if mz_range:
         spectrum = spectrum.set_mz_range(*mz_range)
 
@@ -565,31 +579,45 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     if precursor_charge is None:
         raise PyteomicsError('Could not extract precursor charge from spectrum. '
             'Please specify `precursor_charge` keyword argument.')
-    precursor_mz = mass.fast_mass2(peptide, aa_mass=aa_mass, charge=precursor_charge)
 
     maxcharge = kwargs.pop('maxcharge', max(1, precursor_charge - 1))
     # end of common kwargs
 
     # backend-specific parameters
-    peak_assignment = kwargs.pop('peak_assignment', 'most_intense')
     remove_precursor_peak = kwargs.pop('remove_precursor_peak', False)
-    annotate_mz = kwargs.pop('annotate_mz', None)
-    annotate_mz_text = kwargs.pop('annotate_mz_text', None)
-    variable_mods = kwargs.pop('modifications', None)
-    if not variable_mods:
-        clean_sequence, variable_mods = _spectrum_utils_parse_sequence(peptide, aa_mass)
-    else:
-        clean_sequence = peptide
 
-    spectrum = _spectrum_utils_create_spectrum(spectrum, clean_sequence, *args,
-        precursor_mz=precursor_mz, precursor_charge=precursor_charge, modifications=variable_mods, **kwargs)
+    # peptide can be modX or proforma. spectrum_utils supports proforma only
+    aa_comp = kwargs.get('aa_comp')
+    mod_names = kwargs.get('mod_names')
+    prefix = kwargs.get('prefix')
+
+    try:
+        proforma.parse(peptide)
+        peptide_pro = peptide
+    except Exception:
+        try:
+            peptide_pro = parser.to_proforma(peptide, aa_mass=aa_mass, aa_comp=aa_comp, mod_names=mod_names, prefix=prefix)
+        except Exception:
+            raise PyteomicsError("Cannot parse {} as ProForma or convert from modX".format(peptide))
+
+    precursor_mz = kwargs.pop('precursor_mz', None)
+    if precursor_mz is None:
+        precursor_mz = _get_precursor_mz(spectrum)
+    if precursor_mz is None:
+        try:
+            if aa_comp:
+                precursor_mz = mass.calculate_mass(peptide, aa_comp=aa_comp, charge=precursor_charge)
+            else:
+                precursor_mz = mass.fast_mass2(peptide, aa_mass=aa_mass, charge=precursor_charge)
+        except PyteomicsError:
+            raise PyteomicsError('Cannot obtain precursor m/z, please specify `precursor_mz` argument.')
+
+    spectrum = _spectrum_utils_create_spectrum(spectrum, *args,
+        precursor_mz=precursor_mz, precursor_charge=precursor_charge, **kwargs)
     if remove_precursor_peak:
         spectrum = spectrum.remove_precursor_peak(tol, tol_mode)
-    spectrum = spectrum.annotate_peptide_fragments(tol, tol_mode, types, maxcharge, peak_assignment)
-    if annotate_mz:
-        for i, mz in enumerate(annotate_mz):
-            spectrum = spectrum.annotate_mz_fragment(mz, None, tol, tol_mode, peak_assignment,
-                annotate_mz_text[i] if annotate_mz_text else None)
+    spectrum = spectrum.annotate_proforma(peptide_pro, tol, tol_mode, types, maxcharge)
+
     return spectrum
 
 
@@ -727,19 +755,12 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
         (the default is :py:const:`None`, which means that no scaling
         relative to the most intense peak will be performed).
         Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
-    peak_assignment : one of `{'most_intense', 'nearest_mz'}`, keyword only, optional
-        In case multiple peaks occur within the given mass window around a theoretical peak,
-        only a single peak will be annotated with the fragment type.
-        Default is `'most_intense'`. Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
-    modifications : dict, optional
-        A dict of variable modifications as described in
-        `spectrum_utils documentation <https://spectrum-utils.readthedocs.io/en/latest/processing.html#variable-modifications>`_.
-
-        .. note::
-            You don't need to provide this if your `peptide` is a modX sequence and you supply `aa_mass`.
-
-        .. note::
-            To apply static modifications, provide `aa_mass` with modified masses.
+    aa_comp : dict, keyword only, optional
+        Amino acid compositions, including modified ones. If given, will be used for conversion from *modX* to ProForma.
+    mod_names : dict or callable, keyword only, optional
+        If given, will be used for conversion from *modX* to ProForma.
+    prefix : str, keyword only, optional
+        If given, will be used for conversion from *modX* to ProForma.
 
     Returns
     -------
@@ -788,7 +809,7 @@ def mirror(spec_top, spec_bottom, peptide=None, spectrum_kws=None, ax=None, **kw
     spec_bottom : dict
         A spectrum as returned by Pyteomics parsers. Needs to have 'm/z array' and 'intensity array' keys.
     peptide : str or None, optional
-        A modX sequence. If provided, the peaks will be annotated as peptide fragments.
+        A modX sequence or ProForma. If provided, the peaks will be annotated as peptide fragments.
     spectrum_kws : dict or None, optional
         Passed to :py:func:`spectrum_utils.plot.mirror`.
     backend : str, keyword only, optional

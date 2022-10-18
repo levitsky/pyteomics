@@ -387,16 +387,17 @@ class Composition(BasicComposition):
             Examples of `charge_carrier`: "H+", "NH3+"
             (here, 3 is part of the composition, and + is a single charge),
             "Fe+2" ("Fe" is the formula and "+2" is the charge).
-            .. note ::
-                `charge` must be a multiple of `charge_carrier` charge.
+            .. note :: `charge` must be a multiple of `charge_carrier` charge.
+
             If dict, it is the atomic composition of the group.
             In this case, the charge can be passed separately as `carrier_charge`
             or it will be deduced from the number of protons in `charge_carrier`.
         carrier_charge : int, optional
             Charge of the charge carrier group (if `charge_carrier` is specified
             as a composition dict).
-            .. note ::
-                `charge` must be a multiple of `charge_charge`.
+
+            .. note :: `charge` must be a multiple of `charge_charge`.
+
         mass_data : dict, optional
             A dict with the masses of the chemical elements (the default
             value is :py:data:`nist_mass`).
@@ -590,16 +591,20 @@ def calculate_mass(*args, **kwargs):
         Examples of `charge_carrier`: "H+", "NH3+"
         (here, 3 is part of the composition, and + is a single charge),
         "Fe+2" ("Fe" is the formula and "+2" is the charge).
+
         .. note ::
             `charge` must be a multiple of `charge_carrier` charge.
+
         If dict, it is the atomic composition of the group.
         In this case, the charge can be passed separately as `carrier_charge`
         or it will be deduced from the number of protons in `charge_carrier`.
     carrier_charge : int, optional
         Charge of the charge carrier group (if `charge_carrier` is specified
         as a composition dict).
+
         .. note ::
             `charge` must be a multiple of `charge_charge`.
+
     mass_data : dict, optional
         A dict with the masses of the chemical elements (the default
         value is :py:data:`nist_mass`).

@@ -21,6 +21,6 @@ spectrum_top = usi.proxi(usi_top, 'massive')
 spectrum_bottom = usi.proxi(usi_bottom, 'massive')
 
 pa.mirror(spectrum_top, spectrum_bottom, peptide=peptide, precursor_charge=2,
-    aa_mass=aa_mass, ion_types='aby', title=peptide, ftol=0.5, scaling='root',
+    aa_mass=aa_mass, ion_types='aby', ftol=0.5, scaling='root',
     remove_precursor_peak=True, backend='spectrum_utils.iplot'
     ).properties(width=640, height=400).save('mirror.html')

@@ -41,14 +41,23 @@ Also, this time we are going to use the `spectrum_utils.iplot` backend to produc
 `interactive plot <https://spectrum-utils.readthedocs.io/en/latest/plotting.html#interactive-plotting>`_.
 
 To annotate the spectrum of a modified peptide, you can use the
-`spectrum_utils notation <https://spectrum-utils.readthedocs.io/en/latest/processing.html#variable-modifications>`_,
-but you can also use the *modX* notation which is standard for Pyteomics:
+`ProForma notation <https://spectrum-utils.readthedocs.io/en/latest/annotating.html#fragment-ion-annotation>`_,
+which is the only format supported by `spectrum_utils` now.
+You can also use the *modX* notation which is standard for Pyteomics: it will be converted to ProForma if possible:
 
 .. literalinclude:: ../_static/example_annotation.py
     :language: python
     :lines: 12-15
 
-Next, choose two spectra:
+.. note ::
+    In this case, using `aa_mass` and the *modX* sequence, Pyteomics will convert it to a ProForma string using
+    :py:func:`pyteomics.parser.to_proforma`::
+
+        >>> from pyteomics import parser
+        >>> parser.to_proforma(peptide, aa_mass=aa_mass)
+        'DLTDYLM[+15.9949]K'
+
+Going back to our script! Next, we choose two spectra:
 
 .. literalinclude:: ../_static/example_annotation.py
     :language: python

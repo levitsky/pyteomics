@@ -32,7 +32,9 @@ Operations on polypeptide sequences
   :py:func:`parse` - convert a sequence string into a list of
   amino acid residues.
 
-  :py:func:`tostring` - convert a parsed sequence to a string.
+  :py:func:`to_string` - convert a parsed sequence to a string.
+
+  :py:func:`to_proforma` - convert a (parsed) *modX* sequence to ProForma.
 
   :py:func:`amino_acid_composition` - get numbers of each amino acid
   residue in a peptide.
@@ -103,6 +105,7 @@ from collections import deque
 import itertools as it
 import warnings
 from .auxiliary import PyteomicsError, memoize, BasicComposition, cvstr, cvquery
+
 
 std_amino_acids = ['Q', 'W', 'E', 'R', 'T', 'Y', 'I', 'P', 'A', 'S',
                    'D', 'F', 'G', 'H', 'K', 'L', 'C', 'V', 'N', 'M']
@@ -404,7 +407,7 @@ def fast_valid(sequence, labels=set(std_labels)):
     return set(sequence).issubset(labels)
 
 
-def tostring(parsed_sequence, show_unmodified_termini=True):
+def to_string(parsed_sequence, show_unmodified_termini=True):
     """Create a string from a parsed sequence.
 
     Parameters
@@ -453,6 +456,104 @@ def tostring(parsed_sequence, show_unmodified_termini=True):
             else:
                 labels.append(''.join(cterm[:-1]))
     return ''.join(labels)
+
+
+tostring = to_string
+
+
+def to_proforma(sequence, **kwargs):
+    """Converts a (parsed) *modX* sequence to a basic ProForma string.
+    Modifications are represented as masses, if those are given in :arg:`aa_mass`,
+    as chemical formulas (via :arg:`aa_comp`) or as names (using :arg:`mod_names`).
+
+    Parameters
+    ----------
+    sequence : str or list
+        A *modX* sequence, possibly in the parsed form.
+    aa_mass : dict, keyword only, optional
+        Used to render modifications as mass shifts.
+    aa_comp : dict, keyword only, optional
+        Used to render modifications as chemical formulas.
+    mod_names : dict or callable, keyword only, optional
+        Used to get the rendered name of modification from the mod label.
+    prefix : str, keyword only, optional
+        Prepend all modification names with the given prefix.
+
+    Returns
+    -------
+    out : str
+        A ProForma sequence.
+
+    Examples
+    --------
+    >>> to_proforma('PEPTIDE')
+    'PEPTIDE'
+    >>> to_proforma('Ac-oxMYPEPTIDE-OH', aa_mass={'Ac-': 42.010565}, mod_names={'ox': 'Oxidation'}, prefix='U:')
+    '[+42.0106]-M[U:Oxidation]YPEPTIDE'
+    >>> to_proforma('oxidationMYPEPTIDE')  # last fallback is to just capitalize the label
+    'M[Oxidation]YPEPTIDE'
+    """
+    from . import proforma
+    from .mass.mass import std_aa_mass, std_aa_comp
+
+    if isinstance(sequence, str):
+        return to_proforma(parse(sequence), **kwargs)
+
+    aa_mass = kwargs.get('aa_mass', std_aa_mass)
+    aa_comp = kwargs.get('aa_comp', std_aa_comp)
+    mod_names = kwargs.get('mod_names', {})
+    prefix = kwargs.get('prefix', '')
+
+    if isinstance(mod_names, dict):
+        get_name = mod_names.get
+    else:
+        get_name = mod_names
+
+    def get_tag(label):
+        if label in aa_mass:
+            return [proforma.MassModification(aa_mass[label])]
+        if label in aa_comp:
+            return [proforma.FormulaModification(''.join('{}{}'.format(k, v if v not in {0, 1} else '') for k, v in aa_comp[label].items()))]
+        name = get_name(label)
+        if not name:
+            warnings.warn("Unable to resolve label `{}`. "
+                "The ProForma string may be invalid. Specify `mod_names`, `aa_mass` or `aa_comp`.".format(label))
+            name = label.capitalize()
+        return [proforma.GenericModification(prefix + name)]
+
+    i, j = 0, len(sequence)
+    nterm = cterm = None
+    pro_sequence = []
+    if isinstance(sequence[0], str):  # regular parsed sequence
+        if is_term_mod(sequence[0]) and sequence[0] != std_nterm:
+            nterm = get_tag(sequence[0])
+            i = 1
+        if is_term_mod(sequence[-1]) and sequence[-1] != std_cterm:
+            cterm = get_tag(sequence[-1])
+            j -= 1
+        for label in sequence[i:j]:
+            if len(label) == 1:
+                pro_sequence.append((label, None))
+            else:
+                mod, aa = _split_label(label)
+                pro_sequence.append((aa, get_tag(mod)))
+    else:  # split sequence
+        if is_term_mod(sequence[0][0]) and sequence[0][0] != std_nterm:
+            nterm = get_tag(sequence[0][0])
+        if is_term_mod(sequence[-1][-1]) and sequence[-1][-1] != std_cterm:
+            cterm = get_tag(sequence[-1][-1])
+        if len(sequence) == 1:
+            pro_sequence = [(sequence[0][-2] if cterm else sequence[0][-1], get_tag(sequence[0][1]) if len(sequence[0]) == 4 else None)]
+        else:
+            pro_sequence.append((sequence[0][-1], get_tag(sequence[0][-2]) if len(sequence[0]) == 3 else None))
+            for group in sequence[1:-1]:
+                pro_sequence.append((group[-1], get_tag(group[0]) if len(group) == 2 else None))
+            if len(sequence[-1]) == 1 or (len(sequence[-1]) == 2 and cterm):
+                pro_sequence.append((sequence[-1][0], None))
+            else:
+                pro_sequence.append((sequence[-1][1], get_tag(sequence[-1][0])))
+
+    return proforma.to_proforma(pro_sequence, n_term=nterm, c_term=cterm)
 
 
 def amino_acid_composition(sequence, show_unmodified_termini=False, term_aa=False, allow_unknown_modifications=False, **kwargs):
