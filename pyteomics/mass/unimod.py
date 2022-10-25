@@ -8,7 +8,7 @@ The main class is :py:class:`Unimod`.
 Dependencies
 ------------
 
-This module requres :py:mod:`lxml` and :py:mod:`sqlalchemy`.
+This module requires :py:mod:`lxml` and :py:mod:`sqlalchemy`.
 """
 
 #   Copyright 2015 Joshua Klein, Lev Levitsky
@@ -679,6 +679,24 @@ def session(path='sqlite:///unimod.db'):
 class Unimod(object):
     """
     Main class representing the relational Unimod database.
+
+    Examples
+    --------
+
+    If you just wish to get a new copy of the data and store it in a temporary
+    in-memory database, invoking the type without parameters works without issue.
+
+    >>> new_db = Unimod()
+
+    If you want to persist a snapshot of the Unimod database to disk and query it
+    from there, or to re-use a previously downloaded database copy, pass a database
+    driver prefixed path:
+
+    >>> reused_db = Unimod("sqlite:///path/to/unimod.db")
+
+    If the path did not previously exist, a new copy of Unimod will be downloaded
+    and stored there on the first use, but be immediately available on subsequent
+    uses.
     """
     def __init__(self, path=None):
         """
@@ -765,3 +783,18 @@ class Unimod(object):
 
     def __iter__(self):
         return iter(self.session.query(Modification).yield_per(1000))
+
+    def query(self, *args):
+        '''Compose an SQL query using SQLAlchemy's ORM interface.
+
+        See :mod:`sqlalchemy`'s Session documentation for more details.
+        '''
+        return self.session.query(*args)
+
+    def execute(self, *args, **kwargs):
+        '''Execute an SQLAlchemy statement or a SQL string against the database,
+        returning the resulting database cursor.
+
+        See :mod:`sqlalchemy`'s Session documentation for more details.
+        '''
+        return self.session.execute(*args, **kwargs)
