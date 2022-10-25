@@ -45,13 +45,54 @@ Classes
 :py:class:`ProForma` - An object oriented version of the parsing and formatting code,
 coupled with minimal information about mass and position data.
 
+    >>> seq = ProForma.parse("EM[Oxidation]EVT[#g1(0.01)]S[#g1(0.09)]ES[Phospho#g1(0.90)]PEK")
+    >>> seq
+    ProForma([('E', None), ('M', [GenericModification('Oxidation', None, None)]), ('E', None),
+              ('V', None), ('T', [LocalizationMarker(0.01, None, '#g1')]), ('S', [LocalizationMarker(0.09, None, '#g1')]),
+              ('E', None), ('S', [GenericModification('Phospho', [LocalizationMarker(0.9, None, '#g1')], '#g1')]),
+              ('P', None), ('E', None), ('K', None)],
+              {'n_term': None, 'c_term': None, 'unlocalized_modifications': [],
+               'labile_modifications': [], 'fixed_modifications': [], 'intervals': [],
+               'isotopes': [], 'group_ids': ['#g1'], 'charge_state': None}
+            )
+    >>> seq.mass
+    1360.51054400136
+    >>> seq.tags
+    [GenericModification('Oxidation', None, None),
+     LocalizationMarker(0.01, None, '#g1'),
+     LocalizationMarker(0.09, None, '#g1'),
+     GenericModification('Phospho', [LocalizationMarker(0.9, None, '#g1')], '#g1')]
+    >>> str(seq)
+    'EM[Oxidation]EVT[#g1(0.01)]S[#g1(0.09)]ES[Phospho|#g1(0.9)]PEK'
+
 Dependencies
 ------------
 
 To resolve PSI-MOD, XL-MOD, and GNO identifiers, :mod:`psims` is required. By default,
-:mod:`psims` retrieves the most recent version of each ontology from the internet, but
+:mod:`psims` retrieves the most recent version of each controlled vocabulary from the internet, but
 includes a fall-back version to use when the network is unavailable. It can also create
 an application cache on disk.
+
+CV Disk Caching
+~~~~~~~~~~~~~~~
+ProForma uses several different controlled vocabularies (CVs) that are each versioned separately.
+Internally, the Unimod controlled vocabulary is accessed using :class:`~pyteomics.mass.mass.Unimod`
+and all other controlled vocabularies are accessed using :mod:`psims`. Unless otherwise stated,
+the machinery will download fresh copies of each CV when first queried.
+
+To avoid this slow operation, you can keep a cached copy of the CV source file on disk and tell
+:mod:`pyteomics` and :mod:`psims` where to find them:
+
+.. code-block:: python
+
+    from pyteomics import proforma
+
+    # set the path for Unimod loading via pyteomics
+    proforma.set_unimod_path("path/to/unimod.xml")
+
+    # set the cache directory for downloading and reloading OBOs via psims
+    proforma.obo_cache.cache_path = "obo/cache/dir/"
+    proforma.obo_cache.enabled = True
 
 
 Compliance Levels
@@ -104,6 +145,7 @@ import re
 import warnings
 from collections import deque, namedtuple
 from functools import partial
+from array import array as _array
 
 try:
     from enum import Enum
@@ -111,9 +153,14 @@ except ImportError:
     # Python 2 doesn't have a builtin Enum type
     Enum = object
 
-from .mass import Composition, std_aa_mass, Unimod, nist_mass, calculate_mass
+from .mass import Composition, std_aa_mass, Unimod, nist_mass, calculate_mass, std_ion_comp, mass_charge_ratio
 from .auxiliary import PyteomicsError, BasicComposition
 from .auxiliary.utils import add_metaclass
+
+try:
+    import numpy as np
+except ImportError:
+    np = None
 
 try:
     from psims.controlled_vocabulary.controlled_vocabulary import (load_psimod, load_xlmod, load_gno, obo_cache)
@@ -382,6 +429,10 @@ class ModificationResolver(object):
             self._database = self.load_database()
         return self._database
 
+    @database.setter
+    def database(self, database):
+        self._database = database
+
     def resolve(self, name=None, id=None, **kwargs):
         raise NotImplementedError()
 
@@ -431,13 +482,22 @@ class UnimodResolver(ModificationResolver):
                 raise KeyError(id)
         else:
             raise ValueError("Must provide one of `name` or `id`")
-        return {
-            'composition': defn['composition'],
-            'name': defn['title'],
-            'id': defn['record_id'],
-            'mass': defn['mono_mass'],
-            'provider': self.name
-        }
+        if isinstance(defn, dict):
+            return {
+                'composition': defn['composition'],
+                'name': defn['title'],
+                'id': defn['record_id'],
+                'mass': defn['mono_mass'],
+                'provider': self.name
+            }
+        else:
+            return {
+                "composition": defn.composition,
+                "name": defn.ex_code_name,
+                "id": defn.id,
+                "mass": defn.monoisotopic_mass,
+                "provider": self.name
+            }
 
 
 class PSIModResolver(ModificationResolver):
@@ -971,6 +1031,30 @@ class GenericModification(ModificationBase):
         raise KeyError(keys)
 
 
+def set_unimod_path(path):
+    '''Set the path to load the Unimod database from for resolving
+    ProForma Unimod modifications.
+
+    .. note::
+
+        This method ensures that the Unimod modification database loads
+        quickly from a local database file instead of downloading a new
+        copy from the internet.
+
+    Parameters
+    ----------
+    path : str or file-like object
+        A path to or file-like object for the "unimod.xml" file.
+
+    Returns
+    -------
+    :class:`~pyteomics.mass.mass.Unimod`
+    '''
+    db = Unimod(path)
+    UnimodModification.resolver.database = db
+    return db
+
+
 class ModificationToken(object):
     '''Describes a particular modification from a particular provider, independent
     of a :class:`TagBase`'s state.
@@ -1282,6 +1366,12 @@ class TaggedInterval(object):
 
     def as_slice(self):
         return slice(self.start, self.end)
+
+    def contains(self, i):
+        return self.start <= i < self.end
+
+    def __contains__(self, i):
+        return self.contains(i)
 
     def copy(self):
         return self.__class__(self.start, self.end, self.tags)
@@ -1969,9 +2059,12 @@ class _ProFormaProperty(object):
 class ProForma(object):
     '''Represent a parsed ProForma sequence.
 
+    The preferred way to instantiate this class is via the :meth:`parse`
+    method.
+
     Attributes
     ----------
-    sequence : list[tuple[]]
+    sequence : list[tuple[str, List[TagBase]]]
         The list of (amino acid, tag collection) pairs making up the primary sequence of the
         peptide.
     isotopes : list[StableIsotope]
@@ -2049,6 +2142,17 @@ class ProForma(object):
 
     @classmethod
     def parse(cls, string):
+        '''Parse a ProForma string.
+
+        Parameters
+        ----------
+        string : str
+            The string to parse
+
+        Returns
+        -------
+        ProForma
+        '''
         return cls(*parse(string))
 
     @property
@@ -2102,8 +2206,152 @@ class ProForma(object):
                 continue
         return mass
 
+    def fragments(self, ion_shift, charge=1, reverse=None, include_labile=True, include_unlocalized=True):
+        """
+        The function generates all possible fragments of the requested
+        series type.
+
+        Parameters
+        ----------
+        ion_shift : float or str
+            The mass shift of the ion series, or the name of the ion series
+        charge : int
+            The charge state of the theoretical fragment masses to generate.
+            Defaults to 1+. If 0 is passed, neutral masses will be returned.
+        reverse : bool, optional
+            Whether to fragment from the N-terminus (``False``) or C-terminus (``True``).
+            If ``ion_shift`` is a :class:`str`, the terminal will be inferred from
+            the series name. Otherwise, defaults to ``False``.
+        include_labile : bool, optional
+            Whether or not to include dissociated modification masses.
+            Defaults to ``True``
+        include_unlocalized : bool, optional
+            Whether or not to include unlocalized modification masses.
+            Defaults to ``True``
+
+        Returns
+        -------
+        np.ndarray
+
+        Examples
+        --------
+
+        >>> p = proforma.ProForma.parse("PEPTIDE")
+        >>> p.fragments('b', charge=1)
+        array([ 98.06004032, 227.1026334 , 324.15539725, 425.20307572,
+                538.2871397 , 653.31408272])
+        >>> p.fragments('y', charge=1)
+        array([148.06043424, 263.08737726, 376.17144124, 477.21911971,
+               574.27188356, 703.31447664])
+
+        """
+        if isinstance(ion_shift, str):
+            if ion_shift[0] in 'xyz':
+                reverse = True
+            ion_shift = std_ion_comp[ion_shift].mass(absolute=False)
+
+        n = len(self.sequence)
+        masses = _array('d')
+
+        mass = 0
+        mass += ion_shift
+
+        fixed_modifications = self.properties['fixed_modifications']
+        fixed_rules = {}
+        for rule in fixed_modifications:
+            for aa in rule.targets:
+                fixed_rules[aa] = rule.modification_tag.mass
+
+        intervals = self.intervals
+        if intervals:
+            intervals = sorted(intervals, key=lambda x: x.start)
+        intervals = deque(intervals)
+
+        if not include_labile:
+            for mod in self.properties['labile_modifications']:
+                mass += mod.mass
+
+        if not reverse:
+            if self.properties.get('n_term'):
+                for mod in self.properties['n_term']:
+                    try:
+                        mass += mod.mass
+                    except (AttributeError, KeyError):
+                        continue
+        else:
+            if self.properties.get('c_term'):
+                for mod in self.properties['c_term']:
+                    try:
+                        mass += mod.mass
+                    except (AttributeError, KeyError):
+                        continue
+
+        if include_unlocalized:
+            for mod in self.properties['unlocalized_modifications']:
+                mass += mod.mass
+
+        mass += calculate_mass(formula="H")
+        mass += calculate_mass(formula="OH")
+
+        if not reverse:
+            iterator = (iter(range(0, n - 1)))
+        else:
+            iterator = (reversed(range(1, n)))
+
+        for i in iterator:
+            position = self.sequence[i]
+
+            aa = position[0]
+            try:
+                mass += std_aa_mass[aa]
+            except KeyError:
+                warnings.warn("%r does not have an exact mass" % (aa, ))
+
+            if aa in fixed_rules:
+                mass += fixed_rules[aa]
+
+            tags = position[1]
+            if tags:
+                for tag in tags:
+                    try:
+                        mass += tag.mass
+                    except (AttributeError, KeyError):
+                        continue
+
+            while intervals and intervals[0].contains(i):
+                iv = intervals.popleft()
+
+                try:
+                    mass += iv.tag.mass
+                except (AttributeError, KeyError):
+                    continue
+
+            masses.append(mass)
+
+        if np is not None:
+            masses = np.asarray(masses)
+            if charge != 0:
+                return mass_charge_ratio(masses, charge)
+            return masses
+        if charge != 0:
+            for i, mass in enumerate(masses):
+                masses[i] = mass_charge_ratio(mass, charge)
+        return masses
+
     def find_tags_by_id(self, tag_id, include_position=True):
-        '''Find all occurrences of a particular
+        '''Find all occurrences of a particular tag ID
+
+        Parameters
+        ----------
+        tag_id : str
+            The tag ID to search for
+        include_position : bool
+            Whether or not to return the locations for matched
+            tag positions
+
+        Returns
+        -------
+        list[tuple[Any, TagBase]] or list[TagBase]
         '''
         if not tag_id.startswith("#"):
             tag_id = "#" + tag_id
