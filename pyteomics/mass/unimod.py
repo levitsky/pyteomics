@@ -25,7 +25,6 @@ This module requires :py:mod:`lxml` and :py:mod:`sqlalchemy`.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import warnings
 import re
 
 from lxml import etree
@@ -35,7 +34,6 @@ from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy import (Numeric, Unicode,
                         Column, Integer, ForeignKey,
                         UnicodeText, Boolean, event)
-from sqlalchemy import exc as sa_exc
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
