@@ -592,9 +592,10 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     prefix = kwargs.get('prefix')
 
     try:
-        proforma.parse(peptide)
+        parsed_proforma = proforma.Proforma.parse(peptide)
         peptide_pro = peptide
     except Exception:
+        parsed_proforma = None
         try:
             peptide_pro = parser.to_proforma(peptide, aa_mass=aa_mass, aa_comp=aa_comp, mod_names=mod_names, prefix=prefix)
         except Exception:
@@ -607,8 +608,10 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
         try:
             if aa_comp:
                 precursor_mz = mass.calculate_mass(peptide, aa_comp=aa_comp, charge=precursor_charge)
-            else:
+            elif not parsed_proforma:
                 precursor_mz = mass.fast_mass2(peptide, aa_mass=aa_mass, charge=precursor_charge)
+            else:
+                precursor_mz = mass.mass_charge_ratio(parsed_proforma.mass, precursor_charge)
         except PyteomicsError:
             raise PyteomicsError('Cannot obtain precursor m/z, please specify `precursor_mz` argument.')
 
@@ -633,32 +636,6 @@ class SpectrumUtilsColorScheme:
 
     def __exit__(self, *args, **kwargs):
         sup.colors = self.previous_colors
-
-
-def _spectrum_utils_parse_sequence(sequence, aa_mass=None):
-    if isinstance(sequence, str):
-        parsed = parser.parse(sequence, show_unmodified_termini=True, labels=aa_mass, allow_unknown_modifications=True)
-    else:
-        parsed = sequence
-    mods = {}
-    aa_mass = aa_mass or mass.std_aa_mass
-    if parsed[0] != parser.std_nterm:
-        mods['N-term'] = aa_mass[parsed[0]]
-    if parsed[-1] != parser.std_cterm:
-        mods['C-term'] = aa_mass[parsed[-1]]
-    clean_sequence = []
-    for i, aa in enumerate(parsed[1:-1]):
-        if len(aa) > 1:
-            if aa[:-1] in aa_mass:
-                mods[i] = aa_mass[aa[:-1]]
-            else:
-                try:
-                    mods[i] = aa_mass[aa] - aa_mass[aa[-1]]
-                except KeyError:
-                    raise PyteomicsError('Unknown modification mass: {0}. {0} or {1} must be in `aa_mass`.'.format(
-                        aa[:-1], aa))
-        clean_sequence.append(aa[-1])
-    return ''.join(clean_sequence), mods
 
 
 def _spectrum_utils_annotate_plot(spectrum, peptide, *args, **kwargs):
