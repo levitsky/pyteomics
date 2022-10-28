@@ -1204,3 +1204,11 @@ class Unimod():
         return self._mods[self._id[i]]
 
     __getitem__ = by_id
+
+
+def neutral_mass(mz, z, charge_carrier=_nist_mass[PROTON][0][0]):
+    return (mz * abs(z)) - (z * charge_carrier)
+
+
+def mass_charge_ratio(neutral_mass, z, charge_carrier=_nist_mass[PROTON][0][0]):
+    return (neutral_mass + (z * charge_carrier)) / abs(z)
