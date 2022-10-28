@@ -11,6 +11,9 @@ for more up-to-date information.
 
 Strictly speaking, this implementation supports ProForma v2.
 
+.. contents::
+    :depth: 2
+
 Data Access
 -----------
 

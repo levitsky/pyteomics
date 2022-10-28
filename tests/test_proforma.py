@@ -85,6 +85,24 @@ class ProFormaTest(unittest.TestCase):
         self.assertEqual(i.c_term[0].name, "Methyl")
         self.assertEqual(i[-1][1][0].name, "iTRAQ4plex")
 
+    def test_fragments(self):
+        i = ProForma.parse("PEPTIDE")
+        masses = i.fragments('b', 1)
+
+        expected = [98.06004032, 227.1026334, 324.15539725, 425.20307572,
+                    538.2871397, 653.31408272]
+
+        for o, e in zip(masses, expected):
+            self.assertAlmostEqual(o, e, 3)
+
+        masses = i.fragments('y', 1)
+        expected = [148.06043424, 263.08737726, 376.17144124, 477.21911971,
+                    574.27188356, 703.31447664]
+
+        for o, e in zip(masses, expected):
+            self.assertAlmostEqual(o, e, 3)
+
+
 
 class GenericModificationResolverTest(unittest.TestCase):
     def test_generic_resolver(self):
