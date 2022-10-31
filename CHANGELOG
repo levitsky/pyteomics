@@ -3,11 +3,11 @@
 
  - New function :py:func:`pyteomics.proforma.set_unimod_path` allowing the ProForma parsing machinery
    to work with a local Unimod copy (`#85 <https://github.com/levitsky/pyteomics/pull/85>`_ by Joshua Klein).
-   See `documentation <https://pyteomics.readthedocs.io/en/latest/api/proforma.html#cv-disk-caching>`_ for a usage example).
- - New method :py:func:`pyteomics.proforma.Proforma.fragments` to generate m/z for an ion series
+   See `documentation <https://pyteomics.readthedocs.io/en/latest/api/proforma.html#cv-disk-caching>`_ for a usage example.
+ - New method :py:meth:`pyteomics.proforma.Proforma.fragments` to generate m/z for an ion series
    (`#85 <https://github.com/levitsky/pyteomics/pull/85>`_ by Joshua Klein).
  - New function :py:func:`pyteomics.parser.to_proforma` helps convert *modX* sequences to ProForma.
- - Fix: prevent :func:`pyteomics.mass.fast_mass2` from changing `aa_mass`.
+ - Fix: prevent :func:`pyteomics.mass.mass.fast_mass2` from changing `aa_mass`.
  - Update :py:func:`pyteomics.pylab_aux.annotate_spectrum` for compatibility with latest :py:mod:`spectrum_utils`.
    Pyteomics is now compatible with :py:mod:`spectrum_utils` 0.4.0 and newer.
 
