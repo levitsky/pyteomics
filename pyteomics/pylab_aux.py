@@ -64,10 +64,13 @@ This module requires :py:mod:`matplotlib`. Optional dependencies: :py:mod:`adjus
 
 import pylab
 import numpy as np
-from .auxiliary import linear_regression, PyteomicsError
+from .auxiliary import linear_regression, PyteomicsError, _Version
 from . import parser, mass, mgf, proforma
 
 try:
+    import spectrum_utils
+    if _Version(spectrum_utils.__version__) < _Version('0.4'):
+        raise ImportError("Supported spectrum_utils version is 0.4.0 or newer.")
     import spectrum_utils.spectrum as sus
     import spectrum_utils.plot as sup
 except ImportError:
@@ -539,7 +542,7 @@ def _get_precursor_mz(spectrum):
 
 def _spectrum_utils_create_spectrum(spectrum, *args, **kwargs):
     if sus is None:
-        raise PyteomicsError('This backend requires `spectrum_utils`.')
+        raise PyteomicsError('This backend requires `spectrum_utils>=0.4`.')
 
     # backend-specific parameters
     mz_range = kwargs.pop('mz_range', None)
