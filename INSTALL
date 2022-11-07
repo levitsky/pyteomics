@@ -8,13 +8,13 @@ Project dependencies
 
 Pyteomics uses the following Python packages:
 
- - `numpy <http://pypi.python.org/pypi/numpy>`_
- - `matplotlib <http://sourceforge.net/projects/matplotlib/files/matplotlib/>`_
+ - `numpy <https://numpy.org/>`_
+ - `matplotlib <https://matplotlib.org/>`_
    (used by :py:mod:`pyteomics.pylab_aux`)
- - `lxml <http://pypi.python.org/pypi/lxml>`_ (used by XML parsing modules)
- - `pandas <http://pandas.pydata.org/>`_ (can be used with :py:mod:`pyteomics.pepxml`,
+ - `lxml <https://lxml.de/>`_ (used by XML parsing modules)
+ - `pandas <https://pandas.pydata.org/>`_ (can be used with :py:mod:`pyteomics.pepxml`,
    :py:mod:`pyteomics.tandem`, :py:mod:`pyteomics.mzid`, :py:mod:`pyteomics.auxiliary`)
- - `sqlalchemy <http://www.sqlalchemy.org/>`_ (used by :py:mod:`pyteomics.mass.unimod`)
+ - `sqlalchemy <https://www.sqlalchemy.org/>`_ (used by :py:mod:`pyteomics.mass.unimod`)
  - `pynumpress <https://pypi.org/project/pynumpress/>`_ (adds support for Numpress compression)
 
 All dependencies are optional.
