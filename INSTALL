@@ -8,7 +8,7 @@ Project dependencies
 
 Pyteomics uses the following Python packages:
 
- - `numpy <https://pypi.python.org/pypi/numpy>`_
+ - `numpy <https://numpy.org/>`_
  - `matplotlib <https://matplotlib.org/>`_
    (used by :py:mod:`pyteomics.pylab_aux`)
  - `lxml <https://lxml.de/>`_ (used by XML parsing modules)
