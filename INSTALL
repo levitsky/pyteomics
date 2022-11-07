@@ -11,7 +11,7 @@ Pyteomics uses the following Python packages:
  - `numpy <https://pypi.python.org/pypi/numpy>`_
  - `matplotlib <https://matplotlib.org/>`_
    (used by :py:mod:`pyteomics.pylab_aux`)
- - `lxml <https://pypi.python.org/pypi/lxml>`_ (used by XML parsing modules)
+ - `lxml <https://lxml.de/>`_ (used by XML parsing modules)
  - `pandas <https://pandas.pydata.org/>`_ (can be used with :py:mod:`pyteomics.pepxml`,
    :py:mod:`pyteomics.tandem`, :py:mod:`pyteomics.mzid`, :py:mod:`pyteomics.auxiliary`)
  - `sqlalchemy <https://www.sqlalchemy.org/>`_ (used by :py:mod:`pyteomics.mass.unimod`)
