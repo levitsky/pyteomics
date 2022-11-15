@@ -102,6 +102,17 @@ class ProFormaTest(unittest.TestCase):
         for o, e in zip(masses, expected):
             self.assertAlmostEqual(o, e, 3)
 
+    def test_slice(self):
+        i = ProForma.parse('[U:1]-MPEP-[UNIMOD:2]/2')
+        assert i.n_term is not None
+        assert i.c_term is not None
+
+        assert i[:1].n_term is not None
+        assert i[:1].c_term is None
+
+        assert i[1:].n_term is None
+        assert i[1:].c_term is not None
+
 
 
 class GenericModificationResolverTest(unittest.TestCase):
