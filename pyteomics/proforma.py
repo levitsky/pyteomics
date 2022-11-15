@@ -1985,6 +1985,9 @@ class ProForma(object):
     def __repr__(self):
         return "{self.__class__.__name__}({self.sequence}, {self.properties})".format(self=self)
 
+    def __len__(self):
+        return len(self.sequence)
+
     def __getitem__(self, i):
         if isinstance(i, slice):
             props = self.properties.copy()
@@ -1996,6 +1999,13 @@ class ProForma(object):
                     continue
                 ivs.append(iv)
             props['intervals'] = ivs
+
+            if not (i.start is None or i.start == 0):
+                props['n_term'] = None
+            n = len(self)
+            if not (i.stop is None or i.stop >= n):
+                props['c_term'] = None
+
             return self.__class__(self.sequence[i], props)
         else:
             return self.sequence[i]
