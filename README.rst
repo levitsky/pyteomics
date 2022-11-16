@@ -6,6 +6,10 @@
     :target: https://pypi.org/project/pyteomics/
     :alt: PyPI
 
+.. image:: https://img.shields.io/conda/vn/bioconda/pyteomics
+    :target: http://bioconda.github.io/recipes/pyteomics/README.html
+    :alt: conda
+
 .. image:: https://img.shields.io/readthedocs/pyteomics.svg
     :target: https://pyteomics.readthedocs.io/
     :alt: Read the Docs (latest)
