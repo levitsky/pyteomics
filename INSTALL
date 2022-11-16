@@ -3,47 +3,59 @@ Supported Python versions
 
 Pyteomics supports Python 2.7 and Python 3.3+.
 
-Project dependencies
---------------------
 
-Pyteomics uses the following Python packages:
+Install with pip
+----------------
 
- - `numpy <https://numpy.org/>`_
- - `matplotlib <https://matplotlib.org/>`_
-   (used by :py:mod:`pyteomics.pylab_aux`)
- - `lxml <https://lxml.de/>`_ (used by XML parsing modules)
- - `pandas <https://pandas.pydata.org/>`_ (can be used with :py:mod:`pyteomics.pepxml`,
-   :py:mod:`pyteomics.tandem`, :py:mod:`pyteomics.mzid`, :py:mod:`pyteomics.auxiliary`)
- - `sqlalchemy <https://www.sqlalchemy.org/>`_ (used by :py:mod:`pyteomics.mass.unimod`)
- - `pynumpress <https://pypi.org/project/pynumpress/>`_ (adds support for Numpress compression)
+The main way to obtain Pyteomics is via `pip Python package manager <https://pip.pypa.io/>`_::
 
-All dependencies are optional.
+    pip install pyteomics
 
-GNU/Linux
----------
 
-The preferred way to obtain Pyteomics is via `pip Python package manager <https://pip.pypa.io/>`_.
-The shell code for a freshly installed Ubuntu system::
+Install with conda
+------------------
 
-    sudo apt-get install python-setuptools python-dev build-essential
-    sudo easy_install pip
-    sudo pip install lxml numpy matplotlib pyteomics
+You can also install Pyteomics from `Bioconda <https://bioconda.github.io/index.html>`_
+using `conda <https://docs.conda.io/projects/conda/en/latest/index.html>`_::
+
+    conda install -c bioconda pyteomics
+
 
 Arch-based distros
 ..................
 
 On Arch Linux and related distros, you can install Pyteomics from AUR:
+`python-pyteomics <https://aur.archlinux.org/packages/python-pyteomics/>`_
 
- - `python-pyteomics <https://aur.archlinux.org/packages/python-pyteomics/>`_
- - `python2-pyteomics <https://aur.archlinux.org/packages/python2-pyteomics/>`_
+Project dependencies
+--------------------
 
+Some functionality in Pyteomics relies on other packages:
 
-Windows
--------
+ - `numpy <https://numpy.org/>`_;
+ - `matplotlib <https://matplotlib.org/>`_ (used by :py:mod:`pyteomics.pylab_aux`);
+ - `lxml <https://lxml.de/>`_ (used by XML parsing modules and :py:class:`pyteomics.mass.mass.Unimod`);
+ - `pandas <https://pandas.pydata.org/>`_ (can be used with :py:mod:`pyteomics.pepxml`,
+   :py:mod:`pyteomics.tandem`, :py:mod:`pyteomics.mzid`, :py:mod:`pyteomics.auxiliary`);
+ - `sqlalchemy <https://www.sqlalchemy.org/>`_ (used by :py:mod:`pyteomics.mass.unimod`);
+ - `pynumpress <https://pypi.org/project/pynumpress/>`_ (adds support for Numpress compression in mzML);
+ - `h5py <https://www.h5py.org/>`_ and optionally `hdf5plugin <https://hdf5plugin.readthedocs.io/en/latest/>`_
+   (used by :py:mod:`pyteomics.mzmlb`);
+ - `psims <https://mobiusklein.github.io/psims/docs/build/html/>`_ (used py :py:mod:`pyteomics.proforma`);
+ - `spectrum_utils <https://spectrum-utils.readthedocs.io/en/latest/>`_ (optionally used for spectrum annotation in
+   :py:mod:`pyteomics.pylab_aux`).
 
-- `Get pip <https://pip.pypa.io/en/stable/installing/>`_, if you don't have it yet.
+All dependencies are optional.
 
-- Install Pyteomics and its dependencies::
+Installing a subset of dependencies with pip
+............................................
 
-    pip install lxml numpy matplotlib pyteomics
+You can quickly install just the dependencies you need by specifying an
+`"extra" <https://setuptools.pypa.io/en/latest/userguide/dependency_management.html#optional-dependencies>`_. For example:
 
+    pip install pyteomics[XML]
+
+This will install Pyteomics, NumPy and lxml, which are needed to read XML format. Currently provided identifiers are:
+`XML`, `TDA`, `graphics`, `DF`, Unimod`, `numpress`, `mzMLb`, `proforma`.
+
+You can also use these specs as dependencies in your own packages which require specific Pyteomics functionality.
