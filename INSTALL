@@ -51,11 +51,11 @@ Installing a subset of dependencies with pip
 ............................................
 
 You can quickly install just the dependencies you need by specifying an
-`"extra" <https://setuptools.pypa.io/en/latest/userguide/dependency_management.html#optional-dependencies>`_. For example:
+`"extra" <https://setuptools.pypa.io/en/latest/userguide/dependency_management.html#optional-dependencies>`_. For example::
 
     pip install pyteomics[XML]
 
 This will install Pyteomics, NumPy and lxml, which are needed to read XML format. Currently provided identifiers are:
-`XML`, `TDA`, `graphics`, `DF`, Unimod`, `numpress`, `mzMLb`, `proforma`.
+`XML`, `TDA`, `graphics`, `DF`, `Unimod`, `numpress`, `mzMLb`, `proforma`.
 
 You can also use these specs as dependencies in your own packages which require specific Pyteomics functionality.
