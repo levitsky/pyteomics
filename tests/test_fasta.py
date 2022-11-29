@@ -86,7 +86,7 @@ class FastaTest(unittest.TestCase):
             if not all(a == b for a, b in zip(s, ss)):
                 test = False
         self.assertFalse(test)
-        
+
         test = True
         for s in sequences:
             n = random.randint(1, 5)
@@ -208,7 +208,7 @@ class FastaTest(unittest.TestCase):
                  'taxon': 'RALEH'}
         self.assertEqual(fasta.parse(header), parsed)
 
-    def test_parser_uniptokb_isoform(self):
+    def test_parser_uniprotkb_isoform(self):
         header = ('sp|Q4R572-2|1433B_MACFA Isoform Short of 14-3-3 protein beta'
                 '/alpha OS=Macaca fascicularis GN=YWHAB')
         parsed = {'GN': 'YWHAB',

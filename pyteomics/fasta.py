@@ -402,16 +402,22 @@ class FlavoredMixin():
 
 
 class UniProtMixin(FlavoredMixin):
-    header_pattern = r'^(\w+)\|([-\w]+)\|(\w+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$'
-    header_group = 2
+    header_pattern = r'^(?P<db>\w+)\|(?P<id>[-\w]+)\|(?P<entry>\w+)\s+(?P<name>.*?)(\s+OS=(?P<OS>[^=]+))?(\s+OX=(?P<OX>\d+))?(\s+GN=(?P<GN>\w+))?(\s+PE=(?P<PE>\d))?(\s+SV=(?P<SV>\d+))?\s*$'
+    header_group = 'id'
 
     def parser(self, header):
-        db, ID, entry, name, pairs, _ = re.match(self.header_pattern, header).groups()
-        gid, taxon = entry.split('_')
-        info = {'db': db, 'id': ID, 'entry': entry,
-                'name': name, 'gene_id': gid, 'taxon': taxon}
-        info.update(_split_pairs(pairs))
-        _intify(info, ('PE', 'SV'))
+        # db, ID, entry, name, pairs, _ = re.match(self.header_pattern, header).groups()
+        # gid, taxon = entry.split('_')
+        # info = {'db': db, 'id': ID, 'entry': entry,
+        #         'name': name, 'gene_id': gid, 'taxon': taxon}
+        # info.update(_split_pairs(pairs))
+
+        info = re.match(self.header_pattern, header).groupdict()
+        for key in ['OS', 'OX', 'GN', 'PE', 'SV']:
+            if info[key] is None:
+                del info[key]
+        info['gene_id'], info['taxon'] = info['entry'].split('_')
+        _intify(info, ('PE', 'SV', 'OX'))
         return info
 
 
@@ -698,20 +704,20 @@ def shuffle(sequence, keep_nterm=False, keep_cterm=False, keep_nterm_M=False, fi
     # empty sequence
     if len(sequence) == 0:
         return ''
-    
+
     # presereve the first position
     if (keep_nterm_M and sequence[0] == 'M') or keep_nterm:
-        return sequence[0] + shuffle(sequence[1:], keep_cterm=keep_cterm, 
+        return sequence[0] + shuffle(sequence[1:], keep_cterm=keep_cterm,
                        fix_aa=fix_aa)
-    
+
     # presereve the last position
     if keep_cterm:
         return shuffle(sequence[:-1], fix_aa=fix_aa) + sequence[-1]
-    
-    
+
+
     if not isinstance(fix_aa, str):
         fix_aa = ''.join(fix_aa)
-    
+
     fixed = []
     position = 0
     if len(fix_aa) > 0:  # non-empty fixed list
@@ -721,15 +727,15 @@ def shuffle(sequence, keep_nterm=False, keep_cterm=False, keep_nterm_M=False, fi
             shuffled.extend(sequence[position:match.start()])
             position = match.end()
         shuffled.extend(sequence[position:])
-        
+
     else:  # shuffle everything
         shuffled = list(sequence)
-    
+
     random.shuffle(shuffled)
-    
+
     for fix in fixed:
         shuffled.insert(fix[0], fix[1])
-    
+
     return ''.join(shuffled)
 
 
