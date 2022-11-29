@@ -406,12 +406,6 @@ class UniProtMixin(FlavoredMixin):
     header_group = 'id'
 
     def parser(self, header):
-        # db, ID, entry, name, pairs, _ = re.match(self.header_pattern, header).groups()
-        # gid, taxon = entry.split('_')
-        # info = {'db': db, 'id': ID, 'entry': entry,
-        #         'name': name, 'gene_id': gid, 'taxon': taxon}
-        # info.update(_split_pairs(pairs))
-
         info = re.match(self.header_pattern, header).groupdict()
         for key in ['OS', 'OX', 'GN', 'PE', 'SV']:
             if info[key] is None:
