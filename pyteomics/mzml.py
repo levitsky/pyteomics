@@ -129,6 +129,7 @@ class MzML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.Mult
 
     def __init__(self, *args, **kwargs):
         self.decode_binary = kwargs.pop('decode_binary', True)
+        self._referenceable_param_groups = None
         super(MzML, self).__init__(*args, **kwargs)
 
     def __getstate__(self):
@@ -139,6 +140,19 @@ class MzML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.Mult
     def __setstate__(self, state):
         super(MzML, self).__setstate__(state)
         self.decode_binary = state['decode_binary']
+
+    def _handle_referenceable_param_group(self, param_group_ref, **kwargs):
+        if self._referenceable_param_groups is None:
+            self._referenceable_param_groups = self._build_param_group_index()
+        return self._referenceable_param_groups[param_group_ref.attrib['ref']]
+
+    @xml._keepstate
+    def _build_param_group_index(self):
+        index = {}
+        for group in self.iterfind("referenceableParamGroup"):
+            key = group.pop("id")
+            index[key] = [xml._XMLParam(k, v, None) for k, v in group.items()]
+        return index
 
     def _detect_array_name(self, info):
         """Determine what the appropriate name for this

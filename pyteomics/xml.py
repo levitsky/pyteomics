@@ -372,9 +372,13 @@ class XML(FileReader):
         # return {cvstr(attribs['name'], accession, unit_accesssion): value}
         return _XMLParam(cvstr(attribs['name'], accession, unit_accesssion), value, _local_name(element))
 
+    def _handle_referenceable_param_group(self, param_group_ref, **kwargs):
+        raise NotImplementedError()
+        return []
+
     def _find_immediate_params(self, element, **kwargs):
         return element.xpath(
-            './*[local-name()="cvParam" or local-name()="userParam" or local-name()="UserParam"]')
+            './*[local-name()="cvParam" or local-name()="userParam" or local-name()="UserParam" or local-name()="referenceableParamGroupRef"]')
 
     def _insert_param(self, info_dict, param):
         key = param.name
@@ -410,6 +414,8 @@ class XML(FileReader):
         schema_info = self.schema_info
         if name in {'cvParam', 'userParam', 'UserParam'}:
             return self._handle_param(element, **kwargs)
+        elif name == "referenceableParamGroupRef":
+            return self._handle_referenceable_param_group(element, **kwargs)
 
         info = dict(element.attrib)
         # process subelements
@@ -420,6 +426,8 @@ class XML(FileReader):
                 if cname in {'cvParam', 'userParam', 'UserParam'}:
                     newinfo = self._handle_param(child, **kwargs)
                     params.append(newinfo)
+                elif cname == "referenceableParamGroupRef":
+                    params.extend(self._handle_referenceable_param_group(child, **kwargs))
                 else:
                     if cname not in schema_info['lists']:
                         info[cname] = self._get_info_smart(child, ename=cname, **kwargs)
@@ -430,7 +438,11 @@ class XML(FileReader):
             # handle the case where we do not want to unpack all children, but
             # *Param tags are considered part of the current entity, semantically
             for child in self._find_immediate_params(element, **kwargs):
-                params.append(self._handle_param(child, **kwargs))
+                param_or_group = self._handle_param(child, **kwargs)
+                if isinstance(param_or_group, list):
+                    params.extend(param_or_group)
+                else:
+                    params.append(param_or_group)
 
         handler = self._element_handlers.get(name)
         if handler is not None:
