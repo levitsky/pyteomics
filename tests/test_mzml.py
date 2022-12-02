@@ -142,9 +142,11 @@ class MzmlTest(unittest.TestCase):
             derefed = list(reader.iterfind("instrumentConfiguration", retrieve_refs=True))
             reader.reset()
             raw = list(reader.iterfind("instrumentConfiguration", retrieve_refs=False))
-            self.assertEqual(raw[0].get("ref"), 'CommonInstrumentParams')
-            self.assertNotIn("ref", derefed[0])
-            self.assertEqual(derefed[0].get('instrument serial number'), 'SN06061F')
+            self.assertEqual(raw[0].get("softwareRef"),
+                             {'ref': 'Xcalibur'})
+            self.assertNotIn("ref", derefed[0]['softwareRef'])
+            self.assertEqual(derefed[0].get('softwareRef'), {
+                             'version': '1.1 Beta 7', 'Xcalibur': ''})
 
     def test_in_memory_buffer(self):
         with open(self.path, 'rb') as fh:
