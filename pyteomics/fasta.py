@@ -386,6 +386,11 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
                     return super(TwoLayerIndexedFASTA, self).get_entry(header)
         raise KeyError(key)
 
+    def get_header(self, key):
+        if key in self._id2header:
+            return self._id2header[key]
+        raise KeyError(key)
+
     def __contains__(self, key):
         return super(TwoLayerIndexedFASTA, self).__contains__(key) or key in self._id2header
 
