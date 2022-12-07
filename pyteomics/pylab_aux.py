@@ -595,7 +595,7 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     prefix = kwargs.get('prefix')
 
     try:
-        parsed_proforma = proforma.Proforma.parse(peptide)
+        parsed_proforma = proforma.ProForma.parse(peptide)
         peptide_pro = peptide
     except Exception:
         parsed_proforma = None
