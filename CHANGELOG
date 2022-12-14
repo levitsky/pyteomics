@@ -1,7 +1,8 @@
-4.5.7a1
+4.5.7a2
 -------
 
  - Fix issue #91 (`#92 <https://github.com/levitsky/pyteomics/pull/92>`_ by Joshua Klein).
+ - Fix issue #96.
 
 4.5.6
 -----
