@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - '**.py'
+      - '.github/workflows/pythonpackage.yml'
   pull_request:
     paths:
       - '**.py'
+      - '.github/workflows/pythonpackage.yml'
 
 jobs:
   build:
