@@ -10,7 +10,7 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics import fasta
 
-class FastaTest(unittest.TestCase):
+class ReadWriteTest(unittest.TestCase):
     maxDiff = None
     def setUp(self):
         self.fasta_file = 'test.fasta'
@@ -61,6 +61,42 @@ class FastaTest(unittest.TestCase):
                 sorted(self.fasta_entries_short[1:]),
                 sorted(list(ir.map())))
 
+    def test_read_and_write_fasta_short(self):
+        with tempfile.TemporaryFile(mode='r+') as new_fasta_file:
+            fasta.write(fasta.read(self.fasta_file, ignore_comments=True),
+                new_fasta_file)
+            new_fasta_file.seek(0)
+            new_entries = list(fasta.read(new_fasta_file, ignore_comments=True))
+            self.assertEqual(new_entries, self.fasta_entries_short)
+
+    def test_read_and_write_long(self):
+        with tempfile.TemporaryFile(mode='r+') as new_fasta_file:
+            fasta.write(fasta.read(self.fasta_file), new_fasta_file)
+            new_fasta_file.seek(0)
+            new_entries = list(fasta.read(new_fasta_file))
+            self.assertEqual(new_entries, self.fasta_entries_long)
+
+    def test_write_decoy_db(self):
+        with tempfile.TemporaryFile(mode='r+') as decdb:
+            fasta.write_decoy_db(self.fasta_file, decdb,
+                    decoy_only=False, prefix='PREFIX_')
+            decdb.seek(0)
+            all_entries = list(fasta.read(decdb, False))
+        self.assertEqual(all_entries, self.fasta_entries_long +
+                [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long])
+
+    def test_decoy_entries(self):
+        with fasta.read(self.fasta_file) as f:
+            self.assertEqual(sorted(fasta.decoy_entries(f, decoy_only=False, prefix='PREFIX_', mode='reverse')),
+                sorted(self.fasta_entries_long + [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long]))
+
+    def test_decoy_entries_only(self):
+        with fasta.read(self.fasta_file) as f:
+            self.assertEqual(list(fasta.decoy_entries(f, decoy_only=True, prefix='PREFIX_', mode='reverse')),
+                [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long])
+
+
+class DecoyTest(unittest.TestCase):
     def test_decoy_sequence_reverse(self):
         sequence = ''.join(random.choice(string.ascii_uppercase)
                              for i in range(random.randint(1, 50)))
@@ -86,7 +122,7 @@ class FastaTest(unittest.TestCase):
             if not all(a == b for a, b in zip(s, ss)):
                 test = False
         self.assertFalse(test)
-        
+
         test = True
         for s in sequences:
             n = random.randint(1, 5)
@@ -132,40 +168,8 @@ class FastaTest(unittest.TestCase):
         for seq in sequences:
             self.assertEqual(seq[:-1][::-1], fasta.reverse(seq, keep_cterm=True)[:-1])
 
-    def test_read_and_write_fasta_short(self):
-        with tempfile.TemporaryFile(mode='r+') as new_fasta_file:
-            fasta.write(fasta.read(self.fasta_file, ignore_comments=True),
-                new_fasta_file)
-            new_fasta_file.seek(0)
-            new_entries = list(fasta.read(new_fasta_file, ignore_comments=True))
-            self.assertEqual(new_entries, self.fasta_entries_short)
 
-    def test_read_and_write_long(self):
-        with tempfile.TemporaryFile(mode='r+') as new_fasta_file:
-            fasta.write(fasta.read(self.fasta_file), new_fasta_file)
-            new_fasta_file.seek(0)
-            new_entries = list(fasta.read(new_fasta_file))
-            self.assertEqual(new_entries, self.fasta_entries_long)
-
-    def test_write_decoy_db(self):
-        with tempfile.TemporaryFile(mode='r+') as decdb:
-            fasta.write_decoy_db(self.fasta_file, decdb,
-                    decoy_only=False, prefix='PREFIX_')
-            decdb.seek(0)
-            all_entries = list(fasta.read(decdb, False))
-        self.assertEqual(all_entries, self.fasta_entries_long +
-                [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long])
-
-    def test_decoy_entries(self):
-        with fasta.read(self.fasta_file) as f:
-            self.assertEqual(sorted(fasta.decoy_entries(f, decoy_only=False, prefix='PREFIX_', mode='reverse')),
-                sorted(self.fasta_entries_long + [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long]))
-
-    def test_decoy_entries_only(self):
-        with fasta.read(self.fasta_file) as f:
-            self.assertEqual(list(fasta.decoy_entries(f, decoy_only=True, prefix='PREFIX_', mode='reverse')),
-                [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long])
-
+class ParserTest(unittest.TestCase):
     def test_parser_uniprotkb_decoydb(self):
         header = ('sp|P27748|ACOX_RALEH Acetoin catabolism protein X OS=Ralstonia'
             ' eutropha (strain ATCC 17699 / H16 / DSM 428 / Stanier 337)'
@@ -208,9 +212,8 @@ class FastaTest(unittest.TestCase):
                  'taxon': 'RALEH'}
         self.assertEqual(fasta.parse(header), parsed)
 
-    def test_parser_uniptokb_isoform(self):
-        header = ('sp|Q4R572-2|1433B_MACFA Isoform Short of 14-3-3 protein beta'
-                '/alpha OS=Macaca fascicularis GN=YWHAB')
+    def test_parser_uniprotkb_isoform(self):
+        header = 'sp|Q4R572-2|1433B_MACFA Isoform Short of 14-3-3 protein beta/alpha OS=Macaca fascicularis GN=YWHAB'
         parsed = {'GN': 'YWHAB',
                  'OS': 'Macaca fascicularis',
                  'db': 'sp',
@@ -219,6 +222,39 @@ class FastaTest(unittest.TestCase):
                  'id': 'Q4R572-2',
                  'name': 'Isoform Short of 14-3-3 protein beta/alpha',
                  'taxon': 'MACFA'}
+        self.assertEqual(fasta.parse(header), parsed)
+
+    def test_parser_unitprot_equals(self):
+        header = 'tr|Q9S8M8|Q9S8M8_WHEAT FRIII-2-VIII=GAMMA-gliadin (Fragment) OS=Triticum aestivum OX=4565 PE=1 SV=1'
+        parsed = {
+            'db': 'tr',
+            'id': 'Q9S8M8',
+            'entry': 'Q9S8M8_WHEAT',
+            'taxon': 'WHEAT',
+            'gene_id': 'Q9S8M8',
+            'name': 'FRIII-2-VIII=GAMMA-gliadin (Fragment)',
+            'OS': 'Triticum aestivum',
+            'OX': 4565,
+            'PE': 1,
+            'SV': 1
+        }
+        self.assertEqual(fasta.parse(header), parsed)
+
+    def test_parser_uniprot_hyphen(self):
+        header = 'tr|Q00M55|Q00M55_WHEAT LMW-GS P-32 OS=Triticum aestivum OX=4565 GN=GluD3-3 PE=4 SV=1'
+        parsed = {
+            'db': 'tr',
+            'id': 'Q00M55',
+            'gene_id': 'Q00M55',
+            'taxon': 'WHEAT',
+            'entry': 'Q00M55_WHEAT',
+            'name': 'LMW-GS P-32',
+            'OS': 'Triticum aestivum',
+            'OX': 4565,
+            'GN': 'GluD3-3',
+            'PE': 4,
+            'SV': 1
+        }
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_uniref(self):
@@ -278,6 +314,7 @@ class FastaTest(unittest.TestCase):
                  'id': 'NP_001351877.1',
                  'taxon': 'Homo sapiens'}
         self.assertEqual(fasta.parse(header), parsed)
+
 
 if __name__ == '__main__':
     unittest.main()
