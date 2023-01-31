@@ -1109,8 +1109,8 @@ def process_tag_tokens(tokens):
             except KeyError:
                 main_tag_str = ''.join(main_tag)
                 warnings.warn(
-                    f"Possible unmatched prefix detected for {main_tag_str},"
-                     " attempting to resolve as generic modification")
+                    ("Possible unmatched prefix detected for %r," % main_tag_str) +
+                    " attempting to resolve as generic modification")
                 main_tag = GenericModification(main_tag_str)
 
     if len(parts) > 1:
@@ -1134,8 +1134,8 @@ def process_tag_tokens(tokens):
                 except KeyError:
                     part_str = ''.join(part)
                     warnings.warn(
-                        f"Possible unmatched prefix detected for {part_str}"
-                         ", attempting to resolve as generic modification")
+                        ("Possible unmatched prefix detected for %r" % part_str) +
+                        ", attempting to resolve as generic modification")
                     extra_tag = GenericModification(part_str)
                 extras.append(extra_tag)
         main_tag.extra = extras
