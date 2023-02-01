@@ -1103,8 +1103,16 @@ def process_tag_tokens(tokens):
         if prefix is None:
             main_tag = GenericModification(''.join(value))
         else:
-            tag_type = TagBase.find_by_tag(prefix)
-            main_tag = tag_type(value)
+            try:
+                tag_type = TagBase.find_by_tag(prefix)
+                main_tag = tag_type(value)
+            except KeyError:
+                main_tag_str = ''.join(main_tag)
+                warnings.warn(
+                    ("Possible unmatched prefix detected for %r," % main_tag_str) +
+                    " attempting to resolve as generic modification")
+                main_tag = GenericModification(main_tag_str)
+
     if len(parts) > 1:
         extras = []
         for part in parts[1:]:
@@ -1120,8 +1128,16 @@ def process_tag_tokens(tokens):
                 else:
                     extras.append(GenericModification(''.join(value)))
             else:
-                tag_type = TagBase.find_by_tag(prefix)
-                extras.append(tag_type(value))
+                try:
+                    tag_type = TagBase.find_by_tag(prefix)
+                    extra_tag = tag_type(value)
+                except KeyError:
+                    part_str = ''.join(part)
+                    warnings.warn(
+                        ("Possible unmatched prefix detected for %r" % part_str) +
+                        ", attempting to resolve as generic modification")
+                    extra_tag = GenericModification(part_str)
+                extras.append(extra_tag)
         main_tag.extra = extras
     return main_tag
 

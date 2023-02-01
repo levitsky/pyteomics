@@ -6,7 +6,7 @@ pyteomics.__path__ = [path.abspath(
 from pyteomics.proforma import (
     PSIModModification, ProForma, TaggedInterval, parse, MassModification, ProFormaError, TagTypeEnum,
     ModificationRule, StableIsotope, GenericModification, Composition, to_proforma, ModificationMassNotFoundError,
-    obo_cache)
+    obo_cache, process_tag_tokens)
 
 
 class ProFormaTest(unittest.TestCase):
@@ -113,6 +113,31 @@ class ProFormaTest(unittest.TestCase):
         assert i[1:].n_term is None
         assert i[1:].c_term is not None
 
+
+class TestTagProcessing(unittest.TestCase):
+    def test_process_tag_tokens(self):
+        tokens = list('UNIMOD:Deamidation')
+        tag = process_tag_tokens(tokens)
+        assert tag.value == "Deamidation"
+        assert tag.type == TagTypeEnum.unimod
+
+    def test_process_tag_tokens_generic(self):
+        tokens = list('Deamidation')
+        tag = process_tag_tokens(tokens)
+        assert tag.value == "Deamidation"
+        assert tag.type == TagTypeEnum.generic
+
+    def test_process_tag_tokens_contains_colon(self):
+        tokens = list('UNIMOD:Cation:Na')
+        tag = process_tag_tokens(tokens)
+        assert tag.value == "Cation:Na"
+        assert tag.type == TagTypeEnum.unimod
+
+    def test_process_tag_tokens_generic_contains_colon(self):
+        tokens = list('Cation:Na')
+        tag = process_tag_tokens(tokens)
+        assert tag.value == "Cation:Na"
+        assert tag.type == TagTypeEnum.generic
 
 
 class GenericModificationResolverTest(unittest.TestCase):
