@@ -461,16 +461,15 @@ class IndexedUniProt(UniProtMixin, TwoLayerIndexedFASTA):
 
 
 class UniRefMixin(FlavoredMixin):
-    header_pattern = r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$'
+    header_pattern = r'^(?P<id>\S+)\s+(?P<cluster>.*?)(?:(\s+n=(?P<n>\d+))|(\s+Tax=(?P<Tax>.+?))|(\s+TaxID=(?P<TaxID>\S+))|(\s+RepID=(?P<RepID>\S+)))*\s*$'
+    header_group = 'id'
 
     def parser(self, header):
         assert 'Tax' in header
-        ID, cluster, pairs, _ = re.match(self.header_pattern, header).groups()
-        info = {'id': ID, 'cluster': cluster}
-        info.update(_split_pairs(pairs))
-        gid, taxon = info['RepID'].split('_')
-        type_, acc = ID.split('_')
-        info.update({'taxon': taxon, 'gene_id': gid, 'type': type_, 'accession': acc})
+        info = re.match(self.header_pattern, header).groupdict()
+        for key in ['TaxID', 'Tax', 'RepID', 'n']:
+            if info[key] is None:
+                del info[key]
         _intify(info, ('n',))
         return info
 
