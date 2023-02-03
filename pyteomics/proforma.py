@@ -286,7 +286,8 @@ class MassModification(TagBase):
 
 class ModificationResolver(object):
     def __init__(self, name, **kwargs):
-        self.name = name
+        self.name = name.lower()
+        self.symbol = self.name[0]
         self._database = None
 
     def load_database(self):
@@ -301,6 +302,37 @@ class ModificationResolver(object):
     @database.setter
     def database(self, database):
         self._database = database
+
+    def parse_identifier(self, identifier):
+        """Parse a string that is either a CV prefixed identifier or name.
+
+        Parameters
+        ----------
+        identifier : str
+            The identifier string to parse, removing CV prefix as needed.
+
+        Returns
+        -------
+        name : str, optional
+            A textual identifier embedded in the qualified identifier, if any, otherwise
+            :const:`None`.
+        id : int, optional
+            An integer ID embedded in the qualified identifier, if any, otherwise
+            :const:`None`.
+        """
+        tokens = identifier.split(":", 1)
+        if len(tokens) > 1:
+            prefix = tokens[0].lower()
+            if prefix == self.name or prefix == self.symbol:
+                identifier = tokens[1]
+
+        if identifier.isdigit():
+            id = int(identifier)
+            name = None
+        else:
+            name = identifier
+            id = None
+        return name, id
 
     def resolve(self, name=None, id=None, **kwargs):
         raise NotImplementedError()
@@ -568,6 +600,27 @@ class GenericResolver(ModificationResolver):
     def load_database(self):
         return None
 
+    def parse_identifier(self, identifier):
+        """Parse a string that is either a CV prefixed identifier or name.
+
+        Does no parsing as a :class:`GenericModification` is never qualified.
+
+        Parameters
+        ----------
+        identifier : str
+            The identifier string to parse, removing CV prefix as needed.
+
+        Returns
+        -------
+        name : str, optional
+            A textual identifier embedded in the qualified identifier, if any, otherwise
+            :const:`None`.
+        id : int, optional
+            An integer ID embedded in the qualified identifier, if any, otherwise
+            :const:`None`.
+        """
+        return identifier, None
+
     def resolve(self, name=None, id=None, **kwargs):
         defn = None
         for resolver in self.resolvers:
@@ -690,24 +743,10 @@ class ModificationBase(TagBase):
     def _format_main(self):
         return "{self.prefix_name}:{self.value}".format(self=self)
 
-    def _parse_identifier(self):
-        tokens = self.value.split(":", 1)
-        if len(tokens) > 1:
-            value = tokens[1]
-        else:
-            value = self.value
-        if value.isdigit():
-            id = int(value)
-            name = None
-        else:
-            name = value
-            id = None
-        return name, id
-
     def resolve(self):
         '''Find the term and return it's properties
         '''
-        keys = self._parse_identifier()
+        keys = self.resolver.parse_identifier(self.value)
         return self.resolver(*keys)
 
 
@@ -893,7 +932,7 @@ class GenericModification(ModificationBase):
         '''Find the term, searching through all available vocabularies and
         return the first match's properties
         '''
-        keys = self._parse_identifier()
+        keys = self.resolver.parse_identifier(self.value)
         defn = self.resolver(*keys)
         if defn is not None:
             return defn
@@ -1108,9 +1147,6 @@ def process_tag_tokens(tokens):
                 main_tag = tag_type(value)
             except KeyError:
                 main_tag_str = ''.join(main_tag)
-                warnings.warn(
-                    ("Possible unmatched prefix detected for %r," % main_tag_str) +
-                    " attempting to resolve as generic modification")
                 main_tag = GenericModification(main_tag_str)
 
     if len(parts) > 1:
@@ -1133,9 +1169,6 @@ def process_tag_tokens(tokens):
                     extra_tag = tag_type(value)
                 except KeyError:
                     part_str = ''.join(part)
-                    warnings.warn(
-                        ("Possible unmatched prefix detected for %r" % part_str) +
-                        ", attempting to resolve as generic modification")
                     extra_tag = GenericModification(part_str)
                 extras.append(extra_tag)
         main_tag.extra = extras
