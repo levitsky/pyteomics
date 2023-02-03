@@ -134,10 +134,13 @@ class TestTagProcessing(unittest.TestCase):
         assert tag.type == TagTypeEnum.unimod
 
     def test_process_tag_tokens_generic_contains_colon(self):
-        tokens = list('Cation:Na')
-        tag = process_tag_tokens(tokens)
-        assert tag.value == "Cation:Na"
-        assert tag.type == TagTypeEnum.generic
+        for name in ['Cation:Na', 'Cation:Li', 'Unknown:210', 'QAT:2H(3)']:
+            tag = process_tag_tokens(list(name))
+            assert tag.value == name
+            assert tag.type == TagTypeEnum.generic
+            state = tag.resolve()
+            assert state['name'] == name
+            assert state['provider'] == 'unimod'
 
 
 class GenericModificationResolverTest(unittest.TestCase):
