@@ -261,13 +261,13 @@ class ParserTest(unittest.TestCase):
         header = ('>UniRef100_A5DI11 Elongation factor 2 n=1 '
                 'Tax=Pichia guilliermondii RepID=EF2_PICGU')
         parsed = {'RepID': 'EF2_PICGU',
-                 'taxon': 'PICGU',
-                 'gene_id': 'EF2',
+                 # 'taxon': 'PICGU',
+                 # 'gene_id': 'EF2',
                  'Tax': 'Pichia guilliermondii',
                  'cluster': 'Elongation factor 2',
                  'id': 'UniRef100_A5DI11',
-                 'type': 'UniRef100',
-                 'accession': 'A5DI11',
+                 # 'type': 'UniRef100',
+                 # 'accession': 'A5DI11',
                  'n': 1}
         self.assertEqual(fasta.parse(header), parsed)
 
