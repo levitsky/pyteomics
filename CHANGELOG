@@ -1,15 +1,15 @@
-4.5.7a4
+4.5.7a5
 -------
- - Fix issue #98 by Joshua Klein
-
-4.5.7a3
--------
-
+ - Fix issue #98 (`#99 <https://github.com/levitsky/pyteomics/pull/99>`_ and
+  `#101 <https://github.com/levitsky/pyteomics/pull/101>`_ by Joshua Klein).
  - Fix issue #91 (`#92 <https://github.com/levitsky/pyteomics/pull/92>`_ by Joshua Klein).
  - Fix issue #96.
  - Update the UniProt header pattern (fix rare parsing errors with
    :py:class:`pyteomics.fasta.UniProt` and :py:class:`pyteomics.fasta.IndexedUniProt`) in
    `#93 <https://github.com/levitsky/pyteomics/pull/93>`_.
+ - Update the UniRef header pattern (fix parsing errors with
+   :py:class:`pyteomics.fasta.UniRef` and :py:class:`pyteomics.fasta.IndexedUniRef`) in
+   `#102 <https://github.com/levitsky/pyteomics/pull/102>`_.
 
 4.5.6
 -----
