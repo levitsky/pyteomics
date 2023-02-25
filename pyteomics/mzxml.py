@@ -223,7 +223,8 @@ class MzXML(xml.ArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.Mul
         return scan['retentionTime']
 
 
-def read(source, read_schema=False, iterative=True, use_index=False, dtype=None, huge_tree=False):
+def read(source, read_schema=False, iterative=True, use_index=False, dtype=None,
+         huge_tree=False, decode_binary=True):
     """Parse `source` and iterate through spectra.
 
     Parameters
@@ -265,7 +266,8 @@ def read(source, read_schema=False, iterative=True, use_index=False, dtype=None,
     """
 
     return MzXML(source, read_schema=read_schema, iterative=iterative,
-        use_index=use_index, dtype=dtype, huge_tree=huge_tree)
+                 use_index=use_index, dtype=dtype, huge_tree=huge_tree,
+                 decode_binary=decode_binary)
 
 
 def iterfind(source, path, **kwargs):
