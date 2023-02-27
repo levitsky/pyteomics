@@ -31,7 +31,7 @@ def fragments(peptide, types=('b', 'y'), maxcharge=1):
     The function generates all possible m/z for fragments of types
     `types` and of charges from 1 to `maxharge`.
     """
-    for i in range(1, len(peptide)-1):
+    for i in range(1, len(peptide)):
         for ion_type in types:
             for charge in range(1, maxcharge+1):
                 if ion_type[0] in 'abc':
