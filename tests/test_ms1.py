@@ -1,8 +1,9 @@
-from os import path
+import os
 import numpy as np
 import pyteomics
-pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
+pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
 import unittest
+import pickle
 from pyteomics.ms1 import read, read_header, MS1, IndexedMS1, chain
 import data
 
@@ -37,6 +38,19 @@ class MS1Test(unittest.TestCase):
             for spec in f:
                 for k, v in dtypes.items():
                     self.assertEqual(spec[k].dtype, v)
+
+    def test_indexedms1_picklable(self):
+        with IndexedMS1(self.path, block_size=12345) as reader:
+            spec = pickle.dumps(reader)
+        with pickle.loads(spec) as reader:
+            self.assertEqual(reader.block_size, 12345)
+            self.assertEqual(data.ms1_spectra, list(reader))
+
+        with IndexedMS1(self.path, use_header=True) as reader:
+            spec = pickle.dumps(reader)
+        with pickle.loads(spec) as reader:
+            self.assertEqual(data.ms1_header, reader.header)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -170,10 +170,11 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(data.mgf_spectra_long[::-1], f[key])
 
     def test_indexedmgf_picklable(self):
-        with mgf.IndexedMGF(self.path) as reader:
+        with mgf.IndexedMGF(self.path, block_size=12345) as reader:
             spec = pickle.dumps(reader)
         with pickle.loads(spec) as reader:
             self.assertEqual(data.mgf_spectra_long[0], next(reader))
+            self.assertEqual(reader.block_size, 12345)
 
     def test_map(self):
         with mgf.IndexedMGF(self.path) as reader:

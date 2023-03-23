@@ -393,6 +393,7 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
     label = None
     block_size = 1000000
     label_group = 1
+    _kw_keys = ['delimiter', 'label', 'block_size', 'label_group']
 
     def __init__(self, source, **kwargs):
         # the underlying _file_obj gets None as encoding
@@ -400,7 +401,7 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
         encoding = kwargs.pop('encoding', 'utf-8')
         super(IndexedTextReader, self).__init__(source, mode='rb', encoding=None, **kwargs)
         self.encoding = encoding
-        for attr in ['delimiter', 'label', 'block_size', 'label_group']:
+        for attr in self._kw_keys:
             if attr in kwargs:
                 setattr(self, attr, kwargs.pop(attr))
         self._offset_index = None
@@ -410,11 +411,16 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
     def __getstate__(self):
         state = super(IndexedTextReader, self).__getstate__()
         state['offset_index'] = self._offset_index
+        for key in self._kw_keys:
+            state[key] = getattr(self, key)
         return state
 
     def __setstate__(self, state):
         super(IndexedTextReader, self).__setstate__(state)
         self._offset_index = state['offset_index']
+        for key in self._kw_keys:
+            if key in state:
+                setattr(self, key, state[key])
 
     def _chunk_iterator(self):
         fh = self._source.file

@@ -248,10 +248,8 @@ class IndexedMS1(MS1Base, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
     If created using a file object, it needs to be opened in binary mode.
 
     When iterated, :py:class:`IndexedMS1` object yields spectra one by one.
-    Each 'spectrum' is a :py:class:`dict` with four keys: 'm/z array',
-    'intensity array', 'charge array' and 'params'. 'm/z array' and
-    'intensity array' store :py:class:`numpy.ndarray`'s of floats,
-    'charge array' is a masked array (:py:class:`numpy.ma.MaskedArray`) of ints,
+    Each 'spectrum' is a :py:class:`dict` with three keys: 'm/z array', 'intensity array' and 'params'.
+    'm/z array' and 'intensity array' store :py:class:`numpy.ndarray`'s of floats,
     and 'params' stores a :py:class:`dict` of parameters (keys and values are
     :py:class:`str`, keys corresponding to MS1).
 
@@ -275,15 +273,11 @@ class IndexedMS1(MS1Base, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
 
     def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, encoding='utf-8', _skip_index=False, **kwargs):
         super(IndexedMS1, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype, encoding=encoding,
-            parser_func=self._read, pass_file=False, args=(), kwargs={}, _skip_index=_skip_index)
-        # aux.TimeOrderedIndexedReaderMixin.__init__(self, source, self._read, False, (), {}, encoding,
-        #     block_size, _skip_index=_skip_index)
-        # MS1Base.__init__(self, source, use_header, convert_arrays, dtype)
+            parser_func=self._read, pass_file=False, args=(), kwargs={}, _skip_index=_skip_index, **kwargs)
 
     def __reduce_ex__(self, protocol):
         return (self.__class__,
-            (self._source_init, False, self._convert_arrays,
-                self._read_charges, self._dtype_dict, self.encoding, self.block_size, True),
+            (self._source_init, False, self._convert_arrays, self._dtype_dict, self.encoding, True),
             self.__getstate__())
 
     def __getstate__(self):
