@@ -570,9 +570,12 @@ def write(spectra, output=None, header='', key_order=_default_key_order, fragmen
 
     output : str or file or None, optional
         Path or a file-like object open for writing. If an existing file is
-        specified by file name, it will be opened for appending. In this case
-        writing with a header can result in violation of format conventions.
+        specified by file name, it will be opened for writing.
         Default value is :py:const:`None`, which means using standard output.
+
+        .. note::
+            The default mode for output files specified by name has been changed
+            from `a` to `w` in *pyteomics 4.6*. See `file_mode` to override the mode.
 
     header : dict or (multiline) str or list of str, optional
         In case of a single string or a list of strings, the header will be
@@ -629,7 +632,10 @@ def write(spectra, output=None, header='', key_order=_default_key_order, fragmen
 
     file_mode : str, keyword only, optional
         If `output` is a file name, defines the mode the file will be opened in.
-        Otherwise will be ignored. Default is 'a'.
+        Otherwise will be ignored. Default is `'w'`.
+
+        .. note ::
+            The default changed from `'a'` in *pyteomics 4.6*.
 
     encoding : str, keyword only, optional
         Output file encoding (if `output` is specified by name).

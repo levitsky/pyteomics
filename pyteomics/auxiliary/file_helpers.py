@@ -576,29 +576,18 @@ def _file_reader(_mode='r'):
     return decorator
 
 
-def _file_writer(_mode='a'):
+def _file_writer(_mode='w'):
     def decorator(_func):
         """A decorator that opens output files for writer functions.
         """
         @wraps(_func)
         def helper(*args, **kwargs):
-            if 'file_mode' in kwargs:
-                m = kwargs.pop('file_mode')
-                warn = False
-            else:
-                m = _mode
-                warn = True
+            m = kwargs.pop('file_mode', _mode)
             enc = kwargs.pop('encoding', None)
             if len(args) > 1:
                 out_arg = args[1]
             else:
                 out_arg = kwargs.pop('output', None)
-
-            # warn about the change in default mode if an existing file name is given
-            if isinstance(out_arg, basestring) and warn and os.path.exists(out_arg):
-                warnings.warn("Opening an existing file in append mode. "
-                    "The default mode will change from 'a' to 'w' in a future version. "
-                    "Pass `file_mode='a'` to keep old behavior and suppress this warning.", FutureWarning)
 
             with _file_obj(out_arg, m, encoding=enc) as out:
                 if len(args) > 1:

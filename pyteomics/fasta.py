@@ -625,11 +625,19 @@ def write(entries, output=None):
         An iterable of 2-tuples in the form (description, sequence).
     output : file-like or str, optional
         A file open for writing or a path to write to. If the file exists,
-        it will be opened for appending. Default is :py:const:`None`, which
+        it will be opened for writing. Default is :py:const:`None`, which
         means write to standard output.
+
+        .. note::
+            The default mode for output files specified by name has been changed
+            from `a` to `w` in *pyteomics 4.6*. See `file_mode` to override the mode.
+
     file_mode : str, keyword only, optional
         If `output` is a file name, defines the mode the file will be opened in.
-        Otherwise will be ignored. Default is 'a'.
+        Otherwise will be ignored. Default is `'w'`.
+
+        .. note ::
+            The default changed from `'a'` in *pyteomics 4.6*.
 
     Returns
     -------
