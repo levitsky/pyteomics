@@ -117,6 +117,41 @@ if pynumpress:
         })
 
 
+class ArrayConversionMixin(object):
+    _dtype_dict = {}
+    _array_keys = ['m/z array', 'intensity array']
+
+    def __init__(self, *args, **kwargs):
+        self._dtype_dict = {None: None}
+        dtype = kwargs.pop('dtype', None)
+        if isinstance(dtype, dict):
+            self._dtype_dict.update(dtype)
+        elif dtype:
+            self._dtype_dict = {k: dtype for k in self._array_keys}
+            self._dtype_dict[None] = dtype
+        super(ArrayConversionMixin, self).__init__(*args, **kwargs)
+
+    def __getstate__(self):
+        state = super(ArrayConversionMixin, self).__getstate__()
+        state['_dtype_dict'] = self._dtype_dict
+        return state
+
+    def __setstate__(self, state):
+        super(ArrayConversionMixin, self).__setstate__(state)
+        self._dtype_dict = state['_dtype_dict']
+
+    def _convert_array(self, k, array):
+        dtype = self._dtype_dict.get(k)
+        if dtype is not None:
+            return array.astype(dtype)
+        return array
+
+    def _convert_all_arrays(self, info):
+        for k in self._array_keys:
+            if k in info:
+                info[k] = self._convert_array(k, info[k])
+
+
 if np is not None:
     class BinaryDataArrayTransformer(object):
         """A base class that provides methods for reading
@@ -199,8 +234,16 @@ if np is not None:
             array = self._transform_buffer(binary, dtype)
             return array
 
+
+    class BinaryArrayConversionMixin(ArrayConversionMixin, BinaryDataArrayTransformer):
+        def _finalize_record_conversion(self, array, record):
+            key = record.key
+            return self._convert_array(key, array)
+
+
 else:
     BinaryDataArrayTransformer = None
+    BinaryArrayConversionMixin = None
 
 
 def add_metaclass(metaclass):

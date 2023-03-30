@@ -33,5 +33,5 @@ from .target_decoy import (
     _log_pi, _make_fdr, fdr, sigma_T, sigma_fdr)
 
 from .utils import (
-    print_tree, memoize, BinaryDataArrayTransformer,
+    print_tree, memoize, BinaryDataArrayTransformer, ArrayConversionMixin, BinaryArrayConversionMixin,
     _decode_base64_data_array)

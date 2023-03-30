@@ -419,7 +419,7 @@ def read(*args, **kwargs):
         If `True` (default), fragment charges are reported. Disabling it improves performance.
 
     read_ions : bool, optional
-        If `True` (default: False), fragment charges are reported. Disabling it improves performance.
+        If `True` (default: False), fragment ion types are reported. Disabling it improves performance.
         Note that right now, only one of (read_charges, read_ions) may be True.
 
     dtype : type or str or dict, optional
