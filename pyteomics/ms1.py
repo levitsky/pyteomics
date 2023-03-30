@@ -64,9 +64,6 @@ class MS1Base(aux.ArrayConversionMixin):
         super(MS1Base, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype, **kwargs)
         if convert_arrays and np is None:
             raise aux.PyteomicsError('numpy is required for array conversion')
-        self._convert_arrays = convert_arrays
-        if not convert_arrays:
-            self._array_keys = []
         self._use_header = use_header
         if use_header:
             self._header = self._read_header()

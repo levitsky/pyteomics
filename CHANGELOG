@@ -1,4 +1,4 @@
-4.6a0
+4.6a1
 -----
 
  - When passing an existing file (by name) to :py:func:`pyteomics.mgf.write` or `pyteomics.fasta.write` and
@@ -17,6 +17,8 @@
  - Update the UniRef header pattern (fix parsing errors with
    :py:class:`pyteomics.fasta.UniRef` and :py:class:`pyteomics.fasta.IndexedUniRef`) in
    `#102 <https://github.com/levitsky/pyteomics/pull/102>`_. Some keys are removed from the output.
+ - Fix pickling issues with :py:class:`pyteomics.mgf.IndexedMGF`, :py:class:`pyteomics.ms1.IndexedMS1`,
+   :py:class:`pyteomics.ms2.IndexedMS2` (#108).
 
 4.5.6
 -----

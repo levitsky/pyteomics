@@ -122,13 +122,6 @@ class MGFBase(aux.MaskedArrayConversionMixin):
 
         super(MGFBase, self).__init__(source, **kwargs)
         self._use_header = kwargs.pop('use_header', True)
-        self._convert_arrays = kwargs.pop('convert_arrays', 2)
-        if self._convert_arrays < 2:
-            self._masked_array_keys = []
-        if self._convert_arrays < 1:
-            self._array_keys = []
-        if self._convert_arrays and np is None:
-            raise aux.PyteomicsError('numpy is required for array conversion')
         self._read_charges = kwargs.pop('read_charges', True)
         self._read_ions = kwargs.pop('read_ions', False)
         # Make sure no charges are read if ions are read
@@ -356,7 +349,6 @@ class MGF(MGFBase, aux.FileReader):
         super(MGF, self).__init__(source, mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={},
             encoding=encoding, use_header=use_header, convert_arrays=convert_arrays, read_charges=read_charges,
             read_ions=read_ions, dtype=dtype)
-        # self.encoding = encoding
 
     @aux._keepstate_method
     def _read_header(self):

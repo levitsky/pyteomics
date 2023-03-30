@@ -21,6 +21,7 @@ try:
 except ImportError:
     pynumpress = None
 
+from .structures import PyteomicsError
 
 def print_tree(d, indent_str=' -> ', indent_count=1):
     """Read a nested dict (with strings as keys) and print its structure.
@@ -129,16 +130,23 @@ class ArrayConversionMixin(object):
         elif dtype:
             self._dtype_dict = {k: dtype for k in self._array_keys}
             self._dtype_dict[None] = dtype
+        self._convert_arrays = kwargs.pop('convert_arrays', 2)
+        if self._convert_arrays < 1:
+            self._array_keys = []
+        if self._convert_arrays and np is None:
+            raise PyteomicsError('numpy is required for array conversion')
         super(ArrayConversionMixin, self).__init__(*args, **kwargs)
 
     def __getstate__(self):
         state = super(ArrayConversionMixin, self).__getstate__()
         state['_dtype_dict'] = self._dtype_dict
+        state['_convert_arrays'] = self._convert_arrays
         return state
 
     def __setstate__(self, state):
         super(ArrayConversionMixin, self).__setstate__(state)
         self._dtype_dict = state['_dtype_dict']
+        self._convert_arrays = state['_convert_arrays']
 
     def _build_array(self, k, data):
         dtype = self._dtype_dict.get(k)
@@ -159,6 +167,11 @@ class ArrayConversionMixin(object):
 class MaskedArrayConversionMixin(ArrayConversionMixin):
     _masked_array_keys = ['charge array']
     _mask_value = 0
+
+    def __init__(self, *args, **kwargs):
+        super(MaskedArrayConversionMixin, self).__init__(*args, **kwargs)
+        if self._convert_arrays < 2:
+            self._masked_array_keys = []
 
     def __getstate__(self):
         state = super(MaskedArrayConversionMixin, self).__getstate__()
