@@ -158,6 +158,7 @@ class IteratorContextManager(NoOpBaseReader):
 
     def reset(self):
         """Resets the iterator to its initial state."""
+        super(IteratorContextManager, self).reset()
         try:
             self._reader = self._func(*self._args, **self._kwargs)
         except Exception:

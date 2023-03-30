@@ -71,6 +71,9 @@ class MS1Base(aux.ArrayConversionMixin):
             self._header = None
         self._source_name = getattr(source, 'name', str(source))
 
+    def reset(self):
+        super(MS1Base, self).reset()
+        self._pending_line = None
 
     @property
     def header(self):
@@ -113,14 +116,19 @@ class MS1Base(aux.ArrayConversionMixin):
         params.setdefault('analyzer', []).append(sline[1:])
 
     def _read_spectrum_lines(self, lines):
-        reading_spectrum = False
         params = {}
         masses = []
         intensities = []
         if self._use_header:
             params.update(self.header)
-
-        for line in lines:
+        if self._pending_line:
+            reading_spectrum = True
+            self._handle_S(self._pending_line, None, params)
+        else:
+            reading_spectrum = False
+        line_count = 0
+        for i, line in enumerate(lines):
+            line_count = i
             sline = line.strip().split(None, 2)
             if not sline:
                 continue
@@ -133,6 +141,7 @@ class MS1Base(aux.ArrayConversionMixin):
                 if not sline:
                     pass
                 elif sline[0] == 'S':
+                    self._pending_line = line
                     return self._make_scan(params, masses, intensities)
 
                 else:
@@ -152,6 +161,9 @@ class MS1Base(aux.ArrayConversionMixin):
                                     self._source_name, line))
                         except IndexError:
                             pass
+        self._pending_line = None
+        if line_count == 0:
+            return
         return self._make_scan(params, masses, intensities)
 
 
@@ -176,61 +188,17 @@ class MS1(MS1Base, aux.FileReader):
     def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, encoding=None, **kwargs):
         super(MS1, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype, encoding=encoding,
             mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={})
-        # aux.FileReader.__init__(self, source, 'r', self._read, False, (), {}, encoding)
-        # MS1Base.__init__(self, source, use_header, convert_arrays, dtype)
-        # self.encoding = encoding
 
     @aux._keepstate_method
     def _read_header(self):
         return self._read_header_lines(self._source)
 
-    def _read_spectrum(self, firstline):
-        return self._read_spectrum_lines(self._source, firstline)
-
     def _read(self):
-        reading_spectrum = False
-        params = {}
-        masses = []
-        intensities = []
-        if self._use_header:
-            params.update(self.header)
+        def get_next_spectrum():
+            return self._read_spectrum_lines(self._source)
 
-        for line in self._source:
-            sline = line.strip().split(None, 2)
-            if not sline:
-                continue
-            if not reading_spectrum:
-                if sline[0] == 'S':
-                    reading_spectrum = True
-                    self._handle_S(line, sline, params)
-                # otherwise we are not interested; do nothing, just move along
-            else:
-                if not sline:
-                    pass
-                elif sline[0] == 'S':
-                    yield self._make_scan(params, masses, intensities)
-                    params = dict(self.header) if self._use_header else {}
-                    masses = []
-                    intensities = []
-                    self._handle_S(line, sline, params)
-                else:
-                    if sline[0] == 'I':  # spectrum-specific parameters!
-                        self._handle_I(line, sline, params)
-                    elif sline[0] == 'Z':  # MS2-specific charge state guess
-                        self._handle_Z(line, sline, params)
-                    elif sline[0] == 'D':  # MS2-specific analyzer annotation
-                        self._handle_D(line, sline, params)
-                    else:  # this must be a peak list
-                        try:
-                            masses.append(float(sline[0]))            # this may cause
-                            intensities.append(float(sline[1]))       # exceptions...
-                        except ValueError:
-                            raise aux.PyteomicsError(
-                                'Error when parsing %s. Line: %s' % (self._source_name, line))
-                        except IndexError:
-                            pass
-
-        yield self._make_scan(params, masses, intensities)
+        for spectrum in iter(get_next_spectrum, None):
+            yield spectrum
 
 
 class IndexedMS1(MS1Base, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixin, aux.IndexedTextReader):
@@ -269,7 +237,7 @@ class IndexedMS1(MS1Base, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
 
     def __reduce_ex__(self, protocol):
         return (self.__class__,
-            (self._source_init, False, self._convert_arrays, self._dtype_dict, self.encoding, True),
+            (self._source_init, False, self._convert_arrays, None, self.encoding, True),
             self.__getstate__())
 
     def __getstate__(self):

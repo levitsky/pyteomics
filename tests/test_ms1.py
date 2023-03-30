@@ -40,10 +40,11 @@ class MS1Test(unittest.TestCase):
                     self.assertEqual(spec[k].dtype, v)
 
     def test_indexedms1_picklable(self):
-        with IndexedMS1(self.path, block_size=12345) as reader:
+        with IndexedMS1(self.path, block_size=12345, dtype=np.float32) as reader:
             spec = pickle.dumps(reader)
         with pickle.loads(spec) as reader:
             self.assertEqual(reader.block_size, 12345)
+            self.assertEqual(reader._dtype_dict['m/z array'], np.float32)
             self.assertEqual(data.ms1_spectra, list(reader))
 
         with IndexedMS1(self.path, use_header=True) as reader:
