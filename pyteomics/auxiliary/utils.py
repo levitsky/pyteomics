@@ -140,16 +140,54 @@ class ArrayConversionMixin(object):
         super(ArrayConversionMixin, self).__setstate__(state)
         self._dtype_dict = state['_dtype_dict']
 
+    def _build_array(self, k, data):
+        dtype = self._dtype_dict.get(k)
+        return np.array(data, dtype=dtype)
+
     def _convert_array(self, k, array):
         dtype = self._dtype_dict.get(k)
         if dtype is not None:
             return array.astype(dtype)
         return array
 
-    def _convert_all_arrays(self, info):
+    def _build_all_arrays(self, info):
         for k in self._array_keys:
             if k in info:
-                info[k] = self._convert_array(k, info[k])
+                info[k] = self._build_array(k, info[k])
+
+
+class MaskedArrayConversionMixin(ArrayConversionMixin):
+    _masked_array_keys = ['charge array']
+    _mask_value = 0
+
+    def __getstate__(self):
+        state = super(MaskedArrayConversionMixin, self).__getstate__()
+        state['_masked_array_keys'] = self._masked_array_keys
+        state['_mask_value'] = self._mask_value
+        return state
+
+    def __setstate__(self, state):
+        super(MaskedArrayConversionMixin, self).__setstate__(state)
+        self._masked_array_keys = state['_masked_array_keys']
+        self._mask_value = state['_mask_value']
+
+    def _build_masked_array(self, k, data):
+        array = self._build_array(k, data)
+        return self._convert_masked_array(k, array)
+
+    def _convert_masked_array(self, k, array):
+        return np.ma.masked_equal(array, self._mask_value)
+
+    def _ensure_masked_array(self, k, data):
+        if isinstance(data, np.ndarray):
+            return self._convert_masked_array(k, data)
+        return self._build_masked_array(self, k, data)
+
+    def _build_all_arrays(self, info):
+        super(MaskedArrayConversionMixin, self)._build_all_arrays(info)
+        for k in self._masked_array_keys:
+            if k in info:
+                info[k] = self._ensure_masked_array(k, info[k])
 
 
 if np is not None:

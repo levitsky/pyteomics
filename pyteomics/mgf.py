@@ -76,19 +76,11 @@ import sys
 from . import auxiliary as aux
 
 
-class MGFBase(object):
+class MGFBase(aux.MaskedArrayConversionMixin):
     """Abstract mixin class representing an MGF file. Subclasses implement different approaches to parsing."""
     _comments = set('#;!/')
-    _array = (lambda x, dtype: np.array(x, dtype=dtype)) if np is not None else None
-    _ma = (lambda x, dtype: np.ma.masked_equal(np.array(x, dtype=dtype), 0)) if np is not None else None
-    _identity = lambda x, **kw: x
-    _array_converters = {
-        'm/z array': [_identity, _array, _array],
-        'intensity array': [_identity, _array, _array],
-        'charge array': [_identity, _array, _ma],
-        'ion array': [_identity, _array,  _array]
-    }
     _array_keys = ['m/z array', 'intensity array', 'charge array', 'ion array']
+    _array_keys_str = ['m/z array', 'intensity array', 'charge array', 'ion array']
     _array_keys_unicode = [u'm/z array', u'intensity array', u'charge array', u'ion array']
     encoding = None
 
@@ -131,6 +123,10 @@ class MGFBase(object):
         super(MGFBase, self).__init__(source, **kwargs)
         self._use_header = kwargs.pop('use_header', True)
         self._convert_arrays = kwargs.pop('convert_arrays', 2)
+        if self._convert_arrays < 2:
+            self._masked_array_keys = []
+        if self._convert_arrays < 1:
+            self._array_keys = []
         if self._convert_arrays and np is None:
             raise aux.PyteomicsError('numpy is required for array conversion')
         self._read_charges = kwargs.pop('read_charges', True)
@@ -138,8 +134,6 @@ class MGFBase(object):
         # Make sure no charges are read if ions are read
         if self._read_ions:
             self._read_charges = False
-        dtype = kwargs.pop('dtype', None)
-        self._dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in self._array_keys}
         if self._use_header:
             self._read_header()
         else:
@@ -214,16 +208,14 @@ class MGFBase(object):
                     params['charge'] = self.parse_precursor_charge(params['charge'], True)
                 if 'rtinseconds' in params:
                     params['rtinseconds'] = aux.unitfloat(params['rtinseconds'], 'second')
-                out = {'params': params}
-                data = {'m/z array': masses, 'intensity array': intensities}
+                out = {'params': params, 'm/z array': masses, 'intensity array': intensities}
                 if self._read_charges:
-                    data['charge array'] = charges
+                    out['charge array'] = charges
                 if self._read_ions:
-                    data['ion array'] = ions
-                for key, values in data.items():
-                    out[key] = self._array_converters[key][self._convert_arrays](values, dtype=self._dtype_dict.get(key))
+                    out['ion array'] = ions
+                self._build_all_arrays(out)
                 if self.encoding and sys.version_info.major == 2:
-                    for key, ukey in zip(self._array_keys + ['params'], self._array_keys_unicode + [u'params']):
+                    for key, ukey in zip(self._array_keys_str + ['params'], self._array_keys_unicode + [u'params']):
                         if key in out:
                             out[ukey] = out.pop(key)
                 return out
@@ -298,7 +290,7 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
     def __reduce_ex__(self, protocol):
         return (self.__class__,
                 (self._source_init, False, self._convert_arrays, self._read_charges,
-                 self._dtype_dict, self.encoding, self._index_by_scans, self._read_ions, True),
+                 None, self.encoding, self._index_by_scans, self._read_ions, True),
                 self.__getstate__())
 
     def __getstate__(self):
