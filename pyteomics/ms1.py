@@ -92,12 +92,11 @@ class MS1Base(aux.ArrayConversionMixin):
             header[key] = val
         return header
 
-    def _make_scan(self, params, masses, intensities):
-        if 'RTime' in params:
-            params['RTime'] = float(params['RTime'])
-        out = {'params': params, 'm/z array': masses, 'intensity array': intensities}
-        self._build_all_arrays(out)
-        return out
+    def _make_scan(self, info):
+        if 'RTime' in info['params']:
+            info['params']['RTime'] = float(info['params']['RTime'])
+        self._build_all_arrays(info)
+        return info
 
     def _handle_S(self, line, sline, params):
         sline = line.strip().split(None, 3)
@@ -115,10 +114,20 @@ class MS1Base(aux.ArrayConversionMixin):
     def _handle_D(self, line, sline, params):
         params.setdefault('analyzer', []).append(sline[1:])
 
+    def _handle_peak(self, line, sline, info):
+        try:
+            info['m/z array'].append(float(sline[0]))            # this may cause
+            info['intensity array'].append(float(sline[1]))       # exceptions...
+        except ValueError:
+            raise aux.PyteomicsError(
+                'Error when parsing %s. Line: %s' % (self._source_name, line))
+        except IndexError:
+            pass
+
+
     def _read_spectrum_lines(self, lines):
         params = {}
-        masses = []
-        intensities = []
+        info = {'params': params, 'm/z array': [], 'intensity array': []}
         if self._use_header:
             params.update(self.header)
         if self._pending_line:
@@ -142,7 +151,7 @@ class MS1Base(aux.ArrayConversionMixin):
                     pass
                 elif sline[0] == 'S':
                     self._pending_line = line
-                    return self._make_scan(params, masses, intensities)
+                    return self._make_scan(info)
 
                 else:
                     if sline[0] == 'I':  # spectrum-specific parameters!
@@ -152,19 +161,11 @@ class MS1Base(aux.ArrayConversionMixin):
                     elif sline[0] == 'D':  # MS2-specific analyzer annotation
                         self._handle_D(line, sline, params)
                     else:  # this must be a peak list
-                        try:
-                            masses.append(float(sline[0]))            # this may cause
-                            intensities.append(float(sline[1]))       # exceptions...\
-                        except ValueError:
-                            raise aux.PyteomicsError(
-                                'Error when parsing %s. Line: %s' % (
-                                    self._source_name, line))
-                        except IndexError:
-                            pass
+                        self._handle_peak(line, sline, info)
         self._pending_line = None
         if line_count == 0:
             return
-        return self._make_scan(params, masses, intensities)
+        return self._make_scan(info)
 
 
 class MS1(MS1Base, aux.FileReader):
