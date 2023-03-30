@@ -56,16 +56,17 @@ except ImportError:
     np = None
 
 
-class MS1Base(object):
+class MS1Base(aux.ArrayConversionMixin):
     """Abstract class representing an MS1 file. Subclasses implement different approaches to parsing."""
     _array_keys = ['m/z array', 'intensity array']
 
     def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, **kwargs):
-        super(MS1Base, self).__init__(source, **kwargs)
+        super(MS1Base, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype, **kwargs)
         if convert_arrays and np is None:
             raise aux.PyteomicsError('numpy is required for array conversion')
         self._convert_arrays = convert_arrays
-        self._dtype_dict = dtype if isinstance(dtype, dict) else {k: dtype for k in self._array_keys}
+        if not convert_arrays:
+            self._array_keys = []
         self._use_header = use_header
         if use_header:
             self._header = self._read_header()
@@ -94,14 +95,8 @@ class MS1Base(object):
     def _make_scan(self, params, masses, intensities):
         if 'RTime' in params:
             params['RTime'] = float(params['RTime'])
-        out = {'params': params}
-        if self._convert_arrays:
-            data = {'m/z array': masses, 'intensity array': intensities}
-            for key, values in data.items():
-                out[key] = np.array(values, dtype=self._dtype_dict.get(key))
-        else:
-            out['m/z array'] = masses
-            out['intensity array'] = intensities
+        out = {'params': params, 'm/z array': masses, 'intensity array': intensities}
+        self._build_all_arrays(out)
         return out
 
     def _handle_S(self, line, sline, params):
