@@ -80,7 +80,6 @@ class MGFBase(aux.MaskedArrayConversionMixin):
     """Abstract mixin class representing an MGF file. Subclasses implement different approaches to parsing."""
     _comments = set('#;!/')
     _array_keys = ['m/z array', 'intensity array', 'charge array', 'ion array']
-    _array_keys_str = ['m/z array', 'intensity array', 'charge array', 'ion array']
     _array_keys_unicode = [u'm/z array', u'intensity array', u'charge array', u'ion array']
     encoding = None
 
@@ -208,7 +207,7 @@ class MGFBase(aux.MaskedArrayConversionMixin):
                     out['ion array'] = ions
                 self._build_all_arrays(out)
                 if self.encoding and sys.version_info.major == 2:
-                    for key, ukey in zip(self._array_keys_str + ['params'], self._array_keys_unicode + [u'params']):
+                    for key, ukey in zip(self._array_keys + ['params'], self._array_keys_unicode + [u'params']):
                         if key in out:
                             out[ukey] = out.pop(key)
                 return out

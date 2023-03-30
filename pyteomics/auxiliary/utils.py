@@ -130,9 +130,7 @@ class ArrayConversionMixin(object):
         elif dtype:
             self._dtype_dict = {k: dtype for k in self._array_keys}
             self._dtype_dict[None] = dtype
-        self._convert_arrays = kwargs.pop('convert_arrays', 2)
-        if self._convert_arrays < 1:
-            self._array_keys = []
+        self._convert_arrays = kwargs.pop('convert_arrays', 1)
         if self._convert_arrays and np is None:
             raise PyteomicsError('numpy is required for array conversion')
         super(ArrayConversionMixin, self).__init__(*args, **kwargs)
@@ -159,9 +157,10 @@ class ArrayConversionMixin(object):
         return array
 
     def _build_all_arrays(self, info):
-        for k in self._array_keys:
-            if k in info:
-                info[k] = self._build_array(k, info[k])
+        if self._convert_arrays:
+            for k in self._array_keys:
+                if k in info:
+                    info[k] = self._build_array(k, info[k])
 
 
 class MaskedArrayConversionMixin(ArrayConversionMixin):
@@ -169,9 +168,9 @@ class MaskedArrayConversionMixin(ArrayConversionMixin):
     _mask_value = 0
 
     def __init__(self, *args, **kwargs):
+        self._convert_arrays = kwargs.pop('convert_arrays', 2)
+        kwargs['convert_arrays'] = self._convert_arrays
         super(MaskedArrayConversionMixin, self).__init__(*args, **kwargs)
-        if self._convert_arrays < 2:
-            self._masked_array_keys = []
 
     def __getstate__(self):
         state = super(MaskedArrayConversionMixin, self).__getstate__()
@@ -198,9 +197,10 @@ class MaskedArrayConversionMixin(ArrayConversionMixin):
 
     def _build_all_arrays(self, info):
         super(MaskedArrayConversionMixin, self)._build_all_arrays(info)
-        for k in self._masked_array_keys:
-            if k in info:
-                info[k] = self._ensure_masked_array(k, info[k])
+        if self._convert_arrays == 2:
+            for k in self._masked_array_keys:
+                if k in info:
+                    info[k] = self._ensure_masked_array(k, info[k])
 
 
 if np is not None:
