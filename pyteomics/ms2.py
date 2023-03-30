@@ -50,10 +50,36 @@ Functions
 #   limitations under the License.
 
 from pyteomics import auxiliary as aux
-from pyteomics.ms1 import MS1, IndexedMS1
+from pyteomics.ms1 import MS1, IndexedMS1, MS1Base
 
 
-class MS2(MS1):
+class MS2Base(aux.MaskedArrayConversionMixin, MS1Base):
+    _array_keys = ['m/z array', 'intensity array', 'charge array']
+
+    def __init__(self, source=None, use_header=False, convert_arrays=2, dtype=None, read_charges=True, **kwargs):
+        super(MS2Base, self).__init__(source=source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype,
+            **kwargs)
+        self._read_charges = read_charges
+
+    def _handle_peak(self, line, sline, info):
+        super(MS2Base, self)._handle_peak(line, sline, info)
+        if self._read_charges:
+            if len(sline) > 2:
+                sline = line.strip().split()
+                try:
+                    info['charge array'].append(int(sline[2]))
+                except ValueError:
+                    raise aux.PyteomicsError("Error parsing fragment charge on line: " + line)
+            else:
+                info['charge array'].append(0)
+
+    def _make_scan(self, info):
+        if not self._read_charges:
+            del info['charge array']
+        return super(MS2Base, self)._make_scan(info)
+
+
+class MS2(MS2Base, MS1):
     """
     A class representing an MS2 file. Supports the `with` syntax and direct iteration for sequential
     parsing.
@@ -73,7 +99,7 @@ class MS2(MS1):
     """
 
 
-class IndexedMS2(IndexedMS1):
+class IndexedMS2(IndexedMS1, MS2Base):
     """
     A class representing an MS2 file. Supports the `with` syntax and direct iteration for sequential
     parsing. Specific spectra can be accessed by title using the indexing syntax in constant time.
@@ -101,6 +127,15 @@ class IndexedMS2(IndexedMS1):
     time : RTLocator
         A property used for accessing spectra by retention time.
     """
+    def __init__(self, source=None, use_header=False, convert_arrays=2, dtype=None, read_charges=True,
+                 encoding='utf-8', _skip_index=False, **kwargs):
+        super(IndexedMS2, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype,
+            read_charges=read_charges, encoding=encoding, _skip_index=_skip_index, **kwargs)
+
+    def __reduce_ex__(self, protocol):
+        return (self.__class__,
+            (self._source_init, False, self._convert_arrays, None, self._read_charges, self.encoding, True),
+            self.__getstate__())
 
 
 def read_header(source, *args, **kwargs):
