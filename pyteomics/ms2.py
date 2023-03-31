@@ -152,7 +152,7 @@ class MS2(MS2Base, MS1):
             A file object (or file name) with data in MS2 format. Default is
             :py:const:`None`, which means read standard input.
 
-            ..note :: If a file object is given, it must be opened in text mode.
+            .. note :: If a file object is given, it must be opened in text mode.
 
         use_header : bool, optional
             Add the info from file header to each dict. Spectrum-specific parameters
