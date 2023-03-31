@@ -17,17 +17,34 @@ class MS2Test(unittest.TestCase):
 
     def test_read(self):
         # http://stackoverflow.com/q/14246983/1258041
-        self.assertEqual(data.ms2_spectra, list(read(self.path, read_charges=False)))
+        self.assertEqual(data.ms2_spectra, list(read(self.path)))
         for reader in [read, MS2, IndexedMS2, chain]:
-            with reader(self.path, read_charges=False) as reader:
+            with reader(self.path) as reader:
                 self.assertEqual(data.ms2_spectra, list(reader))
 
-    def test_read_array_conversion(self):
+    def test_read_no_charges(self):
         with read(self.path, convert_arrays=False, read_charges=False) as reader:
+            lhs = data.ms2_spectra_lists.copy()
+            for spec in lhs:
+                del spec['charge array']
+            self.assertEqual(lhs, list(reader))
+
+        with read(self.path, convert_arrays=1, read_charges=False) as reader:
+            lhs = data.ms2_spectra.copy()
+            for spec in lhs:
+                del spec['charge array']
+            self.assertEqual(lhs, list(reader))
+
+    def test_read_array_conversion(self):
+        with read(self.path, convert_arrays=0) as reader:
             self.assertEqual(data.ms2_spectra_lists, list(reader))
-        with read(self.path, convert_arrays=True, read_charges=False) as reader:
+        with read(self.path, convert_arrays=1) as reader:
             s = next(reader)
             self.assertTrue(isinstance(s['m/z array'], np.ndarray))
+        with read(self.path, convert_arrays=2) as reader:
+            s = next(reader)
+            self.assertTrue(isinstance(s['m/z array'], np.ndarray))
+            self.assertTrue(isinstance(s['charge array'], np.ma.core.MaskedArray))
 
     def test_header(self):
         self.assertEqual(self.header, data.ms2_header)
@@ -40,7 +57,7 @@ class MS2Test(unittest.TestCase):
                     self.assertEqual(spec[k].dtype, v)
 
     def test_indexedms2_picklable(self):
-        with IndexedMS2(self.path, block_size=12345, read_charges=False) as reader:
+        with IndexedMS2(self.path, block_size=12345) as reader:
             spec = pickle.dumps(reader)
         with pickle.loads(spec) as reader:
             self.assertEqual(reader.block_size, 12345)

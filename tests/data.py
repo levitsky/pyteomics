@@ -2133,22 +2133,26 @@ ms1_header = {'CreationDate': 'Sat Jun 03 15:25:10 2017',
 
 ms2_spectra = [{'intensity array': makeCA([73., 44., 67., 291., 54., 49.]),
                 'm/z array': makeCA([846.6, 846.8, 847.6, 1640.1, 1640.6, 1895.5]),
+                'charge array': makeCA([0, 0, 0, 0, 0, 0]),
                 'params': {'charge': [2.0],
                            'neutral mass': [1966.193],
                            'precursor m/z': 983.6,
                            'scan': ('0', '0')}},
                {'intensity array': makeCA([237., 128., 108., 1007., 974., 79.]),
                 'm/z array': makeCA([345.1, 370.2, 460.2, 1673.3, 1674., 1675.3]),
+                'charge array': makeCA([0, 0, 0, 0, 0, 0]),
                 'params': {'RTime': 25.0, 'precursor m/z': 1084.9, 'scan': ('1', '1')}}]
 
 ms2_spectra_lists = [{'intensity array': [73., 44., 67., 291., 54., 49.],
                       'm/z array': [846.6, 846.8, 847.6, 1640.1, 1640.6, 1895.5],
+                      'charge array': [0, 0, 0, 0, 0, 0],
                       'params': {'charge': [2.0],
                                  'neutral mass': [1966.193],
                                  'precursor m/z': 983.6,
                                  'scan': ('0', '0')}},
                      {'intensity array': [237., 128., 108., 1007., 974., 79.],
                       'm/z array': [345.1, 370.2, 460.2, 1673.3, 1674., 1675.3],
+                      'charge array': [0, 0, 0, 0, 0, 0],
                       'params': {'RTime': 25.0, 'precursor m/z': 1084.9, 'scan': ('1', '1')}}]
 
 ms2_header = {'CreationDate': 'Wed Apr 24 17:06:23 2019',
