@@ -6,23 +6,32 @@ Summary
 -------
 
 `MS1 <http://dx.doi.org/10.1002/rcm.1603>`_ is a simple
-human-readable format for MS1 data. It allows storing MS1 peak lists and
-exprimental parameters.
+human-readable format for MS1 data. It allows storing MS1 peak lists and exprimental parameters.
 
-This module provides minimalistic infrastructure for access to data stored in
-MS1 files.
+This module provides minimalistic infrastructure for access to data stored in MS1 files.
 Two main classes are :py:class:`MS1`, which provides an iterative, text-mode parser,
 and :py:class:`IndexedMS1`, which is a binary-mode parser that supports random access using scan IDs
 and retention times.
 The function :py:func:`read` helps dispatch between the two classes.
-Also, common parameters can be read from MS1 file header with
-:py:func:`read_header` function.
+Also, common parameters can be read from MS1 file header with :py:func:`read_header` function.
+
+Classes
+-------
+
+  :py:class:`MS1` - a text-mode MS1 parser. Suitable to read spectra from a file consecutively.
+  Needs a file opened in text mode (or will open it if given a file name).
+
+  :py:class:`IndexedMS1` - a binary-mode MS1 parser. When created, builds a byte offset index
+  for fast random access by spectrum ID. Sequential iteration is also supported.
+  Needs a seekable file opened in binary mode (if created from existing file object).
+
+  :py:class:`MS1Base` - abstract class, the common ancestor of the two classes above.
+  Can be used for type checking.
 
 Functions
 ---------
 
-  :py:func:`read` - iterate through spectra in MS1 file. Data from a
-  single spectrum are converted to a human-readable dict.
+  :py:func:`read` - an alias for :py:class:`MS1` or :py:class:`IndexedMS1`.
 
   :py:func:`chain` - read multiple files at once.
 
@@ -61,6 +70,34 @@ class MS1Base(aux.ArrayConversionMixin):
     _array_keys = ['m/z array', 'intensity array']
 
     def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, **kwargs):
+        """
+        Create an instance of a :py:class:`MS1Base` parser.
+
+        Parameters
+        ----------
+
+        source : str or file or None, optional
+            A file object (or file name) with data in MS1 format. Default is
+            :py:const:`None`, which means read standard input.
+
+        use_header : bool, optional
+            Add the info from file header to each dict. Spectrum-specific parameters
+            override those from the header in case of conflict.
+            Default is :py:const:`False`.
+
+        convert_arrays : one of {0, 1, 2}, optional
+            If `0`, m/z, intensities and (possibly) charges will be returned as regular lists.
+            If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
+            If `2`, charges will be reported as a masked array (default).
+            The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
+
+        dtype : type or str or dict, optional
+            dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
+            Keys should be 'm/z array', 'intensity array', 'charge array'.
+
+        encoding : str, optional, keyword only
+            File encoding.
+        """
         super(MS1Base, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype, **kwargs)
         if convert_arrays and np is None:
             raise aux.PyteomicsError('numpy is required for array conversion')
@@ -188,6 +225,42 @@ class MS1(MS1Base, aux.FileReader):
 
     """
     def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, encoding=None, **kwargs):
+        """
+        Create an :py:class:`MS1` (text-mode) reader for a given MS1 file.
+
+        Parameters
+        ----------
+
+        source : str or file or None, optional
+            A file object (or file name) with data in MS1 format. Default is
+            :py:const:`None`, which means read standard input.
+
+            ..note :: If a file object is given, it must be opened in text mode.
+
+        use_header : bool, optional
+            Add the info from file header to each dict. Spectrum-specific parameters
+            override those from the header in case of conflict.
+            Default is :py:const:`False`.
+
+        convert_arrays : one of {0, 1, 2}, optional
+            If `0`, m/z, intensities and (possibly) charges will be returned as regular lists.
+            If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
+            If `2`, charges will be reported as a masked array (default).
+            The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
+
+        dtype : type or str or dict, optional
+            dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
+            Keys should be 'm/z array', 'intensity array', 'charge array' and/or 'ion array'.
+
+        encoding : str, optional
+            File encoding.
+
+        Returns
+        -------
+
+        out : MS1
+            The reader object.
+        """
         super(MS1, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype, encoding=encoding,
             mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={})
 
@@ -234,6 +307,45 @@ class IndexedMS1(MS1Base, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
     label = r'^[\n]?S\s+(\S+)'
 
     def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, encoding='utf-8', _skip_index=False, **kwargs):
+        """
+        Create an :py:class:`IndexedMS1` (binary-mode) reader for a given MS1 file.
+
+        Parameters
+        ----------
+
+        source : str or file or None, optional
+            A file object (or file name) with data in MS1 format. Default is
+            :py:const:`None`, which means read standard input.
+
+            .. note :: If a file object is given, it must be opened in binary mode.
+
+        use_header : bool, optional
+            Add the info from file header to each dict. Spectrum-specific parameters
+            override those from the header in case of conflict.
+            Default is :py:const:`True`.
+
+        convert_arrays : one of {0, 1, 2}, optional
+            If `0`, m/z, intensities and (possibly) charges will be returned as regular lists.
+            If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
+            If `2`, charges will be reported as a masked array (default).
+            The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
+
+        dtype : type or str or dict, optional
+            dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
+            Keys should be 'm/z array', 'intensity array', 'charge array' and/or 'ion array'.
+
+        encoding : str, optional
+            File encoding.
+
+        block_size : int, optinal
+            Size of the chunk (in bytes) used to parse the file when creating the byte offset index.
+
+        Returns
+        -------
+
+        out : IndexedMS1
+            The reader object.
+        """
         super(IndexedMS1, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype, encoding=encoding,
             parser_func=self._read, pass_file=False, args=(), kwargs={}, _skip_index=_skip_index, **kwargs)
 
@@ -323,10 +435,11 @@ def read(*args, **kwargs):
         override those from the header in case of conflict.
         Default is :py:const:`False`.
 
-    convert_arrays : bool, optional
-        If :py:const:`False`, m/z and intensities will be returned as regular lists.
-        If :py:const:`True` (default), they will be converted to regular :py:class:`numpy.ndarray`'s.
-        Conversion requires :py:mod:`numpy`.
+    convert_arrays : one of {0, 1, 2}, optional
+        If `0`, m/z, intensities and (possibly) charges will be returned as regular lists.
+        If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
+        If `2`, charges will be reported as a masked array (default).
+        The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
 
     dtype : type or str or dict, optional
         dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.

@@ -35,8 +35,7 @@ Classes
 Functions
 ---------
 
-  :py:func:`read` - iterate through spectra in MGF file. Data from a
-  single spectrum are converted to a human-readable dict.
+  :py:func:`read` - an alias for :py:class:`MGF` or :py:class:`IndexedMGF`.
 
   :py:func:`get_spectrum` - read a single spectrum with given title from a file.
 
@@ -99,7 +98,7 @@ class MGFBase(aux.MaskedArrayConversionMixin):
             Default is :py:const:`True`.
 
         convert_arrays : one of {0, 1, 2}, optional, keyword only
-            If `0`, m/z, intensities and (possibly) charges or (possibly) ions will be returned as regular lists
+            If `0`, m/z, intensities and (possibly) charges or (possibly) ions will be returned as regular lists.
             If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
             If `2`, charges will be reported as a masked array (default).
             The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
@@ -257,7 +256,6 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
     and 'params' stores a :py:class:`dict` of parameters (keys and values are
     :py:class:`str`, keys corresponding to MGF, lowercased).
 
-
     Attributes
     ----------
 
@@ -270,6 +268,52 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
                  dtype=None, encoding='utf-8', index_by_scans=False, read_ions=False, _skip_index=False, **kwargs):
+        """
+        Create an :py:class:`IndexedMGF` (binary-mode) reader for a given MGF file.
+
+        Parameters
+        ----------
+
+        source : str or file or None, optional
+            A file object (or file name) with data in MGF format. Default is
+            :py:const:`None`, which means read standard input.
+
+            .. note :: If a file object is given, it must be opened in binary mode.
+
+        use_header : bool, optional
+            Add the info from file header to each dict. Spectrum-specific parameters
+            override those from the header in case of conflict.
+            Default is :py:const:`True`.
+
+        convert_arrays : one of {0, 1, 2}, optional
+            If `0`, m/z, intensities and (possibly) charges will be returned as regular lists.
+            If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
+            If `2`, charges will be reported as a masked array (default).
+            The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
+
+        read_charges : bool, optional
+            If `True` (default), fragment charges are reported. Disabling it improves performance.
+
+        read_ions : bool, optional
+            If `True` (default: False), fragment ion types are reported. Disabling it improves performance.
+            Note that right now, only one of (read_charges, read_ions) may be True.
+
+        dtype : type or str or dict, optional
+            dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
+            Keys should be 'm/z array', 'intensity array', 'charge array' and/or 'ion array'.
+
+        encoding : str, optional
+            File encoding.
+
+        block_size : int, optinal
+            Size of the chunk (in bytes) used to parse the file when creating the byte offset index.
+
+        Returns
+        -------
+
+        out : IndexedMGF
+            The reader object.
+        """
         self._index_by_scans = index_by_scans
         self._read_ions = read_ions
         self.label = r'SCANS=(\d+)\s*' if index_by_scans else r'TITLE=([^\n]*\S)\s*'
@@ -345,6 +389,49 @@ class MGF(MGFBase, aux.FileReader):
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
             read_ions=False, dtype=None, encoding=None):
+        """
+        Create an :py:class:`MGF` (text-mode) reader for a given MGF file.
+
+        Parameters
+        ----------
+
+        source : str or file or None, optional
+            A file object (or file name) with data in MGF format. Default is
+            :py:const:`None`, which means read standard input.
+
+            ..note :: If a file object is given, it must be opened in text mode.
+
+        use_header : bool, optional
+            Add the info from file header to each dict. Spectrum-specific parameters
+            override those from the header in case of conflict.
+            Default is :py:const:`True`.
+
+        convert_arrays : one of {0, 1, 2}, optional
+            If `0`, m/z, intensities and (possibly) charges will be returned as regular lists.
+            If `1`, they will be converted to regular :py:class:`numpy.ndarray`'s.
+            If `2`, charges will be reported as a masked array (default).
+            The default option is the slowest. `1` and `2` require :py:mod:`numpy`.
+
+        read_charges : bool, optional
+            If `True` (default), fragment charges are reported. Disabling it improves performance.
+
+        read_ions : bool, optional
+            If `True` (default: False), fragment ion types are reported. Disabling it improves performance.
+            Note that right now, only one of (read_charges, read_ions) may be True.
+
+        dtype : type or str or dict, optional
+            dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
+            Keys should be 'm/z array', 'intensity array', 'charge array' and/or 'ion array'.
+
+        encoding : str, optional
+            File encoding.
+
+        Returns
+        -------
+
+        out : MGF
+            The reader object.
+        """
         super(MGF, self).__init__(source, mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={},
             encoding=encoding, use_header=use_header, convert_arrays=convert_arrays, read_charges=read_charges,
             read_ions=read_ions, dtype=dtype)
