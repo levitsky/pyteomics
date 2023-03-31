@@ -250,7 +250,7 @@ class MS1(MS1Base, aux.FileReader):
 
         dtype : type or str or dict, optional
             dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
-            Keys should be 'm/z array', 'intensity array', 'charge array' and/or 'ion array'.
+            Keys should be 'm/z array', 'intensity array', 'charge array'.
 
         encoding : str, optional
             File encoding.
@@ -332,7 +332,7 @@ class IndexedMS1(MS1Base, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
 
         dtype : type or str or dict, optional
             dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
-            Keys should be 'm/z array', 'intensity array', 'charge array' and/or 'ion array'.
+            Keys should be 'm/z array', 'intensity array', 'charge array'.
 
         encoding : str, optional
             File encoding.
