@@ -631,7 +631,8 @@ def calculate_mass(*args, **kwargs):
             mass_kw[k] = kwargs.pop(k)
     # Make a copy of `composition` keyword argument.
     composition = (Composition(kwargs['composition']) if 'composition' in kwargs else Composition(*args, **kwargs))
-    return composition.mass(**mass_kw, **kwargs)
+    kwargs.update(mass_kw)
+    return composition.mass(**kwargs)
 
 
 def most_probable_isotopic_composition(*args, **kwargs):
