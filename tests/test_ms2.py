@@ -24,13 +24,13 @@ class MS2Test(unittest.TestCase):
 
     def test_read_no_charges(self):
         with read(self.path, convert_arrays=False, read_charges=False) as reader:
-            lhs = data.ms2_spectra_lists.copy()
+            lhs = data.ms2_spectra_lists[:]
             for spec in lhs:
                 del spec['charge array']
             self.assertEqual(lhs, list(reader))
 
         with read(self.path, convert_arrays=1, read_charges=False) as reader:
-            lhs = data.ms2_spectra.copy()
+            lhs = data.ms2_spectra[:]
             for spec in lhs:
                 del spec['charge array']
             self.assertEqual(lhs, list(reader))
