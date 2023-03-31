@@ -408,11 +408,12 @@ class Composition(BasicComposition):
             If specified, then the polypeptide is considered to be in the form
             of the corresponding ion. Do not forget to specify the charge state!
         absolute : bool, optional
-            If :py:const:`True`, the m/z value returned will always be positive,
+            If :py:const:`True` (default), the m/z value returned will always be positive,
             even for negatively charged ions.
 
-            .. warning::
-                Default is :py:const:`False` now, but will be changed in a future version.
+            .. note ::
+                `absolute` only applies when `charge` is negative.
+                The mass can still be negative for negative compositions.
 
         Returns
         -------
@@ -424,7 +425,7 @@ class Composition(BasicComposition):
         # Calculate mass
         mass = 0.0
         average = kwargs.get('average', False)
-        absolute = kwargs.get('absolute')
+        absolute = kwargs.get('absolute', True)
 
         for isotope_string, amount in composition.items():
             element_name, isotope_num = _parse_isotope_string(isotope_string)
@@ -471,10 +472,7 @@ class Composition(BasicComposition):
             charge = composition['H+']
         if charge:
             mass /= charge
-        if mass < 0 and absolute is None:
-            warnings.warn('Returning a signed value. The default will change in the future.'
-                ' Specify `absolute` kwarg to suppress this warning', FutureWarning)
-        if absolute:
+        if charge and charge < 0 and absolute:
             mass = abs(mass)
         return mass
 
@@ -615,26 +613,25 @@ def calculate_mass(*args, **kwargs):
         If specified, then the polypeptide is considered to be in the form
         of the corresponding ion. Do not forget to specify the charge state!
     absolute : bool, optional
-            If :py:const:`True`, the m/z value returned will always be positive,
-            even for negatively charged ions.
+        If :py:const:`True` (default), the m/z value returned will always be positive,
+        even for negatively charged ions.
 
-            .. warning::
-                Default is :py:const:`False` now, but will be changed in a future version.
+        .. note ::
+            `absolute` only applies when `charge` is negative.
+            The mass can still be negative for negative compositions.
 
     Returns
     -------
     mass : float
     """
-    # These parameters must not be passed to mass(), not __init__
-    charge = kwargs.pop('charge', None)
-    charge_carrier = kwargs.pop('charge_carrier', None)
-    carrier_charge = kwargs.pop('carrier_charge', None)
-    absolute = kwargs.pop('absolute', None)
+    # These parameters must be passed to mass(), not __init__
+    mass_kw = {}
+    for k in ['charge', 'charge_carrier', 'carrier_charge', 'absolute']:
+        if k in kwargs:
+            mass_kw[k] = kwargs.pop(k)
     # Make a copy of `composition` keyword argument.
     composition = (Composition(kwargs['composition']) if 'composition' in kwargs else Composition(*args, **kwargs))
-    return composition.mass(
-        charge=charge, charge_carrier=charge_carrier, carrier_charge=carrier_charge,
-        absolute=absolute, **kwargs)
+    return composition.mass(**mass_kw, **kwargs)
 
 
 def most_probable_isotopic_composition(*args, **kwargs):

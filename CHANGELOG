@@ -1,14 +1,16 @@
-4.6a4
+4.6a5
 -----
 
- - When passing an existing file (by name) to :py:func:`pyteomics.mgf.write` or `pyteomics.fasta.write` and
+ - When passing an existing file (by name) to :py:func:`pyteomics.mgf.write` or :py:func:`pyteomics.fasta.write` and
    other writing functions, **the file will be opened for writing by default**. Previously, it would be opened for
    appending with a warning about the upcoming change. Please be aware that existing files will be overwritten
    if passed by name. The rationale for this is better reproducibility if the same code is run multiple
    times. You can use the `file_mode` argument of the writing functions to override this behaviour, or pass your own
    file objects.
+ - In :py:func:`pyteomics.mass.mass.calculate_mass`, the `absolute` parameter is now `True` by default.
+   When calculating *m/z* for negative charges, the returned value will be positive by default.
  - Fix issue #98 (`#99 <https://github.com/levitsky/pyteomics/pull/99>`_ and
-  `#101 <https://github.com/levitsky/pyteomics/pull/101>`_ by Joshua Klein).
+   `#101 <https://github.com/levitsky/pyteomics/pull/101>`_ by Joshua Klein).
  - Fix issue #91 (`#92 <https://github.com/levitsky/pyteomics/pull/92>`_ by Joshua Klein).
  - Fix issue #96.
  - Update the UniProt header pattern (fix rare parsing errors with
