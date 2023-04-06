@@ -68,6 +68,7 @@ except ImportError:
 class MS1Base(aux.ArrayConversionMixin):
     """Abstract class representing an MS1 file. Subclasses implement different approaches to parsing."""
     _array_keys = ['m/z array', 'intensity array']
+    _float_keys = ['RTime', 'RetTime']
 
     def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, **kwargs):
         """
@@ -130,8 +131,9 @@ class MS1Base(aux.ArrayConversionMixin):
         return header
 
     def _make_scan(self, info):
-        if 'RTime' in info['params']:
-            info['params']['RTime'] = float(info['params']['RTime'])
+        for key in self._float_keys:
+            if key in info['params']:
+                info['params'][key] = float(info['params'][key])
         self._build_all_arrays(info)
         return info
 

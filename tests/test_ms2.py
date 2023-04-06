@@ -1,8 +1,9 @@
-from os import path
+import os
 import numpy as np
 import pyteomics
-pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
+pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
 import unittest
+import copy
 import pickle
 from pyteomics.ms2 import read, read_header, MS2, IndexedMS2, chain
 import data
@@ -24,15 +25,28 @@ class MS2Test(unittest.TestCase):
 
     def test_read_no_charges(self):
         with read(self.path, convert_arrays=False, read_charges=False) as reader:
-            lhs = data.ms2_spectra_lists[:]
+            lhs = copy.deepcopy(data.ms2_spectra_lists)
             for spec in lhs:
                 del spec['charge array']
             self.assertEqual(lhs, list(reader))
 
         with read(self.path, convert_arrays=1, read_charges=False) as reader:
-            lhs = data.ms2_spectra[:]
+            lhs = copy.deepcopy(data.ms2_spectra)
             for spec in lhs:
                 del spec['charge array']
+            self.assertEqual(lhs, list(reader))
+
+    def test_read_no_resolution(self):
+        with read(self.path, convert_arrays=False, read_resolutions=False) as reader:
+            lhs = copy.deepcopy(data.ms2_spectra_lists)
+            for spec in lhs:
+                del spec['resolution array']
+            self.assertEqual(lhs, list(reader))
+
+        with read(self.path, convert_arrays=1, read_resolutions=False) as reader:
+            lhs = copy.deepcopy(data.ms2_spectra)
+            for spec in lhs:
+                del spec['resolution array']
             self.assertEqual(lhs, list(reader))
 
     def test_read_array_conversion(self):

@@ -18,3 +18,21 @@ I	RTime	25
 1673.3 1007
 1674 974
 1675.3 79
+S   000002  000002  445.12
+I   RetTime 0.02
+I   IonInjectionTime    150
+I   ActivationType  HCD
+I   InstrumentType  FTMS
+I   TemperatureFTAnalyzer   -1
+I   Filter  FTMS + p NSI d Full ms2 445.12@hcd25.00 [120.00-475.00]
+I   PrecursorScan   1
+I   PrecursorInt    0
+Z   1   445.12
+121.9724 572 0 18100
+121.9795 2377.6 0 18400
+122.574 18185.5 0 25102
+133.0122 1197.9 0 15900
+133.1404 854 0 16200
+134.0208 1253.6 0 16200
+134.5954 815.5 0 16900
+149.0444 181082.3 1 23306

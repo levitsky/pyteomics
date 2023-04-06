@@ -1,4 +1,4 @@
-4.6a5
+4.6a6
 -----
 
  - When passing an existing file (by name) to :py:func:`pyteomics.mgf.write` or :py:func:`pyteomics.fasta.write` and
@@ -21,7 +21,9 @@
    `#102 <https://github.com/levitsky/pyteomics/pull/102>`_. Some keys are removed from the output.
  - Fix pickling issues with :py:class:`pyteomics.mgf.IndexedMGF`, :py:class:`pyteomics.ms1.IndexedMS1`,
    :py:class:`pyteomics.ms2.IndexedMS2` (#108).
- - Add "charge array" to the output of MS2 parsers (#108).
+ - Add "charge array" and "resolution array" to the output of MS2 parsers (#108). Add new arguments `read_charges`
+   and `read_resolutions` to disable parsing, and `convert_arrays` to govern the creation of NumPy arrays
+   (and masked arrays).
 
 4.5.6
 -----

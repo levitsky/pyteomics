@@ -67,9 +67,10 @@ from pyteomics.ms1 import MS1, IndexedMS1, MS1Base
 
 class MS2Base(aux.MaskedArrayConversionMixin, MS1Base):
     """Abstract class representing an MS2 file. Subclasses implement different approaches to parsing."""
-    _array_keys = ['m/z array', 'intensity array', 'charge array']
+    _array_keys = ['m/z array', 'intensity array', 'charge array', 'resolution array']
+    _float_keys = ['RTime', 'RetTime', 'IonInjectionTime', 'PrecursorInt']
 
-    def __init__(self, source=None, use_header=False, convert_arrays=2, dtype=None, read_charges=True, **kwargs):
+    def __init__(self, source=None, use_header=False, convert_arrays=2, dtype=None, read_charges=True, read_resolutions=True, **kwargs):
         """
         Create an instance of a :py:class:`MS2Base` parser.
 
@@ -93,10 +94,15 @@ class MS2Base(aux.MaskedArrayConversionMixin, MS1Base):
 
         read_charges : bool, optional
             If `True` (default), fragment charges are reported. Disabling it improves performance.
+            Charge is expected to be the **third** number on the line, after peak *m/z* and intensity.
+
+        read_resolutions : bool, optional
+            If `True` (default), fragment peak resolutions are reported. Disabling it improves performance.
+            Resolution is expected to be the **fourth** number on the line, after peak *m/z*, intensity, and charge.
 
         dtype : type or str or dict, optional
             dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
-            Keys should be 'm/z array', 'intensity array', 'charge array'.
+            Keys should be 'm/z array', 'intensity array', 'charge array', 'resolution array'.
 
         encoding : str, optional, keyword only
             File encoding.
@@ -104,6 +110,7 @@ class MS2Base(aux.MaskedArrayConversionMixin, MS1Base):
         super(MS2Base, self).__init__(source=source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype,
             **kwargs)
         self._read_charges = read_charges
+        self._read_resolutions = read_resolutions
 
     def _handle_peak(self, line, sline, info):
         super(MS2Base, self)._handle_peak(line, sline, info)
@@ -116,10 +123,21 @@ class MS2Base(aux.MaskedArrayConversionMixin, MS1Base):
                     raise aux.PyteomicsError("Error parsing fragment charge on line: " + line)
             else:
                 info['charge array'].append(0)
+        if self._read_resolutions:
+            if len(sline) > 2:
+                sline = line.strip().split()
+                try:
+                    info['resolution array'].append(int(sline[3]))
+                except ValueError:
+                    raise aux.PyteomicsError("Error parsing fragment peak resolution on line: " + line)
+            else:
+                info['resolution array'].append(0)
 
     def _make_scan(self, info):
         if not self._read_charges:
             del info['charge array']
+        if not self._read_resolutions:
+            del info['resolution array']
         return super(MS2Base, self)._make_scan(info)
 
 
@@ -167,6 +185,11 @@ class MS2(MS2Base, MS1):
 
         read_charges : bool, optional
             If `True` (default), fragment charges are reported. Disabling it improves performance.
+            Charge is expected to be the **third** number on the line, after peak *m/z* and intensity.
+
+        read_resolutions : bool, optional
+            If `True` (default), fragment peak resolutions are reported. Disabling it improves performance.
+            Resolution is expected to be the **fourth** number on the line, after peak *m/z*, intensity, and charge.
 
         dtype : type or str or dict, optional
             dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
@@ -212,7 +235,7 @@ class IndexedMS2(IndexedMS1, MS2Base):
     time : RTLocator
         A property used for accessing spectra by retention time.
     """
-    def __init__(self, source=None, use_header=False, convert_arrays=2, dtype=None, read_charges=True,
+    def __init__(self, source=None, use_header=False, convert_arrays=2, dtype=None, read_charges=True, read_resolutions=True,
                  encoding='utf-8', _skip_index=False, **kwargs):
         """
         Create an :py:class:`IndexedMS2` (binary-mode) reader for a given MS2 file.
@@ -239,6 +262,11 @@ class IndexedMS2(IndexedMS1, MS2Base):
 
         read_charges : bool, optional
             If `True` (default), fragment charges are reported. Disabling it improves performance.
+            Charge is expected to be the **third** number on the line, after peak *m/z* and intensity.
+
+        read_resolutions : bool, optional
+            If `True` (default), fragment peak resolutions are reported. Disabling it improves performance.
+            Resolution is expected to be the **fourth** number on the line, after peak *m/z*, intensity, and charge.
 
         dtype : type or str or dict, optional
             dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
@@ -257,11 +285,11 @@ class IndexedMS2(IndexedMS1, MS2Base):
             The reader object.
         """
         super(IndexedMS2, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype,
-            read_charges=read_charges, encoding=encoding, _skip_index=_skip_index, **kwargs)
+            read_charges=read_charges, read_resolutions=read_resolutions, encoding=encoding, _skip_index=_skip_index, **kwargs)
 
     def __reduce_ex__(self, protocol):
         return (self.__class__,
-            (self._source_init, False, self._convert_arrays, None, self._read_charges, self.encoding, True),
+            (self._source_init, False, self._convert_arrays, None, self._read_charges, self._read_resolutions, self.encoding, True),
             self.__getstate__())
 
 
@@ -310,6 +338,14 @@ def read(*args, **kwargs):
         If :py:const:`False`, m/z and intensities will be returned as regular lists.
         If :py:const:`True` (default), they will be converted to regular :py:class:`numpy.ndarray`'s.
         Conversion requires :py:mod:`numpy`.
+
+    read_charges : bool, optional
+        If `True` (default), fragment charges are reported. Disabling it improves performance.
+        Charge is expected to be the **third** number on the line, after peak *m/z* and intensity.
+
+    read_resolutions : bool, optional
+        If `True` (default), fragment peak resolutions are reported. Disabling it improves performance.
+        Resolution is expected to be the **fourth** number on the line, after peak *m/z*, intensity, and charge.
 
     dtype : type or str or dict, optional
         dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
