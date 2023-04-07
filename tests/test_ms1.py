@@ -52,6 +52,13 @@ class MS1Test(unittest.TestCase):
         with pickle.loads(spec) as reader:
             self.assertEqual(data.ms1_header, reader.header)
 
+    def test_ms1_picklable(self):
+        with MS1(self.path, convert_arrays=0) as reader:
+            spec = pickle.dumps(reader)
+        with pickle.loads(spec) as reader:
+            self.assertEqual(reader._convert_arrays, 0)
+            self.assertEqual(data.ms1_spectra_lists, list(reader))
+
 
 if __name__ == "__main__":
     unittest.main()

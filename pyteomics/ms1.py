@@ -70,7 +70,7 @@ class MS1Base(aux.ArrayConversionMixin):
     _array_keys = ['m/z array', 'intensity array']
     _float_keys = ['RTime', 'RetTime']
 
-    def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, **kwargs):
+    def __init__(self, source=None, use_header=False, convert_arrays=True, dtype=None, encoding=None, **kwargs):
         """
         Create an instance of a :py:class:`MS1Base` parser.
 
@@ -96,10 +96,10 @@ class MS1Base(aux.ArrayConversionMixin):
             dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
             Keys should be 'm/z array', 'intensity array', 'charge array'.
 
-        encoding : str, optional, keyword only
+        encoding : str, optional
             File encoding.
         """
-        super(MS1Base, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype, **kwargs)
+        super(MS1Base, self).__init__(source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype, encoding=encoding, **kwargs)
         if convert_arrays and np is None:
             raise aux.PyteomicsError('numpy is required for array conversion')
         self._use_header = use_header
@@ -206,6 +206,22 @@ class MS1Base(aux.ArrayConversionMixin):
         if line_count == 0:
             return
         return self._make_scan(info)
+
+    def __getstate__(self):
+        state = super(MS1Base, self).__getstate__()
+        state['use_header'] = self._use_header
+        state['header'] = self._header
+        return state
+
+    def __setstate__(self, state):
+        super(MS1Base, self).__setstate__(state)
+        self._use_header = state['use_header']
+        self._header = state['header']
+
+    def __reduce_ex__(self, protocol):
+        return (self.__class__,
+            (self._source_init, False, self._convert_arrays, None, self.encoding),
+            self.__getstate__())
 
 
 class MS1(MS1Base, aux.FileReader):
@@ -355,17 +371,6 @@ class IndexedMS1(MS1Base, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
         return (self.__class__,
             (self._source_init, False, self._convert_arrays, None, self.encoding, True),
             self.__getstate__())
-
-    def __getstate__(self):
-        state = super(IndexedMS1, self).__getstate__()
-        state['use_header'] = self._use_header
-        state['header'] = self._header
-        return state
-
-    def __setstate__(self, state):
-        super(IndexedMS1, self).__setstate__(state)
-        self._use_header = state['use_header']
-        self._header = state['header']
 
     @aux._keepstate_method
     def _read_header(self):

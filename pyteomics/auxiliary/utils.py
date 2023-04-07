@@ -139,12 +139,14 @@ class ArrayConversionMixin(object):
         state = super(ArrayConversionMixin, self).__getstate__()
         state['_dtype_dict'] = self._dtype_dict
         state['_convert_arrays'] = self._convert_arrays
+        state['_array_keys'] = self._array_keys
         return state
 
     def __setstate__(self, state):
         super(ArrayConversionMixin, self).__setstate__(state)
         self._dtype_dict = state['_dtype_dict']
         self._convert_arrays = state['_convert_arrays']
+        self._array_keys = state['_array_keys']
 
     def _build_array(self, k, data):
         dtype = self._dtype_dict.get(k)

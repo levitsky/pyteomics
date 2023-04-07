@@ -175,6 +175,12 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(data.mgf_spectra_long[0], next(reader))
             self.assertEqual(reader.block_size, 12345)
 
+    def test_mgf_picklable(self):
+        with mgf.MGF(self.path, convert_arrays=0) as reader:
+            spec = pickle.dumps(reader)
+        with pickle.loads(spec) as reader:
+            self.assertEqual(data.mgf_spectra_lists[0], next(reader))
+
     def test_map(self):
         with mgf.IndexedMGF(self.path) as reader:
             spectra = sorted(list(reader.map()), key=lambda s: s['params']['title'])

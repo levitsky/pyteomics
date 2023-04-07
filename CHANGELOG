@@ -1,4 +1,4 @@
-4.6a6
+4.6a7
 -----
 
  - When passing an existing file (by name) to :py:func:`pyteomics.mgf.write` or :py:func:`pyteomics.fasta.write` and

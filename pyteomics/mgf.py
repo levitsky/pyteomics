@@ -130,6 +130,20 @@ class MGFBase(aux.MaskedArrayConversionMixin):
         else:
             self._header = None
 
+    def __reduce_ex__(self, protocol):
+        return (self.__class__, (self._source_init,), self.__getstate__())
+
+    def __getstate__(self):
+        state = super(MGFBase, self).__getstate__()
+        state['use_header'] = self._use_header
+        state['header'] = self._header
+        return state
+
+    def __setstate__(self, state):
+        super(MGFBase, self).__setstate__(state)
+        self._header = state['header']
+        self._use_header = state['use_header']
+
     @staticmethod
     def parse_precursor_charge(charge_text, list_only=False):
         return aux._parse_charge(charge_text, list_only=list_only)
@@ -328,17 +342,6 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
                 (self._source_init, False, self._convert_arrays, self._read_charges,
                  None, self.encoding, self._index_by_scans, self._read_ions, True),
                 self.__getstate__())
-
-    def __getstate__(self):
-        state = super(IndexedMGF, self).__getstate__()
-        state['use_header'] = self._use_header
-        state['header'] = self._header
-        return state
-
-    def __setstate__(self, state):
-        super(IndexedMGF, self).__setstate__(state)
-        self._header = state['header']
-        self._use_header = state['use_header']
 
     @aux._keepstate_method
     def _read_header(self):

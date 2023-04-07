@@ -70,7 +70,7 @@ class MS2Base(aux.MaskedArrayConversionMixin, MS1Base):
     _array_keys = ['m/z array', 'intensity array', 'charge array', 'resolution array']
     _float_keys = ['RTime', 'RetTime', 'IonInjectionTime', 'PrecursorInt']
 
-    def __init__(self, source=None, use_header=False, convert_arrays=2, dtype=None, read_charges=True, read_resolutions=True, **kwargs):
+    def __init__(self, source=None, use_header=False, convert_arrays=2, dtype=None, read_charges=True, read_resolutions=True, encoding=None, **kwargs):
         """
         Create an instance of a :py:class:`MS2Base` parser.
 
@@ -104,11 +104,11 @@ class MS2Base(aux.MaskedArrayConversionMixin, MS1Base):
             dtype argument to :py:mod:`numpy` array constructor, one for all arrays or one for each key.
             Keys should be 'm/z array', 'intensity array', 'charge array', 'resolution array'.
 
-        encoding : str, optional, keyword only
+        encoding : str, optional
             File encoding.
         """
         super(MS2Base, self).__init__(source=source, use_header=use_header, convert_arrays=convert_arrays, dtype=dtype,
-            **kwargs)
+            encoding=encoding, **kwargs)
         self._read_charges = read_charges
         self._read_resolutions = read_resolutions
 
@@ -139,6 +139,11 @@ class MS2Base(aux.MaskedArrayConversionMixin, MS1Base):
         if not self._read_resolutions:
             del info['resolution array']
         return super(MS2Base, self)._make_scan(info)
+
+    def __reduce_ex__(self, protocol):
+        return (self.__class__,
+            (self._source_init, False, self._convert_arrays, None, self._read_charges, self._read_resolutions, self.encoding),
+            self.__getstate__())
 
 
 class MS2(MS2Base, MS1):

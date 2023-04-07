@@ -71,16 +71,35 @@ class MS2Test(unittest.TestCase):
                     self.assertEqual(spec[k].dtype, v)
 
     def test_indexedms2_picklable(self):
-        with IndexedMS2(self.path, block_size=12345) as reader:
+        with IndexedMS2(self.path, block_size=12345, convert_arrays=1, read_charges=False, read_resolutions=False) as reader:
             spec = pickle.dumps(reader)
         with pickle.loads(spec) as reader:
             self.assertEqual(reader.block_size, 12345)
-            self.assertEqual(data.ms2_spectra, list(reader))
+            self.assertEqual(reader._read_charges, False)
+            self.assertEqual(reader._read_resolutions, False)
+            lhs = copy.deepcopy(data.ms2_spectra)
+            for spec in lhs:
+                del spec['resolution array']
+                del spec['charge array']
+            self.assertEqual(lhs, list(reader))
 
         with IndexedMS2(self.path, use_header=True) as reader:
             spec = pickle.dumps(reader)
         with pickle.loads(spec) as reader:
             self.assertEqual(data.ms2_header, reader.header)
+
+    def test_ms2_picklable(self):
+        with MS2(self.path, convert_arrays=1, read_charges=False, read_resolutions=False) as reader:
+            spec = pickle.dumps(reader)
+        with pickle.loads(spec) as reader:
+            self.assertEqual(reader._read_charges, False)
+            self.assertEqual(reader._read_resolutions, False)
+            lhs = copy.deepcopy(data.ms2_spectra)
+            for spec in lhs:
+                del spec['resolution array']
+                del spec['charge array']
+            self.assertEqual(lhs, list(reader))
+
 
 if __name__ == "__main__":
     unittest.main()
