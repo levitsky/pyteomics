@@ -647,6 +647,9 @@ def write(spectra, output=None, header='', key_order=_default_key_order, fragmen
             To ensure correct output when writing multiple spectra,
             it is recommended to construct a sequence of spectra first and then call :py:func:`write` once.
 
+        .. seealso ::
+            This discussion of usage patterns of :py:func:`write`: https://github.com/levitsky/pyteomics/discussions/109
+
     output : str or file or None, optional
         Path or a file-like object open for writing. If an existing file is
         specified by file name, it will be opened for writing.
@@ -766,8 +769,9 @@ def write(spectra, output=None, header='', key_order=_default_key_order, fragmen
 
     if isinstance(spectra, dict) and 'm/z array' in spectra:
         spectra = (spectra, )
-        warnings.warn("Passing a single spectrum to `write()` is discouraged."
-            "To write a set of spectra, pass them to `write()` all at once.")
+        warnings.warn("Passing a single spectrum to `write()` is discouraged. "
+            "To write a set of spectra, pass them to `write()` all at once. "
+            "For more info, see: https://github.com/levitsky/pyteomics/discussions/109.")
 
     for spectrum in spectra:
         output.write('BEGIN IONS\n')
