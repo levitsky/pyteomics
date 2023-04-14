@@ -10,6 +10,7 @@ import pickle
 import shutil
 import json
 from collections import OrderedDict
+import warnings
 from pyteomics import mgf, auxiliary as aux
 import data
 
@@ -143,6 +144,21 @@ class MGFTest(unittest.TestCase):
                                  self.spectra2[i]['m/z array'][j])
                 self.assertEqual(self.spectra[i]['intensity array'][j],
                                  self.spectra2[i]['intensity array'][j])
+
+    def test_write_single(self):
+        tmpfile = tempfile.TemporaryFile(mode='r+')
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+            for spectrum in self.spectra:
+                mgf.write(spectra=spectrum, output=tmpfile)
+
+        self.assertEqual(len(ws), 2)
+        for w in ws:
+            self.assertTrue(issubclass(w.category, UserWarning))
+            self.assertTrue("discouraged" in str(w.message))
+        tmpfile.seek(0)
+        tmpreader = mgf.read(tmpfile)
+        self.assertEqual(data.mgf_spectra_long, list(tmpreader))
 
     def test_read_dtype(self):
         dtypes = {'m/z array': np.float32, 'intensity array': np.int32}

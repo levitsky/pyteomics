@@ -72,6 +72,7 @@ except ImportError:
     np = None
 import itertools as it
 import sys
+import warnings
 from . import auxiliary as aux
 
 
@@ -628,7 +629,7 @@ def write(spectra, output=None, header='', key_order=_default_key_order, fragmen
     ----------
 
     spectra : iterable
-        A sequence of dictionaries with keys 'm/z array', 'intensity array',
+        A **sequence** of dictionaries with keys 'm/z array', 'intensity array',
         and 'params'. 'm/z array' and 'intensity array' should be sequences of
         :py:class:`int`, :py:class:`float`, or :py:class:`str`. Strings will
         be written 'as is'. The sequences should be of equal length, otherwise
@@ -639,7 +640,12 @@ def write(spectra, output=None, header='', key_order=_default_key_order, fragmen
         without any format consistency tests. Values can be of any type allowing
         string representation.
 
-        'charge array' can also be specified.
+        'charge array' or 'ion array' can also be specified.
+
+        .. note ::
+            Passing a single spectrum will work, but will trigger a warning. This usage pattern is discouraged.
+            To ensure correct output when writing multiple spectra,
+            it is recommended to construct a sequence of spectra first and then call :py:func:`write` once.
 
     output : str or file or None, optional
         Path or a file-like object open for writing. If an existing file is
@@ -757,6 +763,11 @@ def write(spectra, output=None, header='', key_order=_default_key_order, fragmen
                 head_dict[l[0].lower()] = l[1].strip()
     if head_str:
         output.write(head_str + '\n\n')
+
+    if isinstance(spectra, dict) and 'm/z array' in spectra:
+        spectra = (spectra, )
+        warnings.warn("Passing a single spectrum to `write()` is discouraged."
+            "To write a set of spectra, pass them to `write()` all at once.")
 
     for spectrum in spectra:
         output.write('BEGIN IONS\n')
