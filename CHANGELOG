@@ -8,6 +8,7 @@
    times. You can use the `file_mode` argument of the writing functions to override this behaviour, or pass your own
    file objects.
  - Add a special warning when trying to write a single spectrum with :py:func:`pyteomics.mgf.write`.
+   See also: `Writing one or more MGF spectra to a file <https://github.com/levitsky/pyteomics/discussions/109>`_.
  - In :py:func:`pyteomics.mass.mass.calculate_mass`, the `absolute` parameter is now `True` by default.
    When calculating *m/z* for negative charges, the returned value will be positive by default.
  - Fix issue #98 (`#99 <https://github.com/levitsky/pyteomics/pull/99>`_ and
