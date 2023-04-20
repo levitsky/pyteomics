@@ -1,5 +1,5 @@
-4.6b1
------
+4.6
+---
 
  - When passing an existing file (by name) to :py:func:`pyteomics.mgf.write` or :py:func:`pyteomics.fasta.write` and
    other writing functions, **the file will be opened for writing by default**. Previously, it would be opened for
