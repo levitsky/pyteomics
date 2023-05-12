@@ -245,5 +245,19 @@ class MGFTest(unittest.TestCase):
         self.assertEqual(container['index'], [['Spectrum 1', [217, 343]], ['Spectrum 2', [343, 506]]])
 
 
+class UtilityTest(unittest.TestCase):
+    def test_charge_repr_single(self):
+        self.assertEqual(mgf._charge_repr('charge', 2), 'CHARGE=2+')
+        self.assertEqual(mgf._charge_repr('charge', '2'), 'CHARGE=2+')
+        self.assertEqual(mgf._charge_repr('charge', [2]), 'CHARGE=2+')
+        self.assertEqual(mgf._charge_repr('charge', aux.Charge(2)), 'CHARGE=2+')
+        self.assertEqual(mgf._charge_repr('charge', aux.ChargeList([2])), 'CHARGE=2+')
+
+    def test_charge_repr_multiple(self):
+        self.assertEqual(mgf._charge_repr('charge', [2, 3]), 'CHARGE=2+ and 3+')
+        self.assertEqual(mgf._charge_repr('charge', aux.ChargeList([2, 3])), 'CHARGE=2+ and 3+')
+        self.assertEqual(mgf._charge_repr('charge', '2+, 3+'), 'CHARGE=2+ and 3+')
+
+
 if __name__ == "__main__":
     unittest.main()
