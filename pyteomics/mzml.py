@@ -336,7 +336,10 @@ class MzML(aux.BinaryArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xm
         intkeys = {'ms level'}
         for k in intkeys:
             if k in info:
-                info[k] = int(info[k])
+                try:
+                    info[k] = int(info[k])
+                except (ValueError, TypeError):
+                    pass
         return info
 
     def _retrieve_refs(self, info, **kwargs):
