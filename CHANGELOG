@@ -1,7 +1,8 @@
-4.6.1a1
+4.6.1a2
 -------
 
  - Make :py:func:`pyteomics.mgf.write` work with a regular list of ints as "charge" param.
+ - Fix #115.
 
 4.6
 ---
