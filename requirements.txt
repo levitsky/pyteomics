@@ -4,3 +4,4 @@ matplotlib
 pandas
 sqlalchemy
 pynumpress
+scikit-learn

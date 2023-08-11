@@ -327,7 +327,8 @@ References
 Dependencies
 ------------
 
-This module requires :py:mod:`numpy`.
+This module requires :py:mod:`numpy` and, optionally, :py:mod:`scikit-learn`
+(for MAE regression).
 
 --------------------------------------------------------------------------------
 """
@@ -348,10 +349,14 @@ This module requires :py:mod:`numpy`.
 
 import numpy as np
 from .auxiliary import linear_regression, PyteomicsError
+try:
+    from sklearn.linear_model import QuantileRegressor
+except ImportError:
+    QuantileRegressor = None
+
 from . import parser
 
-def get_RCs(sequences, RTs, lcp = -0.21,
-            term_aa = False, **kwargs):
+def get_RCs(sequences, RTs, lcp=-0.21, term_aa=False, metric='mse', **kwargs):
     """Calculate the retention coefficients of amino acids using
     retention times of a peptide sample and a fixed value of length
     correction parameter.
@@ -369,6 +374,15 @@ def get_RCs(sequences, RTs, lcp = -0.21,
         If :py:const:`True`, terminal amino acids are treated as being
         modified with 'ntermX'/'ctermX' modifications. :py:const:`False`
         by default.
+    metric : str, optional
+        Metric for the regression problem. Set to "mse" (mean squared
+        error) by default. Alternative: "mae" (mean absolute error),
+        which uses quantile regression.
+
+        .. note ::
+            `"mae"` requires :py:mod:`scikit-learn` for
+            `quantile regression <https://scikit-learn.org/stable/auto_examples/linear_model/plot_quantile_regression.html>`_.
+
     labels : list of str, optional
         List of all possible amino acids and terminal groups
         If not given, any modX labels are allowed.
@@ -435,8 +449,19 @@ def get_RCs(sequences, RTs, lcp = -0.21,
             composition_array.append(normalizing_peptide)
             RTs.append(0.0)
 
-    # Use least square linear regression.
-    RCs, res, rank, s = np.linalg.lstsq(np.array(composition_array), np.array(RTs), rcond=None)
+    if metric == 'mse':
+        # # Use least square linear regression.
+        RCs, _, _, _ = np.linalg.lstsq(np.array(composition_array), np.array(RTs), rcond=None)
+
+    elif metric == 'mae':
+        if QuantileRegressor is None:
+            raise PyteomicsError("`metric='mae'` requires scikit-learn.")
+        # Use Quantile regression.
+        QR = QuantileRegressor(fit_intercept=False, alpha=0, solver='highs')
+        QR.fit(np.array(composition_array), np.array(RTs))
+        RCs = QR.coef_
+    else:
+        raise PyteomicsError('Invalid metric "{}". Must be "mse" or "mae".'.format(metric))
 
     # Remove normalizing elements from the RTs vector.
     if term_aa:
@@ -478,10 +503,8 @@ def get_RCs(sequences, RTs, lcp = -0.21,
 
     return RC_dict
 
-def get_RCs_vary_lcp(sequences, RTs,
-                term_aa = False,
-                lcp_range = (-1.0, 1.0),
-                **kwargs):
+
+def get_RCs_vary_lcp(sequences, RTs, term_aa=False, lcp_range=(-1.0, 1.0), metric='mse', **kwargs):
     """Find the best combination of a length correction parameter and
     retention coefficients for a given peptide sample.
 
@@ -494,6 +517,14 @@ def get_RCs_vary_lcp(sequences, RTs,
     term_aa : bool, optional
         If True, terminal amino acids are treated as being
         modified with 'ntermX'/'ctermX' modifications. False by default.
+    metric : str, optional
+        Metric for the regression problem. Set to "mse" (mean squared
+        error) by default. Alternative: "mae" (mean absolute error).
+
+        .. note ::
+            `"mae"` requires :py:mod:`scikit-learn` for
+            `quantile regression <https://scikit-learn.org/stable/auto_examples/linear_model/plot_quantile_regression.html>`_.
+
     lcp_range : 2-tuple of float, optional
         Range of possible values of the length correction parameter.
     labels : list of str, optional
@@ -540,7 +571,7 @@ def get_RCs_vary_lcp(sequences, RTs,
         lcp_grid = np.arange(min_lcp, max_lcp,
                                 (max_lcp - min_lcp) / 10.0)
         for lcp in lcp_grid:
-            RC_dict = get_RCs(peptide_dicts, RTs, lcp, term_aa, labels=labels)
+            RC_dict = get_RCs(peptide_dicts, RTs, lcp, term_aa, labels=labels, metric=metric)
             regression_coeffs = linear_regression(
                 RTs,
                 [calculate_RT(peptide, RC_dict) for peptide in peptide_dicts])
@@ -552,6 +583,7 @@ def get_RCs_vary_lcp(sequences, RTs,
         step = (max_lcp - min_lcp) / 10.0
 
     return best_RC_dict
+
 
 def calculate_RT(peptide, RC_dict, raise_no_mod=True):
     """Calculate the retention time of a peptide using a given set

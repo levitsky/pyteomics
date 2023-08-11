@@ -1,8 +1,10 @@
-4.6.1a2
+4.6.1a3
 -------
 
  - Make :py:func:`pyteomics.mgf.write` work with a regular list of ints as "charge" param.
  - Fix #115.
+ - Add mean absolute error (MAE) regression in :py:mod:`pyteomics.achrom`
+   (`#117 <https://github.com/levitsky/pyteomics/pull/117>`_ by Mark Ivanov).
 
 4.6
 ---
