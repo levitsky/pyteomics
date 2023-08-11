@@ -40,7 +40,7 @@ extras_require = {'XML': ['lxml', 'numpy'],
                   'numpress': ['pynumpress'],
                   'mzMLb': ['h5py', 'hdf5plugin'],
                   'proforma': ['psims > v0.1.42']}
-extras_require['all'] = sum(extras_require.values(), [])
+extras_require['all'] = sum(extras_require.values(), ['scikit-learn'])
 
 
 setup(
