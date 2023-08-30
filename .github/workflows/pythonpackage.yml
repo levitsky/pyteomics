@@ -37,8 +37,8 @@ jobs:
 
   tests-py2:
     runs-on: 'ubuntu-20.04'
-      container:
-        image: python:2.7.18-buster
+    container:
+      image: python:2.7.18-buster
     steps:
     - uses: actions/checkout@v3
     - name: Install dependencies
