@@ -35,7 +35,7 @@ with open('README.rst') as r, open('INSTALL') as i:
 extras_require = {'XML': ['lxml', 'numpy'],
                   'TDA': ['numpy'],
                   'graphics': ['matplotlib'],
-                  'DF': ['pandas'],
+                  'DF': ['pandas>=0.17'],
                   'Unimod': ['lxml', 'sqlalchemy'],
                   'numpress': ['pynumpress'],
                   'mzMLb': ['h5py', 'hdf5plugin'],

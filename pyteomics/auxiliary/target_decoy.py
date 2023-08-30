@@ -14,11 +14,10 @@ except ImportError:
     from collections import Container, Sized
 from bisect import bisect_right
 from contextlib import contextmanager
-
+import pandas as  pd
 
 from .structures import PyteomicsError
 from .file_helpers import _keepstate, IteratorContextManager, _make_chain, ChainBase, TableJoiner
-from .patch import pd
 
 
 def _fix_docstring(f, **defaults):
