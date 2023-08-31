@@ -975,16 +975,16 @@ class UseIndexTest(unittest.TestCase):
 class VersionTest(unittest.TestCase):
 
     def test_short_version(self):
-        self.assertEqual(version._VersionInfo('1.2'), ('1', '2', None, None, None))
+        self.assertEqual(version.VersionInfo('1.2'), ('1', '2', None, None, None))
 
     def test_longer_version(self):
-        self.assertEqual(version._VersionInfo('1.2.3'), ('1', '2', '3', None, None))
+        self.assertEqual(version.VersionInfo('1.2.3'), ('1', '2', '3', None, None))
 
     def test_short_dev_version(self):
-        self.assertEqual(version._VersionInfo('1.2dev3'), ('1', '2', None, 'dev', '3'))
+        self.assertEqual(version.VersionInfo('1.2dev3'), ('1', '2', None, 'dev', '3'))
 
     def test_longer_dev_version(self):
-        self.assertEqual(version._VersionInfo('1.2.3dev4'), ('1', '2', '3', 'dev', '4'))
+        self.assertEqual(version.VersionInfo('1.2.3dev4'), ('1', '2', '3', 'dev', '4'))
 
 
 import warnings

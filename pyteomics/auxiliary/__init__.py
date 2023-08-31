@@ -3,8 +3,6 @@ try:
 except NameError:
     basestring = (str, bytes)
 
-from .patch import Version as _Version
-
 from .structures import (
     PyteomicsError, Charge, ChargeList,
     _parse_charge, _parse_ion, BasicComposition,

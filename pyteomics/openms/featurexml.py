@@ -68,7 +68,7 @@ class FeatureXML(xml.MultiProcessingXML):
         if not read_schema:
             return schema_info
         file_version, schema = self.version_info
-        if version._VersionInfo(file_version) < version._VersionInfo(self._default_version):
+        if version.VersionInfo(file_version) < version.VersionInfo(self._default_version):
             for k, s in self._offending_keys.items():
                 if k in schema_info:
                     for elem in s:
