@@ -8,7 +8,7 @@ Classes
 -------
 
   :py:class:`VersionInfo` - a namedtuple for version numbers that supports comparisons and can be initialized
-                            from a version string.
+    from a version string.
 
 Constants
 ---------

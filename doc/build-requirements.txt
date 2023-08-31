@@ -1,4 +1,5 @@
 lxml
+pandas
 sqlalchemy
 matplotlib
 git+https://github.com/sphinx-contrib/googleanalytics.git
