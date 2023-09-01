@@ -191,7 +191,7 @@ class ParserTest(unittest.TestCase):
                  'gene_id': 'ACOX',
                  'name': 'Acetoin catabolism protein X',
                  'taxon': 'RALEH',
-                 '_raw': header[0]}
+                 '_raw': 'PREFIX_' + header}
         self.assertEqual(entries[0][0], parsed)
         self.assertEqual(entries[0][1], 'SEQUENCE'[::-1])
         self.assertEqual(len(entries), 1)
@@ -211,7 +211,7 @@ class ParserTest(unittest.TestCase):
                  'gene_id': 'ACOX',
                  'name': 'Acetoin catabolism protein X',
                  'taxon': 'RALEH',
-                 '_raw': header[0]}
+                 '_raw': header}
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_uniprotkb_isoform(self):
@@ -274,7 +274,7 @@ class ParserTest(unittest.TestCase):
                  # 'type': 'UniRef100',
                  # 'accession': 'A5DI11',
                  'n': 1,
-                 '_raw': header[0][1:]}
+                 '_raw': header[1:]}
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_uniparc(self):
@@ -292,7 +292,7 @@ class ParserTest(unittest.TestCase):
                  'SV': 1,
                  'id': 'MES00000000005',
                  'name': 'Putative uncharacterized protein GOS_3018412 (Fragment)',
-                 '_raw': header[0]}
+                 '_raw': header}
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_spd(self):
@@ -304,7 +304,7 @@ class ParserTest(unittest.TestCase):
                  'gene_id': '1433S',
                  'id': 'P31947',
                  'taxon': 'HUMAN',
-                 '_raw': header[0][1:]}
+                 '_raw': header[1:]}
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_spd_mult_ids(self):
@@ -316,7 +316,7 @@ class ParserTest(unittest.TestCase):
                  'gene_id': 'A1AG1',
                  'id': 'P02763 Q8TC16',
                  'taxon': 'HUMAN',
-                 '_raw': header[0][1:]}
+                 '_raw': header[1:]}
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_ncbi(self):
