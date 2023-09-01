@@ -119,6 +119,32 @@ Protein = namedtuple('Protein', ('description', 'sequence'))
 DECOY_PREFIX = 'DECOY_'
 
 
+def _add_raw_field(parser):
+    """
+    Add "_raw" field to the parsed dictinary
+
+    Parameters
+    ----------
+    parser : func
+        parser function.
+
+    Returns
+    -------
+    None.
+
+    """
+    def _new_parser(cls, descr):
+        parsed = parser(cls, descr)
+        if not '_raw' in parsed.keys():
+            parsed['_raw'] = descr
+        else:
+            raise aux.PytemicsError('Cannot save raw protein header, since the corresponsing\
+                                    key (_raw) already exists')
+        return parsed
+
+    return _new_parser
+
+
 class FASTABase(object):
     """Abstract base class for FASTA file parsers.
     Can be used for type checking.
@@ -410,6 +436,7 @@ class UniProtMixin(FlavoredMixin):
     header_pattern = r'^(?P<db>\w+)\|(?P<id>[-\w]+)\|(?P<entry>\w+)\s+(?P<name>.*?)(?:(\s+OS=(?P<OS>[^=]+))|(\s+OX=(?P<OX>\d+))|(\s+GN=(?P<GN>\S+))|(\s+PE=(?P<PE>\d))|(\s+SV=(?P<SV>\d+)))*\s*$'
     header_group = 'id'
 
+    @_add_raw_field
     def parser(self, header):
         info = re.match(self.header_pattern, header).groupdict()
         for key in ['OS', 'OX', 'GN', 'PE', 'SV']:
@@ -449,7 +476,6 @@ def _add_init(cls):
 
     return type(cls.__name__, (flavor, typ), newdict)
 
-
 @_add_init
 class UniProt(UniProtMixin, FASTA):
     pass
@@ -464,6 +490,7 @@ class UniRefMixin(FlavoredMixin):
     header_pattern = r'^(?P<id>\S+)\s+(?P<cluster>.*?)(?:(\s+n=(?P<n>\d+))|(\s+Tax=(?P<Tax>.+?))|(\s+TaxID=(?P<TaxID>\S+))|(\s+RepID=(?P<RepID>\S+)))*\s*$'
     header_group = 'id'
 
+    @_add_raw_field
     def parser(self, header):
         assert 'Tax' in header
         info = re.match(self.header_pattern, header).groupdict()
@@ -487,6 +514,7 @@ class IndexedUniRef(UniRefMixin, TwoLayerIndexedFASTA):
 class UniParcMixin(FlavoredMixin):
     header_pattern = r'(\S+)\s+status=(\w+)\s*$'
 
+    @_add_raw_field
     def parser(self, header):
         ID, status = re.match(self.header_pattern, header).groups()
         return {'id': ID, 'status': status}
@@ -505,6 +533,7 @@ class IndexedUniParc(UniParcMixin, TwoLayerIndexedFASTA):
 class UniMesMixin(FlavoredMixin):
     header_pattern = r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$'
 
+    @_add_raw_field
     def parser(self, header):
         assert 'OS=' in header and 'SV=' in header and 'PE=' not in header
         ID, name, pairs, _ = re.match(self.header_pattern, header).groups()
@@ -527,6 +556,7 @@ class IndexedUniMes(UniMesMixin, TwoLayerIndexedFASTA):
 class SPDMixin(FlavoredMixin):
     header_pattern = r'^([^|]+?)\s*\|\s*(([^|]+?)_([^|]+?))\s*\|\s*([^|]+?)\s*$'
 
+    @_add_raw_field
     def parser(self, header):
         assert '=' not in header
         ID, gene, gid, taxon, d = re.match(self.header_pattern, header).groups()
@@ -547,6 +577,7 @@ class IndexedSPD(SPDMixin, TwoLayerIndexedFASTA):
 class NCBIMixin(FlavoredMixin):
     header_pattern = r'^(\S+)\s+(.*\S)\s+\[(.*)\]'
 
+    @_add_raw_field
     def parser(self, header):
         ID, description, organism = re.match(self.header_pattern, header).groups()
         return {'id': ID, 'description': description, 'taxon': organism}
@@ -565,6 +596,7 @@ class IndexedNCBI(NCBIMixin, TwoLayerIndexedFASTA):
 class RefSeqMixin(FlavoredMixin):
     header_pattern = r'^ref\|([^|]+)\|\s*([^\[]*\S)\s*\[(.*)\]'
 
+    @_add_raw_field
     def parser(self, header):
         ID, description, organism = re.match(self.header_pattern, header).groups()
         return {'id': ID, 'description': description, 'taxon': organism}
@@ -621,8 +653,10 @@ def write(entries, output=None):
 
     Parameters
     ----------
-    entries : iterable of (str, str) tuples
+    entries : iterable of (str/dict, str) tuples
         An iterable of 2-tuples in the form (description, sequence).
+        If description is a dictionary, it should contain a key "_raw"
+        that will be used for protein description.
     output : file-like or str, optional
         A file open for writing or a path to write to. If the file exists,
         it will be opened for writing. Default is :py:const:`None`, which
@@ -645,7 +679,12 @@ def write(entries, output=None):
         The file where the FASTA is written.
     """
     for descr, seq in entries:
-        output.write('>' + descr.replace('\n', '\n;') + '\n')
+        if type(descr) is str:
+            output.write('>' + descr.replace('\n', '\n;') + '\n')
+        elif type(descr) is dict and '_raw' in descr.keys():
+            output.write('>' + descr['_raw'].replace('\n', '\n;') + '\n')
+        else:
+             raise aux.PyteomicsError('Cannot use provided description: ' + repr(descr))
         output.write(''.join([('%s\n' % seq[i:i+70])
             for i in range(0, len(seq), 70)]) + '\n')
 
