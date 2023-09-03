@@ -191,7 +191,7 @@ class ParserTest(unittest.TestCase):
                  'gene_id': 'ACOX',
                  'name': 'Acetoin catabolism protein X',
                  'taxon': 'RALEH',
-                 '_raw': 'PREFIX_' + header}
+                 fasta.RAW_HEADER_KEY: 'PREFIX_' + header}
         self.assertEqual(entries[0][0], parsed)
         self.assertEqual(entries[0][1], 'SEQUENCE'[::-1])
         self.assertEqual(len(entries), 1)
@@ -211,7 +211,7 @@ class ParserTest(unittest.TestCase):
                  'gene_id': 'ACOX',
                  'name': 'Acetoin catabolism protein X',
                  'taxon': 'RALEH',
-                 '_raw': header}
+                 fasta.RAW_HEADER_KEY: header}
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_uniprotkb_isoform(self):
@@ -224,7 +224,7 @@ class ParserTest(unittest.TestCase):
                  'id': 'Q4R572-2',
                  'name': 'Isoform Short of 14-3-3 protein beta/alpha',
                  'taxon': 'MACFA',
-                 '_raw': header}
+                 fasta.RAW_HEADER_KEY: header}
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_unitprot_equals(self):
@@ -240,7 +240,7 @@ class ParserTest(unittest.TestCase):
             'OX': 4565,
             'PE': 1,
             'SV': 1,
-            '_raw': header
+            fasta.RAW_HEADER_KEY: header
         }
         self.assertEqual(fasta.parse(header), parsed)
 
@@ -258,7 +258,7 @@ class ParserTest(unittest.TestCase):
             'GN': 'GluD3-3',
             'PE': 4,
             'SV': 1,
-            '_raw': header
+            fasta.RAW_HEADER_KEY: header
         }
         self.assertEqual(fasta.parse(header), parsed)
 
@@ -274,14 +274,14 @@ class ParserTest(unittest.TestCase):
                  # 'type': 'UniRef100',
                  # 'accession': 'A5DI11',
                  'n': 1,
-                 '_raw': header[1:]}
+                 fasta.RAW_HEADER_KEY: header[1:]}
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_uniparc(self):
         header = '>UPI0000000005 status=active'
         parsed = {'id': 'UPI0000000005',
                   'status': 'active',
-                  '_raw': header[1:]}
+                  fasta.RAW_HEADER_KEY: header[1:]}
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_unimes(self):
@@ -292,7 +292,7 @@ class ParserTest(unittest.TestCase):
                  'SV': 1,
                  'id': 'MES00000000005',
                  'name': 'Putative uncharacterized protein GOS_3018412 (Fragment)',
-                 '_raw': header}
+                 fasta.RAW_HEADER_KEY: header}
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_spd(self):
@@ -304,7 +304,7 @@ class ParserTest(unittest.TestCase):
                  'gene_id': '1433S',
                  'id': 'P31947',
                  'taxon': 'HUMAN',
-                 '_raw': header[1:]}
+                 fasta.RAW_HEADER_KEY: header[1:]}
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_spd_mult_ids(self):
@@ -316,7 +316,7 @@ class ParserTest(unittest.TestCase):
                  'gene_id': 'A1AG1',
                  'id': 'P02763 Q8TC16',
                  'taxon': 'HUMAN',
-                 '_raw': header[1:]}
+                 fasta.RAW_HEADER_KEY: header[1:]}
         self.assertEqual(fasta.parse(header), parsed)
 
     def test_parser_ncbi(self):
@@ -324,7 +324,7 @@ class ParserTest(unittest.TestCase):
         parsed = {'description': 'acylglycerol kinase, mitochondrial isoform 2',
                  'id': 'NP_001351877.1',
                  'taxon': 'Homo sapiens',
-                 '_raw': header[1:]}
+                 fasta.RAW_HEADER_KEY: header[1:]}
         self.assertEqual(fasta.parse(header), parsed)
 
 

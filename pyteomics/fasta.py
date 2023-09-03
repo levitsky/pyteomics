@@ -117,11 +117,12 @@ from . import auxiliary as aux
 
 Protein = namedtuple('Protein', ('description', 'sequence'))
 DECOY_PREFIX = 'DECOY_'
+RAW_HEADER_KEY = '__raw__'
 
 
 def _add_raw_field(parser):
     """
-    Add "_raw" field to the parsed dictinary
+    Add :py:const:`RAW_HEADER_KEY` field to the parsed dictinary.
 
     Parameters
     ----------
@@ -133,13 +134,13 @@ def _add_raw_field(parser):
     None.
 
     """
-    def _new_parser(cls, descr):
-        parsed = parser(cls, descr)
-        if not '_raw' in parsed.keys():
-            parsed['_raw'] = descr
+    def _new_parser(instance, descr):
+        parsed = parser(instance, descr)
+        if not RAW_HEADER_KEY in parsed:
+            parsed[RAW_HEADER_KEY] = descr
         else:
-            raise aux.PytemicsError('Cannot save raw protein header, since the corresponsing\
-                                    key (_raw) already exists')
+            raise aux.PytemicsError('Cannot save raw protein header, since the corresponsing'
+                                    'key ({}) already exists.'.format(RAW_HEADER_KEY))
         return parsed
 
     return _new_parser
@@ -655,8 +656,8 @@ def write(entries, output=None):
     ----------
     entries : iterable of (str/dict, str) tuples
         An iterable of 2-tuples in the form (description, sequence).
-        If description is a dictionary, it should contain a key "_raw"
-        that will be used for protein description.
+        If description is a dictionary, the value for :py:const:`RAW_HEADER_KEY`
+        will be written as protein description.
     output : file-like or str, optional
         A file open for writing or a path to write to. If the file exists,
         it will be opened for writing. Default is :py:const:`None`, which
@@ -679,10 +680,10 @@ def write(entries, output=None):
         The file where the FASTA is written.
     """
     for descr, seq in entries:
-        if type(descr) is str:
+        if isinstance(descr, str):
             output.write('>' + descr.replace('\n', '\n;') + '\n')
-        elif type(descr) is dict and '_raw' in descr.keys():
-            output.write('>' + descr['_raw'].replace('\n', '\n;') + '\n')
+        elif isinstance(descr, dict) and RAW_HEADER_KEY in descr:
+            output.write('>' + descr[RAW_HEADER_KEY].replace('\n', '\n;') + '\n')
         else:
              raise aux.PyteomicsError('Cannot use provided description: ' + repr(descr))
         output.write(''.join([('%s\n' % seq[i:i+70])
