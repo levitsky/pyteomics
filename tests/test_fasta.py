@@ -214,6 +214,28 @@ class ParserTest(unittest.TestCase):
                  fasta.RAW_HEADER_KEY: header}
         self.assertEqual(fasta.parse(header), parsed)
 
+    def test_parser_uniprotkb_write(self):
+        header = ('sp|P27748|ACOX_RALEH Acetoin catabolism protein X OS=Ralstonia'
+            ' eutropha (strain ATCC 17699 / H16 / DSM 428 / Stanier 337)'
+            ' GN=acoX PE=4 SV=2')
+        parsed = {'GN': 'acoX',
+                 'OS': 'Ralstonia eutropha '
+                    '(strain ATCC 17699 / H16 / DSM 428 / Stanier 337)',
+                 'PE': 4,
+                 'SV': 2,
+                 'db': 'sp',
+                 'entry': 'ACOX_RALEH',
+                 'id': 'P27748',
+                 'gene_id': 'ACOX',
+                 'name': 'Acetoin catabolism protein X',
+                 'taxon': 'RALEH',
+                 fasta.RAW_HEADER_KEY: header}
+        with tempfile.TemporaryFile(mode='r+') as new_fasta_file:
+            fasta.write([(parsed, 'SEQUENCE')], new_fasta_file)
+            new_fasta_file.seek(0)
+            new_entries = list(fasta.read(new_fasta_file))
+            self.assertEqual([(header, 'SEQUENCE')], new_entries)
+
     def test_parser_uniprotkb_isoform(self):
         header = 'sp|Q4R572-2|1433B_MACFA Isoform Short of 14-3-3 protein beta/alpha OS=Macaca fascicularis GN=YWHAB'
         parsed = {'GN': 'YWHAB',
