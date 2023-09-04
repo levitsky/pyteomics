@@ -112,7 +112,9 @@ import itertools
 import random
 from collections import namedtuple
 import re
+import abc
 from . import auxiliary as aux
+from .auxiliary.utils import add_metaclass
 
 
 Protein = namedtuple('Protein', ('description', 'sequence'))
@@ -422,6 +424,14 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
         return super(TwoLayerIndexedFASTA, self).__contains__(key) or key in self._id2header
 
 
+class _FastaParserFlavorMeta(abc.ABCMeta):
+    def __new__(mcs, name, bases, namespace):
+        if "parser" in namespace:
+            namespace["parser"] = _add_raw_field(namespace["parser"])
+        return super(_FastaParserFlavorMeta, mcs).__new__(mcs, name, bases, namespace)
+
+
+@add_metaclass(_FastaParserFlavorMeta)
 class FlavoredMixin():
     """Parser aimed at a specific FASTA flavor.
     Subclasses should define `parser` and `header_pattern`.
@@ -437,7 +447,6 @@ class UniProtMixin(FlavoredMixin):
     header_pattern = r'^(?P<db>\w+)\|(?P<id>[-\w]+)\|(?P<entry>\w+)\s+(?P<name>.*?)(?:(\s+OS=(?P<OS>[^=]+))|(\s+OX=(?P<OX>\d+))|(\s+GN=(?P<GN>\S+))|(\s+PE=(?P<PE>\d))|(\s+SV=(?P<SV>\d+)))*\s*$'
     header_group = 'id'
 
-    @_add_raw_field
     def parser(self, header):
         info = re.match(self.header_pattern, header).groupdict()
         for key in ['OS', 'OX', 'GN', 'PE', 'SV']:
@@ -477,6 +486,7 @@ def _add_init(cls):
 
     return type(cls.__name__, (flavor, typ), newdict)
 
+
 @_add_init
 class UniProt(UniProtMixin, FASTA):
     pass
@@ -491,7 +501,6 @@ class UniRefMixin(FlavoredMixin):
     header_pattern = r'^(?P<id>\S+)\s+(?P<cluster>.*?)(?:(\s+n=(?P<n>\d+))|(\s+Tax=(?P<Tax>.+?))|(\s+TaxID=(?P<TaxID>\S+))|(\s+RepID=(?P<RepID>\S+)))*\s*$'
     header_group = 'id'
 
-    @_add_raw_field
     def parser(self, header):
         assert 'Tax' in header
         info = re.match(self.header_pattern, header).groupdict()
@@ -515,7 +524,6 @@ class IndexedUniRef(UniRefMixin, TwoLayerIndexedFASTA):
 class UniParcMixin(FlavoredMixin):
     header_pattern = r'(\S+)\s+status=(\w+)\s*$'
 
-    @_add_raw_field
     def parser(self, header):
         ID, status = re.match(self.header_pattern, header).groups()
         return {'id': ID, 'status': status}
@@ -534,7 +542,6 @@ class IndexedUniParc(UniParcMixin, TwoLayerIndexedFASTA):
 class UniMesMixin(FlavoredMixin):
     header_pattern = r'^(\S+)\s+([^=]*\S)((\s+\w+=[^=]+(?!\w*=))+)\s*$'
 
-    @_add_raw_field
     def parser(self, header):
         assert 'OS=' in header and 'SV=' in header and 'PE=' not in header
         ID, name, pairs, _ = re.match(self.header_pattern, header).groups()
@@ -557,7 +564,6 @@ class IndexedUniMes(UniMesMixin, TwoLayerIndexedFASTA):
 class SPDMixin(FlavoredMixin):
     header_pattern = r'^([^|]+?)\s*\|\s*(([^|]+?)_([^|]+?))\s*\|\s*([^|]+?)\s*$'
 
-    @_add_raw_field
     def parser(self, header):
         assert '=' not in header
         ID, gene, gid, taxon, d = re.match(self.header_pattern, header).groups()
@@ -578,7 +584,6 @@ class IndexedSPD(SPDMixin, TwoLayerIndexedFASTA):
 class NCBIMixin(FlavoredMixin):
     header_pattern = r'^(\S+)\s+(.*\S)\s+\[(.*)\]'
 
-    @_add_raw_field
     def parser(self, header):
         ID, description, organism = re.match(self.header_pattern, header).groups()
         return {'id': ID, 'description': description, 'taxon': organism}
@@ -597,7 +602,6 @@ class IndexedNCBI(NCBIMixin, TwoLayerIndexedFASTA):
 class RefSeqMixin(FlavoredMixin):
     header_pattern = r'^ref\|([^|]+)\|\s*([^\[]*\S)\s*\[(.*)\]'
 
-    @_add_raw_field
     def parser(self, header):
         ID, description, organism = re.match(self.header_pattern, header).groups()
         return {'id': ID, 'description': description, 'taxon': organism}

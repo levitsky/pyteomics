@@ -227,7 +227,7 @@ class ParserTest(unittest.TestCase):
                  fasta.RAW_HEADER_KEY: header}
         self.assertEqual(fasta.parse(header), parsed)
 
-    def test_parser_unitprot_equals(self):
+    def test_parser_uniprot_equals(self):
         header = 'tr|Q9S8M8|Q9S8M8_WHEAT FRIII-2-VIII=GAMMA-gliadin (Fragment) OS=Triticum aestivum OX=4565 PE=1 SV=1'
         parsed = {
             'db': 'tr',
