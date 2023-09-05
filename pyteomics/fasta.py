@@ -112,11 +112,40 @@ import itertools
 import random
 from collections import namedtuple
 import re
+import abc
 from . import auxiliary as aux
+from .auxiliary.utils import add_metaclass
 
 
 Protein = namedtuple('Protein', ('description', 'sequence'))
 DECOY_PREFIX = 'DECOY_'
+RAW_HEADER_KEY = '__raw__'
+
+
+def _add_raw_field(parser):
+    """
+    Add :py:const:`RAW_HEADER_KEY` field to the parsed dictinary.
+
+    Parameters
+    ----------
+    parser : func
+        parser function.
+
+    Returns
+    -------
+    None.
+
+    """
+    def _new_parser(instance, descr):
+        parsed = parser(instance, descr)
+        if not RAW_HEADER_KEY in parsed:
+            parsed[RAW_HEADER_KEY] = descr
+        else:
+            raise aux.PytemicsError('Cannot save raw protein header, since the corresponsing'
+                                    'key ({}) already exists.'.format(RAW_HEADER_KEY))
+        return parsed
+
+    return _new_parser
 
 
 class FASTABase(object):
@@ -395,6 +424,14 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
         return super(TwoLayerIndexedFASTA, self).__contains__(key) or key in self._id2header
 
 
+class _FastaParserFlavorMeta(abc.ABCMeta):
+    def __new__(mcs, name, bases, namespace):
+        if "parser" in namespace:
+            namespace["parser"] = _add_raw_field(namespace["parser"])
+        return super(_FastaParserFlavorMeta, mcs).__new__(mcs, name, bases, namespace)
+
+
+@add_metaclass(_FastaParserFlavorMeta)
 class FlavoredMixin():
     """Parser aimed at a specific FASTA flavor.
     Subclasses should define `parser` and `header_pattern`.
@@ -621,8 +658,10 @@ def write(entries, output=None):
 
     Parameters
     ----------
-    entries : iterable of (str, str) tuples
+    entries : iterable of (str/dict, str) tuples
         An iterable of 2-tuples in the form (description, sequence).
+        If description is a dictionary, the value for :py:const:`RAW_HEADER_KEY`
+        will be written as protein description.
     output : file-like or str, optional
         A file open for writing or a path to write to. If the file exists,
         it will be opened for writing. Default is :py:const:`None`, which
@@ -645,7 +684,12 @@ def write(entries, output=None):
         The file where the FASTA is written.
     """
     for descr, seq in entries:
-        output.write('>' + descr.replace('\n', '\n;') + '\n')
+        if isinstance(descr, str):
+            output.write('>' + descr.replace('\n', '\n;') + '\n')
+        elif isinstance(descr, dict) and RAW_HEADER_KEY in descr:
+            output.write('>' + descr[RAW_HEADER_KEY].replace('\n', '\n;') + '\n')
+        else:
+             raise aux.PyteomicsError('Cannot use provided description: ' + repr(descr))
         output.write(''.join([('%s\n' % seq[i:i+70])
             for i in range(0, len(seq), 70)]) + '\n')
 
