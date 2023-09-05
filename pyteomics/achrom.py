@@ -11,7 +11,7 @@ achrom has the following form:
 
 .. math::
 
-    RT = (1 + m\,ln N) \sum_{i=1}^{i=N}{RC_i n_i} + RT_0
+    RT = (1 + m\\,ln N) \\sum_{i=1}^{i=N}{RC_i n_i} + RT_0
 
 
 Here, :math:`RC_i` is the retention coefficient of the amino acid
@@ -171,7 +171,7 @@ retention time (RT) during a gradient elution is then calculated as:
 
 .. math::
 
-    RT = \sum_{i=1}^{i=N}{RC_i \cdot n_i} + RT_0,
+    RT = \\sum_{i=1}^{i=N}{RC_i \\cdot n_i} + RT_0,
 
 which is the sum of retention coefficients of all amino acid residues in a
 polypeptide. This equation can also be expressed in terms of linear
@@ -179,7 +179,7 @@ algebra:
 
 .. math::
 
-    RT = \\bar{aa} \cdot \\bar{RC} + RT_0,
+    RT = \\bar{aa} \\cdot \\bar{RC} + RT_0,
 
 where :math:`\\bar{aa}` is a vector of amino acid composition,
 i.e. :math:`\\bar{aa}_i` is the number of amino acid residues of i-th
@@ -223,15 +223,15 @@ peptide sequence:
 
 .. math::
 
-    RT = \sum_{i=1}^{i=N}{RC_i} + m\,ln N \sum_{i=1}^{i=N}{RC_i} + RT_0
+    RT = \\sum_{i=1}^{i=N}{RC_i} + m\\,ln N \\sum_{i=1}^{i=N}{RC_i} + RT_0
 
-We would call the second term :math:`m\,ln N \sum_{i=1}^{i=N}{RC_i}` *the
+We would call the second term :math:`m\\,ln N \\sum_{i=1}^{i=N}{RC_i}` *the
 length correction term* and m - *the length correction parameter*. The
 simplified and vectorized form of this equation would be:
 
 .. math::
 
-    RT = (1 + m\,ln N) \, \\bar{RC} \cdot \\bar{aa} + RT_0
+    RT = (1 + m\\,ln N) \\, \\bar{RC} \\cdot \\bar{aa} + RT_0
 
 This equation may be reduced to a linear form and solved by the standard
 methods.

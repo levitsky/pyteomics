@@ -7,7 +7,7 @@ You can access all of this info off-line from your Python interpreter.
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :titlesonly:
 
    api/parser
    api/mass

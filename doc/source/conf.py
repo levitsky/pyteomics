@@ -47,13 +47,15 @@ extensions = [
               'sphinx.ext.doctest',
               'sphinx.ext.intersphinx',
               'sphinx.ext.todo',
-              'sphinx.ext.imgmath',
+              'sphinx.ext.mathjax',
               'matplotlib.sphinxext.plot_directive',
              #  'matplotlib.sphinxext.only_directives',
               'matplotlib.sphinxext.mathmpl',
               'sphinxcontrib.googleanalytics',
               'sphinx_sitemap',
              ]
+
+toc_object_entries = False
 
 site_url = 'https://pyteomics.readthedocs.io/en/latest/'
 # Enable Google Analytics via a script from
@@ -278,7 +280,7 @@ texinfo_documents = [
 
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'http://docs.python.org/': None}
+intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
 def skip(app, what, name, obj, skip, options):
     if name == '__init__':
