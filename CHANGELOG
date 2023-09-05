@@ -4,6 +4,7 @@
  - :py:func:`pyteomics.fasta.write` can now write entries with parsed sequences
    (`#120 <https://github.com/levitsky/pyteomics/pull/120>`_ by Vladimir Gorshkov, Joshua Klein and Lev Levitsky).
  - Fix `#110 <https://github.com/levitsky/pyteomics/issues/119>`_.
+ - Fix import issue with :py:mod:`pyteomics.pylab_aux`.
 
 4.6.1
 -----

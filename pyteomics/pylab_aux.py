@@ -64,12 +64,13 @@ This module requires :py:mod:`matplotlib`. Optional dependencies: :py:mod:`adjus
 
 import pylab
 import numpy as np
-from .auxiliary import linear_regression, PyteomicsError, _Version
+from .auxiliary import linear_regression, PyteomicsError
+from .version import VersionInfo
 from . import parser, mass, mgf, proforma
 
 try:
     import spectrum_utils
-    if _Version(spectrum_utils.__version__) < _Version('0.4'):
+    if VersionInfo(spectrum_utils.__version__) < VersionInfo('0.4'):
         raise ImportError("Supported spectrum_utils version is 0.4.0 or newer.")
     import spectrum_utils.spectrum as sus
     import spectrum_utils.plot as sup

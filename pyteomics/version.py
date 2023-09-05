@@ -34,7 +34,7 @@ class VersionInfo(namedtuple('VersionInfo', ('major', 'minor', 'micro', 'release
         else:
             inst = super(VersionInfo, cls).__new__(cls, *(str(x) if x is not None else x for x in version_str))
         inst._version_str = version_str
-        inst._version_ints = tuple(int(x) if isinstance(x, str) and x.isdigit() else x for x in inst)
+        inst._version_ints = tuple(int(x) if isinstance(x, str) and x.isdigit() else 0 for x in inst)
         return inst
 
     def __str__(self):
