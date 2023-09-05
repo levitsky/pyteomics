@@ -34,4 +34,4 @@ python:
    install:
    - requirements: doc/build-requirements.txt
    - method: pip
-      path: .
+     path: .
