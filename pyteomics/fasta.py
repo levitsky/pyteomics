@@ -428,39 +428,43 @@ class _FastaParserFlavorMeta(abc.ABCMeta):
     def __new__(mcs, name, bases, namespace):
         if "parser" in namespace:
             namespace["parser"] = _add_raw_field(namespace["parser"])
-        reader_type = None
-        for t in (FASTA, IndexedFASTA, TwoLayerIndexedFASTA):
-            if t in bases:
-                reader_type = t
+        if name != 'FlavoredMixin':
+            reader_type = None
+            for t in (FASTA, IndexedFASTA, TwoLayerIndexedFASTA):
+                if t in bases:
+                    reader_type = t
 
-        if reader_type is not None:
-            # this is a "concrete" reader class
-            # add a unified __init__ method for it
-            b = list(bases)
-            b.remove(reader_type)
-            flavor = b[0]
+            if reader_type is not None:
+                # this is a "concrete" reader class
+                # add a unified __init__ method for it
+                for c in bases:
+                    if issubclass(c, FlavoredMixin):
+                        flavor = c
+                        break
+                else:
+                    raise aux.PyteomicsError('Could not detect flavor of {}, not a subclass of `FlavoredMixin`.')
 
-            def __init__(self, source, parse=True, **kwargs):
-                reader_type.__init__(self, source, **kwargs)
-                flavor.__init__(self, parse)
-                self._init_args = (source, parse)
-                self._init_kwargs = kwargs
+                def __init__(self, source, parse=True, **kwargs):
+                    reader_type.__init__(self, source, **kwargs)
+                    flavor.__init__(self, parse)
+                    self._init_args = (source, parse)
+                    self._init_kwargs = kwargs
 
-            flavor_name = name[:-5]
-            type_name = "Text-mode" if reader_type is FASTA else "Indexed"
-            __init__.__doc__ = """Creates a :py:class:`{}` object.
+                flavor_name = name[:-5]
+                type_name = "Text-mode" if reader_type is FASTA else "Indexed"
+                __init__.__doc__ = """Creates a :py:class:`{}` object.
 
-            Parameters
-            ----------
-            source : str or file
-                The file to read. If a file object, it needs to be in *{}* mode.
-            parse : bool, optional
-                Defines whether the descriptions should be parsed in the produced tuples.
-                Default is :py:const:`True`.
-            kwargs : passed to the :py:class:`{}` constructor.
-            """.format(name, 'text' if reader_type is FASTA else 'binary', reader_type.__name__)
-            namespace['__init__'] = __init__
-            namespace['__doc__'] = """{} parser for {} FASTA files.""".format(type_name, flavor_name)
+                Parameters
+                ----------
+                source : str or file
+                    The file to read. If a file object, it needs to be in *{}* mode.
+                parse : bool, optional
+                    Defines whether the descriptions should be parsed in the produced tuples.
+                    Default is :py:const:`True`.
+                kwargs : passed to the :py:class:`{}` constructor.
+                """.format(name, 'text' if reader_type is FASTA else 'binary', reader_type.__name__)
+                namespace['__init__'] = __init__
+                namespace['__doc__'] = """{} parser for {} FASTA files.""".format(type_name, flavor_name)
 
         return super(_FastaParserFlavorMeta, mcs).__new__(mcs, name, bases, namespace)
 
