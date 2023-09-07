@@ -428,6 +428,44 @@ class _FastaParserFlavorMeta(abc.ABCMeta):
     def __new__(mcs, name, bases, namespace):
         if "parser" in namespace:
             namespace["parser"] = _add_raw_field(namespace["parser"])
+        if name != 'FlavoredMixin':
+            reader_type = None
+            for t in (FASTA, IndexedFASTA, TwoLayerIndexedFASTA):
+                if t in bases:
+                    reader_type = t
+
+            if reader_type is not None:
+                # this is a "concrete" reader class
+                # add a unified __init__ method for it
+                for c in bases:
+                    if issubclass(c, FlavoredMixin):
+                        flavor = c
+                        break
+                else:
+                    raise aux.PyteomicsError('Could not detect flavor of {}, not a subclass of `FlavoredMixin`.')
+
+                def __init__(self, source, parse=True, **kwargs):
+                    reader_type.__init__(self, source, **kwargs)
+                    flavor.__init__(self, parse)
+                    self._init_args = (source, parse)
+                    self._init_kwargs = kwargs
+
+                flavor_name = name[:-5]
+                type_name = "Text-mode" if reader_type is FASTA else "Indexed"
+                __init__.__doc__ = """Creates a :py:class:`{}` object.
+
+                Parameters
+                ----------
+                source : str or file
+                    The file to read. If a file object, it needs to be in *{}* mode.
+                parse : bool, optional
+                    Defines whether the descriptions should be parsed in the produced tuples.
+                    Default is :py:const:`True`.
+                kwargs : passed to the :py:class:`{}` constructor.
+                """.format(name, 'text' if reader_type is FASTA else 'binary', reader_type.__name__)
+                namespace['__init__'] = __init__
+                namespace['__doc__'] = """{} parser for {} FASTA files.""".format(type_name, flavor_name)
+
         return super(_FastaParserFlavorMeta, mcs).__new__(mcs, name, bases, namespace)
 
 
@@ -457,42 +495,10 @@ class UniProtMixin(FlavoredMixin):
         return info
 
 
-def _add_init(cls):
-    """Add an __init__ method to a flavored parser class,
-    which simply calls __init__ of its two bases."""
-    flavor, typ = cls.__bases__
-    newdict = cls.__dict__.copy()
-    def __init__(self, source, parse=True, **kwargs):
-        typ.__init__(self, source, **kwargs)
-        flavor.__init__(self, parse)
-        self._init_args = (source, parse)
-        self._init_kwargs = kwargs
-
-    flavor_name = flavor.__name__[:-5]
-    type_name = "Text-mode" if typ is FASTA else "Indexed"
-    __init__.__doc__ = """Creates a :py:class:`{}` object.
-
-    Parameters
-    ----------
-    source : str or file
-        The file to read. If a file object, it needs to be in *{}* mode.
-    parse : bool, optional
-        Defines whether the descriptions should be parsed in the produced tuples.
-        Default is :py:const:`True`.
-    kwargs : passed to the :py:class:`{}` constructor.
-    """.format(cls.__name__, 'text' if typ is FASTA else 'binary', typ.__name__)
-    newdict['__init__'] = __init__
-    newdict['__doc__'] = """{} parser for {} FASTA files.""".format(type_name, flavor_name)
-
-    return type(cls.__name__, (flavor, typ), newdict)
-
-
-@_add_init
 class UniProt(UniProtMixin, FASTA):
     pass
 
 
-@_add_init
 class IndexedUniProt(UniProtMixin, TwoLayerIndexedFASTA):
     pass
 
@@ -511,12 +517,10 @@ class UniRefMixin(FlavoredMixin):
         return info
 
 
-@_add_init
 class UniRef(UniRefMixin, FASTA):
     pass
 
 
-@_add_init
 class IndexedUniRef(UniRefMixin, TwoLayerIndexedFASTA):
     pass
 
@@ -529,12 +533,10 @@ class UniParcMixin(FlavoredMixin):
         return {'id': ID, 'status': status}
 
 
-@_add_init
 class UniParc(UniParcMixin, FASTA):
     pass
 
 
-@_add_init
 class IndexedUniParc(UniParcMixin, TwoLayerIndexedFASTA):
     pass
 
@@ -551,12 +553,10 @@ class UniMesMixin(FlavoredMixin):
         return info
 
 
-@_add_init
 class UniMes(UniMesMixin, FASTA):
     pass
 
 
-@_add_init
 class IndexedUniMes(UniMesMixin, TwoLayerIndexedFASTA):
     pass
 
@@ -571,12 +571,10 @@ class SPDMixin(FlavoredMixin):
                 'taxon': taxon, 'gene_id': gid}
 
 
-@_add_init
 class SPD(SPDMixin, FASTA):
     pass
 
 
-@_add_init
 class IndexedSPD(SPDMixin, TwoLayerIndexedFASTA):
     pass
 
@@ -589,12 +587,10 @@ class NCBIMixin(FlavoredMixin):
         return {'id': ID, 'description': description, 'taxon': organism}
 
 
-@_add_init
 class NCBI(NCBIMixin, FASTA):
     pass
 
 
-@_add_init
 class IndexedNCBI(NCBIMixin, TwoLayerIndexedFASTA):
     pass
 
@@ -607,12 +603,10 @@ class RefSeqMixin(FlavoredMixin):
         return {'id': ID, 'description': description, 'taxon': organism}
 
 
-@_add_init
 class RefSeq(RefSeqMixin, FASTA):
     pass
 
 
-@_add_init
 class IndexedRefSeq(RefSeqMixin, TwoLayerIndexedFASTA):
     pass
 
