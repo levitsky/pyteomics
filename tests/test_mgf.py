@@ -252,11 +252,13 @@ class UtilityTest(unittest.TestCase):
         self.assertEqual(mgf._charge_repr('charge', [2]), 'CHARGE=2+')
         self.assertEqual(mgf._charge_repr('charge', aux.Charge(2)), 'CHARGE=2+')
         self.assertEqual(mgf._charge_repr('charge', aux.ChargeList([2])), 'CHARGE=2+')
+        self.assertEqual(mgf._charge_repr('charge', np.int64(2)), 'CHARGE=2+')
 
     def test_charge_repr_multiple(self):
         self.assertEqual(mgf._charge_repr('charge', [2, 3]), 'CHARGE=2+ and 3+')
         self.assertEqual(mgf._charge_repr('charge', aux.ChargeList([2, 3])), 'CHARGE=2+ and 3+')
         self.assertEqual(mgf._charge_repr('charge', '2+, 3+'), 'CHARGE=2+ and 3+')
+        self.assertEqual(mgf._charge_repr('charge', np.array([2, 3])), 'CHARGE=2+ and 3+')
 
 
 if __name__ == "__main__":

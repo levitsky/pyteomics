@@ -609,7 +609,11 @@ def _pepmass_repr(k, pepmass):
 
 
 def _charge_repr(k, charge):
-    return '{}={}'.format(k.upper(), aux.Charge(charge) if isinstance(charge, int) else aux.ChargeList(charge))
+    try:
+        val = aux.Charge(charge)
+    except (TypeError, aux.PyteomicsError):
+        val = aux.ChargeList(charge)
+    return '{}={}'.format(k.upper(), val)
 
 
 def _default_repr(key, val):
