@@ -141,7 +141,7 @@ def _add_raw_field(parser):
         if not RAW_HEADER_KEY in parsed:
             parsed[RAW_HEADER_KEY] = descr
         else:
-            raise aux.PytemicsError('Cannot save raw protein header, since the corresponsing'
+            raise aux.PyteomicsError('Cannot save raw protein header, since the corresponsing'
                                     'key ({}) already exists.'.format(RAW_HEADER_KEY))
         return parsed
 
