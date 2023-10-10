@@ -361,7 +361,7 @@ class UnimodResolver(ModificationResolver):
 
     def load_database(self):
         if _has_psims:
-            return load_unimod()
+            return obo_cache.load("http://www.unimod.org/obo/unimod.obo")
         return Unimod()
 
     def resolve(self, name=None, id=None, **kwargs):
@@ -397,9 +397,12 @@ class UnimodResolver(ModificationResolver):
                 'provider': self.name
             }
         else:
+            name = defn.ex_code_name
+            if not name:
+                name = defn.code_name
             return {
                 "composition": defn.composition,
-                "name": defn.ex_code_name,
+                "name": name,
                 "id": defn.id,
                 "mass": defn.monoisotopic_mass,
                 "provider": self.name
