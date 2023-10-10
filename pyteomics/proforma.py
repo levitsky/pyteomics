@@ -32,7 +32,8 @@ except ImportError:
     np = None
 
 try:
-    from psims.controlled_vocabulary.controlled_vocabulary import (load_psimod, load_xlmod, load_gno, obo_cache)
+    from psims.controlled_vocabulary.controlled_vocabulary import (load_psimod, load_xlmod, load_gno, obo_cache, load_unimod)
+    _has_psims = True
 except ImportError:
     def _needs_psims(name):
         raise ImportError("Loading %s requires the `psims` library. To access it, please install `psims`" % name)
@@ -40,7 +41,9 @@ except ImportError:
     load_psimod = partial(_needs_psims, 'PSIMOD')
     load_xlmod = partial(_needs_psims, 'XLMOD')
     load_gno = partial(_needs_psims, 'GNO')
+    load_unimod = partial(_needs_psims, 'UNIMOD')
     obo_cache = None
+    _has_psims = False
 
 _water_mass = calculate_mass("H2O")
 
@@ -357,6 +360,8 @@ class UnimodResolver(ModificationResolver):
         self.strict = kwargs.get("strict", True)
 
     def load_database(self):
+        if _has_psims:
+            return load_unimod()
         return Unimod()
 
     def resolve(self, name=None, id=None, **kwargs):
