@@ -361,7 +361,7 @@ class UnimodResolver(ModificationResolver):
 
     def load_database(self):
         if _has_psims:
-            return obo_cache.load("http://www.unimod.org/obo/unimod.obo")
+            return obo_cache.resolve("http://www.unimod.org/obo/unimod.obo")
         return Unimod()
 
     def resolve(self, name=None, id=None, **kwargs):
