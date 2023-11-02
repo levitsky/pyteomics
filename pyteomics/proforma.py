@@ -258,35 +258,6 @@ class InformationTag(TagBase):
         return str(self.value)
 
 
-class MassModification(TagBase):
-    '''A modification defined purely by a signed mass shift in Daltons.
-
-    The value of a :class:`MassModification` is always a :class:`float`
-    '''
-    __slots__ = ('_significant_figures', )
-
-    prefix_name = "Obs"
-
-    def __init__(self, value, extra=None, group_id=None):
-        if isinstance(value, str):
-            sigfigs = len(value.split('.')[-1].rstrip('0'))
-        else:
-            sigfigs = 4
-        self._significant_figures = sigfigs
-        super(MassModification, self).__init__(
-            TagTypeEnum.massmod, float(value), extra, group_id)
-
-    def _format_main(self):
-        if self.value >= 0:
-            return ('+{0:0.{1}f}'.format(self.value, self._significant_figures)).rstrip('0').rstrip('.')
-        else:
-            return ('{0:0.{1}f}'.format(self.value, self._significant_figures)).rstrip('0').rstrip('.')
-
-    @property
-    def mass(self):
-        return self.value
-
-
 class ModificationResolver(object):
     def __init__(self, name, **kwargs):
         self.name = name.lower()
@@ -758,6 +729,62 @@ class ModificationBase(TagBase):
         return self.resolver(*keys)
 
 
+class MassModification(TagBase):
+    '''A modification defined purely by a signed mass shift in Daltons.
+
+    The value of a :class:`MassModification` is always a :class:`float`
+    '''
+    __slots__ = ('_significant_figures', )
+
+    prefix_name = "Obs"
+
+    def __init__(self, value, extra=None, group_id=None):
+        if isinstance(value, str):
+            sigfigs = len(value.split('.')[-1].rstrip('0'))
+        else:
+            sigfigs = 4
+        self._significant_figures = sigfigs
+        super(MassModification, self).__init__(
+            TagTypeEnum.massmod, float(value), extra, group_id)
+
+    def _format_main(self):
+        if self.value >= 0:
+            return ('+{0:0.{1}f}'.format(self.value, self._significant_figures)).rstrip('0').rstrip('.')
+        else:
+            return ('{0:0.{1}f}'.format(self.value, self._significant_figures)).rstrip('0').rstrip('.')
+
+    @property
+    def provider(self):
+        return None
+
+    @property
+    def id(self):
+        return self._format_main()
+
+    @property
+    def key(self):
+        '''Get a safe-to-hash-and-compare :class:`ModificationToken`
+        representing this modification without tag-like properties.
+
+        Returns
+        --------
+        ModificationToken
+        '''
+        return ModificationToken(self.value, self.id, self.provider, self.__class__)
+
+    @property
+    def mass(self):
+        return self.value
+
+    def __eq__(self, other):
+        if isinstance(other, ModificationToken):
+            return other == self
+        return super(MassModification, self).__eq__(other)
+
+    def __hash__(self):
+        return hash((self.id, self.provider))
+
+
 class FormulaModification(ModificationBase):
     prefix_name = "Formula"
 
@@ -1007,7 +1034,7 @@ class ModificationToken(object):
     def __eq__(self, other):
         if other is None:
             return False
-        if isinstance(other, (ModificationToken, ModificationBase)):
+        if isinstance(other, (ModificationToken, ModificationBase, MassModification)):
             return self.id == other.id and self.provider == other.provider
         return False
 
