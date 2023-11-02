@@ -1139,7 +1139,7 @@ class ChainBase(object):
     file names or file objects. Keyword arguments are passed to
     the :meth:`sequence_maker` function.
 
-    Attributes
+    Parameters
     ----------
     sources : :class:`Iterable`
         Sources for creating new sequences from, such as paths or
@@ -1161,11 +1161,13 @@ class ChainBase(object):
     def _make_chain(cls, sequence_maker):
         if isinstance(sequence_maker, type):
             tp = type('%sChain' % sequence_maker.__class__.__name__, (cls,), {
-                'sequence_maker': sequence_maker
+                'sequence_maker': sequence_maker,
+                '__doc__': cls.__doc__.replace(':meth:`sequence_maker`', ':class:`{}`'.format(sequence_maker.__name__))
             })
         else:
             tp = type('FunctionChain', (cls,), {
-                'sequence_maker': staticmethod(sequence_maker)
+                'sequence_maker': staticmethod(sequence_maker),
+                '__doc__': cls.__doc__.replace(':meth:`sequence_maker`', ':func:`{}`'.format(sequence_maker.__name__))
             })
         return tp
 
