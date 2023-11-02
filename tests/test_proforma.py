@@ -167,5 +167,18 @@ class PSIModModificationResolverTest(unittest.TestCase):
         self.assertRaises(ModificationMassNotFoundError, lambda: state.resolve())
 
 
+class ModificationHashingTest(unittest.TestCase):
+    def test_mass_modification(self):
+        mod = MassModification(57.08)
+
+        container = set()
+        container.add(mod.key)
+        self.assertIn(mod.key, container)
+
+        mod2 = MassModification(57.08 + 1e-19)
+        self.assertIn(mod2.key, container)
+        self.assertIn(mod2, container)
+
+
 if __name__ == '__main__':
     unittest.main()
