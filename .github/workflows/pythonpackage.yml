@@ -31,9 +31,10 @@ jobs:
         python -m pip install --upgrade pip
         pip install numpy
         pip install -r test-requirements.txt
+        pip install .
     - name: Run the tests
       run: |
-        cd tests; find . -name 'test_*.py' -print0 | xargs -0 -n1 env PYTHONPATH=.. python
+        cd tests; find . -name 'test_*.py' -print0 | xargs -0 -n1 python
 
   tests-py2:
     runs-on: 'ubuntu-20.04'
