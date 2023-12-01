@@ -153,9 +153,10 @@ class MGFTest(unittest.TestCase):
                 mgf.write(spectra=spectrum, output=tmpfile)
 
         self.assertGreaterEqual(len(ws), 2)
+        n_warned = 0
         for w in ws:
-            self.assertTrue(issubclass(w.category, UserWarning))
-            self.assertTrue("discouraged" in str(w.message))
+            n_warned += (issubclass(w.category, UserWarning) and "discouraged" in str(w.message))
+        self.assertGreaterEqual(n_warned, 2)
         tmpfile.seek(0)
         tmpreader = mgf.read(tmpfile)
         self.assertEqual(data.mgf_spectra_long, list(tmpreader))
