@@ -102,6 +102,14 @@ class TagTypeEnum(Enum):
     group_placeholder = 999
 
 
+class ModificationTagStyle(Enum):
+    Unset = 0
+    ShortId = 1
+    LongId = 2
+    ShortName = 3
+    LongName = 4
+
+
 _sentinel = object()
 
 
@@ -354,7 +362,7 @@ class UnimodResolver(ModificationResolver):
             if not defn:
                 raise KeyError(name)
         elif id is not None:
-            defn = self.database.by_id(id)
+            defn = self.database[id]
             if not defn:
                 raise KeyError(id)
         else:
@@ -365,7 +373,8 @@ class UnimodResolver(ModificationResolver):
                 'name': defn['title'],
                 'id': defn['record_id'],
                 'mass': defn['mono_mass'],
-                'provider': self.name
+                'provider': self.name,
+                "source": self
             }
         else:
             name = defn.ex_code_name
@@ -376,7 +385,8 @@ class UnimodResolver(ModificationResolver):
                 "name": name,
                 "id": defn.id,
                 "mass": defn.monoisotopic_mass,
-                "provider": self.name
+                "provider": self.name,
+                "source": self
             }
 
 
@@ -420,7 +430,8 @@ class PSIModResolver(ModificationResolver):
             'composition': composition,
             'name': defn.name,
             'id': defn.id,
-            'provider': self.name
+            'provider': self.name,
+            "source": self
         }
 
 
@@ -453,7 +464,8 @@ class XLMODResolver(ModificationResolver):
             'composition': composition,
             'name': defn.name,
             'id': defn.id,
-            'provider': self.name
+            'provider': self.name,
+            "source": self
         }
 
 # TODO: Implement resolve walking up the graph to get the mass. Can't really
@@ -565,7 +577,8 @@ class GNOResolver(ModificationResolver):
             "provider": self.name,
             "composition": composition,
             "monosaccharides": monosaccharides,
-            "mass": self.get_mass_from_term(term, raw_mass)
+            "mass": self.get_mass_from_term(term, raw_mass),
+            "source": self
         }
         return rec
 
@@ -631,12 +644,15 @@ class ModificationBase(TagBase):
     '''
 
     _tag_type = None
-    __slots__ = ('_definition', )
+    __slots__ = ('_definition', 'style')
 
-    def __init__(self, value, extra=None, group_id=None):
+    def __init__(self, value, extra=None, group_id=None, style=None):
+        if style is None:
+            style = ModificationTagStyle.Unset
         super(ModificationBase, self).__init__(
             self._tag_type, value, extra, group_id)
         self._definition = None
+        self.style = style
 
     def __eq__(self, other):
         if isinstance(other, ModificationToken):
@@ -720,7 +736,19 @@ class ModificationBase(TagBase):
         self._definition = definition
 
     def _format_main(self):
-        return "{self.prefix_name}:{self.value}".format(self=self)
+        if self.style == ModificationTagStyle.Unset or self.style is None:
+            return "{self.prefix_name}:{self.value}".format(self=self)
+        elif self.style == ModificationTagStyle.LongId:
+            return "{self.prefix_name}:{self.id}".format(self=self)
+        elif self.style == ModificationTagStyle.ShortId:
+            return "{self.short_prefix}:{self.id}".format(self=self)
+        elif self.style == ModificationTagStyle.LongName:
+            return "{self.prefix_name}:{self.name}".format(self=self)
+        elif self.style == ModificationTagStyle.ShortName:
+            return "{self.short_prefix}:{self.name}".format(self=self)
+        else:
+            warnings.warn("Unknown formatting style {!r}".format(self.style))
+            return "{self.prefix_name}:{self.value}".format(self=self)
 
     def resolve(self):
         '''Find the term and return it's properties
