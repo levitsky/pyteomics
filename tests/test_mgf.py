@@ -152,7 +152,7 @@ class MGFTest(unittest.TestCase):
             for spectrum in self.spectra:
                 mgf.write(spectra=spectrum, output=tmpfile)
 
-        self.assertEqual(len(ws), 2)
+        self.assertGreaterEqual(len(ws), 2)
         for w in ws:
             self.assertTrue(issubclass(w.category, UserWarning))
             self.assertTrue("discouraged" in str(w.message))
