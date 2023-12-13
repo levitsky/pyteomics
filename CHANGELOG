@@ -1,3 +1,12 @@
+4.6.4b1
+-------
+
+ - Make :py:class:`proforma.MassModification` objects hashable
+   (`#130 <https://github.com/levitsky/pyteomics/pull/130>`_ by Joshua Klein).
+ - Fix `#132 <https://github.com/levitsky/pyteomics/issues/132>`_
+   (`#133 <https://github.com/levitsky/pyteomics/pull/133>`_ by Joshua Klein).
+ - Fix thermolysin cleavage rule (`#135 <https://github.com/levitsky/pyteomics/issues/135>`_).
+
 4.6.3
 -----
 
