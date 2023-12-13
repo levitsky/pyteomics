@@ -841,7 +841,7 @@ expasy_rules = {
     'proline endopeptidase': r'(?<=[HKR])P(?=[^P])',
     'proteinase k':  r'[AEFILTVWY]',
     'staphylococcal peptidase i': r'(?<=[^E])E',
-    'thermolysin':   r'[^DE](?=[AFILMV])',
+    'thermolysin':   r'[^DE](?=[AFILMV][^P])',
     'thrombin':      r'((?<=G)R(?=G))|'
                      r'((?<=[AFGILTVM][AFGILTVWA]P)R(?=[^DE][^DE]))',
     'trypsin':       r'([KR](?=[^P]))|((?<=W)K(?=P))|((?<=M)R(?=P))',
