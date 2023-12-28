@@ -188,6 +188,17 @@ class MassTest(unittest.TestCase):
                 mass.calculate_mass(parsed_sequence=parser.parse(pep, labels=['X', 'Y', 'Z'], show_unmodified_termini=True),
                     aa_comp=self.aa_comp, mass_data=self.mass_data, ion_comp=self.ion_comp))
 
+    def test_calculate_proforma_mass(self):
+        seq_modX = 'PEPTIcamCIDE'
+        aa_comp = mass.std_aa_comp.copy()
+        aa_comp['cam'] = mass.Composition(formula='H3C2NO')
+        seq_proforma = 'PEPTIC[+57.021464]IDE'
+        for charge in [None, 0, 1, 2]:
+            self.assertAlmostEqual(
+                mass.calculate_mass(sequence=seq_modX, charge=charge, aa_comp=aa_comp),
+                mass.calculate_mass(proforma=seq_proforma, charge=charge),
+                places=6)
+
     def test_most_probable_isotopic_composition(self):
         self.assertEqual(
             mass.most_probable_isotopic_composition(formula='F', mass_data=self.mass_data),

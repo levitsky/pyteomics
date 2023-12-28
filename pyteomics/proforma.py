@@ -45,7 +45,7 @@ except ImportError:
     obo_cache = None
     _has_psims = False
 
-_water_mass = calculate_mass("H2O")
+_WATER_MASS = calculate_mass(formula="H2O")
 
 std_aa_mass = std_aa_mass.copy()
 std_aa_mass['X'] = 0
@@ -554,7 +554,7 @@ class GNOResolver(ModificationResolver):
         if not match:
             return None
         # This will have a small mass error.
-        rough_mass = float(match.group(1)) - _water_mass
+        rough_mass = float(match.group(1)) - _WATER_MASS
         if raw_mass is not None and abs(rough_mass - raw_mass) < 1:
             return raw_mass
         warnings.warn(
@@ -2036,8 +2036,6 @@ class _ProFormaProperty(object):
         template = "{self.__class__.__name__}({self.name!r})"
         return template.format(self=self)
 
-
-_WATER_MASS = calculate_mass(formula="H2O")
 
 class ProForma(object):
     '''Represent a parsed ProForma sequence.

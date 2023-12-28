@@ -367,6 +367,51 @@ class Composition(BasicComposition):
             charge = int(charge) * (-1, 1)[sign == '+']
         return comp, charge
 
+    @staticmethod
+    def _mass_to_mz(mass, composition=None, **kwargs):
+        mass_data = kwargs.get('mass_data', nist_mass)
+        absolute = kwargs.get('absolute', True)
+        average = kwargs.get('average', False)
+
+        # Calculate m/z if required
+        charge = kwargs.get('charge')
+        if charge:
+            # get charge carrier mass and charge
+            charge_carrier = kwargs.get('charge_carrier')
+            ccharge = kwargs.get('carrier_charge')
+            if isinstance(charge_carrier, dict):
+                carrier_comp = Composition(charge_carrier)
+                if ccharge and PROTON in carrier_comp:
+                    raise PyteomicsError('`carrier_charge` specified but the charge carrier contains protons.')
+                carrier_charge = ccharge or carrier_comp[PROTON]
+                if not carrier_charge:
+                    raise PyteomicsError('Charge carrier charge not specified.')
+            else:
+                carrier_comp, carrier_charge = (composition or Composition)._parse_carrier(charge_carrier)
+                if carrier_charge and ccharge:
+                    raise PyteomicsError('Both `carrier_charge` and charge in carrier spec are given.')
+                carrier_charge = ccharge or carrier_charge
+                if not carrier_charge:
+                    raise PyteomicsError('Charge of the charge carrier group not specified.')
+            if charge % carrier_charge:
+                raise PyteomicsError('The `charge` must be a multiple of the carrier charge. Given: {} and {}'.format(
+                    charge, carrier_charge))
+            num = charge // carrier_charge
+            carrier_mass = carrier_comp.mass(mass_data=mass_data, average=average, charge=0)
+
+        if charge and (composition is None or not composition['H+']):
+            mass += carrier_mass * num
+        if charge and composition and composition['H+']:
+            raise PyteomicsError('Composition contains protons and charge is explicitly specified.')
+        if charge is None and composition and composition['H+']:
+            warnings.warn('Charge is not specified, but the Composition contains protons. Assuming m/z calculation.')
+            charge = composition['H+']
+        if charge:
+            mass /= charge
+        if charge and charge < 0 and absolute:
+            mass = abs(mass)
+        return mass
+
     def mass(self, **kwargs):
         """Calculate the mass or *m/z* of a :py:class:`Composition`.
 
@@ -425,7 +470,6 @@ class Composition(BasicComposition):
         # Calculate mass
         mass = 0.0
         average = kwargs.get('average', False)
-        absolute = kwargs.get('absolute', True)
 
         for isotope_string, amount in composition.items():
             element_name, isotope_num = _parse_isotope_string(isotope_string)
@@ -438,43 +482,7 @@ class Composition(BasicComposition):
             else:
                 mass += (amount * mass_data[element_name][isotope_num][0])
 
-        # Calculate m/z if required
-        charge = kwargs.get('charge')
-        if charge:
-            # get charge carrier mass and charge
-            charge_carrier = kwargs.get('charge_carrier')
-            ccharge = kwargs.get('carrier_charge')
-            if isinstance(charge_carrier, dict):
-                carrier_comp = Composition(charge_carrier)
-                if ccharge and PROTON in carrier_comp:
-                    raise PyteomicsError('`carrier_charge` specified but the charge carrier contains protons.')
-                carrier_charge = ccharge or carrier_comp[PROTON]
-                if not carrier_charge:
-                    raise PyteomicsError('Charge carrier charge not specified.')
-            else:
-                carrier_comp, carrier_charge = self._parse_carrier(charge_carrier)
-                if carrier_charge and ccharge:
-                    raise PyteomicsError('Both `carrier_charge` and charge in carrier spec are given.')
-                carrier_charge = ccharge or carrier_charge
-                if not carrier_charge:
-                    raise PyteomicsError('Charge of the charge carrier group not specified.')
-            if charge % carrier_charge:
-                raise PyteomicsError('The `charge` must be a multiple of the carrier charge. Given: {} and {}'.format(
-                    charge, carrier_charge))
-            num = charge // carrier_charge
-            carrier_mass = carrier_comp.mass(mass_data=mass_data, average=average, charge=0)
-        if charge and not composition['H+']:
-            mass += carrier_mass * num
-        if charge and composition['H+']:
-            raise PyteomicsError('Composition contains protons and charge is explicitly specified.')
-        if charge is None and composition['H+']:
-            warnings.warn('Charge is not specified, but the Composition contains protons. Assuming m/z calculation.')
-            charge = composition['H+']
-        if charge:
-            mass /= charge
-        if charge and charge < 0 and absolute:
-            mass = abs(mass)
-        return mass
+        return self._mass_to_mz(mass, self, **kwargs)
 
 
 std_aa_comp.update({
@@ -565,6 +573,9 @@ def calculate_mass(*args, **kwargs):
         A string with a chemical formula.
     sequence : str, optional
         A polypeptide sequence string in modX notation.
+    proforma : str, optional
+        A polypeptide sequeence string in `ProForma notation <https://www.psidev.info/proforma>`_,
+        or a :py:class:`pyteomics.proforma.ProForma` object.
     parsed_sequence : list of str, optional
         A polypeptide sequence parsed into a list of amino acids.
     composition : Composition, optional
@@ -624,6 +635,14 @@ def calculate_mass(*args, **kwargs):
     -------
     mass : float
     """
+    if 'proforma' in kwargs:
+        # do not try to create a composition
+        from .. import proforma
+        proteoform = kwargs.pop('proforma')
+        if isinstance(proteoform, str):
+            proteoform = proforma.ProForma.parse(proteoform)
+        return Composition._mass_to_mz(proteoform.mass, **kwargs)
+
     # These parameters must be passed to mass(), not __init__
     mass_kw = {}
     for k in ['charge', 'charge_carrier', 'carrier_charge', 'absolute']:
