@@ -366,6 +366,11 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
     def get_spectrum(self, key):
         return self.get_by_id(key)
 
+    def _warn_empty(self):
+        text = ("{} object has an empty index for file {}. If this is unexpected, consider adjusting `label` or "
+            "setting `index_by_scans={}`.".format(
+            self.__class__.__name__, getattr(self._source, 'name', self._source_init), not self._index_by_scans))
+        warnings.warn(text)
 
 class MGF(MGFBase, aux.FileReader):
     """

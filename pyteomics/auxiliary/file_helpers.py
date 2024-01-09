@@ -394,11 +394,14 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
     block_size = 1000000
     label_group = 1
     _kw_keys = ['delimiter', 'label', 'block_size', 'label_group']
+    _warn_if_empty = True
 
     def __init__(self, source, **kwargs):
         # the underlying _file_obj gets None as encoding
         # to avoid transparent decoding of StreamReader on read() calls
         encoding = kwargs.pop('encoding', 'utf-8')
+        if 'warn_if_empty' in kwargs:
+            self._warn_if_empty = kwargs.pop('warn_if_empty')
         super(IndexedTextReader, self).__init__(source, mode='rb', encoding=None, **kwargs)
         self.encoding = encoding
         for attr in self._kw_keys:
@@ -407,6 +410,8 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
         self._offset_index = None
         if not kwargs.pop('_skip_index', False):
             self._offset_index = self.build_byte_index()
+            if self._warn_if_empty and not self._offset_index:
+                self._warn_empty()
 
     def __getstate__(self):
         state = super(IndexedTextReader, self).__getstate__()
@@ -485,6 +490,10 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
         self._source.seek(start)
         lines = self._source.read(end - start).decode(self.encoding).split('\n')
         return lines
+
+    def _warn_empty(self):
+        warnings.warn("{} object has an empty index for file {}. If this is unexpected, consider adjusting `label`.".format(
+            self.__class__.__name__, getattr(self._source, 'name', self._source_init)))
 
 
 class IndexSavingMixin(NoOpBaseReader):
