@@ -655,7 +655,7 @@ def write(entries, output=None):
     entries : iterable of (str/dict, str) tuples
         An iterable of 2-tuples in the form (description, sequence).
         If description is a dictionary, it must have a special key, whose value
-        will be written as protein description. They special key is defined by the variable
+        will be written as protein description. The special key is defined by the variable
         :py:const:`RAW_HEADER_KEY`.
     output : file-like or str, optional
         A file open for writing or a path to write to. If the file exists,
