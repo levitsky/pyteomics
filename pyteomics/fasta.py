@@ -482,7 +482,7 @@ class FlavoredMixin():
 
 
 class UniProtMixin(FlavoredMixin):
-    header_pattern = r'^(?P<db>\w+)\|(?P<id>[-\w]+)\|(?P<entry>\w+)\s+(?P<name>.*?)(?:(\s+OS=(?P<OS>[^=]+))|(\s+OX=(?P<OX>\d+))|(\s+GN=(?P<GN>\S+))|(\s+PE=(?P<PE>\d))|(\s+SV=(?P<SV>\d+)))*\s*$'
+    header_pattern = r'^(?P<db>\w+)\|(?P<id>[-\w]+)\|(?P<entry>\w+)\s+(?P<name>.*?)(?:(\s+OS=(?P<OS>[^=]+))|(\s+OX=(?P<OX>\d+))|(\s+GN=(?P<GN>[^=]+))|(\s+PE=(?P<PE>\d))|(\s+SV=(?P<SV>\d+)))*\s*$'
     header_group = 'id'
 
     def parser(self, header):
