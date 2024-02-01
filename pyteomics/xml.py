@@ -39,7 +39,6 @@ import numpy as np
 from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj, HierarchicalOffsetIndex
 from .auxiliary import unitint, unitfloat, unitstr, cvstr
 from .auxiliary import _keepstate_method as _keepstate
-from .auxiliary import BinaryDataArrayTransformer
 from .auxiliary import TaskMappingMixin, IndexedReaderMixin, IndexSavingMixin
 
 try:  # Python 2.7
@@ -1074,8 +1073,7 @@ class IndexedXML(IndexedReaderMixin, XML):
                     '_default_iter_tag will be used in the index, mind the consequences.')
         super(IndexedXML, self).__init__(source, read_schema, iterative, build_id_cache, *args, **kwargs)
 
-        self._offset_index = None
-        self._build_index()
+        self._offset_index = self.build_byte_index()
 
     @property
     def default_index(self):
@@ -1102,14 +1100,18 @@ class IndexedXML(IndexedReaderMixin, XML):
         self._offset_index = state['_offset_index']
 
     @_keepstate
-    def _build_index(self):
+    def build_byte_index(self):
         """
-        Build up a `dict` of `dict` of offsets for elements. Calls :func:`find_index_list`
-        on :attr:`_source` and assigns the return value to :attr:`_offset_index`
+        Build up an index of offsets for elements.
+
+        Returns
+        -------
+
+        out : TagSpecificXMLByteIndex
         """
         if not self._indexed_tags or not self._use_index:
             return
-        self._offset_index = TagSpecificXMLByteIndex.build(
+        return TagSpecificXMLByteIndex.build(
             self._source, self._indexed_tags, self._indexed_tag_keys)
 
     @_keepstate
@@ -1209,7 +1211,7 @@ class IndexSavingXML(IndexSavingMixin, IndexedXML):
             index = self._index_class.load(f)
             if index.schema_version is None:
                 raise TypeError("Legacy Offset Index!")
-            self._offset_index = index
+            return index
 
 
 class Iterfind(object):
