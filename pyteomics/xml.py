@@ -1180,6 +1180,10 @@ class IndexedXML(IndexedReaderMixin, XML):
             return IndexedIterfind(self, path, **kwargs)
         return Iterfind(self, path, **kwargs)
 
+    def __init_subclass__(cls, **kwargs):  # only works on Python 3.x
+        super(IndexedXML, cls).__init_subclass__(**kwargs)
+        if hasattr(cls, '_build_index'):
+            warnings.warn("The method `_build_index` has been renamed to `build_byte_index`.")
 
 class MultiProcessingXML(IndexedXML, TaskMappingMixin):
     """XML reader that feeds indexes to external processes
