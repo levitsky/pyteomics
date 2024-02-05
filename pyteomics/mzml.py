@@ -471,17 +471,22 @@ class PreIndexedMzML(MzML):
     """Parser class for mzML files, subclass of :py:class:`MzML`.
     Uses byte offsets listed at the end of the file for quick access to spectrum elements.
     """
-    def _build_index(self):
+    def build_byte_index(self):
         """
-        Build up a `dict` of `dict` of offsets for elements. Calls :meth:`_find_index_list`
-        and assigns the return value to :attr:`_offset_index`
+        Build up a :class:`HierarchicalOffsetIndex` of offsets for elements. Calls :meth:`_find_index_list` or
+        falls back on regular :class:`MzML` indexing.
+
+        Returns
+        -------
+
+        out : HierarchicalOffsetIndex
         """
         index = self._find_index_list()
         if index:
-            self._offset_index = index
+            return index
         else:
             warnings.warn('Could not extract the embedded offset index. Falling back to default indexing procedure.')
-            super(PreIndexedMzML, self)._build_index()
+            return super(PreIndexedMzML, self).build_byte_index()
 
     @xml._keepstate
     def _iterparse_index_list(self, offset):

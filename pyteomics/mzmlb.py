@@ -433,7 +433,7 @@ class MzMLb(TimeOrderedIndexedReaderMixin, TaskMappingMixin):
         self._mzml_parser = ExternalDataMzML(
             self._xml_buffer, external_data_registry=self._array_registry,
             use_index=False, **kwargs)
-        self._mzml_parser._offset_index = self._build_index()
+        self._mzml_parser._offset_index = self.build_byte_index()
         self._mzml_parser._use_index = True
 
     @property
@@ -442,7 +442,7 @@ class MzMLb(TimeOrderedIndexedReaderMixin, TaskMappingMixin):
             return self.path.name
         return self.path
 
-    def _build_index(self):
+    def build_byte_index(self):
         index = HierarchicalOffsetIndex()
         for label in [u'spectrum', u'chromatogram']:
             sub = index[label]
