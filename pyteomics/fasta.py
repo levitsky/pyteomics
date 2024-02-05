@@ -482,7 +482,7 @@ class FlavoredMixin():
 
 
 class UniProtMixin(FlavoredMixin):
-    header_pattern = r'^(?P<db>\w+)\|(?P<id>[-\w]+)\|(?P<entry>\w+)\s+(?P<name>.*?)(?:(\s+OS=(?P<OS>[^=]+))|(\s+OX=(?P<OX>\d+))|(\s+GN=(?P<GN>\S+))|(\s+PE=(?P<PE>\d))|(\s+SV=(?P<SV>\d+)))*\s*$'
+    header_pattern = r'^(?P<db>\w+)\|(?P<id>[-\w]+)\|(?P<entry>\w+)\s+(?P<name>.*?)(?:(\s+OS=(?P<OS>[^=]+))|(\s+OX=(?P<OX>\d+))|(\s+GN=(?P<GN>[^=]+))|(\s+PE=(?P<PE>\d))|(\s+SV=(?P<SV>\d+)))*\s*$'
     header_group = 'id'
 
     def parser(self, header):
@@ -654,8 +654,9 @@ def write(entries, output=None):
     ----------
     entries : iterable of (str/dict, str) tuples
         An iterable of 2-tuples in the form (description, sequence).
-        If description is a dictionary, the value for :py:const:`RAW_HEADER_KEY`
-        will be written as protein description.
+        If description is a dictionary, it must have a special key, whose value
+        will be written as protein description. The special key is defined by the variable
+        :py:const:`RAW_HEADER_KEY`.
     output : file-like or str, optional
         A file open for writing or a path to write to. If the file exists,
         it will be opened for writing. Default is :py:const:`None`, which
