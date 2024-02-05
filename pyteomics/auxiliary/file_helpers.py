@@ -483,7 +483,7 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
             last_offset = offset
         assert last_label is None
         if self._warn_if_empty and not index:
-                self._warn_empty()
+            self._warn_empty()
         return index
 
     def _read_lines_from_offsets(self, start, end):
