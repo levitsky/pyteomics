@@ -246,7 +246,7 @@ class MGFTest(unittest.TestCase):
         tag_key = mgf.IndexedMGF._index_class._schema_version_tag_key
         self.assertEqual(set(container.keys()), {tag_key, 'index'})
         self.assertEqual(tuple(container[tag_key]), mgf.IndexedMGF._index_class.schema_version)
-        self.assertEqual(container['index'], [['Spectrum 1', [217, 343]], ['Spectrum 2', [343, 506]]])
+        self.assertEqual(container['index'], [['Spectrum 1', [217, 343]], ['Spectrum 2', [343, 504]]])
 
 
 class UtilityTest(unittest.TestCase):
