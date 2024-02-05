@@ -214,12 +214,15 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
             self.assertTrue(isinstance(inst._offset_index, aux.OffsetIndex))
         self.assertTrue(inst._source.closed)
-        mgf.IndexedMGF.prebuild_byte_offset_file(work_path)
+        with mgf.IndexedMGF(work_path) as inst:
+            inst._offset_index.pop('Spectrum 1')
+            inst.write_byte_offsets()
         with mgf.IndexedMGF(work_path) as inst:
             offsets_exist = os.path.exists(inst._byte_offset_filename)
             self.assertTrue(offsets_exist)
             self.assertEqual(offsets_exist, inst._check_has_byte_offset_file())
             self.assertTrue(isinstance(inst._offset_index, aux.OffsetIndex))
+            self.assertEqual(len(inst), 1)
         self.assertTrue(inst._source.closed)
         os.remove(inst._byte_offset_filename)
         with mgf.IndexedMGF(work_path) as inst:

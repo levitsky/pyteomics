@@ -544,25 +544,24 @@ class IndexSavingMixin(NoOpBaseReader):
             self._offset_index.save(f)
 
     @_keepstate_method
-    def _build_index(self):
+    def build_byte_index(self):
         """Build the byte offset index by either reading these offsets
         from the file at :attr:`_byte_offset_filename`, or falling back
-        to the method used by :class:`IndexedXML` if this operation fails
+        to the method used by :class:`IndexedXML` or :class:`IndexedTextReader` if this operation fails
         due to an IOError
         """
-        if not self._use_index: return
+        if not getattr(self, '_use_index', True): return  # indexed text readers do not have `_use_index`
         try:
-            self._read_byte_offsets()
+            return self._read_byte_offsets()
         except (IOError, AttributeError, TypeError):
-            super(IndexSavingMixin, self)._build_index()
+            return super(IndexSavingMixin, self).build_byte_index()
 
     def _read_byte_offsets(self):
         """Read the byte offset index JSON file at :attr:`_byte_offset_filename`
         and populate :attr:`_offset_index`
         """
         with open(self._byte_offset_filename, 'r') as f:
-            index = self._index_class.load(f)
-            self._offset_index = index
+            return self._index_class.load(f)
 
 
 def _file_reader(_mode='r'):
