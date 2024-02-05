@@ -410,8 +410,6 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
         self._offset_index = None
         if not kwargs.pop('_skip_index', False):
             self._offset_index = self.build_byte_index()
-            if self._warn_if_empty and not self._offset_index:
-                self._warn_empty()
 
     def __getstate__(self):
         state = super(IndexedTextReader, self).__getstate__()
@@ -484,6 +482,8 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
             last_label = label
             last_offset = offset
         assert last_label is None
+        if self._warn_if_empty and not index:
+                self._warn_empty()
         return index
 
     def _read_lines_from_offsets(self, start, end):
