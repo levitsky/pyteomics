@@ -464,14 +464,13 @@ class Composition(BasicComposition):
         -------
         mass : float
         """
-        composition = self
         mass_data = kwargs.get('mass_data', nist_mass)
 
         # Calculate mass
         mass = 0.0
         average = kwargs.get('average', False)
 
-        for isotope_string, amount in composition.items():
+        for isotope_string, amount in self.items():
             element_name, isotope_num = _parse_isotope_string(isotope_string)
             # Calculate average mass if required and the isotope number is
             # not specified.
@@ -649,7 +648,10 @@ def calculate_mass(*args, **kwargs):
         if k in kwargs:
             mass_kw[k] = kwargs.pop(k)
     # Make a copy of `composition` keyword argument.
-    composition = (Composition(kwargs['composition']) if 'composition' in kwargs else Composition(*args, **kwargs))
+    if 'composition' in kwargs:
+        composition = Composition(kwargs.pop('composition'))
+    else:
+        composition = Composition(*args, **kwargs)
     kwargs.update(mass_kw)
     return composition.mass(**kwargs)
 

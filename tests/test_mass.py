@@ -148,6 +148,11 @@ class MassTest(unittest.TestCase):
             mass.calculate_mass(parsed_sequence=['H-', 'X', 'Y', 'Z', '-OH'], aa_comp=self.aa_comp, mass_data=self.mass_data),
             sum(self.mass_data[atom][0][0] for atom in 'ABCDE'))
 
+        # Calculate mass by composition
+        self.assertEqual(
+            mass.calculate_mass(composition={'A': 1, 'B': 1, 'C': 1, 'D': 1, 'E': 1}, mass_data=self.mass_data),
+            sum(self.mass_data[atom][0][0] for atom in 'ABCDE'))
+
         # Calculate average mass by a formula.
         self.assertEqual(
             mass.calculate_mass(formula='ABCDE', average=True, mass_data=self.mass_data),
@@ -174,6 +179,10 @@ class MassTest(unittest.TestCase):
             self.assertEqual(
                 mass.calculate_mass(formula='ABCDE', ion_type='M', charge=charge, mass_data=self.mass_data),
                 (mass.calculate_mass(formula='ABCDE', mass_data=self.mass_data) + self.mass_data['H+'][0][0] * charge) / charge)
+
+            self.assertAlmostEqual(
+                mass.calculate_mass(composition={'A': 1, 'B': 1, 'C': 1, 'D': 1, 'E': 1}, charge=charge, charge_carrier='BC+', mass_data=self.mass_data),
+                mass.calculate_mass(composition={'A': 1, 'B': 1 + charge, 'C': 1 + charge, 'D': 1, 'E': 1}, mass_data=self.mass_data) / charge)
 
             self.assertRaises(auxiliary.PyteomicsError, mass.calculate_mass, **{'formula': 'ABCDEH+%d' % charge,
                    'ion_type': 'M', 'charge': charge, 'mass_data': self.mass_data})
