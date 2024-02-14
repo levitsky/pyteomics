@@ -1,5 +1,5 @@
-4.7.1a1
--------
+4.7.1
+-----
 
  - Fix issue with :py:func:`calculate_mass` with a `composition` keyword argument.
 
