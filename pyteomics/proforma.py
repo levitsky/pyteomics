@@ -658,6 +658,8 @@ class ModificationBase(TagBase):
         return self.__class__, (self.value, self.extra, self.group_id, self.style), self.__getstate__()
 
     def __getstate__(self):
+        if self._definition is None:
+            return None
         state = self._definition.copy()
         state['source'] = None
         return state
