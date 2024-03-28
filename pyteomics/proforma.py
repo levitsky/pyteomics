@@ -654,6 +654,17 @@ class ModificationBase(TagBase):
         self._definition = None
         self.style = style
 
+    def __reduce__(self):
+        return self.__class__, (self.value, self.extra, self.group_id, self.style), self.__getstate__()
+
+    def __getstate__(self):
+        state = self._definition.copy()
+        state['source'] = None
+        return state
+
+    def __setstate__(self, state):
+        self._definition = state
+
     def __eq__(self, other):
         if isinstance(other, ModificationToken):
             return other == self
@@ -984,9 +995,9 @@ class GenericModification(ModificationBase):
         partial(UnimodModification.resolver, strict=False)
     ])
 
-    def __init__(self, value, extra=None, group_id=None):
+    def __init__(self, value, extra=None, group_id=None, style=None):
         super(GenericModification, self).__init__(
-            value, extra, group_id)
+            value, extra, group_id, style)
 
     def _format_main(self):
         return self.value
