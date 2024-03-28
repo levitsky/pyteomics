@@ -1,5 +1,6 @@
 from os import path
 import unittest
+import pickle
 import pyteomics
 pyteomics.__path__ = [path.abspath(
     path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
@@ -178,6 +179,18 @@ class ModificationHashingTest(unittest.TestCase):
         mod2 = MassModification(57.08 + 1e-19)
         self.assertIn(mod2.key, container)
         self.assertIn(mod2, container)
+
+
+class ModificationPicklingTest(unittest.TestCase):
+    def test_pickle(self):
+        mod = GenericModification("UNIMOD:1")
+        payload = pickle.dumps(mod)
+        dup = pickle.loads(payload)
+        self.assertEqual(mod, dup)
+        assert mod.mass is not None
+        payload = pickle.dumps(mod)
+        dup = pickle.loads(payload)
+        self.assertEqual(mod, dup)
 
 
 if __name__ == '__main__':
