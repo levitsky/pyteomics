@@ -28,7 +28,10 @@ This module requires :py:mod:`lxml` and :py:mod:`sqlalchemy`.
 import re
 
 from lxml import etree
-from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
+try:
+    from sqlalchemy.orm import declarative_base, DeclarativeMeta
+except ImportError:  # Moved in sqlalchemy 2.0
+    from sqlalchemy.ext.declarative import declarative_base, DeclarativeMeta
 from sqlalchemy.orm import relationship, backref, object_session
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy import (Numeric, Unicode,
