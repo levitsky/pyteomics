@@ -20,8 +20,12 @@ try:
     from functools import lru_cache
 
 except ImportError:
-    def lru_cache(func, *args, **kwargs):
-        return func
+    def lru_cache(maxsize=None, typed=False):
+        def decorator(func):
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
+            return wrapper
+        return decorator
 
 try:
     from enum import Enum
