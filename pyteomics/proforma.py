@@ -17,6 +17,13 @@ from functools import partial
 from array import array as _array
 
 try:
+    from functools import lru_cache
+
+except ImportError:
+    def lru_cache(func, *args, **kwargs):
+        return func
+
+try:
     from enum import Enum
 except ImportError:
     # Python 2 doesn't have a builtin Enum type
@@ -343,6 +350,7 @@ class UnimodResolver(ModificationResolver):
             return obo_cache.resolve("http://www.unimod.org/obo/unimod.obo")
         return Unimod()
 
+    @lru_cache(maxsize=None)
     def resolve(self, name=None, id=None, **kwargs):
         strict = kwargs.get("strict", self.strict)
         exhaustive = kwargs.get("exhaustive", True)
@@ -398,6 +406,7 @@ class PSIModResolver(ModificationResolver):
     def load_database(self):
         return load_psimod()
 
+    @lru_cache(maxsize=None)
     def resolve(self, name=None, id=None, **kwargs):
         if name is not None:
             defn = self.database[name]
@@ -443,6 +452,7 @@ class XLMODResolver(ModificationResolver):
     def load_database(self):
         return load_xlmod()
 
+    @lru_cache(maxsize=None)
     def resolve(self, name=None, id=None, **kwargs):
         if name is not None:
             defn = self.database[name]
@@ -562,6 +572,7 @@ class GNOResolver(ModificationResolver):
              "Only a rough approximation is available.") % (term, ))
         return rough_mass
 
+    @lru_cache(maxsize=None)
     def resolve(self, name=None, id=None, **kwargs):
         if name is not None:
             term = self.database[name]
@@ -613,6 +624,7 @@ class GenericResolver(ModificationResolver):
         """
         return identifier, None
 
+    @lru_cache(maxsize=None)
     def resolve(self, name=None, id=None, **kwargs):
         defn = None
         for resolver in self.resolvers:
