@@ -17,17 +17,6 @@ from functools import partial
 from array import array as _array
 
 try:
-    from functools import lru_cache
-
-except ImportError:
-    def lru_cache(maxsize=None, typed=False):
-        def decorator(func):
-            def wrapper(*args, **kwargs):
-                return func(*args, **kwargs)
-            return wrapper
-        return decorator
-
-try:
     from enum import Enum
 except ImportError:
     # Python 2 doesn't have a builtin Enum type
@@ -36,6 +25,7 @@ except ImportError:
 from .mass import Composition, std_aa_mass, Unimod, nist_mass, calculate_mass, std_ion_comp, mass_charge_ratio
 from .auxiliary import PyteomicsError, BasicComposition
 from .auxiliary.utils import add_metaclass
+from .auxiliary.utils import memoize
 
 try:
     import numpy as np
@@ -354,7 +344,7 @@ class UnimodResolver(ModificationResolver):
             return obo_cache.resolve("http://www.unimod.org/obo/unimod.obo")
         return Unimod()
 
-    @lru_cache(maxsize=None)
+    @memoize(maxsize=10000)
     def resolve(self, name=None, id=None, **kwargs):
         strict = kwargs.get("strict", self.strict)
         exhaustive = kwargs.get("exhaustive", True)
@@ -410,7 +400,7 @@ class PSIModResolver(ModificationResolver):
     def load_database(self):
         return load_psimod()
 
-    @lru_cache(maxsize=None)
+    @memoize(maxsize=10000)
     def resolve(self, name=None, id=None, **kwargs):
         if name is not None:
             defn = self.database[name]
@@ -456,7 +446,7 @@ class XLMODResolver(ModificationResolver):
     def load_database(self):
         return load_xlmod()
 
-    @lru_cache(maxsize=None)
+    @memoize(maxsize=10000)
     def resolve(self, name=None, id=None, **kwargs):
         if name is not None:
             defn = self.database[name]
@@ -576,7 +566,7 @@ class GNOResolver(ModificationResolver):
              "Only a rough approximation is available.") % (term, ))
         return rough_mass
 
-    @lru_cache(maxsize=None)
+    @memoize(maxsize=10000)
     def resolve(self, name=None, id=None, **kwargs):
         if name is not None:
             term = self.database[name]
@@ -628,7 +618,7 @@ class GenericResolver(ModificationResolver):
         """
         return identifier, None
 
-    @lru_cache(maxsize=None)
+    @memoize(maxsize=10000)
     def resolve(self, name=None, id=None, **kwargs):
         defn = None
         for resolver in self.resolvers:
