@@ -144,7 +144,7 @@ class MS1Base(aux.ArrayConversionMixin):
             params['precursor m/z'] = float(sline[3])
 
     def _handle_I(self, line, sline, params):
-        params[sline[1]] = sline[2]
+        params[sline[1]] = sline[2] if len(sline) > 2 else ''
 
     def _handle_Z(self, line, sline, params):
         params.setdefault('charge', []).append(float(sline[1]))
