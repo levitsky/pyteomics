@@ -722,7 +722,7 @@ def xpath(tree, path, ns=None):
         if not s: return 'd:'
         return '/d:'
     new_path = re.sub(r'(\/|^)(?![\*\/])', repl, path)
-    n_s = ({'d': ns} if ns else None)
+    n_s = {'d': ns} if ns else None
     return tree.xpath(new_path, namespaces=n_s)
 
 
