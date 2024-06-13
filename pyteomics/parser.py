@@ -151,7 +151,7 @@ def is_term_group(label):
     return (re.match(_nterm_group, label) or re.match(_cterm_group, label)) is not None
 
 
-is_term_group = is_term_group
+is_term_mod = is_term_group
 
 
 def match_modX(label):
