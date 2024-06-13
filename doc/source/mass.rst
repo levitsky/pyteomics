@@ -27,6 +27,7 @@ In :py:mod:`pyteomics.mass` there are two ways to approach these problems.
 
   The values of :py:data:`pyteomics.mass.std_aa_comp` are
   :py:class:`pyteomics.mass.Composition` objects.
+  You can do basic arithmetics with :py:class:`Composition` objects: add, subtract and multiply by integers.
 
 * All functions that accept a **formula** keyword argument sum and
   subtract numbers following the same atom in the formula:
