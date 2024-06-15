@@ -164,10 +164,25 @@ class Composition(BasicComposition):
     def _from_parsed_sequence(self, parsed_sequence, aa_comp):
         self.clear()
         comp = defaultdict(int)
+        failflag = False
         for label in parsed_sequence:
             if label in aa_comp:
                 for elem, cnt in aa_comp[label].items():
                     comp[elem] += cnt
+            elif parser.is_term_group(label):
+                slabel = label.strip('-')
+                if slabel in aa_comp:
+                    # a modification label used as terminal group. Need to add one hydrogen to the comp
+                    if not slabel.islower():
+                        failflag = True
+                    else:
+                        comp += aa_comp[slabel]
+                        comp['H'] += 1
+
+                elif re.match(_formula, slabel):
+                    comp += Composition(formula=slabel)
+                else:
+                    failflag = True
             else:
                 try:
                     mod, aa = parser._split_label(label)
@@ -176,7 +191,9 @@ class Composition(BasicComposition):
                         comp[elem] += cnt
 
                 except (PyteomicsError, KeyError):
-                    raise PyteomicsError('No information for %s in `aa_comp`' % label)
+                    failflag = True
+            if failflag:
+                raise PyteomicsError('No information for %s in `aa_comp`' % label)
         self._from_composition(comp)
 
     def _from_split_sequence(self, split_sequence, aa_comp):
@@ -186,15 +203,16 @@ class Composition(BasicComposition):
             i = 0
             while i < len(group):
                 for j in range(len(group) + 1, -1, -1):
-                    try:
-                        label = ''.join(group[i:j])
+                    label = ''.join(group[i:j])
+                    if label in aa_comp:
                         for elem, cnt in aa_comp[label].items():
                             comp[elem] += cnt
-                    except KeyError:
-                        continue
+                    elif parser.is_term_group(label) and label.strip('-') in aa_comp:
+                        comp += aa_comp[label.strip('-')] + {'H': 1}
                     else:
-                        i = j
-                        break
+                        continue
+                    i = j
+                    break
                 if j == 0:
                     raise PyteomicsError("Invalid group starting from position %d: %s" % (i + 1, group))
         self._from_composition(comp)
@@ -202,7 +220,6 @@ class Composition(BasicComposition):
     def _from_sequence(self, sequence, aa_comp):
         parsed_sequence = parser.parse(
             sequence,
-            labels=aa_comp,
             show_unmodified_termini=True)
         self._from_parsed_sequence(parsed_sequence, aa_comp)
 
@@ -255,8 +272,7 @@ class Composition(BasicComposition):
         Parameters
         ----------
         formula : str, optional
-            A string with a chemical formula. All elements must be present in
-            `mass_data`.
+            A string with a chemical formula.
         sequence : str, optional
             A polypeptide sequence string in modX notation.
         parsed_sequence : list of str, optional
@@ -999,7 +1015,11 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
                 mass += aa_mass[aa] * num
             elif parser.is_term_mod(aa):
                 assert num == 1
-                mass += calculate_mass(formula=aa.strip('-'), mass_data=mass_data)
+                group = aa.strip('-')
+                if group in aa_mass:
+                    mass += aa_mass[group] + mass_data['H'][0][0]
+                else:
+                    mass += calculate_mass(formula=group, mass_data=mass_data)
             else:
                 mod, X = parser._split_label(aa)
                 mass += (aa_mass[mod] + aa_mass[X]) * num

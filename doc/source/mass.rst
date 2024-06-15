@@ -152,8 +152,7 @@ modification on a specific residue:
 
 `Unimod database <http://www.unimod.org>`_ is an excellent resource for the
 information on the chemical compositions of known protein modifications.
-Version 2.0.3 introduces :py:class:`pyteomics.mass.Unimod` class that can serve
-as a Python interface to Unimod:
+:py:class:`pyteomics.mass.Unimod` class is a simple Python interface to Unimod:
 
 .. code-block:: python
 
@@ -188,6 +187,23 @@ as a Python interface to Unimod:
         >>> aa_comp['Ac-'] = aa_comp['ac'] + {'H': 1}  # adding the hydrogen produces a full acetyl group composition
         >>> mass.calculate_mass('Ac-PEPacTIDE-OH', aa_comp=aa_comp)
         883.38109339411  # correct!
+
+    The following will produce the same result. **Pyteomics** recognizes that you are using a *mod* label instead
+    of a terminal group and adds a hydrogen implicitly:
+
+    .. code-block:: python
+
+        >>> aa_comp = dict(mass.std_aa_comp)
+        >>> aa_comp['ac'] = db.by_title('Acetyl')['composition']
+        >>> mass.calculate_mass('ac-PEPacTIDE-OH', aa_comp=aa_comp)
+        883.38109339411  # correct!
+
+    For completeness, note that you can actually specify terminal groups directly by their formula in the sequence:
+
+    .. code-block:: python
+
+        >>> mass.calculate_mass('CH3CO-PEPacTIDE-OH', aa_comp=aa_comp)
+        883.38109339411
 
 Faster mass calculations
 ------------------------
