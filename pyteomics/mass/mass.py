@@ -148,6 +148,11 @@ _atom = r'([A-Z][a-z+]*)(?:\[(\d+)\])?([+-]?\d+)?'
 _formula = r'^({})*$'.format(_atom)
 
 
+def _raise_term_label_exception(what='comp'):
+    raise PyteomicsError(f"Cannot use a mod label as a terminal group. Provide correct group {what}"
+                        f" in `aa_{what}`.")
+
+
 class Composition(BasicComposition):
     """
     A Composition object stores a chemical composition of a
@@ -172,13 +177,8 @@ class Composition(BasicComposition):
             elif parser.is_term_group(label):
                 slabel = label.strip('-')
                 if slabel in aa_comp:
-                    # a modification label used as terminal group. Need to add one hydrogen to the comp
-                    if not slabel.islower():
-                        failflag = True
-                    else:
-                        comp += aa_comp[slabel]
-                        comp['H'] += 1
-
+                    # a modification label used as terminal group. This is prone to errors and not allowed
+                    _raise_term_label_exception()
                 elif re.match(_formula, slabel):
                     comp += Composition(formula=slabel)
                 else:
@@ -208,7 +208,7 @@ class Composition(BasicComposition):
                         for elem, cnt in aa_comp[label].items():
                             comp[elem] += cnt
                     elif parser.is_term_group(label) and label.strip('-') in aa_comp:
-                        comp += aa_comp[label.strip('-')] + {'H': 1}
+                        _raise_term_label_exception()
                     else:
                         continue
                     i = j
@@ -987,7 +987,7 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
         value is :py:data:`nist_mass`).
     aa_mass : dict, optional
         A dict with the monoisotopic mass of amino acid residues
-        (default is std_aa_mass);
+        (default is std_aa_mass).
     ion_comp : dict, optional
         A dict with the relative elemental compositions of peptide ion
         fragments (default is :py:data:`std_ion_comp`).
@@ -1017,7 +1017,7 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
                 assert num == 1
                 group = aa.strip('-')
                 if group in aa_mass:
-                    mass += aa_mass[group] + mass_data['H'][0][0]
+                    _raise_term_label_exception('mass')
                 else:
                     mass += calculate_mass(formula=group, mass_data=mass_data)
             else:

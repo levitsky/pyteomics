@@ -87,12 +87,8 @@ class MassTest(unittest.TestCase):
         for pep in self.random_peptides:
             for mlabel, mcomp in self.mods.items():
                 mpep = mlabel + '-' + pep + '-' + mlabel
-                self.assertAlmostEqual(
-                    mass.fast_mass2(mpep, mass_data=mass_data, aa_mass=aa_mass),
-                    mass.fast_mass2(pep, mass_data=mass_data, aa_mass=aa_mass)
-                        + 2 * mass.calculate_mass(composition=mcomp, mass_data=mass_data)
-                        - self.mass_O
-                    )
+                self.assertRaises(auxiliary.PyteomicsError,
+                    mass.fast_mass2, mpep, mass_data=mass_data, aa_mass=aa_mass)
 
     def test_composition_term(self):
         aa_comp = self.aa_comp.copy()
@@ -100,8 +96,7 @@ class MassTest(unittest.TestCase):
         for pep in self.random_peptides:
             for mlabel, mcomp in self.mods.items():
                 mpep = mlabel + '-' + pep + '-' + mlabel
-                self.assertEqual(mass.Composition(sequence=mpep, aa_comp=aa_comp),
-                    mass.Composition(sequence=pep, aa_comp=aa_comp) - aa_comp['H-'] - aa_comp['-OH'] + mcomp * 2 + {'H': 2})
+                self.assertRaises(auxiliary.PyteomicsError, mass.Composition, sequence=mpep, aa_comp=aa_comp)
 
     def test_composition_term_sseq(self):
         aa_comp = self.aa_comp.copy()
@@ -109,9 +104,8 @@ class MassTest(unittest.TestCase):
         for pep in self.random_peptides:
             for mlabel, mcomp in self.mods.items():
                 split_sequence = parser.parse(pep, split=True)
-                self.assertEqual(mass.Composition(split_sequence=[
-                    (mlabel + '-',) + split_sequence[0]] + split_sequence[1:-1] + [split_sequence[-1] + ('-' + mlabel,)], aa_comp=aa_comp),
-                    mass.Composition(sequence=pep, aa_comp=aa_comp) - aa_comp['H-'] - aa_comp['-OH'] + mcomp * 2 + {'H': 2})
+                self.assertRaises(auxiliary.PyteomicsError, mass.Composition, split_sequence=[
+                    (mlabel + '-',) + split_sequence[0]] + split_sequence[1:-1] + [split_sequence[-1] + ('-' + mlabel,)], aa_comp=aa_comp)
 
     def test_Composition_dict(self):
         # Test Composition from a dict.
