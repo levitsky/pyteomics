@@ -40,17 +40,17 @@ class MassTest(unittest.TestCase):
             for i in range(10)]
 
         self.aa_comp = {
-            'X':   mass.Composition({'A': 1}, mass_data=self.mass_data),
-            'Y':   mass.Composition({'B': 1}, mass_data=self.mass_data),
-            'Z':   mass.Composition({'C': 1}, mass_data=self.mass_data),
-            'F':   mass.Composition({'F': 1}, mass_data=self.mass_data),
-            'H-':  mass.Composition({'D': 1}, mass_data=self.mass_data),
-            '-OH': mass.Composition({'E': 1}, mass_data=self.mass_data),
+            'X':   mass.Composition({'A': 1}),
+            'Y':   mass.Composition({'B': 1}),
+            'Z':   mass.Composition({'C': 1}),
+            'F':   mass.Composition({'F': 1}),
+            'H-':  mass.Composition({'D': 1}),
+            '-OH': mass.Composition({'E': 1}),
         }
 
         self.ion_comp = {
-            'M': mass.Composition({}, mass_data=self.mass_data),
-            'a': mass.Composition({'A': -1}, mass_data=self.mass_data)
+            'M': mass.Composition({}),
+            'a': mass.Composition({'A': -1})
         }
 
         self.mods = {'a': mass.Composition(A=1), 'b': mass.Composition(B=1)}
@@ -78,6 +78,34 @@ class MassTest(unittest.TestCase):
                     self.mass_data['A'][0][0] + self.mass_data['B'][0][0] * 2 + self.mass_data['C'][0][0] * 3 +
                     self.mass_data['D'][0][0] + self.mass_data['E'][0][0] * 2 + self.mass_data['F'][0][0] * 3))
 
+    def test_fast_mass2_term_label(self):
+        mass_data = dict(self.mass_data)
+        mass_data['H'] = {0: (self.mass_H, 1.0)}
+        mass_data['O'] = {0: (self.mass_O, 1.0)}
+        aa_mass = self.test_aa_mass.copy()
+        aa_mass.update({k: mass.calculate_mass(composition=v, mass_data=mass_data) for k, v in self.mods.items()})
+        for pep in self.random_peptides:
+            for mlabel, mcomp in self.mods.items():
+                mpep = mlabel + '-' + pep + '-' + mlabel
+                self.assertRaises(auxiliary.PyteomicsError,
+                    mass.fast_mass2, mpep, mass_data=mass_data, aa_mass=aa_mass)
+
+    def test_composition_term(self):
+        aa_comp = self.aa_comp.copy()
+        aa_comp.update(self.mods)
+        for pep in self.random_peptides:
+            for mlabel, mcomp in self.mods.items():
+                mpep = mlabel + '-' + pep + '-' + mlabel
+                self.assertRaises(auxiliary.PyteomicsError, mass.Composition, sequence=mpep, aa_comp=aa_comp)
+
+    def test_composition_term_sseq(self):
+        aa_comp = self.aa_comp.copy()
+        aa_comp.update(self.mods)
+        for pep in self.random_peptides:
+            for mlabel, mcomp in self.mods.items():
+                split_sequence = parser.parse(pep, split=True)
+                self.assertRaises(auxiliary.PyteomicsError, mass.Composition, split_sequence=[
+                    (mlabel + '-',) + split_sequence[0]] + split_sequence[1:-1] + [split_sequence[-1] + ('-' + mlabel,)], aa_comp=aa_comp)
 
     def test_Composition_dict(self):
         # Test Composition from a dict.
@@ -102,6 +130,10 @@ class MassTest(unittest.TestCase):
         self.assertEqual(
             mass.Composition(split_sequence=[('X',), ('Y',), ('Z',)], aa_comp=self.aa_comp),
             {atom: 1 for atom in 'ABC'})
+
+    def test_Composition_term_formula(self):
+        self.assertEqual(mass.Composition(sequence='A2B-XYZ-DE2F3', aa_comp=self.aa_comp),
+            {'A': 3, 'B': 2, 'C': 1, 'D': 1, 'E': 2, 'F': 3})
 
     def test_Composition_sum(self):
         # Test sum of Composition objects.

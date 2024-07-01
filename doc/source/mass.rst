@@ -1,8 +1,45 @@
-Mass and isotopes
-=================
+Composition, mass and isotopes
+==============================
 
 The functions related to mass calculations and isotopic distributions are
 organized into the :py:mod:`pyteomics.mass` module.
+
+Chemical compositions
+---------------------
+
+Some problems in organic mass spectrometry deal with molecules made by
+addition or subtraction of standard chemical 'building blocks'.
+In :py:mod:`pyteomics.mass` there are two ways to approach these problems.
+
+* There is a :py:class:`pyteomics.mass.Composition` class intended to store
+  chemical formulas. :py:class:`pyteomics.mass.Composition` objects are dicts
+  that can be added or subtracted from one another or multiplied by integers.
+
+  .. code-block:: python
+
+     >>> from pyteomics import mass
+     >>> p = mass.Composition(formula='HO3P') # Phosphate group
+     Composition({'H': 1, 'O': 3, 'P': 1})
+     >>> mass.std_aa_comp['T']
+     Composition{'C': 4, 'H': 7, 'N': 1, 'O': 2})
+     >>> p + mass.std_aa_comp['T']
+     Composition({'C': 4, 'H': 8, 'N': 1, 'O': 5, 'P': 1})
+
+  The values of :py:data:`pyteomics.mass.std_aa_comp` are
+  :py:class:`pyteomics.mass.Composition` objects.
+  You can do basic arithmetics with :py:class:`Composition` objects: add, subtract and multiply by integers.
+
+* All functions that accept a **formula** keyword argument sum and
+  subtract numbers following the same atom in the formula:
+
+  .. code-block:: python
+
+     >>> from pyteomics import mass
+     >>> mass.calculate_mass(formula='C2H6') # Ethane
+     30.046950192426
+     >>> mass.calculate_mass(formula='C2H6H-2') # Ethylene
+     28.031300128284002
+
 
 Basic mass calculations
 -----------------------
@@ -12,7 +49,8 @@ mass of an organic molecule or peptide or *m/z* ratio of an ion.
 The tasks of this kind can be performed with the
 :py:func:`pyteomics.mass.calculate_mass` function. It works with
 chemical formulas, polypeptide sequences in modX notation, pre-parsed sequences
-and dictionaries of chemical compositions:
+and dictionaries of chemical compositions. Internally, all kinds of input are converted into
+a :py:class`Composition` for mass calculation.
 
 .. code-block:: python
 
@@ -80,7 +118,7 @@ To add information about modified amino acids to a user-defined ``aa_comp`` dict
 one can either add the composition info for a specific modified residue or just
 for a modification:
 
-.. code-block:: python 
+.. code-block:: python
 
     >>> from pyteomics import mass
     >>> aa_comp = dict(mass.std_aa_comp)
@@ -114,8 +152,7 @@ modification on a specific residue:
 
 `Unimod database <http://www.unimod.org>`_ is an excellent resource for the
 information on the chemical compositions of known protein modifications.
-Version 2.0.3 introduces :py:class:`pyteomics.mass.Unimod` class that can serve
-as a Python interface to Unimod:
+:py:class:`pyteomics.mass.Unimod` class is a simple Python interface to Unimod:
 
 .. code-block:: python
 
@@ -125,40 +162,38 @@ as a Python interface to Unimod:
     >>> mass.calculate_mass('PEpTIDE', aa_comp=aa_comp)
     782.2735307010443
 
-Chemical compositions
----------------------
+.. warning::
 
-Some problems in organic mass spectrometry deal with molecules made by
-addition or subtraction of standard chemical 'building blocks'.
-In :py:mod:`pyteomics.mass` there are two ways to approach these problems.
+    Keep in mind the difference between **modifications** and **terminal groups**.
+    The composition of a modification can be added directly to the composition of the unmodified peptide, because
+    the hydrogen atom that gets replaced by the modification is already subtracted (e.g. acetylation is a replacement
+    of hydrogen with an acetyl and is represented by the composition `H(2) C(2) O`).
+    A **terminal group**, on the other hand, must be represented by its full composition, e.g. `H(3) C(2) O` in case
+    of acetyl.
 
-* There is a :py:class:`pyteomics.mass.Composition` class intended to store
-  chemical formulas. :py:class:`pyteomics.mass.Composition` objects are dicts
-  that can be added or subtracted from one another or multiplied by integers.
+    So, this is incorrect:
 
-  .. code-block:: python
+    .. code-block:: python
 
-     >>> from pyteomics import mass
-     >>> p = mass.Composition(formula='HO3P') # Phosphate group
-     Composition({'H': 1, 'O': 3, 'P': 1})
-     >>> mass.std_aa_comp['T']
-     Composition{'C': 4, 'H': 7, 'N': 1, 'O': 2})
-     >>> p + mass.std_aa_comp['T']
-     Composition({'C': 4, 'H': 8, 'N': 1, 'O': 5, 'P': 1})
+        >>> aa_comp['ac'] = aa_comp['Ac-'] = db.by_title('Acetyl')['composition']  # do not do this!
+        >>> mass.calculate_mass('Ac-PEPacTIDE-OH', aa_comp=aa_comp)
+        882.37326836204  # not correct mass!
 
-  The values of :py:data:`pyteomics.mass.std_aa_comp` are
-  :py:class:`pyteomics.mass.Composition` objects.
+    This will give you a correct result:
 
-* All functions that accept a **formula** keyword argument sum and
-  subtract numbers following the same atom in the formula:
+    .. code-block:: python
 
-  .. code-block:: python
+        >>> aa_comp['ac'] = db.by_title('Acetyl')['composition']
+        >>> aa_comp['Ac-'] = aa_comp['ac'] + {'H': 1}  # adding the hydrogen produces a full acetyl group composition
+        >>> mass.calculate_mass('Ac-PEPacTIDE-OH', aa_comp=aa_comp)
+        883.38109339411  # correct!
 
-     >>> from pyteomics import mass
-     >>> mass.calculate_mass(formula='C2H6') # Ethane
-     30.046950192426
-     >>> mass.calculate_mass(formula='C2H6H-2') # Ethylene
-     28.031300128284002
+    For completeness, note that you can actually specify **terminal groups** directly by their formula in the sequence:
+
+    .. code-block:: python
+
+        >>> mass.calculate_mass('CH3CO-PEPacTIDE-OH', aa_comp=aa_comp)
+        883.38109339411
 
 Faster mass calculations
 ------------------------

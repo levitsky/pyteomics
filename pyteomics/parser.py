@@ -18,8 +18,8 @@ The valid examples of modX amino acid labels are: 'G', 'pS', 'oxM'. This rule
 allows to combine read- and parseability.
 
 Besides the sequence of amino acid residues, modX has a rule to specify
-terminal modifications of a polypeptide. Such a label should start or
-end with a hyphen. The default N-terminal amine group and C-terminal
+terminal modifications (alternative terminal groups) of a polypeptide.
+Such a label should start or end with a hyphen. The default N-terminal amine group and C-terminal
 carboxyl group may not be shown explicitly.
 
 Therefore, valid examples of peptide sequences in modX are: "GAGA",
@@ -62,8 +62,8 @@ Auxiliary commands
 
   :py:func:`is_modX` - check if supplied code corresponds to a modX label.
 
-  :py:func:`is_term_mod` - check if supplied code corresponds to a
-  terminal modification.
+  :py:func:`is_term_group` - check if supplied code corresponds to a
+  terminal group.
 
 Data
 ----
@@ -120,12 +120,12 @@ std_cterm = '-OH'
 std_labels = std_amino_acids + [std_nterm, std_cterm]
 """modX labels for the standard amino acids and unmodified termini."""
 
-_nterm_mod = r'[^-]+-$'
-_cterm_mod = r'-[^-]+$'
+_nterm_group = r'[^-]+-$'
+_cterm_group = r'-[^-]+$'
 
 
-def is_term_mod(label):
-    """Check if `label` corresponds to a terminal modification.
+def is_term_group(label):
+    """Check if `label` corresponds to a terminal group.
 
     Parameters
     ----------
@@ -137,18 +137,21 @@ def is_term_mod(label):
 
     Examples
     --------
-    >>> is_term_mod('A')
+    >>> is_term_group('A')
     False
-    >>> is_term_mod('Ac-')
+    >>> is_term_group('Ac-')
     True
-    >>> is_term_mod('-customGroup')
+    >>> is_term_group('-customGroup')
     True
-    >>> is_term_mod('this-group-')
+    >>> is_term_group('this-group-')
     False
-    >>> is_term_mod('-')
+    >>> is_term_group('-')
     False
     """
-    return (re.match(_nterm_mod, label) or re.match(_cterm_mod, label)) is not None
+    return (re.match(_nterm_group, label) or re.match(_cterm_group, label)) is not None
+
+
+is_term_mod = is_term_group
 
 
 def match_modX(label):
@@ -222,13 +225,13 @@ def length(sequence, **kwargs):
         else:
             parsed_sequence = sequence
         num_term_groups = 0
-        if is_term_mod(parsed_sequence[0]):
+        if is_term_group(parsed_sequence[0]):
             num_term_groups += 1
-        if is_term_mod(parsed_sequence[-1]):
+        if is_term_group(parsed_sequence[-1]):
             num_term_groups += 1
         return len(parsed_sequence) - num_term_groups
     elif isinstance(sequence, dict):
-        return sum(amount for aa, amount in sequence.items() if not is_term_mod(aa))
+        return sum(amount for aa, amount in sequence.items() if not is_term_group(aa))
 
     raise PyteomicsError('Unsupported type of sequence.')
 
@@ -525,10 +528,10 @@ def to_proforma(sequence, **kwargs):
     nterm = cterm = None
     pro_sequence = []
     if isinstance(sequence[0], str):  # regular parsed sequence
-        if is_term_mod(sequence[0]) and sequence[0] != std_nterm:
+        if is_term_group(sequence[0]) and sequence[0] != std_nterm:
             nterm = get_tag(sequence[0])
             i = 1
-        if is_term_mod(sequence[-1]) and sequence[-1] != std_cterm:
+        if is_term_group(sequence[-1]) and sequence[-1] != std_cterm:
             cterm = get_tag(sequence[-1])
             j -= 1
         for label in sequence[i:j]:
@@ -538,9 +541,9 @@ def to_proforma(sequence, **kwargs):
                 mod, aa = _split_label(label)
                 pro_sequence.append((aa, get_tag(mod)))
     else:  # split sequence
-        if is_term_mod(sequence[0][0]) and sequence[0][0] != std_nterm:
+        if is_term_group(sequence[0][0]) and sequence[0][0] != std_nterm:
             nterm = get_tag(sequence[0][0])
-        if is_term_mod(sequence[-1][-1]) and sequence[-1][-1] != std_cterm:
+        if is_term_group(sequence[-1][-1]) and sequence[-1][-1] != std_cterm:
             cterm = get_tag(sequence[-1][-1])
         if len(sequence) == 1:
             pro_sequence = [(sequence[0][-2] if cterm else sequence[0][-1], get_tag(sequence[0][1]) if len(sequence[0]) == 4 else None)]
@@ -616,9 +619,9 @@ def amino_acid_composition(sequence, show_unmodified_termini=False, term_aa=Fals
 
     # Process terminal amino acids.
     if term_aa:
-        nterm_aa_position = 1 if is_term_mod(parsed_sequence[0]) else 0
+        nterm_aa_position = 1 if is_term_group(parsed_sequence[0]) else 0
         cterm_aa_position = (
-            len(parsed_sequence) - 2 if is_term_mod(parsed_sequence[-1])
+            len(parsed_sequence) - 2 if is_term_group(parsed_sequence[-1])
             else len(parsed_sequence) - 1)
         if len(parsed_sequence) > 1:
             aa_dict['cterm' + parsed_sequence.pop(cterm_aa_position)] = 1
@@ -984,13 +987,13 @@ def isoforms(sequence, **kwargs):
         group = list(label)
         m = main(group)[0]
         c = True  # whether the change is applied in the end
-        if m == 0 and not is_term_mod(mod):
+        if m == 0 and not is_term_group(mod):
             group.insert(0, mod)
         elif mod[0] == '-' and (group[-1] == std_cterm or (group[-1][0] == '-' and override)):
             group[-1] = mod
         elif mod[-1] == '-' and (group[0] == std_nterm or (group[0][-1] == '-' and override)):
             group[0] = mod
-        elif not is_term_mod(mod):
+        elif not is_term_group(mod):
             if m and group[m - 1][-1] != '-':
                 if override:
                     group[m - 1] = mod
@@ -1006,7 +1009,7 @@ def isoforms(sequence, **kwargs):
     variable_mods = kwargs.get('variable_mods', {})
     varmods_term, varmods_non_term = [], []
     for m, r in sorted(variable_mods.items()):
-        if is_term_mod(m):
+        if is_term_group(m):
             varmods_term.append((m, r))
         else:
             varmods_non_term.append((m, r))

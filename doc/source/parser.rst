@@ -7,7 +7,7 @@ modX
 **Pyteomics** uses a custom IUPAC-derived peptide sequence notation named **modX**.
 As in the IUPAC notation, each amino acid residue is represented by a capital
 letter, but it may preceded by an arbitrary number of small letters to show
-modification. Terminal modifications are separated from the backbone sequence by
+modification. Terminal groups are separated from the backbone sequence by
 a hyphen (‘-’). By default, both termini are assumed to be unmodified, which can be
 shown explicitly by 'H-' for N-terminal hydrogen and '-OH' for C-terminal hydroxyl.
 
@@ -23,7 +23,7 @@ Parsing
 
 There are two helper functions to check if a label is in modX format or represents
 a terminal modification: :py:func:`pyteomics.parser.is_modX` and
-:py:func:`pyteomics.parser.is_term_mod`:
+:py:func:`pyteomics.parser.is_term_group`:
 
 .. code-block:: python
 
@@ -33,9 +33,9 @@ a terminal modification: :py:func:`pyteomics.parser.is_modX` and
     True
     >>> parser.is_modX('pTx')
     False
-    >>> parser.is_term_mod('pT')
+    >>> parser.is_term_group('pT')
     False
-    >>> parser.is_term_mod('Ac-')
+    >>> parser.is_term_group('Ac-')
     True
 
 
