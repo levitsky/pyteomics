@@ -9,12 +9,19 @@ from pyteomics.auxiliary import basestring
 
 
 # http://stackoverflow.com/q/14246983/1258041
+# updated to avoid calling np.allclose: since numpy 2.0 this results in a RecursionError
 class ComparableArray(np.ndarray):
+    def __new__(cls, *args, **kwargs):
+        inst = super().__new__(cls, *args, **kwargs)
+        inst._atol = kwargs.pop('atol', 1e-8)
+        inst._rtol = kwargs.pop('rtol', 1e-5)
+        return inst
+
     def __eq__(self, other):
         if not isinstance(other, np.ndarray):
             return False
         other = np.asarray(other, dtype=float)
-        return self.shape == other.shape and np.allclose(self, other)
+        return self.shape == other.shape and np.all(np.abs(self - other) <= self._atol + self._rtol * np.abs(other))
 
 
 def makeCA(arr):
