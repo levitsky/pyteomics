@@ -12,7 +12,7 @@ from pyteomics.auxiliary import basestring
 # updated to avoid calling np.allclose: since numpy 2.0 this results in a RecursionError
 class ComparableArray(np.ndarray):
     def __new__(cls, *args, **kwargs):
-        inst = super().__new__(cls, *args, **kwargs)
+        inst = super(ComparableArray, cls).__new__(cls, *args, **kwargs)
         inst._atol = kwargs.pop('atol', 1e-8)
         inst._rtol = kwargs.pop('rtol', 1e-5)
         return inst
