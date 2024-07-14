@@ -149,8 +149,8 @@ _formula = r'^({})*$'.format(_atom)
 
 
 def _raise_term_label_exception(what='comp'):
-    raise PyteomicsError(f"Cannot use a mod label as a terminal group. Provide correct group {what}"
-                        f" in `aa_{what}`.")
+    raise PyteomicsError("Cannot use a mod label as a terminal group. Provide correct group {0}"
+                         " in `aa_{0}`.".format(what))
 
 
 class Composition(BasicComposition):
