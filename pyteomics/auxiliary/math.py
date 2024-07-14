@@ -27,9 +27,9 @@ def linear_regression_vertical(x, y=None, a=None, b=None):
     """
 
     import numpy as np
-    x = np.array(x, copy=False)
+    x = np.asarray(x)
     if y is not None:
-        y = np.array(y, copy=False)
+        y = np.asarray(y)
     else:
         if len(x.shape) != 2 or x.shape[-1] != 2:
             raise PyteomicsError(
@@ -76,9 +76,9 @@ def linear_regression_perpendicular(x, y=None):
     """
 
     import numpy as np
-    x = np.array(x, copy=False)
+    x = np.asarray(x)
     if y is not None:
-        y = np.array(y, copy=False)
+        y = np.asarray(y)
         data = np.hstack((x.reshape((-1, 1)), y.reshape((-1, 1))))
     else:
         if len(x.shape) != 2 or x.shape[-1] != 2:

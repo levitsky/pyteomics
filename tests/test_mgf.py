@@ -71,14 +71,14 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(data.mgf_spectra_short_no_charges, list(reader))
 
     def test_read_with_ions(self):
-        for spec_data, spec_read in zip(data.mgf_spectra_annotated_long, list(self.spectra_annotated)):
+        for spec_data, spec_read in zip(data.mgf_spectra_annotated_long, self.spectra_annotated):
             # Check that the spectra have the same dict keys
             self.assertEqual(spec_data.keys(), spec_read.keys())
-            for key in spec_data.keys():
-                if type(spec_data[key]) == dict:
-                    self.assertDictEqual(spec_data[key], spec_read[key])
-                else:
+            for key in spec_data:
+                if key == 'ion array':
                     np.testing.assert_array_equal(spec_data[key], spec_read[key])
+                else:
+                    self.assertEqual(spec_data[key], spec_read[key])
 
     def test_read_write_with_ions(self):
         formats = ['{:.6f} {:.6f} {}', '%.6f %.6f %s']
@@ -91,11 +91,11 @@ class MGFTest(unittest.TestCase):
             for spec_data, spec_read in zip(data.mgf_spectra_annotated_long, spectra):
                 # Check that the spectra have the same dict keys
                 self.assertEqual(spec_data.keys(), spec_read.keys())
-                for key in spec_data.keys():
-                    if type(spec_data[key]) == dict:
-                        self.assertDictEqual(spec_data[key], spec_read[key])
-                    else:
+                for key in spec_data:
+                    if key == 'ion array':
                         np.testing.assert_array_equal(spec_data[key], spec_read[key])
+                    else:
+                        self.assertEqual(spec_data[key], spec_read[key])
 
     def test_read_array_conversion(self):
         with mgf.read(self.path, convert_arrays=0) as reader:

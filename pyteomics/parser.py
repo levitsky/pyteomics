@@ -1143,7 +1143,7 @@ def coverage(protein, peptides):
             '(?={})'.format(re.sub(r'[^A-Z]', '', peptide)), protein)]
         for i in indices:
             mask[i:i + len(peptide)] = 1
-    return mask.sum(dtype=float) / mask.size
+    return float(mask.sum(dtype=float) / mask.size)
 
 
 if __name__ == "__main__":

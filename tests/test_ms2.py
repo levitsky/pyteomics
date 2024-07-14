@@ -25,26 +25,26 @@ class MS2Test(unittest.TestCase):
 
     def test_read_no_charges(self):
         with read(self.path, convert_arrays=False, read_charges=False) as reader:
-            lhs = copy.deepcopy(data.ms2_spectra_lists)
+            lhs = list(map(copy.copy, data.ms2_spectra_lists))
             for spec in lhs:
                 del spec['charge array']
             self.assertEqual(lhs, list(reader))
 
         with read(self.path, convert_arrays=1, read_charges=False) as reader:
-            lhs = copy.deepcopy(data.ms2_spectra)
+            lhs = list(map(copy.copy, data.ms2_spectra))
             for spec in lhs:
                 del spec['charge array']
             self.assertEqual(lhs, list(reader))
 
     def test_read_no_resolution(self):
         with read(self.path, convert_arrays=False, read_resolutions=False) as reader:
-            lhs = copy.deepcopy(data.ms2_spectra_lists)
+            lhs = list(map(copy.copy, data.ms2_spectra_lists))
             for spec in lhs:
                 del spec['resolution array']
             self.assertEqual(lhs, list(reader))
 
         with read(self.path, convert_arrays=1, read_resolutions=False) as reader:
-            lhs = copy.deepcopy(data.ms2_spectra)
+            lhs = list(map(copy.copy, data.ms2_spectra))
             for spec in lhs:
                 del spec['resolution array']
             self.assertEqual(lhs, list(reader))
@@ -77,7 +77,7 @@ class MS2Test(unittest.TestCase):
             self.assertEqual(reader.block_size, 12345)
             self.assertEqual(reader._read_charges, False)
             self.assertEqual(reader._read_resolutions, False)
-            lhs = copy.deepcopy(data.ms2_spectra)
+            lhs = list(map(copy.copy, data.ms2_spectra))
             for spec in lhs:
                 del spec['resolution array']
                 del spec['charge array']
@@ -94,7 +94,7 @@ class MS2Test(unittest.TestCase):
         with pickle.loads(spec) as reader:
             self.assertEqual(reader._read_charges, False)
             self.assertEqual(reader._read_resolutions, False)
-            lhs = copy.deepcopy(data.ms2_spectra)
+            lhs = list(map(copy.copy, data.ms2_spectra))
             for spec in lhs:
                 del spec['resolution array']
                 del spec['charge array']
