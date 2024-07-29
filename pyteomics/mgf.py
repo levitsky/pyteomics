@@ -150,6 +150,25 @@ class MGFBase(aux.MaskedArrayConversionMixin):
         return aux._parse_charge(charge_text, list_only=list_only)
 
     @staticmethod
+    def parse_pepmass_charge(pepmass_str):
+        split = pepmass_str.split()
+        if len(split) > 3:
+            raise aux.PyteomicsError('MGF format error: cannot parse '
+                    'PEPMASS = {}'.format(pepmass_str))
+        elif len(split) == 3:
+            charge = split[2]
+            try:
+                pepmass = tuple(map(float, split[:2]))
+            except ValueError:
+                raise aux.PyteomicsError('MGF format error: cannot parse '
+                    'PEPMASS = {}'.format(pepmass_str))
+        else:
+            pepmass = tuple(map(float, split[:2]))
+            pepmass = pepmass + (None,) * (2-len(pepmass))
+            charge = None
+        return pepmass, charge
+
+    @staticmethod
     def parse_peak_charge(charge_text, list_only=False):
         return aux._parse_charge(charge_text, list_only=False)
 
@@ -203,13 +222,9 @@ class MGFBase(aux.MaskedArrayConversionMixin):
                 pass
             elif sline == 'END IONS':
                 if 'pepmass' in params:
-                    try:
-                        pepmass = tuple(map(float, params['pepmass'].split()))
-                    except ValueError:
-                        raise aux.PyteomicsError('MGF format error: cannot parse '
-                                'PEPMASS = {}'.format(params['pepmass']))
-                    else:
-                        params['pepmass'] = pepmass + (None,) * (2-len(pepmass))
+                    params['pepmass'], charge = self.parse_pepmass_charge(params['pepmass'])
+                    if charge is not None:
+                        params['charge'] = charge
                 if isinstance(params.get('charge'), aux.basestring):
                     params['charge'] = self.parse_precursor_charge(params['charge'], True)
                 if 'rtinseconds' in params:

@@ -264,6 +264,12 @@ class UtilityTest(unittest.TestCase):
         self.assertEqual(mgf._charge_repr('charge', '2+, 3+'), 'CHARGE=2+ and 3+')
         self.assertEqual(mgf._charge_repr('charge', np.array([2, 3])), 'CHARGE=2+ and 3+')
 
+    def test_pepmass_parsing(self):
+        with mgf.MGF('test_pepmass.mgf') as f:
+            spectra = list(f)
+            self.assertEqual(len(spectra), 3)
+            self.assertEqual(spectra[0]['params'], spectra[1]['params'])
+            self.assertEqual(spectra[0]['params'], spectra[2]['params'])
 
 if __name__ == "__main__":
     unittest.main()
