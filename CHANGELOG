@@ -1,5 +1,5 @@
-4.7.3a2
--------
+4.7.3
+-----
 
  - Add compatibility with NumPy 2.0.
  - Fix `#153 <https://github.com/levitsky/pyteomics/issues/153>`_. MGF parser now recognizes precursor charge specified
