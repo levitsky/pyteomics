@@ -243,7 +243,7 @@ class MassIVEBackend(_PROXIBackend):
 
 
 class PRIDEBackend(_PROXIBackend):
-    _url_template = "http://wwwdev.ebi.ac.uk/pride/proxi/archive/v{version}/spectra?resultType=full&usi={usi}"
+    _url_template = "http://www.ebi.ac.uk/pride/proxi/archive/v{version}/spectra?resultType=full&usi={usi}"
 
     def __init__(self, **kwargs):
         super(PRIDEBackend, self).__init__(
