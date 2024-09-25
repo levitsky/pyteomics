@@ -196,7 +196,7 @@ class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
         return info
 
 
-def read(source, read_schema=False, iterative=True, **kwargs):
+def read(*args, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
 
     Parameters
@@ -215,13 +215,23 @@ def read(source, read_schema=False, iterative=True, **kwargs):
         memory usage at almost the same parsing speed. Default is
         :py:const:`True`.
 
+    use_index : bool, optional
+        Defines whether an index of byte offsets needs to be created for
+        elements listed in `indexed_tags`.
+        This is useful for random access to spectum queries.
+        Default is :py:const:`True`.
+
+    indexed_tags : container of bytes, optional
+        If `use_index` is :py:const:`True`, elements listed in this parameter
+        will be indexed. Empty set by default.
+
     Returns
     -------
     out : PepXML
        An iterator over dicts with PSM properties.
     """
 
-    return PepXML(source, read_schema=read_schema, iterative=iterative)
+    return PepXML(*args, **kwargs)
 
 
 def iterfind(source, path, **kwargs):
