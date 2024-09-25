@@ -404,6 +404,7 @@ def DataFrame(*args, **kwargs):
     sep = kwargs.pop('sep', None)
     pd_kwargs = kwargs.pop('pd_kwargs', {})
     def gen_items():
+        kwargs.setdefault('use_index', False)
         with chain(*args, **kwargs) as f:
             for item in f:
                 info = {}
