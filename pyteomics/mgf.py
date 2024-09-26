@@ -387,6 +387,7 @@ class IndexedMGF(MGFBase, aux.TaskMappingMixin, aux.TimeOrderedIndexedReaderMixi
             self.__class__.__name__, getattr(self._source, 'name', self._source_init), not self._index_by_scans))
         warnings.warn(text)
 
+
 class MGF(MGFBase, aux.FileReader):
     """
     A class representing an MGF file. Supports the `with` syntax and direct iteration for sequential

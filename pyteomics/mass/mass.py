@@ -486,16 +486,19 @@ class Composition(BasicComposition):
         mass = 0.0
         average = kwargs.get('average', False)
 
-        for isotope_string, amount in self.items():
-            element_name, isotope_num = _parse_isotope_string(isotope_string)
-            # Calculate average mass if required and the isotope number is
-            # not specified.
-            if (not isotope_num) and average:
-                for isotope, data in mass_data[element_name].items():
-                    if isotope:
-                        mass += (amount * data[0] * data[1])
-            else:
-                mass += (amount * mass_data[element_name][isotope_num][0])
+        try:
+            for isotope_string, amount in self.items():
+                element_name, isotope_num = _parse_isotope_string(isotope_string)
+                # Calculate average mass if required and the isotope number is
+                # not specified.
+                if (not isotope_num) and average:
+                    for isotope, data in mass_data[element_name].items():
+                        if isotope:
+                            mass += (amount * data[0] * data[1])
+                else:
+                    mass += (amount * mass_data[element_name][isotope_num][0])
+        except KeyError as e:
+            raise PyteomicsError('No mass information for element: {}'.format(e.args[0]))
 
         return self._mass_to_mz(mass, self, **kwargs)
 
@@ -1016,10 +1019,13 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
             elif parser.is_term_mod(aa):
                 assert num == 1
                 group = aa.strip('-')
-                if group in aa_mass:
+                if group.islower() and group in aa_mass:
                     _raise_term_label_exception('mass')
                 else:
-                    mass += calculate_mass(formula=group, mass_data=mass_data)
+                    try:
+                        mass += calculate_mass(formula=group, mass_data=mass_data)
+                    except PyteomicsError:
+                        raise PyteomicsError('Could not parse terminal group as a formula: {}'.format(group))
             else:
                 mod, X = parser._split_label(aa)
                 mass += (aa_mass[mod] + aa_mass[X]) * num
