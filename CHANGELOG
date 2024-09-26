@@ -1,3 +1,12 @@
+4.7.4a1
+-------
+
+- Fix call signature for :py:func:`pepxml.read` and make it a full alias to :py:class:`pepxml.PepXML`.
+- Disable indexing of pepXML in :py:func:`pepxml.DataFrame`, which fixes creation of dataframes from files
+  with non-unique spectrum IDs.
+- Fix #156.
+
+
 4.7.3
 -----
 
