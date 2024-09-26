@@ -69,7 +69,8 @@ class MassTest(unittest.TestCase):
                 sum(pep.count(aa) * m for aa, m in self.test_aa_mass.items()) + self.mass_H * 2.0 + self.mass_O)
 
     def test_fast_mass2_sanity(self):
-        self.assertAlmostEqual(mass.fast_mass2('PEPTIDE'), mass.fast_mass('PEPTIDE'), 799.36)
+        self.assertAlmostEqual(mass.fast_mass2('PEPTIDE'), mass.fast_mass('PEPTIDE'))
+        self.assertAlmostEqual(mass.fast_mass2('PEPTIDE'), 799.359964)
 
     def test_fast_mass2_term(self):
         for pep in self.random_peptides:
