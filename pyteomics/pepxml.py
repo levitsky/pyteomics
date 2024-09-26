@@ -99,7 +99,9 @@ from . import xml, auxiliary as aux, _schema_defaults
 
 
 class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
-    """Parser class for pepXML files."""
+    """
+    Parser class for pepXML files.
+    """
     file_format = 'pepXML'
     _root_element = 'msms_pipeline_analysis'
     _default_schema = _schema_defaults._pepxml_schema_defaults
@@ -194,6 +196,16 @@ class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
         if 'search_hit' in info:
             info['search_hit'].sort(key=lambda x: x['hit_rank'])
         return info
+
+    def search_hits(self):
+        """
+        Iterate over search hits rather than spectrum queries.
+        """
+        for sq in self:
+            sh = sq.pop('search_hit', [])
+            for item in sh:
+                item.update(sq)
+                yield item
 
 
 def read(*args, **kwargs):
@@ -369,6 +381,11 @@ def DataFrame(*args, **kwargs):
     **kwargs
         Passed to :py:func:`chain`.
 
+    by : str, keyword only, optional
+        Can be :py:const:`"spectrum_query"` (default) or :py:const:`"search_hit"`.
+        One row in the resulting dataframe corresponds to one element of the given type.
+        If :py:const:`"spectrum_query"` is set, only the top search hit is shown in the dataframe.
+
     sep : str or None, keyword only, optional
         Some values related to PSMs (such as protein information) are variable-length
         lists. If `sep` is a :py:class:`str`, they will be packed into single string using
@@ -403,8 +420,50 @@ def DataFrame(*args, **kwargs):
     kwargs = kwargs.copy()
     sep = kwargs.pop('sep', None)
     pd_kwargs = kwargs.pop('pd_kwargs', {})
-    def gen_items():
-        kwargs.setdefault('use_index', False)
+    kwargs.setdefault('use_index', False)
+    by = kwargs.pop('by', 'spectrum_query')
+
+    def search_hit_info(sh):
+        info = {}
+        proteins = sh.pop('proteins')
+        prot_dict = {}
+        for p in proteins:
+            for k in p:
+                prot_dict[k] = []
+        for p in proteins:
+            for k, v in prot_dict.items():
+                v.append(p.get(k))
+        if sep is None:
+            info.update(prot_dict)
+        else:
+            for k, v in prot_dict.items():
+                info[k] = sep.join(str(val) if val is not None else '' for val in v)
+        info.update(sh.pop('search_score'))
+        mods = sh.pop('modifications', [])
+        formatted_mods = ['{0[mass]:.3f}@{0[position]}'.format(x) for x in mods]
+        if sep is not None:
+            info['modifications'] = sep.join(formatted_mods)
+        else:
+            info['modifications'] = formatted_mods
+        for k, v in sh.items():
+            if isinstance(v, (str, int, float)):
+                info[k] = v
+        if 'analysis_result' in sh:
+            for ar in sh['analysis_result']:
+                if ar['analysis'] == 'peptideprophet':
+                    try:
+                        info.update(ar['peptideprophet_result']['parameter'])
+                    except KeyError:
+                        pass
+                    info['peptideprophet_probability'] = ar['peptideprophet_result']['probability']
+                    info['peptideprophet_ntt_prob'] = ar['peptideprophet_result']['all_ntt_prob']
+                elif ar['analysis'] == 'interprophet':
+                    info.update(ar['interprophet_result']['parameter'])
+                    info['interprophet_probability'] = ar['interprophet_result']['probability']
+                    info['interprophet_ntt_prob'] = ar['interprophet_result']['all_ntt_prob']
+        return info
+
+    def iter_spectrum_query():
         with chain(*args, **kwargs) as f:
             for item in f:
                 info = {}
@@ -413,44 +472,17 @@ def DataFrame(*args, **kwargs):
                         info[k] = v
                 if 'search_hit' in item:
                     sh = item['search_hit'][0]
-                    proteins = sh.pop('proteins')
-                    prot_dict = {}
-                    for p in proteins:
-                        for k in p:
-                            prot_dict[k] = []
-                    for p in proteins:
-                        for k, v in prot_dict.items():
-                            v.append(p.get(k))
-                    if sep is None:
-                        info.update(prot_dict)
-                    else:
-                        for k, v in prot_dict.items():
-                            info[k] = sep.join(str(val) if val is not None else '' for val in v)
-                    info.update(sh.pop('search_score'))
-                    mods = sh.pop('modifications', [])
-                    formatted_mods = ['{0[mass]:.3f}@{0[position]}'.format(x) for x in mods]
-                    if sep is not None:
-                        info['modifications'] = sep.join(formatted_mods)
-                    else:
-                        info['modifications'] = formatted_mods
-                    for k, v in sh.items():
-                        if isinstance(v, (str, int, float)):
-                            info[k] = v
-                    if 'analysis_result' in sh:
-                        for ar in sh['analysis_result']:
-                            if ar['analysis'] == 'peptideprophet':
-                                try:
-                                    info.update(ar['peptideprophet_result']['parameter'])
-                                except KeyError:
-                                    pass
-                                info['peptideprophet_probability'] = ar['peptideprophet_result']['probability']
-                                info['peptideprophet_ntt_prob'] = ar['peptideprophet_result']['all_ntt_prob']
-                            elif ar['analysis'] == 'interprophet':
-                                info.update(ar['interprophet_result']['parameter'])
-                                info['interprophet_probability'] = ar['interprophet_result']['probability']
-                                info['interprophet_ntt_prob'] = ar['interprophet_result']['all_ntt_prob']
+                    info.update(search_hit_info(sh))
                 yield info
-    return pd.DataFrame(gen_items(), **pd_kwargs)
+
+    def iter_search_hit():
+        for source in args:
+            with PepXML(source, **kwargs) as f:
+                for sh in f.search_hits():
+                    yield search_hit_info(sh)
+
+    items = {'spectrum_query': iter_spectrum_query, 'search_hit': iter_search_hit}[by]
+    return pd.DataFrame(items(), **pd_kwargs)
 
 
 def filter_df(*args, **kwargs):
