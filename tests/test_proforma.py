@@ -26,8 +26,7 @@ class ProFormaTest(unittest.TestCase):
         assert properties['fixed_modifications'][0] == ModificationRule(
             GenericModification('Carbamidomethyl', None, None), ['C'])
         assert to_proforma(tokens, **properties) == complicated_short
-        self.assertAlmostEqual(
-            ProForma(tokens, properties).mass, 1210.5088, 3)
+        self.assertAlmostEqual(ProForma(tokens, properties).mass, 1228.6588, 3)
 
     def test_range(self):
         seq = "PRQT(EQC[Carbamidomethyl]FQRMS)[+19.0523]ISK"

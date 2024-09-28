@@ -207,6 +207,16 @@ class TagBase(object):
     def parse(cls, buffer):
         return process_tag_tokens(buffer)
 
+    def has_mass(self):
+        """
+        Check if this tag carries a mass value.
+
+        Returns
+        -------
+        bool
+        """
+        return False
+
 
 class GroupLabelBase(TagBase):
     __slots__ = ()
@@ -742,6 +752,16 @@ class ModificationBase(TagBase):
         '''
         return self.definition['mass']
 
+    def has_mass(self):
+        """
+        Check if this tag carries a mass value.
+
+        Returns
+        -------
+        bool
+        """
+        return True
+
     @property
     def composition(self):
         '''The chemical composition shift this modification applies'''
@@ -849,6 +869,16 @@ class MassModification(TagBase):
     @property
     def mass(self):
         return self.value
+
+    def has_mass(self):
+        """
+        Check if this tag carries a mass value.
+
+        Returns
+        -------
+        bool
+        """
+        return True
 
     def __eq__(self, other):
         if isinstance(other, ModificationToken):
@@ -2321,38 +2351,32 @@ class ProForma(object):
             c_term = i == c_term_v
             for rule in fixed_modifications:
                 if rule.is_valid(aa, n_term, c_term):
-                    mass += rule.modification_tag.mass
+                    if rule.modification_tag.has_mass():
+                        mass += rule.modification_tag.mass
             tags = position[1]
             if tags:
                 for tag in tags:
-                    try:
+                    if tag.has_mass():
                         mass += tag.mass
-                    except (AttributeError, KeyError):
-                        continue
         for mod in self.properties['labile_modifications']:
             mass += mod.mass
         for mod in self.properties['unlocalized_modifications']:
             mass += mod.mass
         if self.properties.get('n_term'):
             for mod in self.properties['n_term']:
-                try:
+                if mod.has_mass():
                     mass += mod.mass
-                except (AttributeError, KeyError):
-                    continue
         mass += calculate_mass(formula="H")
         if self.properties.get('c_term'):
             for mod in self.properties['c_term']:
-                try:
+                if mod.has_mass():
                     mass += mod.mass
-                except (AttributeError, KeyError):
-                    continue
 
         mass += calculate_mass(formula="OH")
         for iv in self.properties['intervals']:
-            try:
-                mass += iv.tag.mass
-            except (AttributeError, KeyError):
-                continue
+            for tag in iv.tags:
+                if tag.has_mass():
+                    mass += tag.mass
         return mass
 
     def fragments(self, ion_shift, charge=1, reverse=None, include_labile=True, include_unlocalized=True):
@@ -2419,21 +2443,18 @@ class ProForma(object):
         if not reverse:
             if self.properties.get('n_term'):
                 for mod in self.properties['n_term']:
-                    try:
+                    if mod.has_mass():
                         mass += mod.mass
-                    except (AttributeError, KeyError):
-                        continue
         else:
             if self.properties.get('c_term'):
                 for mod in self.properties['c_term']:
-                    try:
+                    if mod.has_mass():
                         mass += mod.mass
-                    except (AttributeError, KeyError):
-                        continue
 
         if include_unlocalized:
             for mod in self.properties['unlocalized_modifications']:
-                mass += mod.mass
+                if mod.has_mass():
+                    mass += mod.mass
 
         mass += _WATER_MASS
 
@@ -2459,23 +2480,20 @@ class ProForma(object):
             c_term = i == c_term_v
             for rule in fixed_modifications:
                 if rule.is_valid(aa, n_term, c_term):
-                    mass += rule.modification_tag.mass
+                    if rule.modification_tag.has_mass():
+                        mass += rule.modification_tag.mass
 
             tags = position[1]
             if tags:
                 for tag in tags:
-                    try:
+                    if tag.has_mass():
                         mass += tag.mass
-                    except (AttributeError, KeyError):
-                        continue
 
             while intervals and intervals[0].contains(i):
                 iv = intervals.popleft()
-
-                try:
-                    mass += iv.tag.mass
-                except (AttributeError, KeyError):
-                    continue
+                for tag in iv.tags:
+                    if tag.has_mass():
+                        mass += tag.mass
 
             masses.append(mass)
 
