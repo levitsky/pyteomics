@@ -328,7 +328,7 @@ def parse(sequence, show_unmodified_termini=False, split=False, allow_unknown_mo
         if labels is None:
             labels = std_labels
         # we can try to resolve the ambiguity
-        if n != std_nterm and n not in labels and re.match(r'^[A-Z]+\-$', n) and all(aa in labels for aa in n[:-1]):
+        if n != std_nterm and n not in labels and valid(n[:-1], labels=labels):
             # n is the body then
             c = '-' + body
             body = n[:-1]
