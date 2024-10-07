@@ -220,7 +220,9 @@ class Composition(BasicComposition):
     def _from_sequence(self, sequence, aa_comp):
         parsed_sequence = parser.parse(
             sequence,
-            show_unmodified_termini=True)
+            labels=aa_comp,
+            show_unmodified_termini=True,
+            allow_unknown_modifications=True)
         self._from_parsed_sequence(parsed_sequence, aa_comp)
 
     def _from_formula(self, formula):

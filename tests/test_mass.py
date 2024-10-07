@@ -139,6 +139,14 @@ class MassTest(unittest.TestCase):
         self.assertEqual(mass.Composition(sequence='A2B-XYZ-DE2F3', aa_comp=self.aa_comp),
             {'A': 3, 'B': 2, 'C': 1, 'D': 1, 'E': 2, 'F': 3})
 
+    def test_Composition_nterm_formula(self):
+        self.assertEqual(mass.Composition(sequence='AB-XYZ', aa_comp=self.aa_comp),
+            {'A': 2, 'B': 2, 'C': 1, 'E': 1})
+
+    def test_Composition_cterm_formula(self):
+        self.assertEqual(mass.Composition(sequence='XYZ-AB', aa_comp=self.aa_comp),
+            {'A': 2, 'B': 2, 'C': 1, 'D': 1})
+
     def test_Composition_sum(self):
         # Test sum of Composition objects.
         self.assertEqual(
