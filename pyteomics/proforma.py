@@ -360,7 +360,7 @@ class ModificationResolver(object):
             return self._cache[cache_key].copy()
         value = self._resolve_impl(name, id, **kwargs)
         self._cache[cache_key] = value
-        return  value.copy()
+        return value.copy()
 
     def __call__(self, name=None, id=None, **kwargs):
         return self.resolve(name, id, **kwargs)

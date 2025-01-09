@@ -75,6 +75,7 @@ This module requres :py:mod:`lxml`.
 from . import xml, auxiliary as aux, _schema_defaults
 import operator as op
 
+
 class ProtXML(xml.MultiProcessingXML):
     """Parser class for protXML files."""
     file_format = 'protXML'
@@ -126,6 +127,7 @@ class ProtXML(xml.MultiProcessingXML):
         if 'unique_stripped_peptides' in info:
             info['unique_stripped_peptides'] = info['unique_stripped_peptides'].split('+')
         return info
+
 
 def read(source, read_schema=False, iterative=True, **kwargs):
     """Parse `source` and iterate through protein groups.
@@ -180,6 +182,7 @@ def _is_decoy_prefix(pg, prefix='DECOY_'):
     """
     return all(p['protein_name'].startswith(prefix) for p in pg['protein'])
 
+
 def _is_decoy_suffix(pg, suffix='_DECOY'):
     """Determine if a protein group should be considered decoy.
 
@@ -201,6 +204,7 @@ def _is_decoy_suffix(pg, suffix='_DECOY'):
     """
     return all(p['protein_name'].endswith(suffix) for p in pg['protein'])
 
+
 is_decoy = _is_decoy_prefix
 
 fdr = aux._make_fdr(_is_decoy_prefix, _is_decoy_suffix)
@@ -208,6 +212,7 @@ _key = op.itemgetter('probability')
 qvalues = aux._make_qvalues(chain, _is_decoy_prefix, _is_decoy_suffix, _key)
 filter = aux._make_filter(chain, _is_decoy_prefix, _is_decoy_suffix, _key, qvalues)
 filter.chain = aux._make_chain(filter, 'filter', True)
+
 
 def DataFrame(*args, **kwargs):
     """Read protXML output files into a :py:class:`pandas.DataFrame`.
@@ -241,6 +246,7 @@ def DataFrame(*args, **kwargs):
     kwargs = kwargs.copy()
     sep = kwargs.pop('sep', None)
     pd_kwargs = kwargs.pop('pd_kwargs', {})
+
     def gen_items():
         with chain(*args, **kwargs) as f:
             for item in f:
@@ -260,6 +266,11 @@ def DataFrame(*args, **kwargs):
                                 out['indistinguishable_protein'] = [p['protein_name'] for p in out['indistinguishable_protein']]
                             else:
                                 out['indistinguishable_protein'] = sep.join(p['protein_name'] for p in out['indistinguishable_protein'])
+                        if 'analysis_result' in out:
+                            for ar in out['analysis_result']:
+                                if ar['analysis'] == 'stpeter':
+                                    out.update(ar['StPeterQuant'])
+
                         yield out
     return pd.DataFrame(gen_items(), **pd_kwargs)
 

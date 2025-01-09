@@ -66,5 +66,6 @@ class ProtXMLTest(unittest.TestCase):
         fdf = protxml.filter_df(df, decoy_suffix='_SUF', **kw)
         self.assertEqual(fdf.shape, (1, 17))
 
+
 if __name__ == '__main__':
     unittest.main()
