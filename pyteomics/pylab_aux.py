@@ -623,7 +623,7 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
         precursor_mz=precursor_mz, precursor_charge=precursor_charge, **kwargs)
     if remove_precursor_peak:
         spectrum = spectrum.remove_precursor_peak(tol, tol_mode)
-    spectrum = spectrum.annotate_proforma(peptide_pro, tol, tol_mode, types, maxcharge)
+    spectrum = spectrum.annotate_proforma(peptide_pro, tol, tol_mode, types, max_ion_charge=maxcharge)
 
     return spectrum
 
@@ -646,14 +646,16 @@ def _spectrum_utils_annotate_plot(spectrum, peptide, *args, **kwargs):
 
     with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
         spectrum = _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs)
-        return spectrum, sup.spectrum(spectrum, annot_kws=kwargs.pop('text_kw', None), ax=kwargs.pop('ax', None))
+        return spectrum, sup.spectrum(spectrum, annot_kws=kwargs.pop('text_kw', None), ax=kwargs.pop('ax', None),
+            annot_fmt=kwargs.pop('annot_fmt', str))
 
 
 def _spectrum_utils_annotate_iplot(spectrum, peptide, *args, **kwargs):
     import spectrum_utils.iplot as supi
     with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
         spectrum = _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs)
-        return spectrum, supi.spectrum(spectrum, annot_kws=kwargs.pop('text_kw', None))
+        return spectrum, supi.spectrum(spectrum, annot_kws=kwargs.pop('text_kw', None),
+            annot_fmt=kwargs.pop('annot_fmt', str))
 
 
 _annotation_backends = {
