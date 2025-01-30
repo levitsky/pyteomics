@@ -160,8 +160,8 @@ def scatter_trend(x, y=None, **kwargs):
     pylab.ylabel(kwargs.get('ylabel', ''))
 
     equation = (
-        '$y\,=\,{:.3f}x\,{}\,{:.3f}$, '
-        '$R^2=\,{:.3f}$ \n$\sigma\,=\,{:.3f}$'.format(
+        r'$y\,=\,{:.3f}x\,{}\,{:.3f}$, '
+        r'$R^2=\,{:.3f}$ \n$\sigma\,=\,{:.3f}$'.format(
             a, '-' if b < 0 else '+', abs(b), r*r, stderr))
 
     if y is None:
@@ -246,23 +246,20 @@ def plot_function_3d(x, y, function, **kwargs):
     plot_type = kwargs.pop('plot_type', 'surface')
     if plot_type == 'surface':
         ax.plot_surface(X, Y, Z,
-                rstride=kwargs.pop('rstride', 1),
-                cstride=kwargs.pop('cstride', 1),
-                cmap=kwargs.pop('cmap', pylab.cm.jet),
-                **kwargs)
+                        rstride=kwargs.pop('rstride', 1),
+                        cstride=kwargs.pop('cstride', 1),
+                        cmap=kwargs.pop('cmap', pylab.cm.jet),
+                        **kwargs)
     elif plot_type == 'wireframe':
-        ax.plot_wireframe(X, Y, Z,
-                cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
+        ax.plot_wireframe(X, Y, Z, cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
     elif plot_type == 'scatter':
         ax.scatter3D(np.ravel(X), np.ravel(Y), np.ravel(Z), **kwargs)
     elif plot_type == 'contour':
         num_contours = kwargs.pop('num_contours', 50)
-        ax.contour3D(X, Y, Z, num_contours,
-                cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
+        ax.contour3D(X, Y, Z, num_contours, cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
     elif plot_type == 'contourf':
         num_contours = kwargs.pop('num_contours', 50)
-        ax.contourf3D(X, Y, Z, num_contours,
-                cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
+        ax.contourf3D(X, Y, Z, num_contours, cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
     else:
         raise PyteomicsError('Unknown plot type: {}'.format(plot_type))
 
@@ -299,11 +296,10 @@ def plot_function_contour(x, y, function, **kwargs):
     Z = np.array(Z)
     num_contours = kwargs.pop('num_contours', 50)
     if kwargs.pop('filling', True):
-        pylab.contourf(X, Y, Z, num_contours,
-                cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
+        plot_func = pylab.contourf
     else:
-        pylab.contour(X, Y, Z, num_contours,
-                cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
+        plot_func = pylab.contour
+    plot_func(X, Y, Z, num_contours, cmap=kwargs.pop('cmap', pylab.cm.jet), **kwargs)
 
 
 def plot_qvalue_curve(qvalues, *args, **kwargs):
@@ -484,13 +480,15 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
         for charge in range(1, maxcharge + 1):
             if ion[0] in 'abc':
                 for i in range(2, n):
-                    mz.setdefault(ion, []).append(mass.fast_mass2(parsed[:i] + [parser.std_cterm],
-                        aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
+                    mz.setdefault(ion, []).append(
+                        mass.fast_mass2(parsed[:i] + [parser.std_cterm], aa_mass=aa_mass, charge=charge,
+                                        ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
                     names.setdefault(ion, []).append(ion[0] + str(i - 1) + ion[1:])
             else:
                 for i in range(1, n - 1):
-                    mz.setdefault(ion, []).append(mass.fast_mass2([parser.std_nterm] + parsed[n - (i + 1):],
-                        aa_mass=aa_mass, charge=charge, ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
+                    mz.setdefault(ion, []).append(
+                        mass.fast_mass2([parser.std_nterm] + parsed[n - (i + 1):], aa_mass=aa_mass, charge=charge,
+                                        ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
                     names.setdefault(ion, []).append(ion[0] + str(i) + ion[1:])
     texts = []
     for ion in types:
@@ -558,7 +556,8 @@ def _spectrum_utils_create_spectrum(spectrum, *args, **kwargs):
     if mz_range:
         spectrum = spectrum.set_mz_range(*mz_range)
 
-    spectrum = spectrum.filter_intensity(min_intensity=min_intensity, max_num_peaks=max_num_peaks
+    spectrum = spectrum.filter_intensity(
+        min_intensity=min_intensity, max_num_peaks=max_num_peaks
         ).scale_intensity(scaling, max_intensity)
     return spectrum
 
@@ -581,7 +580,8 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     if precursor_charge is None:
         precursor_charge = _get_precursor_charge(spectrum)
     if precursor_charge is None:
-        raise PyteomicsError('Could not extract precursor charge from spectrum. '
+        raise PyteomicsError(
+            'Could not extract precursor charge from spectrum. '
             'Please specify `precursor_charge` keyword argument.')
 
     maxcharge = kwargs.pop('maxcharge', max(1, precursor_charge - 1))
@@ -646,16 +646,18 @@ def _spectrum_utils_annotate_plot(spectrum, peptide, *args, **kwargs):
 
     with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
         spectrum = _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs)
-        return spectrum, sup.spectrum(spectrum, annot_kws=kwargs.pop('text_kw', None), ax=kwargs.pop('ax', None),
-            annot_fmt=kwargs.pop('annot_fmt', str))
+        return spectrum, sup.spectrum(
+            spectrum, annot_kws=kwargs.pop('text_kw', None), ax=kwargs.pop('ax', None),
+            annot_fmt=kwargs.pop('annot_fmt', str), grid=kwargs.pop('grid', True))
 
 
 def _spectrum_utils_annotate_iplot(spectrum, peptide, *args, **kwargs):
     import spectrum_utils.iplot as supi
     with SpectrumUtilsColorScheme(kwargs.pop('colors', None)):
         spectrum = _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs)
-        return spectrum, supi.spectrum(spectrum, annot_kws=kwargs.pop('text_kw', None),
-            annot_fmt=kwargs.pop('annot_fmt', str))
+        return spectrum, supi.spectrum(
+            spectrum, annot_kws=kwargs.pop('text_kw', None),
+            annot_fmt=kwargs.pop('annot_fmt', str), grid=kwargs.pop('grid', True))
 
 
 _annotation_backends = {
@@ -724,7 +726,7 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
 
     remove_precursor_peak : bool, keyword only, optional
         Remove precursor peak from spectrum before annotation. Default is :py:const:`False`.
-        Only works with `spectrum_utils` backend.
+        Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
     min_intensity : float, keyword only, optional
         Remove low-intensity peaks; this is a factor of maximum peak intensity. Default is 0 (no filtering).
         Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
@@ -737,6 +739,12 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
         Intensity of the most intense peak relative to which the peaks will be scaled
         (the default is :py:const:`None`, which means that no scaling
         relative to the most intense peak will be performed).
+        Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
+    annot_fmt : callable, keyword-only, optional
+        Passed to :py:func:`spectrum_utils.plot.spectrum`.
+        Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
+    grid : bool, keyword-only, optional
+        Passed to :py:func:`spectrum_utils.plot.spectrum`. Default is :py:const:`True`.
         Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
     aa_comp : dict, keyword only, optional
         Amino acid compositions, including modified ones. If given, will be used for conversion from *modX* to ProForma.
