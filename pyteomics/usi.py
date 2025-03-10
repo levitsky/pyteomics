@@ -371,7 +371,7 @@ class PROXIAggregator(object):
 
         def collapse_attribute(values):
             try:
-                acc = list(set(v['value'] for v in values))
+                acc = list(set(v['value'] for v in values if 'value' in v ))
             except TypeError:
                 acc = []
                 for v in values:
