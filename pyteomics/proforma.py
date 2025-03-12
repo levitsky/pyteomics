@@ -511,6 +511,7 @@ class XLMODResolver(ModificationResolver):
             "source": self
         }
 
+
 # TODO: Implement resolve walking up the graph to get the mass. Can't really
 # get any more information without glypy/glyspace interaction
 class GNOResolver(ModificationResolver):

@@ -1,3 +1,10 @@
+4.7.6a1
+-------
+
+ - Improve :py:mod:`spectrum_utils` integration.
+ - Retain StPeter output in :py:func:`pyteomics.protxml.DataFrame`.
+
+
 4.7.5
 -----
 
