@@ -318,15 +318,12 @@ class MzML(aux.BinaryArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xm
     def _get_info_smart(self, element, **kw):
         name = xml._local_name(element)
         kwargs = dict(kw)
+        default_rec = (name not in {'indexedmzML', 'mzML'})
         rec = kwargs.pop('recursive', None)
-        if name in {'indexedmzML', 'mzML'}:
-            info = self._get_info(element,
-                    recursive=(rec if rec is not None else False),
-                    **kwargs)
-        else:
-            info = self._get_info(element,
-                    recursive=(rec if rec is not None else True),
-                    **kwargs)
+        if rec is None:
+            rec = default_rec
+        info = self._get_info(element, recursive=rec, **kwargs)
+
         if 'binary' in info and isinstance(info, dict):
             info = self._handle_binary(info, **kwargs)
 
@@ -409,6 +406,7 @@ def read(source, read_schema=False, iterative=True, use_index=False, dtype=None,
                 use_index=use_index, dtype=dtype, huge_tree=huge_tree,
                 decode_binary=decode_binary)
 
+
 def iterfind(source, path, **kwargs):
     """Parse `source` and yield info on elements with specified local
     name or by specified "XPath".
@@ -459,6 +457,7 @@ def iterfind(source, path, **kwargs):
     out : iterator
     """
     return MzML(source, **kwargs).iterfind(path, **kwargs)
+
 
 version_info = xml._make_version_info(MzML)
 
