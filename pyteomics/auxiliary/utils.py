@@ -5,7 +5,6 @@ import zlib
 from functools import wraps
 from collections import namedtuple
 
-
 try:
     basestring
 except NameError:
@@ -22,6 +21,7 @@ except ImportError:
     pynumpress = None
 
 from .structures import PyteomicsError
+
 
 def print_tree(d, indent_str=' -> ', indent_count=1):
     """Read a nested dict (with strings as keys) and print its structure.
@@ -286,7 +286,6 @@ if np is not None:
                 binary = bytearray(binary)
             array = self._transform_buffer(binary, dtype)
             return array
-
 
     class BinaryArrayConversionMixin(ArrayConversionMixin, BinaryDataArrayTransformer):
         def _finalize_record_conversion(self, array, record):

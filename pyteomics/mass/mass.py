@@ -106,6 +106,7 @@ key, mass of the most abundant isotope and 1.0 abundance.
 
 PROTON = 'H+'
 
+
 def _make_isotope_string(element_name, isotope_num):
     """Form a string label for an isotope."""
     if isotope_num == 0:
