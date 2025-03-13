@@ -16,15 +16,16 @@ import pynumpress
 import base64
 import zlib
 
+
 class MzmlTest(unittest.TestCase):
     maxDiff = None
     path = 'test.mzML'
 
     def test_read(self):
         for rs, it, ui in product([True, False], repeat=3):
-            if rs: continue # temporarily disable retrieval of schema
-            for func in [MzML, read, chain,
-                    lambda x, **kw: chain.from_iterable([x], **kw), PreIndexedMzML]:
+            if rs:
+                continue  # temporarily disable retrieval of schema
+            for func in [MzML, read, chain, lambda x, **kw: chain.from_iterable([x], **kw), PreIndexedMzML]:
                 with func(self.path, read_schema=rs, iterative=it, use_index=ui) as r:
                     # http://stackoverflow.com/q/14246983/1258041
                     self.assertEqual(mzml_spectra, list(r))

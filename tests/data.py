@@ -224,7 +224,8 @@ pepxml_results = [
      'spectrum': '"Cmpd 24, +MSn(1085.6886), 1.2 min.23.23.3"',
      'start_scan': 23}]
 
-mzid_spectra = {(False, False): [{'id': 'SEQ_spec1',
+mzid_spectra = {
+                (False, False): [{'id': 'SEQ_spec1',
                                   'spectraData_ref': 'LCMALDI_spectra',
                                   'spectrumID': 'databasekey=1'},
                                  {'id': 'SEQ_spec2a',
@@ -1313,7 +1314,8 @@ mzid_spectra = {(False, False): [{'id': 'SEQ_spec1',
 
 mzml_mz_array = np.load('test_mzml_mz.npy')
 mzml_int_array = np.load('test_mzml_intensity.npy')
-mzml_spectra = [{'MSn spectrum': '',
+mzml_spectra = [
+                {'MSn spectrum': '',
                  'base peak intensity': 1471973.875,
                  'base peak m/z': 810.415283203125,
                  'count': 2,
@@ -1371,7 +1373,8 @@ mgf_mz = [np.array([846.6, 846.8, 847.6, 1640.1, 1640.6, 1895.5]),
 mgf_ch = [np.ma.masked_equal([0] * 6, 0),
           np.array([3., 2., 1., 1., 1., 1.])]
 
-mgf_spectra_long = [{'intensity array': makeCA(mgf_int[0]),
+mgf_spectra_long = [
+                    {'intensity array': makeCA(mgf_int[0]),
                      'm/z array': makeCA(mgf_mz[0]),
                      'charge array': makeCA(mgf_ch[0]),
                      'params': {'charge': [2],
@@ -1402,7 +1405,8 @@ mgf_spectra_long = [{'intensity array': makeCA(mgf_int[0]),
                                 'useremail': 'leu@altered-state.edu',
                                 'username': 'Lou Scene'}}]
 
-mgf_spectra_short = [{'intensity array': makeCA(mgf_int[0]),
+mgf_spectra_short = [
+                     {'intensity array': makeCA(mgf_int[0]),
                       'charge array': makeCA(mgf_ch[0]),
                       'm/z array': makeCA(mgf_mz[0]),
                       'params': {'pepmass': (983.6, None), 'title': 'Spectrum 1',
@@ -1435,7 +1439,8 @@ mgf_annotated_ions = [np.array(["b1+1", "b3+2", "y3+1", "y7+2", "y10+2", "y11+2"
                       np.array(["y1+1", "b1+1", "y3+2", "y4+2", "y2+1", "b2+1", "b6+2", "y6+1", "b6+1", "b7+1",
                                 "b8+1"])]
 
-mgf_spectra_annotated_long = [{'intensity array': makeCA(mgf_annotated_int[0]),
+mgf_spectra_annotated_long = [
+                              {'intensity array': makeCA(mgf_annotated_int[0]),
                                'm/z array': makeCA(mgf_annotated_mz[0]),
                                'ion array': mgf_annotated_ions[0],
                                'params': {'charge': [2],
@@ -1674,7 +1679,8 @@ tandem_spectra = [{'act': '0',
                                                                        'label': '11745.y'}}},
                    'z': 2}]
 
-features = [{'FWHM': 8.53579425811768,
+features = [
+            {'FWHM': 8.53579425811768,
              'charge': 1,
              'convexhull': [{'nr': 0,
                              'pt': [{'x': 4020.447, 'y': 489.778198242188},
@@ -2117,7 +2123,8 @@ ms1_spectra = [
                 'TIC': '2694200',
                 'scan': ('2', '2')}}]
 
-ms1_spectra_lists = [{'intensity array': [0., 20.0522, 29.26406, 30.04175, 20.19221, 11.58895, 0.],
+ms1_spectra_lists = [
+                     {'intensity array': [0., 20.0522, 29.26406, 30.04175, 20.19221, 11.58895, 0.],
                       'm/z array': [2.51263, 82.51282, 82.51301, 82.51321, 82.5134, 82.51359, 82.51378],
                       'params': {'BPI': '585566',
                                  'BPM': '544.2904',
@@ -2138,7 +2145,8 @@ ms1_header = {'CreationDate': 'Sat Jun 03 15:25:10 2017',
               'Extractor': 'ProteoWizard',
               'Source file': 'Set 1. B2 at 193 nm RT.RAW'}
 
-ms2_spectra = [{'intensity array': makeCA([73., 44., 67., 291., 54., 49.]),
+ms2_spectra = [
+               {'intensity array': makeCA([73., 44., 67., 291., 54., 49.]),
                 'm/z array': makeCA([846.6, 846.8, 847.6, 1640.1, 1640.6, 1895.5]),
                 'charge array': makeCA([0, 0, 0, 0, 0, 0]),
                 'resolution array': makeCA([0, 0, 0, 0, 0, 0]),
@@ -2152,25 +2160,24 @@ ms2_spectra = [{'intensity array': makeCA([73., 44., 67., 291., 54., 49.]),
                 'resolution array': makeCA([0, 0, 0, 0, 0, 0]),
                 'params': {'RTime': 25.0, 'precursor m/z': 1084.9, 'scan': ('1', '1')}},
                {'params': {'scan': ('000002', '000002'),
-                  'precursor m/z': 445.12,
-                  'RetTime': 0.02,
-                  'IonInjectionTime': 150.0,
-                  'ActivationType': 'HCD',
-                  'InstrumentType': 'FTMS',
-                  'TemperatureFTAnalyzer': '-1',
-                  'Filter': 'FTMS + p NSI d Full ms2 445.12@hcd25.00 [120.00-475.00]',
-                  'PrecursorScan': '1',
-                  'PrecursorInt': 0.0,
-                  'charge': [1.0],
-                  'neutral mass': [445.12]},
-                'm/z array': makeCA([121.9724, 121.9795, 122.574 , 133.0122, 133.1404, 134.0208,
-                        134.5954, 149.0444]),
-                'intensity array': makeCA([   572. ,   2377.6,  18185.5,   1197.9,    854. ,   1253.6,
-                           815.5, 181082.3]),
+                           'precursor m/z': 445.12,
+                           'RetTime': 0.02,
+                           'IonInjectionTime': 150.0,
+                           'ActivationType': 'HCD',
+                           'InstrumentType': 'FTMS',
+                           'TemperatureFTAnalyzer': '-1',
+                           'Filter': 'FTMS + p NSI d Full ms2 445.12@hcd25.00 [120.00-475.00]',
+                           'PrecursorScan': '1',
+                           'PrecursorInt': 0.0,
+                           'charge': [1.0],
+                           'neutral mass': [445.12]},
+                'm/z array': makeCA([121.9724, 121.9795, 122.574 , 133.0122, 133.1404, 134.0208, 134.5954, 149.0444]),
+                'intensity array': makeCA([   572. ,   2377.6,  18185.5,   1197.9,    854. ,   1253.6, 815.5, 181082.3]),
                 'charge array': makeCA([0, 0, 0, 0, 0, 0, 0, 1]),
                 'resolution array': makeCA([18100, 18400, 25102, 15900, 16200, 16200, 16900, 23306])}]
 
-ms2_spectra_lists = [{'intensity array': [73., 44., 67., 291., 54., 49.],
+ms2_spectra_lists = [
+                     {'intensity array': [73., 44., 67., 291., 54., 49.],
                       'm/z array': [846.6, 846.8, 847.6, 1640.1, 1640.6, 1895.5],
                       'charge array': [0, 0, 0, 0, 0, 0],
                       'resolution array': [0, 0, 0, 0, 0, 0],
@@ -2183,31 +2190,30 @@ ms2_spectra_lists = [{'intensity array': [73., 44., 67., 291., 54., 49.],
                       'charge array': [0, 0, 0, 0, 0, 0],
                       'resolution array': [0, 0, 0, 0, 0, 0],
                       'params': {'RTime': 25.0, 'precursor m/z': 1084.9, 'scan': ('1', '1')}},
-                      {'params': {'scan': ('000002', '000002'),
-                           'precursor m/z': 445.12,
-                           'RetTime': 0.02,
-                           'IonInjectionTime': 150.,
-                           'ActivationType': 'HCD',
-                           'InstrumentType': 'FTMS',
-                           'TemperatureFTAnalyzer': '-1',
-                           'Filter': 'FTMS + p NSI d Full ms2 445.12@hcd25.00 [120.00-475.00]',
-                           'PrecursorScan': '1',
-                           'PrecursorInt': 0.,
-                           'charge': [1.0],
-                           'neutral mass': [445.12]},
-                       'm/z array': [121.9724, 121.9795, 122.574 , 133.0122, 133.1404, 134.0208,
-                            134.5954, 149.0444],
-                       'intensity array': [   572. ,   2377.6,  18185.5,   1197.9,    854. ,   1253.6,
-                               815.5, 181082.3],
-                       'charge array': [0, 0, 0, 0, 0, 0, 0, 1],
-                       'resolution array': [18100, 18400, 25102, 15900, 16200, 16200, 16900, 23306]}]
+                     {'params': {'scan': ('000002', '000002'),
+                                 'precursor m/z': 445.12,
+                                 'RetTime': 0.02,
+                                 'IonInjectionTime': 150.,
+                                 'ActivationType': 'HCD',
+                                 'InstrumentType': 'FTMS',
+                                 'TemperatureFTAnalyzer': '-1',
+                                 'Filter': 'FTMS + p NSI d Full ms2 445.12@hcd25.00 [120.00-475.00]',
+                                 'PrecursorScan': '1',
+                                 'PrecursorInt': 0.,
+                                 'charge': [1.0],
+                                 'neutral mass': [445.12]},
+                      'm/z array': [121.9724, 121.9795, 122.574 , 133.0122, 133.1404, 134.0208, 134.5954, 149.0444],
+                      'intensity array': [   572. ,   2377.6,  18185.5,   1197.9,    854. ,   1253.6, 815.5, 181082.3],
+                      'charge array': [0, 0, 0, 0, 0, 0, 0, 1],
+                      'resolution array': [18100, 18400, 25102, 15900, 16200, 16200, 16900, 23306]}]
 
 ms2_header = {'CreationDate': 'Wed Apr 24 17:06:23 2019',
               'Extractor': 'ProteoWizard',
               'Extractor version': 'pwiz_2.1.2575 (TPP v4.5 RAPTURE rev 2, Build 201208012328 (linux))',
               'Source file': 'test.mgf'}
 
-protxml_results = [{'group_number': 1,
+protxml_results = [
+                   {'group_number': 1,
                     'probability': 1.0,
                     'protein': [{'confidence': 1.0,
                                  'group_sibling_id': 'a',
@@ -2971,7 +2977,8 @@ transitions = [
                      'theoretical mass': 1189.22}}]
 ]
 
-idxml_data = {(0,
+idxml_data = {
+ (0,
   0): [{'score_type': 'q-value',
    'higher_score_better': False,
    'significance_threshold': 0.0,
@@ -3050,8 +3057,8 @@ idxml_data = {(0,
        'sequence': '',
        'OMSSA_score': 0.0}]}]}]}
 
-
-usi_proxi_data = {'attributes': [{'accession': 'MS:1008025',
+usi_proxi_data = {
+ 'attributes': [{'accession': 'MS:1008025',
                  'name': 'scan number',
                  'value': '131256'},
                 {'accession': 'MS:1000827',
