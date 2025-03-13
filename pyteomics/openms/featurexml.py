@@ -39,7 +39,8 @@ This module requres :py:mod:`lxml`.
 
 from .. import xml, auxiliary as aux, _schema_defaults, version
 
-class FeatureXML(xml.MultiProcessingXML):
+
+class FeatureXML(xml.ParamParserMixin, xml.MultiProcessingXML):
     """Parser class for featureXML files."""
     file_format = 'featureXML'
     _root_element = 'featureMap'
@@ -111,5 +112,6 @@ def read(source, read_schema=True, iterative=True, use_index=False):
     """
 
     return FeatureXML(source, read_schema=read_schema, iterative=iterative, use_index=use_index)
+
 
 chain = aux._make_chain(read, 'read')

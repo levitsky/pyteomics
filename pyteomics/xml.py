@@ -40,6 +40,7 @@ from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj, Hierar
 from .auxiliary import unitint, unitfloat, unitstr, cvstr
 from .auxiliary import _keepstate_method as _keepstate
 from .auxiliary import TaskMappingMixin, IndexedReaderMixin, IndexSavingMixin
+# from .auxiliary.psims_util import load_psims
 
 try:  # Python 2.7
     from urllib2 import urlopen, URLError
@@ -208,7 +209,6 @@ class XML(FileReader):
 
     # Configurable plugin logic
     _converters = XMLValueConverter.converters()
-    _element_handlers = {}
 
     # Must be implemented by subclasses
     def _get_info_smart(self, element, **kwargs):
@@ -243,8 +243,9 @@ class XML(FileReader):
             (e.g. `XMLSyntaxError: xmlSAX2Characters: huge text node`).
         """
 
-        super(XML, self).__init__(source, mode='rb', parser_func=self.iterfind, pass_file=False,
-                args=(self._default_iter_path or self._default_iter_tag,), kwargs=kwargs)
+        super(XML, self).__init__(
+            source, mode='rb', parser_func=self.iterfind, pass_file=False,
+            args=(self._default_iter_path or self._default_iter_tag,), kwargs=kwargs)
         if iterative is None:
             iterative = self._iterative
         if iterative:
@@ -297,9 +298,10 @@ class XML(FileReader):
         for _, elem in etree.iterparse(
                 self._source, events=('start',), remove_comments=True, huge_tree=self._huge_tree):
             if _local_name(elem) == self._root_element:
-                return (elem.attrib.get('version'),
-                        elem.attrib.get(('{{{}}}'.format(elem.nsmap['xsi'])
-                            if 'xsi' in elem.nsmap else '') + self._schema_location_param))
+                return (
+                    elem.attrib.get('version'),
+                    elem.attrib.get(('{{{}}}'.format(elem.nsmap['xsi']) if 'xsi' in elem.nsmap else '') + self._schema_location_param)
+                    )
 
     @_keepstate
     def _get_schema_info(self, read_schema=True):
@@ -323,147 +325,30 @@ class XML(FileReader):
             ret = xsd_parser(schema_url)
         except Exception as e:
             if isinstance(e, (URLError, socket.error, socket.timeout)):
-                warnings.warn("Can't get the {0.file_format} schema for version "
-                "`{1}` from <{2}> at the moment.\n"
-                "Using defaults for {0._default_version}.\n"
-                "You can disable reading the schema by specifying "
-                "`read_schema=False`.".format(self, version, schema_url))
+                warnings.warn(
+                    "Can't get the {0.file_format} schema for version `{1}` from <{2}> at the moment.\n"
+                    "Using defaults for {0._default_version}.\nYou can disable reading the schema by specifying "
+                    "`read_schema=False`.".format(self, version, schema_url))
             else:
-                warnings.warn("Unknown {0.file_format} version `{1}`.\n"
-                    "Attempt to use schema "
-                    "information from <{2}> failed.\n"
-                    "Exception information:\n{3}\n"
+                warnings.warn(
+                    "Unknown {0.file_format} version `{1}`.\n"
+                    "Attempt to use schema information from <{2}> failed.\nException information:\n{3}\n"
                     "Falling back to defaults for {0._default_version}\n"
-                    "NOTE: This is just a warning, probably from a badly-"
-                    "generated XML file.\nYou will still most probably get "
+                    "NOTE: This is just a warning, probably from a badly-generated XML file.\nYou will still most probably get "
                     "decent results.\nLook here for suppressing warnings:\n"
-                    "http://docs.python.org/library/warnings.html#"
-                    "temporarily-suppressing-warnings\n"
-                    "You can also disable reading the schema by specifying "
-                    "`read_schema=False`.\n"
-                    "If you think this shouldn't have happened, please "
-                    "report this to\n"
+                    "http://docs.python.org/library/warnings.html#temporarily-suppressing-warnings\n"
+                    "You can also disable reading the schema by specifying `read_schema=False`.\n"
+                    "If you think this shouldn't have happened, please report this to\n"
                     "http://github.com/levitsky/pyteomics/issues\n"
                     "".format(self, version, schema_url, format_exc()))
             ret = self._default_schema
         return ret
 
-    def _handle_param(self, element, **kwargs):
-        """Unpacks cvParam and userParam tags into key-value pairs"""
-        types = {'int': unitint, 'float': unitfloat, 'string': unitstr}
-        attribs = element.attrib
-        unit_info = None
-        unit_accesssion = None
-        if 'unitCvRef' in attribs or 'unitName' in attribs:
-            unit_accesssion = attribs.get('unitAccession')
-            unit_name = attribs.get('unitName', unit_accesssion)
-            unit_info = unit_name
-        accession = attribs.get('accession')
-        value = attribs.get('value', '')
-        try:
-            if attribs.get('type') in types:
-                value = types[attribs['type']](value, unit_info)
-            else:
-                value = unitfloat(value, unit_info)
-        except ValueError:
-            value = unitstr(value, unit_info)
-
-        # return {cvstr(attribs['name'], accession, unit_accesssion): value}
-        return _XMLParam(cvstr(attribs['name'], accession, unit_accesssion), value, _local_name(element))
-
-    def _handle_referenceable_param_group(self, param_group_ref, **kwargs):
-        raise NotImplementedError()
-        return []
-
-    def _find_immediate_params(self, element, **kwargs):
-        return element.xpath(
-            './*[local-name()="cvParam" or local-name()="userParam" or local-name()="UserParam" or local-name()="referenceableParamGroupRef"]')
-
-    def _insert_param(self, info_dict, param):
-        key = param.name
-        if key in info_dict:
-            if isinstance(info_dict[key], list):
-                info_dict[key].append(param.value)
-            else:
-                info_dict[key] = [info_dict[key], param.value]
-        else:
-            info_dict[key] = param.value
-
-    def _promote_empty_parameter_to_name(self, info, params):
-        empty_values = []
-        not_empty_values = []
-        for param in params:
-            if param.is_empty():
-                empty_values.append(param)
-            else:
-                not_empty_values.append(param)
-
-        if len(empty_values) == 1 and 'name' not in info:
-            info['name'] = empty_values[0].name
-            return info, not_empty_values
-        return info, params
-
-    def _get_info(self, element, **kwargs):
-        """Extract info from element's attributes, possibly recursive.
-        <cvParam> and <userParam> elements are treated in a special way."""
-        try:
-            name = kwargs.pop('ename')
-        except KeyError:
-            name = _local_name(element)
-        schema_info = self.schema_info
-        if name in {'cvParam', 'userParam', 'UserParam'}:
-            return self._handle_param(element, **kwargs)
-        elif name == "referenceableParamGroupRef":
-            return self._handle_referenceable_param_group(element, **kwargs)
-
-        info = dict(element.attrib)
-        # process subelements
-        params = []
-        if kwargs.get('recursive'):
-            for child in element.iterchildren():
-                cname = _local_name(child)
-                if cname in {'cvParam', 'userParam', 'UserParam'}:
-                    newinfo = self._handle_param(child, **kwargs)
-                    params.append(newinfo)
-                elif cname == "referenceableParamGroupRef":
-                    params.extend(self._handle_referenceable_param_group(child, **kwargs))
-                else:
-                    if cname not in schema_info['lists']:
-                        info[cname] = self._get_info_smart(child, ename=cname, **kwargs)
-                    else:
-                        info.setdefault(cname, []).append(
-                            self._get_info_smart(child, ename=cname, **kwargs))
-        else:
-            # handle the case where we do not want to unpack all children, but
-            # *Param tags are considered part of the current entity, semantically
-            for child in self._find_immediate_params(element, **kwargs):
-                param_or_group = self._handle_param(child, **kwargs)
-                if isinstance(param_or_group, list):
-                    params.extend(param_or_group)
-                else:
-                    params.append(param_or_group)
-
-        handler = self._element_handlers.get(name)
-        if handler is not None:
-            info, params = handler(self, info, params)
-
-        for param in params:
-            self._insert_param(info, param)
-
-        # process element text
-        if element.text:
-            stext = element.text.strip()
-            if stext:
-                if info:
-                    info[name] = stext
-                else:
-                    return stext
-
-        # convert types
+    def _convert_types(self, name, info):
         try:
             for k, v in info.items():
                 for t, a in self._converters_items:
-                    if t in schema_info and (name, k) in schema_info[t]:
+                    if t in self.schema_info and (name, k) in self.schema_info[t]:
                         info[k] = a(v)
         except ValueError as e:
             message = 'Error when converting types: {}'.format(e.args)
@@ -471,11 +356,7 @@ class XML(FileReader):
                 message += '\nTry reading the file with read_schema=True'
             raise PyteomicsError(message)
 
-        # resolve refs
-        if kwargs.get('retrieve_refs', self._retrieve_refs_enabled):
-            self._retrieve_refs(info, **kwargs)
-
-        # flatten the excessive nesting
+    def _flatten(self, info):
         for k, v in dict(info).items():
             if k in self._structures_to_flatten:
                 if isinstance(v, list):
@@ -493,6 +374,50 @@ class XML(FileReader):
                 'value' in info or 'values' in info):
             name = info.pop('name')
             info = {name: info.popitem()[1]}
+        return info
+
+    def _process_text(self, element, name, info):
+        if element.text:
+            stext = element.text.strip()
+            if stext:
+                if info:
+                    info[name] = stext
+                else:
+                    return stext
+
+    def _postprocess(self, element, name, info, **kwargs):
+        text = self._process_text(element, name, info)
+        if text:
+            return text
+
+        self._convert_types(name, info)
+
+        if kwargs.get('retrieve_refs', self._retrieve_refs_enabled):
+            self._retrieve_refs(info, **kwargs)
+
+        info = self._flatten(info)
+        return info
+
+    def _get_info(self, element, **kwargs):
+        """Extract info from element's attributes, possibly recursive."""
+        try:
+            name = kwargs.pop('ename')
+        except KeyError:
+            name = _local_name(element)
+
+        info = dict(element.attrib)
+        # process subelements
+        if kwargs.get('recursive'):
+            for child in element.iterchildren():
+                cname = _local_name(child)
+                if cname not in self.schema_info['lists']:
+                    info[cname] = self._get_info_smart(child, ename=cname, **kwargs)
+                else:
+                    info.setdefault(cname, []).append(
+                        self._get_info_smart(child, ename=cname, **kwargs))
+
+        info = self._postprocess(element, name, info, **kwargs)
+
         return info
 
     @_keepstate
@@ -602,7 +527,7 @@ class XML(FileReader):
                         elem.clear()
         else:
             xpath = ('/' if absolute else '//') + '/'.join(
-                    '*[local-name()="{}"]'.format(node) if node != '*' else '*' for node in nodes ) + tail
+                    '*[local-name()="{}"]'.format(node) if node != '*' else '*' for node in nodes) + tail
             for elem in self._tree.xpath(xpath):
                 info = self._get_info_smart(elem, **kwargs)
                 yield info
@@ -613,8 +538,7 @@ class XML(FileReader):
         attribute"""
         stack = 0
         id_dict = {}
-        for event, elem in etree.iterparse(self._source, events=('start', 'end'),
-                remove_comments=True, huge_tree=self._huge_tree):
+        for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True, huge_tree=self._huge_tree):
             if event == 'start':
                 if 'id' in elem.attrib:
                     stack += 1
@@ -678,6 +602,123 @@ class XML(FileReader):
         else:
             elem = self._id_dict[elem_id]
         return self._get_info_smart(elem, **kwargs)
+
+
+class ParamParserMixin(XML):
+    cv = None
+    _element_handlers = {}
+
+    # def __init__(self, *args, **kwargs):
+    #     super(ParamParserMixin, self).__init__(*args, **kwargs)
+    #     cv = kwargs.pop('cv', None)
+    #     if cv is None:
+    #         cv = load_psims()
+    #     self.cv = cv
+
+    def _handle_param(self, element, **kwargs):
+        """Unpacks cvParam and userParam tags into key-value pairs"""
+        types = {'int': unitint, 'float': unitfloat, 'string': unitstr}
+        attribs = element.attrib
+        unit_info = None
+        unit_accesssion = None
+        if 'unitCvRef' in attribs or 'unitName' in attribs:
+            unit_accesssion = attribs.get('unitAccession')
+            unit_name = attribs.get('unitName', unit_accesssion)
+            unit_info = unit_name
+        accession = attribs.get('accession')
+        value = attribs.get('value', '')
+        try:
+            if attribs.get('type') in types:
+                value = types[attribs['type']](value, unit_info)
+            else:
+                value = unitfloat(value, unit_info)
+        except ValueError:
+            value = unitstr(value, unit_info)
+
+        # return {cvstr(attribs['name'], accession, unit_accesssion): value}
+        return _XMLParam(cvstr(attribs['name'], accession, unit_accesssion), value, _local_name(element))
+
+    def _handle_referenceable_param_group(self, param_group_ref, **kwargs):
+        raise NotImplementedError()
+        return []
+
+    def _find_immediate_params(self, element, **kwargs):
+        return element.xpath(
+            './*[local-name()="cvParam" or local-name()="userParam" or local-name()="UserParam" or local-name()="referenceableParamGroupRef"]')
+
+    def _insert_param(self, info_dict, param):
+        key = param.name
+        if key in info_dict:
+            if isinstance(info_dict[key], list):
+                info_dict[key].append(param.value)
+            else:
+                info_dict[key] = [info_dict[key], param.value]
+        else:
+            info_dict[key] = param.value
+
+    def _promote_empty_parameter_to_name(self, info, params):
+        empty_values = []
+        not_empty_values = []
+        for param in params:
+            if param.is_empty():
+                empty_values.append(param)
+            else:
+                not_empty_values.append(param)
+
+        if len(empty_values) == 1 and 'name' not in info:
+            info['name'] = empty_values[0].name
+            return info, not_empty_values
+        return info, params
+
+    def _get_info(self, element, **kwargs):
+        # this method currently does not call the superclass implementation, rather relies on XML._postprocess
+        try:
+            name = kwargs['ename']
+        except KeyError:
+            name = _local_name(element)
+        if name in {'cvParam', 'userParam', 'UserParam'}:
+            return self._handle_param(element, **kwargs)
+        elif name == "referenceableParamGroupRef":
+            return self._handle_referenceable_param_group(element, **kwargs)
+
+        info = dict(element.attrib)
+
+        # process subelements
+        params = []
+        if kwargs.get('recursive'):
+            for child in element.iterchildren():
+                cname = _local_name(child)
+                if cname in {'cvParam', 'userParam', 'UserParam'}:
+                    newinfo = self._handle_param(child, **kwargs)
+                    params.append(newinfo)
+                elif cname == "referenceableParamGroupRef":
+                    params.extend(self._handle_referenceable_param_group(child, **kwargs))
+                else:
+                    if cname not in self.schema_info['lists']:
+                        info[cname] = self._get_info_smart(child, **kwargs)
+                    else:
+                        info.setdefault(cname, []).append(
+                            self._get_info_smart(child, **kwargs))
+        else:
+            # handle the case where we do not want to unpack all children, but
+            # *Param tags are considered part of the current entity, semantically
+            for child in self._find_immediate_params(element, **kwargs):
+                param_or_group = self._handle_param(child, **kwargs)
+                if isinstance(param_or_group, list):
+                    params.extend(param_or_group)
+                else:
+                    params.append(param_or_group)
+
+        handler = self._element_handlers.get(name)
+        if handler is not None:
+            info, params = handler(self, info, params)
+
+        for param in params:
+            self._insert_param(info, param)
+
+        info = self._postprocess(element, name, info, **kwargs)
+
+        return info
 
 
 # XPath emulator tools

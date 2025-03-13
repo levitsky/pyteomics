@@ -112,7 +112,7 @@ from . import auxiliary as aux
 from . import xml, _schema_defaults
 
 
-class MzIdentML(xml.MultiProcessingXML, xml.IndexSavingXML):
+class MzIdentML(xml.ParamParserMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for MzIdentML files."""
     file_format = 'mzIdentML'
     _root_element = 'MzIdentML'
@@ -130,12 +130,12 @@ class MzIdentML(xml.MultiProcessingXML, xml.IndexSavingXML):
                      'ProteinDetectionHypothesis', 'ProteinAmbiguityGroup',
                     }
 
-    _element_handlers = xml.XML._element_handlers.copy()
+    _element_handlers = xml.ParamParserMixin._element_handlers.copy()
     _element_handlers.update({
-        "Modification": xml.XML._promote_empty_parameter_to_name,
-        "SpectrumIDFormat": xml.XML._promote_empty_parameter_to_name,
-        "FileFormat": xml.XML._promote_empty_parameter_to_name,
-        "Role": xml.XML._promote_empty_parameter_to_name
+        "Modification": xml.ParamParserMixin._promote_empty_parameter_to_name,
+        "SpectrumIDFormat": xml.ParamParserMixin._promote_empty_parameter_to_name,
+        "FileFormat": xml.ParamParserMixin._promote_empty_parameter_to_name,
+        "Role": xml.ParamParserMixin._promote_empty_parameter_to_name
     })
 
     def __init__(self, *args, **kwargs):
@@ -172,6 +172,7 @@ class MzIdentML(xml.MultiProcessingXML, xml.IndexSavingXML):
                     info.update(by_id)
                     del info[k]
                     info.pop('id', None)
+
 
 def read(source, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.

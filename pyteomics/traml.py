@@ -74,7 +74,7 @@ import warnings
 from . import xml, _schema_defaults, auxiliary as aux
 
 
-class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
+class TraML(xml.ParamParserMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for TraML files."""
     file_format = 'TraML'
     _root_element = 'TraML'
@@ -91,11 +91,11 @@ class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
         'Compound',
     }
 
-    _element_handlers = xml.XML._element_handlers.copy()
+    _element_handlers = xml.ParamParserMixin._element_handlers.copy()
     _element_handlers.update({
-        'Modification': xml.XML._promote_empty_parameter_to_name,
-        'Interpretation': xml.XML._promote_empty_parameter_to_name,
-        'Software': xml.XML._promote_empty_parameter_to_name,
+        'Modification': xml.ParamParserMixin._promote_empty_parameter_to_name,
+        'Interpretation': xml.ParamParserMixin._promote_empty_parameter_to_name,
+        'Software': xml.ParamParserMixin._promote_empty_parameter_to_name,
     })
 
     def __init__(self, *args, **kwargs):
@@ -105,10 +105,7 @@ class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
     def _get_info_smart(self, element, **kw):
         kwargs = dict(kw)
         rec = kwargs.pop('recursive', None)
-        info = self._get_info(
-            element,
-            recursive=(rec if rec is not None else True),
-            **kwargs)
+        info = self._get_info(element, recursive=(rec if rec is not None else True), **kwargs)
         return info
 
     def _retrieve_refs(self, info, **kwargs):
@@ -135,7 +132,6 @@ class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
                         # by_id.pop('id', None)
                         info[k[:-3]] = by_id
                         del info[k]
-
 
 
 def read(source, retrieve_refs=True, read_schema=False, iterative=True, use_index=False, huge_tree=False):
