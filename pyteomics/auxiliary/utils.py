@@ -6,7 +6,7 @@ from functools import wraps
 from collections import namedtuple
 
 try:
-    basestring
+    basestring = basestring
 except NameError:
     basestring = (str, bytes)
 
