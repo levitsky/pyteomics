@@ -1,6 +1,5 @@
 from functools import partial
 
-
 try:
     from psims.controlled_vocabulary.controlled_vocabulary import (load_psimod, load_xlmod, load_gno, obo_cache, load_unimod)
     _has_psims = True

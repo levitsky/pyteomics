@@ -25,7 +25,7 @@ except ImportError:
 from .mass import Composition, std_aa_mass, Unimod, nist_mass, calculate_mass, std_ion_comp, mass_charge_ratio
 from .auxiliary import PyteomicsError, BasicComposition
 from .auxiliary.utils import add_metaclass
-from .auxiliary.psims import load_psimod, load_xlmod, load_gno, obo_cache, _has_psims
+from .auxiliary.psims_util import load_psimod, load_xlmod, load_gno, obo_cache, _has_psims
 
 try:
     import numpy as np
