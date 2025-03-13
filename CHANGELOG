@@ -1,8 +1,10 @@
-4.7.6a1
+4.7.6a2
 -------
 
  - Improve :py:mod:`spectrum_utils` integration.
  - Retain StPeter output in :py:func:`pyteomics.protxml.DataFrame`.
+ - Fix `#163 <https://github.com/levitsky/pyteomics/issues/163>`_
+   (`#164 <https://github.com/levitsky/pyteomics/pull/164>`_ by Dikshant jha).
 
 
 4.7.5
