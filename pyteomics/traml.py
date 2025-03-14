@@ -74,7 +74,7 @@ import warnings
 from . import xml, _schema_defaults, auxiliary as aux
 
 
-class TraML(xml.ParamParserMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
+class TraML(xml.CVParamParserMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for TraML files."""
     file_format = 'TraML'
     _root_element = 'TraML'

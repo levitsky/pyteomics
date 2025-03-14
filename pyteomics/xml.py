@@ -605,38 +605,33 @@ class XML(FileReader):
 
 
 class ParamParserMixin(XML):
-    cv = None
     _element_handlers = {}
+    _param_elements = {'userParam', 'UserParam'}
+    _param_subelements = _param_elements
+    _param_types = {'int': int, 'float': float, 'string': str}
+    _default_param_type = float
+    _fallback_param_type = str
 
-    # def __init__(self, *args, **kwargs):
-    #     super(ParamParserMixin, self).__init__(*args, **kwargs)
-    #     cv = kwargs.pop('cv', None)
-    #     if cv is None:
-    #         cv = load_psims()
-    #     self.cv = cv
+    def _param_type(self, attribs):
+        if attribs.get('type') in self._param_types:
+            return self._param_types[attribs['type']]
+        return self._default_param_type
+
+    def _param_value(self, attribs):
+        value = attribs.get('value', '')
+        vtype = self._param_type(attribs)
+        try:
+            return vtype(value)
+        except ValueError:
+            return self._fallback_param_type(value)
+
+    def _param_name(self, attribs):
+        return attribs['name']
 
     def _handle_param(self, element, **kwargs):
         """Unpacks cvParam and userParam tags into key-value pairs"""
-        types = {'int': unitint, 'float': unitfloat, 'string': unitstr}
         attribs = element.attrib
-        unit_info = None
-        unit_accesssion = None
-        if 'unitCvRef' in attribs or 'unitName' in attribs:
-            unit_accesssion = attribs.get('unitAccession')
-            unit_name = attribs.get('unitName', unit_accesssion)
-            unit_info = unit_name
-        accession = attribs.get('accession')
-        value = attribs.get('value', '')
-        try:
-            if attribs.get('type') in types:
-                value = types[attribs['type']](value, unit_info)
-            else:
-                value = unitfloat(value, unit_info)
-        except ValueError:
-            value = unitstr(value, unit_info)
-
-        # return {cvstr(attribs['name'], accession, unit_accesssion): value}
-        return _XMLParam(cvstr(attribs['name'], accession, unit_accesssion), value, _local_name(element))
+        return _XMLParam(self._param_name(attribs), self._param_value(attribs), _local_name(element))
 
     def _handle_referenceable_param_group(self, param_group_ref, **kwargs):
         raise NotImplementedError()
@@ -644,7 +639,7 @@ class ParamParserMixin(XML):
 
     def _find_immediate_params(self, element, **kwargs):
         return element.xpath(
-            './*[local-name()="cvParam" or local-name()="userParam" or local-name()="UserParam" or local-name()="referenceableParamGroupRef"]')
+            './*[' + ' or '.join('local-name()="{}"'.format(name) for name in self._param_subelements) + ']')
 
     def _insert_param(self, info_dict, param):
         key = param.name
@@ -676,7 +671,7 @@ class ParamParserMixin(XML):
             name = kwargs['ename']
         except KeyError:
             name = _local_name(element)
-        if name in {'cvParam', 'userParam', 'UserParam'}:
+        if name in self._param_elements:
             return self._handle_param(element, **kwargs)
         elif name == "referenceableParamGroupRef":
             return self._handle_referenceable_param_group(element, **kwargs)
@@ -688,7 +683,7 @@ class ParamParserMixin(XML):
         if kwargs.get('recursive'):
             for child in element.iterchildren():
                 cname = _local_name(child)
-                if cname in {'cvParam', 'userParam', 'UserParam'}:
+                if cname in self._param_elements:
                     newinfo = self._handle_param(child, **kwargs)
                     params.append(newinfo)
                 elif cname == "referenceableParamGroupRef":
@@ -717,8 +712,50 @@ class ParamParserMixin(XML):
             self._insert_param(info, param)
 
         info = self._postprocess(element, name, info, **kwargs)
-
         return info
+
+
+class CVParamParserMixin(ParamParserMixin):
+    cv = None
+    _param_types = {'int': unitint, 'float': unitfloat, 'string': unitstr}
+    _default_param_type = unitfloat
+    _fallback_param_type = unitstr
+
+    _param_elements = ParamParserMixin._param_elements.copy()
+    _param_elements.add('cvParam')
+    _param_subelements = _param_elements.copy()
+    _param_subelements.add('referenceableParamGroupRef')
+
+    def _param_name(self, attribs):
+        unit_accesssion = None
+        if 'unitCvRef' in attribs or 'unitName' in attribs:
+            unit_accesssion = attribs.get('unitAccession')
+        accession = attribs.get('accession')
+        return cvstr(attribs['name'], accession, unit_accesssion)
+
+    def _param_unit_info(self, attribs):
+        unit_info = None
+        unit_accesssion = None
+        if 'unitCvRef' in attribs or 'unitName' in attribs:
+            unit_accesssion = attribs.get('unitAccession')
+            unit_info = attribs.get('unitName', unit_accesssion)
+        return unit_info
+
+    def _param_value(self, attribs):
+        value = attribs.get('value', '')
+        vtype = self._param_type(attribs)
+        uinfo = self._param_unit_info(attribs)
+        try:
+            return vtype(value, uinfo)
+        except ValueError:
+            return self._fallback_param_type(value, uinfo)
+
+    # def __init__(self, *args, **kwargs):
+    #     super(ParamParserMixin, self).__init__(*args, **kwargs)
+    #     cv = kwargs.pop('cv', None)
+    #     if cv is None:
+    #         cv = load_psims()
+    #     self.cv = cv
 
 
 # XPath emulator tools

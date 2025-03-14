@@ -117,7 +117,7 @@ STANDARD_ARRAYS = set([
 ])
 
 
-class MzML(aux.BinaryArrayConversionMixin, xml.ParamParserMixin, aux.TimeOrderedIndexedReaderMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
+class MzML(aux.BinaryArrayConversionMixin, xml.CVParamParserMixin, aux.TimeOrderedIndexedReaderMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for mzML files."""
     file_format = 'mzML'
     _root_element = 'mzML'

@@ -112,7 +112,7 @@ from . import auxiliary as aux
 from . import xml, _schema_defaults
 
 
-class MzIdentML(xml.ParamParserMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
+class MzIdentML(xml.CVParamParserMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for MzIdentML files."""
     file_format = 'mzIdentML'
     _root_element = 'MzIdentML'
@@ -127,15 +127,14 @@ class MzIdentML(xml.ParamParserMixin, xml.MultiProcessingXML, xml.IndexSavingXML
                      'Organization', 'AnalysisSoftware', 'BibliographicReference', 'Person', 'Provider',
                      'SpectrumIdentificationList', 'SpectrumIdentificationProtocol', 'SpectrumIdentification',
                      'ProteinDetectionList', 'ProteinDetectionProtocol', 'ProteinDetection',
-                     'ProteinDetectionHypothesis', 'ProteinAmbiguityGroup',
-                    }
+                     'ProteinDetectionHypothesis', 'ProteinAmbiguityGroup'}
 
-    _element_handlers = xml.ParamParserMixin._element_handlers.copy()
+    _element_handlers = xml.CVParamParserMixin._element_handlers.copy()
     _element_handlers.update({
-        "Modification": xml.ParamParserMixin._promote_empty_parameter_to_name,
-        "SpectrumIDFormat": xml.ParamParserMixin._promote_empty_parameter_to_name,
-        "FileFormat": xml.ParamParserMixin._promote_empty_parameter_to_name,
-        "Role": xml.ParamParserMixin._promote_empty_parameter_to_name
+        "Modification": xml.CVParamParserMixin._promote_empty_parameter_to_name,
+        "SpectrumIDFormat": xml.CVParamParserMixin._promote_empty_parameter_to_name,
+        "FileFormat": xml.CVParamParserMixin._promote_empty_parameter_to_name,
+        "Role": xml.CVParamParserMixin._promote_empty_parameter_to_name
     })
 
     def __init__(self, *args, **kwargs):
@@ -150,14 +149,9 @@ class MzIdentML(xml.ParamParserMixin, xml.MultiProcessingXML, xml.IndexSavingXML
 
         # Try not to recursively unpack the root element
         # unless the user really wants to.
-        if name == self._root_element:
-            return self._get_info(element,
-                    recursive=(rec if rec is not None else False),
-                    **kwargs)
-        else:
-            return self._get_info(element,
-                    recursive=(rec if rec is not None else True),
-                    **kwargs)
+        if rec is None:
+            rec = (name != self._root_element)
+        return self._get_info(element, recursive=rec, **kwargs)
 
     def _retrieve_refs(self, info, **kwargs):
         """Retrieves and embeds the data for each attribute in `info` that
