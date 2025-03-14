@@ -7,3 +7,4 @@ __pycache__
 .vscode
 *.diff
 tests/unimod.db
+tests/parallel.log
