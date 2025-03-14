@@ -40,7 +40,7 @@ from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj, Hierar
 from .auxiliary import unitint, unitfloat, unitstr, cvstr
 from .auxiliary import _keepstate_method as _keepstate
 from .auxiliary import TaskMappingMixin, IndexedReaderMixin, IndexSavingMixin
-# from .auxiliary.psims_util import load_psims
+from .auxiliary.psims_util import load_psims, HasValueTypeRelationship, _has_psims
 
 try:  # Python 2.7
     from urllib2 import urlopen, URLError
@@ -726,6 +726,12 @@ class CVParamParserMixin(ParamParserMixin):
     _param_subelements = _param_elements.copy()
     _param_subelements.add('referenceableParamGroupRef')
 
+    _cvparam_types = {
+        'int': {'xsd:integer', 'xsd:int', 'xsd:nonNegativeInteger', 'xsd:positiveInteger'},
+        'float': {'xsd:float', 'xsd:double', 'xsd:decimal'},
+        'string': {'xsd:string', 'xsd:anyURI', 'xsd:boolean', 'xsd:dateTime'}  # better catch more to avoid auto-conversion to float
+    }
+
     def _param_name(self, attribs):
         unit_accesssion = None
         if 'unitCvRef' in attribs or 'unitName' in attribs:
@@ -741,6 +747,21 @@ class CVParamParserMixin(ParamParserMixin):
             unit_info = attribs.get('unitName', unit_accesssion)
         return unit_info
 
+    def _param_type(self, attribs):
+        if attribs.get('type') in self._param_types:
+            return self._param_types[attribs['type']]
+
+        # check for type information in CV
+        if self.cv is not None and 'accession' in attribs and 'value' in attribs and attribs.get('cvRef') in {'PSI-MS', 'MS'}:
+            entity = self.cv[attribs['accession']]
+            for r in entity.relationship:
+                if isinstance(r, HasValueTypeRelationship):
+                    for type_name, types in self._cvparam_types.items():
+                        if r.value_type.id in types:
+                            return self._param_types[type_name]
+
+        return self._default_param_type
+
     def _param_value(self, attribs):
         value = attribs.get('value', '')
         vtype = self._param_type(attribs)
@@ -750,12 +771,16 @@ class CVParamParserMixin(ParamParserMixin):
         except ValueError:
             return self._fallback_param_type(value, uinfo)
 
-    # def __init__(self, *args, **kwargs):
-    #     super(ParamParserMixin, self).__init__(*args, **kwargs)
-    #     cv = kwargs.pop('cv', None)
-    #     if cv is None:
-    #         cv = load_psims()
-    #     self.cv = cv
+    def __init__(self, *args, **kwargs):
+        super(ParamParserMixin, self).__init__(*args, **kwargs)
+
+        if not _has_psims:
+            raise PyteomicsError('Parsing PSI formats requires `psims`.')
+
+        cv = kwargs.pop('cv', None)
+        if cv is None:
+            cv = load_psims()
+        self.cv = cv
 
 
 # XPath emulator tools

@@ -15,6 +15,9 @@ import operator as op
 import pynumpress
 import base64
 import zlib
+from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
+obo_cache.cache_path = '.'
+obo_cache.enabled = True
 
 
 class MzmlTest(unittest.TestCase):

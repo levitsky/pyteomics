@@ -6,16 +6,19 @@ from pyteomics.mzid import MzIdentML, read, chain
 from pyteomics import auxiliary as aux
 from data import mzid_spectra
 from itertools import product
+from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
+obo_cache.cache_path = '.'
+obo_cache.enabled = True
+
 
 class MzidTest(unittest.TestCase):
     maxDiff = None
     path = 'test.mzid'
-    def testReadPSM(self):
+
+    def test_read(self):
         for rec, refs, rs, it, ui in product((True, False), repeat=5):
-            for func in [MzIdentML, read, chain,
-                    lambda x, **kw: chain.from_iterable([x], **kw)]:
-                with func(self.path, recursive=rec, retrieve_refs=refs,
-                        read_schema=rs, iterative=it, use_index=ui) as reader:
+            for func in [MzIdentML, read, chain, lambda x, **kw: chain.from_iterable([x], **kw)]:
+                with func(self.path, recursive=rec, retrieve_refs=refs, read_schema=rs, iterative=it, use_index=ui) as reader:
                     try:
                         psms = list(reader)
                         self.assertEqual(psms, mzid_spectra[(rec, refs)])
@@ -41,8 +44,7 @@ class MzidTest(unittest.TestCase):
         assert index['MS:1000774'] == 'multiple peak list nativeID format'
 
     def test_map(self):
-        self.assertEqual(len(mzid_spectra[(1, 1)]),
-            sum(1 for _ in MzIdentML(self.path).map()))
+        self.assertEqual(len(mzid_spectra[(1, 1)]), sum(1 for _ in MzIdentML(self.path).map()))
 
     def test_iterfind_map(self):
         self.assertEqual(
