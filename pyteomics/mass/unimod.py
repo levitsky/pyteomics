@@ -41,6 +41,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from . import mass
+from ..auxiliary.utils import basestring
 
 model_registry = set()
 
@@ -57,12 +58,6 @@ Base = declarative_base(metaclass=SubclassRegisteringDeclarativeMeta)
 
 _unimod_xml_download_url = 'http://www.unimod.org/xml/unimod_tables.xml'
 
-try:
-    basestring
-except:
-    basestring = (str, bytes)
-
-
 CompositionType = mass.Composition
 
 
@@ -70,6 +65,7 @@ def simple_repr(self):  # pragma: no cover
     template = '{self.__class__.__name__}({d})'
     d = {'%s=%r' % (k, v) for k, v in self.__dict__.items() if not k.startswith('_')}
     return template.format(self=self, d=', '.join(d))
+
 
 Base.__repr__ = simple_repr
 
