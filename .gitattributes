@@ -1,0 +1,12 @@
+* text=auto
+
+*.rs text
+*.md text
+*.sh text eol=lf
+
+*.mzML binary
+*.mzml binary
+*.gz binary
+
+*.mgf text eol=lf
+*.fasta text eol=lf
