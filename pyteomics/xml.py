@@ -732,6 +732,8 @@ class CVParamParserMixin(ParamParserMixin):
         'string': {'xsd:string', 'xsd:anyURI', 'xsd:boolean', 'xsd:dateTime'}  # better catch more to avoid auto-conversion to float
     }
 
+    _cv_type_cache = {}
+
     def _param_name(self, attribs):
         unit_accesssion = None
         if 'unitCvRef' in attribs or 'unitName' in attribs:
@@ -751,6 +753,10 @@ class CVParamParserMixin(ParamParserMixin):
         if attribs.get('type') in self._param_types:
             return self._param_types[attribs['type']]
 
+        param_accession = attribs.get('accession')
+        if param_accession in self._cv_type_cache:
+            return self._cv_type_cache[param_accession]
+
         # check for type information in CV
         if self.cv is not None and 'accession' in attribs and 'value' in attribs and attribs.get('cvRef') in {'PSI-MS', 'MS'}:
             entity = self.cv[attribs['accession']]
@@ -758,9 +764,13 @@ class CVParamParserMixin(ParamParserMixin):
                 if isinstance(r, HasValueTypeRelationship):
                     for type_name, types in self._cvparam_types.items():
                         if r.value_type.id in types:
-                            return self._param_types[type_name]
+                            tp = self._param_types[type_name]
+                            self._cv_type_cache[param_accession] = tp
+                            return tp
 
-        return self._default_param_type
+        tp = self._default_param_type
+        self._cv_type_cache[param_accession] = tp
+        return tp
 
     def _param_value(self, attribs):
         value = attribs.get('value', '')
