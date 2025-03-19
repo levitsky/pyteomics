@@ -2,6 +2,8 @@ import base64
 import zlib
 from functools import wraps
 from collections import namedtuple
+from urllib.parse import urlparse
+import pathlib
 
 try:
     import numpy as np
@@ -280,7 +282,6 @@ if np is not None:
             array = self._transform_buffer(binary, dtype)
             return array
 
-
     class BinaryArrayConversionMixin(ArrayConversionMixin, BinaryDataArrayTransformer):
         def _finalize_record_conversion(self, array, record):
             key = record.key
@@ -308,3 +309,32 @@ def add_metaclass(metaclass):
             orig_vars['__qualname__'] = cls.__qualname__
         return metaclass(cls.__name__, cls.__bases__, orig_vars)
     return wrapper
+
+
+_supported_url_schemes = {'file', 'ftp', 'http', 'https'}
+
+
+def ensure_url_prefix(path_or_url):
+    """
+    Ensure that a string path has a URL schema prefix, add "file://" if it is missing.
+    Only expects a subset of URL schemes that can be urlopen-ed for reading.
+
+    Parameters
+    ----------
+    path_or_url : str or Path
+
+    Returns
+    -------
+    out : str
+    """
+    if isinstance(path_or_url, pathlib.Path):
+        path = path_or_url
+    else:
+        parsed = urlparse(path_or_url)
+        if parsed.scheme in _supported_url_schemes:
+            return path_or_url
+        if parsed.params or parsed.query or parsed.fragment:
+            return path_or_url
+        # for all other cases assume it's a local path
+        path = pathlib.Path(path_or_url)
+    return path.absolute().as_uri()

@@ -27,4 +27,4 @@ from .target_decoy import (
 
 from .utils import (
     print_tree, memoize, BinaryDataArrayTransformer, ArrayConversionMixin, BinaryArrayConversionMixin,
-    MaskedArrayConversionMixin, _decode_base64_data_array)
+    MaskedArrayConversionMixin, _decode_base64_data_array, ensure_url_prefix)

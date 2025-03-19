@@ -82,7 +82,7 @@ Data
 
 import math
 from .. import parser
-from ..auxiliary import PyteomicsError, _nist_mass, BasicComposition
+from ..auxiliary import PyteomicsError, _nist_mass, BasicComposition, ensure_url_prefix
 from itertools import chain, product, combinations_with_replacement
 from collections import defaultdict
 try:
@@ -93,6 +93,7 @@ from datetime import datetime
 import re
 import operator
 import warnings
+from pathlib import Path
 
 nist_mass = _nist_mass
 """
@@ -1049,6 +1050,9 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
     return mass
 
 
+UNIMOD_DEFAULT_URL = 'http://www.unimod.org/xml/unimod.xml'
+
+
 class Unimod():
     """A class for Unimod database of modifications.
     The list of all modifications can be retrieved via `mods` attribute.
@@ -1060,15 +1064,14 @@ class Unimod():
         more features.
     """
 
-    def __init__(self, source='http://www.unimod.org/xml/unimod.xml'):
+    def __init__(self, source=UNIMOD_DEFAULT_URL):
         """Create a database and fill it from XML file retrieved from `source`.
 
         Parameters
         ----------
 
-        source : str or file, optional
-            A file-like object or a URL to read from. Don't forget the ``'file://'``
-            prefix when pointing to local files.
+        source : str or Path or file, optional
+            A file-like object, file name or a URL to read from.
         """
         from lxml import etree
         from ..xml import _local_name
@@ -1130,8 +1133,9 @@ class Unimod():
             new_d['refs'] = refs
             return new_d
 
-        if isinstance(source, str):
-            self._tree = etree.parse(urlopen(source))
+        if isinstance(source, (str, Path)):
+            url = ensure_url_prefix(source)
+            self._tree = etree.parse(urlopen(url))
         else:
             self._tree = etree.parse(source)
         self._massdata = self._mass_data()

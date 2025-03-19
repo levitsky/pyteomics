@@ -35,3 +35,24 @@ jobs:
     - name: Run the tests
       run: |
         cd tests; find . -name 'test_*.py' -print0 | xargs -0 -n1 python
+
+  tests-multiplatform:
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+        os: ['macos-latest', 'windows-latest']
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .
+      - name: Run the tests
+        run: |
+          cd tests; python -m unittest test_auxiliary.UtilTest

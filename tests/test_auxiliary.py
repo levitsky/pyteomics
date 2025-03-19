@@ -5,6 +5,7 @@ import operator as op
 import numpy as np
 import pandas as pd
 import tempfile
+import platform
 
 from os import path
 import pyteomics
@@ -37,10 +38,8 @@ class QvalueTest(unittest.TestCase):
         self.assertTrue(np.allclose(q['score'], np.arange(52)))
         self.setUp()
         spsms = sorted(self.psms, key=self.key)
-        self.assertTrue(np.allclose([self.is_decoy(x) for x in spsms],
-            q['is decoy']))
-        self.assertTrue(np.allclose([self.key(x) for x in spsms],
-            q['score']))
+        self.assertTrue(np.allclose([self.is_decoy(x) for x in spsms], q['is decoy']))
+        self.assertTrue(np.allclose([self.key(x) for x in spsms], q['score']))
         self.setUp()
 
     def _run_check_pep(self, q):
@@ -80,8 +79,7 @@ class QvalueTest(unittest.TestCase):
         psms = np.array(list(self.psms), dtype=dtype)
         q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1)
         self._run_check(q, 1)
-        q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1,
-            full_output=True)
+        q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1, full_output=True)
         self._run_check(q, 1)
         self.assertTrue(q['psm'].dtype == dtype)
 
@@ -123,8 +121,7 @@ class QvalueTest(unittest.TestCase):
         psms = np.array(list(self.psms), dtype=dtype)
         q = aux.qvalues(psms, key='score', is_decoy=self.is_decoy, remove_decoy=False, formula=1)
         self._run_check(q, 1)
-        q = aux.qvalues(psms, key='score', is_decoy=self.is_decoy, remove_decoy=False, formula=1,
-            full_output=True)
+        q = aux.qvalues(psms, key='score', is_decoy=self.is_decoy, remove_decoy=False, formula=1, full_output=True)
         self._run_check(q, 1)
         self.assertTrue(q['psm'].dtype == dtype)
 
@@ -143,8 +140,7 @@ class QvalueTest(unittest.TestCase):
         psms = pd.DataFrame(np.array(list(self.psms), dtype=dtype))
         q = aux.qvalues(psms, key='score', is_decoy=self.is_decoy, remove_decoy=False, formula=1)
         self._run_check(q, 1)
-        q = aux.qvalues(psms, key='score', is_decoy=self.is_decoy, remove_decoy=False, formula=1,
-            full_output=True)
+        q = aux.qvalues(psms, key='score', is_decoy=self.is_decoy, remove_decoy=False, formula=1, full_output=True)
         self._run_check(q, 1)
 
     def test_qvalues_pep_from_dataframe_string_pep(self):
@@ -163,8 +159,7 @@ class QvalueTest(unittest.TestCase):
         psms['is decoy'] = [self.is_decoy(row) for _, row in psms.iterrows()]
         q = aux.qvalues(psms, key='score', is_decoy='is decoy', remove_decoy=False, formula=1)
         self._run_check(q, 1)
-        q = aux.qvalues(psms, key='score', is_decoy='is decoy', remove_decoy=False, formula=1,
-            full_output=True)
+        q = aux.qvalues(psms, key='score', is_decoy='is decoy', remove_decoy=False, formula=1, full_output=True)
         self._run_check(q, 1)
 
     def test_qvalues_pep_from_dataframe_string_key_and_pep(self):
@@ -176,12 +171,9 @@ class QvalueTest(unittest.TestCase):
         self._run_check_pep(q)
 
     def test_qvalues_pep_exceptions(self):
-        self.assertRaises(aux.PyteomicsError, aux.qvalues,
-            self.psms, pep='pep', is_decoy=self.is_decoy)
-        self.assertRaises(aux.PyteomicsError, aux.qvalues,
-            self.psms, pep='pep', remove_decoy=False)
-        self.assertRaises(aux.PyteomicsError, aux.qvalues,
-            self.psms, pep='pep', correction=0)
+        self.assertRaises(aux.PyteomicsError, aux.qvalues, self.psms, pep='pep', is_decoy=self.is_decoy)
+        self.assertRaises(aux.PyteomicsError, aux.qvalues, self.psms, pep='pep', remove_decoy=False)
+        self.assertRaises(aux.PyteomicsError, aux.qvalues, self.psms, pep='pep', correction=0)
 
     def test_qvalues_from_tandem(self):
         psms = tandem.TandemXML('test.t.xml')
@@ -259,13 +251,13 @@ class FilterTest(unittest.TestCase):
 
     def test_filter_chain_with(self):
         with aux.filter.chain(self.psms, self.psms, key=self.key, is_decoy=self.is_decoy,
-            fdr=0.5, full_output=False) as f:
+                              fdr=0.5, full_output=False) as f:
             f1 = list(f)
         self.assertEqual(len(f1), 52)
 
     def test_filter_pep_chain_with(self):
         with aux.filter.chain(self.psms, self.psms, pep=self.pep,
-            fdr=0.02, full_output=False) as f:
+                              fdr=0.02, full_output=False) as f:
             f1 = list(f)
         self.assertEqual(len(f1), 42)
 
@@ -304,14 +296,12 @@ class FilterTest(unittest.TestCase):
         self.assertEqual(f.shape[0], 42)
 
     def test_filter_chain_from_iterable_with(self):
-        with aux.filter.chain.from_iterable([self.psms, self.psms],
-            key=self.key, is_decoy=self.is_decoy, fdr=0.5, full_output=False) as f:
+        with aux.filter.chain.from_iterable([self.psms, self.psms], key=self.key, is_decoy=self.is_decoy, fdr=0.5, full_output=False) as f:
             f11 = list(f)
         self.assertEqual(len(f11), 52)
 
     def test_filter_pep_chain_from_iterable_with(self):
-        with aux.filter.chain.from_iterable([self.psms, self.psms],
-            key=self.key, pep=self.pep, fdr=0.02, full_output=False) as f:
+        with aux.filter.chain.from_iterable([self.psms, self.psms], key=self.key, pep=self.pep, fdr=0.02, full_output=False) as f:
             f1 = list(f)
         self.assertEqual(len(f1), 42)
 
@@ -745,7 +735,6 @@ class FilterTest(unittest.TestCase):
 
 
 class FDRTest(unittest.TestCase):
-
     is_decoy = staticmethod(lambda x: x[1].islower())
     pep = staticmethod(op.itemgetter(2))
 
@@ -985,6 +974,33 @@ class VersionTest(unittest.TestCase):
 
     def test_longer_dev_version(self):
         self.assertEqual(version.VersionInfo('1.2.3dev4'), ('1', '2', '3', 'dev', '4'))
+
+
+class UtilTest(unittest.TestCase):
+    def test_ensure_prefix(self):
+        pairs = [
+            ('file:///home/test/unimod.xml', 'file:///home/test/unimod.xml'),
+            ('https://example.org/test/unimod.xml', 'https://example.org/test/unimod.xml'),
+            ('ftp://example.org/test/unimod.xml', 'ftp://example.org/test/unimod.xml'),
+            ('http://example.org/test/unimod.xml', 'http://example.org/test/unimod.xml'),
+        ]
+        pairs_windows = [
+            ('C:/Data folder/unimod.xml', 'file:///C:/Data folder/unimod.xml'),
+            ('file:///C:/Data folder/unimod.xml', 'file:///C:/Data folder/unimod.xml'),
+        ]
+        pairs_other = [('/home/test/unimod.xml', 'file:///home/test/unimod.xml'),]
+        system = platform.system()
+        print('Testing on', system)
+        if system == 'Windows':
+            pairs.extend(pairs_windows)
+        else:
+            pairs.extend(pairs_other)
+        for inp, out in pairs:
+            try:
+                self.assertEqual(aux.ensure_prefix(inp), out)
+            except Exception:
+                print('Failed with:', inp, out)
+                raise
 
 
 import warnings
