@@ -27,9 +27,7 @@ def get_version(rel_path):
 
 
 with open('README.rst') as r, open('INSTALL') as i:
-    long_description = re.sub(r':py:\w+:`([^`]+)`',
-            lambda m: '**{}**'.format(m.group(1)),
-            ''.join(r) + '\n' + ''.join(i))
+    long_description = re.sub(r':py:\w+:`([^`]+)`', lambda m: '**{}**'.format(m.group(1)), ''.join(r) + '\n' + ''.join(i))
 
 
 extras_require = {'XML': ['lxml', 'numpy'],
@@ -61,7 +59,6 @@ setup(
     namespace_packages = ['pyteomics'],
     extras_require     = extras_require,
     classifiers        = ['Intended Audience :: Science/Research',
-                          'Programming Language :: Python :: 2.7',
                           'Programming Language :: Python :: 3',
                           'Topic :: Education',
                           'Topic :: Scientific/Engineering :: Bio-Informatics',

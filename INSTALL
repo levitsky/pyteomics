@@ -1,7 +1,7 @@
 Supported Python versions
 -------------------------
 
-Pyteomics supports Python 2.7 and Python 3.3+.
+Pyteomics supports recent versions of Python 3.
 
 
 Install with pip

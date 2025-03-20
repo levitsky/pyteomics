@@ -38,6 +38,7 @@ This module requres :py:mod:`lxml`.
 
 from .. import xml, auxiliary as aux, _schema_defaults
 
+
 class TrafoXML(xml.XML):
     """Parser class for trafoXML files."""
     file_format = 'trafoXML'
@@ -51,6 +52,7 @@ class TrafoXML(xml.XML):
         kw['recursive'] = kw.get('recursive', True)
         info = self._get_info(element, **kw)
         return info
+
 
 def read(source, read_schema=True, iterative=True):
     """Parse `source` and iterate through pairs.
@@ -78,5 +80,6 @@ def read(source, read_schema=True, iterative=True):
     """
 
     return TrafoXML(source, read_schema=read_schema, iterative=iterative)
+
 
 chain = aux._make_chain(read, 'read')
