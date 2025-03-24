@@ -1366,6 +1366,34 @@ mzml_spectra = [
                                                                            'scan window upper limit': 2000.0}]}}]},
                  'total ion current': 15245068.0}]
 
+mzmlb_mz_array = np.load('test_mzmlb_mz.npy')
+mzmlb_int_array = np.load('test_mzmlb_intensity.npy')
+mzmlb_spectra = [
+                 {'index': 0,
+                  'id': 'controllerType=0 controllerNumber=1 scan=1',
+                  'defaultArrayLength': 19913,
+                  'scanList': {'count': 1,
+                               'scan': [{'scanWindowList': {'count': 1,
+                                                            'scanWindow': [{'scan window lower limit': 200.0,
+                                                                            'scan window upper limit': 2000.0}]},
+                                         'scan start time': 0.004935,
+                                         'mass resolving power': '100000',
+                                         'filter string': 'FTMS + p ESI Full ms [200.00-2000.00]',
+                                         'preset scan configuration': '1', 'ion injection time': 68.227485656738}],
+                               'no combination': ''},
+                  'MS1 spectrum': '',
+                  'ms level': 1,
+                  'positive scan': '',
+                  'profile spectrum': '',
+                  'base peak m/z': 810.415283203125,
+                  'base peak intensity': 1471973.875,
+                  'total ion current': 15245068.0,
+                  'lowest observed m/z': 200.00018816645,
+                  'highest observed m/z': 1999.985729309592,
+                  'count': 2,
+                  'm/z array': makeCA(mzmlb_mz_array),
+                  'intensity array': makeCA(mzmlb_int_array)}]
+
 mgf_int = [np.array([73., 44., 67., 291., 54., 49.]),
            np.array([237., 128., 108., 1007., 974., 79.])]
 mgf_mz = [np.array([846.6, 846.8, 847.6, 1640.1, 1640.6, 1895.5]),
