@@ -6,6 +6,7 @@
  - Retain StPeter output in :py:func:`pyteomics.protxml.DataFrame`.
  - Fix `#163 <https://github.com/levitsky/pyteomics/issues/163>`_
    (`#164 <https://github.com/levitsky/pyteomics/pull/164>`_ by Dikshant jha).
+ - In :py:mod:`pyteomics.achrom`, return regular Python types instead of NumPy scalars.
 
 
 4.7.5
