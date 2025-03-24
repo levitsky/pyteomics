@@ -10,11 +10,8 @@ import threading
 import warnings
 import os
 from abc import ABCMeta
-
-try:
-    basestring
-except NameError:
-    basestring = (str, bytes)
+from queue import Empty
+from collections.abc import Sequence
 
 try:
     import pandas as pd
@@ -30,23 +27,11 @@ try:
     import dill
 except ImportError:
     dill = None
-    try:
-        import cPickle as pickle
-    except ImportError:
-        import pickle
+    import pickle
     serializer = pickle
 else:
     serializer = dill
 
-try:
-    from queue import Empty
-except ImportError:
-    from Queue import Empty
-
-try:
-    from collections.abc import Sequence
-except ImportError:
-    from collections import Sequence
 
 from .structures import PyteomicsError
 from .utils import add_metaclass
@@ -98,7 +83,7 @@ class _file_obj(object):
             self.file = {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout
                          }[mode[0]]
             self._file_spec = None
-        elif isinstance(f, basestring):
+        elif isinstance(f, (str, bytes)):
             self.file = codecs.open(f, mode, encoding)
             self._file_spec = f
         else:
@@ -279,7 +264,7 @@ class IndexedReaderMixin(NoOpBaseReader):
         return self.get_by_ids(keys)
 
     def __getitem__(self, key):
-        if isinstance(key, basestring):
+        if isinstance(key, (str, bytes)):
             return self.get_by_id(key)
         if isinstance(key, int):
             return self.get_by_index(key)
@@ -288,7 +273,7 @@ class IndexedReaderMixin(NoOpBaseReader):
                 return []
             if isinstance(key[0], int):
                 return self.get_by_indexes(key)
-            if isinstance(key[0], basestring):
+            if isinstance(key[0], (str, bytes)):
                 return self.get_by_ids(key)
         if isinstance(key, slice):
             for item in (key.start, key.stop, key.step):
@@ -296,7 +281,7 @@ class IndexedReaderMixin(NoOpBaseReader):
                     break
             if isinstance(item, int):
                 return self.get_by_index_slice(key)
-            if isinstance(item, basestring):
+            if isinstance(item, (str, bytes)):
                 return self.get_by_key_slice(key)
             if item is None:
                 return list(self)
@@ -910,7 +895,7 @@ def _check_use_index(source, use_index, default):
             use_index = bool(use_index)
 
         # if a file name is given, do not override anything; short-circuit
-        if isinstance(source, basestring):
+        if isinstance(source, (str, bytes)):
             return use_index if use_index is not None else default
 
         # collect information on source
@@ -934,7 +919,7 @@ def _check_use_index(source, use_index, default):
         elif binary is not None:
             if use_index is not None and binary != use_index:
                 warnings.warn('use_index is {}, but the file mode is {}. '
-                    'Setting `use_index` to {}'.format(use_index, source.mode, binary))
+                              'Setting `use_index` to {}'.format(use_index, source.mode, binary))
             use_index = binary
         elif use_index is None:
             warnings.warn('Could not check mode on {}. Specify `use_index` explicitly to avoid errors.'.format(source))
@@ -949,7 +934,7 @@ def _check_use_index(source, use_index, default):
     except Exception as e:
         if use_index is None:
             warnings.warn('Could not check mode on {}. Reason: {!r}. '
-                'Specify `use_index` explicitly to avoid errors.'.format(source, e))
+                          'Specify `use_index` explicitly to avoid errors.'.format(source, e))
             return default
         return use_index
 

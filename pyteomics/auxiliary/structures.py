@@ -2,14 +2,6 @@ import re
 from collections import defaultdict, Counter
 import warnings
 
-try:
-    basestring
-    PY2 = True
-except NameError:
-    basestring = (str, bytes)
-    PY2 = False
-
-
 _UNIT_CV_INTERN_TABLE = dict()
 
 
@@ -72,7 +64,7 @@ class Charge(int):
         try:
             return super(Charge, cls).__new__(cls, *args)
         except ValueError as e:
-            if isinstance(args[0], basestring):
+            if isinstance(args[0], (str, bytes)):
                 try:
                     num, sign = re.match(r'^(\d+)(\+|-)$', args[0]).groups()
                     return super(Charge, cls).__new__(cls, sign + num, *args[1:], **kwargs)
@@ -90,7 +82,7 @@ class Ion(str):
     _pattern = r'([abcxyz]\d+(\-H2O|\-NH3)?)([\+|-]\d+)'  # "y2-H2O+1"
 
     def __init__(self, *args, **kwargs):
-        if args and isinstance(args[0], basestring):
+        if args and isinstance(args[0], (str, bytes)):
             try:
                 self.ion_type, self.neutral_loss, self.charge = re.match(self._pattern, args[0]).groups()
             except Exception:
@@ -104,7 +96,7 @@ class ChargeList(list):
     """
 
     def __init__(self, *args, **kwargs):
-        if args and isinstance(args[0], basestring):
+        if args and isinstance(args[0], (str, bytes)):
             delim = r'(?:,\s*)|(?:\s*and\s*)'
             self.extend(map(Charge, re.split(delim, args[0])))
         else:
@@ -333,12 +325,9 @@ class unitstr(str):
     unit_info : :class:`str`
         The name of the unit this value posseses.
     '''
-    if not PY2:
-        __slots__ = ("unit_info", )
+    __slots__ = ("unit_info", )
 
     def __new__(cls, value, unit_info=None):
-        if PY2 and isinstance(value, unicode):
-            value = value.encode('utf-8')
         inst = str.__new__(cls, value)
         inst.unit_info = unit_info
         return inst
@@ -371,8 +360,7 @@ class cvstr(str):
         The accession number for the unit of the value, if any
     '''
 
-    if not PY2:
-        __slots__ = ('accession', 'unit_accession')
+    __slots__ = ('accession', 'unit_accession')
 
     _cache = {}
 
@@ -384,8 +372,6 @@ class cvstr(str):
         except KeyError:
             pass
 
-        if PY2 and isinstance(value, unicode):
-            value = value.encode('utf-8')
         inst = str.__new__(cls, value)
         inst.accession = _intern_unit_or_cv(accession)
         inst.unit_accession = _intern_unit_or_cv(unit_accession)
@@ -450,7 +436,7 @@ class CVQueryEngine(object):
         return self._query_dict(data, accession)
 
     def _is_empty(self, value):
-        if isinstance(value, basestring):
+        if isinstance(value, (str, bytes)):
             return value == ''
         return False
 

@@ -57,12 +57,6 @@ Base = declarative_base(metaclass=SubclassRegisteringDeclarativeMeta)
 
 _unimod_xml_download_url = 'http://www.unimod.org/xml/unimod_tables.xml'
 
-try:
-    basestring
-except:
-    basestring = (str, bytes)
-
-
 CompositionType = mass.Composition
 
 
@@ -70,6 +64,7 @@ def simple_repr(self):  # pragma: no cover
     template = '{self.__class__.__name__}({d})'
     d = {'%s=%r' % (k, v) for k, v in self.__dict__.items() if not k.startswith('_')}
     return template.format(self=self, d=', '.join(d))
+
 
 Base.__repr__ = simple_repr
 
@@ -747,7 +742,7 @@ class Unimod(object):
             if mod is None:
                 raise KeyError(identifier)
             return mod
-        elif isinstance(identifier, basestring):
+        elif isinstance(identifier, (str, bytes)):
             if strict:
                 mod = self.session.query(Modification).filter(
                     (Modification.full_name == identifier) |

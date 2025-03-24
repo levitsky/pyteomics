@@ -15,12 +15,7 @@ import warnings
 from collections import deque, namedtuple
 from functools import partial
 from array import array as _array
-
-try:
-    from enum import Enum
-except ImportError:
-    # Python 2 doesn't have a builtin Enum type
-    Enum = object
+from enum import Enum
 
 from .mass import Composition, std_aa_mass, Unimod, nist_mass, calculate_mass, std_ion_comp, mass_charge_ratio
 from .auxiliary import PyteomicsError, BasicComposition

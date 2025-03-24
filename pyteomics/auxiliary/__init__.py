@@ -1,8 +1,3 @@
-try:
-    basestring = basestring
-except NameError:
-    basestring = (str, bytes)
-
 from .structures import (
     PyteomicsError, Charge, ChargeList,
     _parse_charge, _parse_ion, BasicComposition,

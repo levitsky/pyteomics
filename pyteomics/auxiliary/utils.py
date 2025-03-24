@@ -1,15 +1,7 @@
-from __future__ import print_function
-
 import base64
 import zlib
 from functools import wraps
 from collections import namedtuple
-
-
-try:
-    basestring
-except NameError:
-    basestring = (str, bytes)
 
 try:
     import numpy as np
@@ -22,6 +14,7 @@ except ImportError:
     pynumpress = None
 
 from .structures import PyteomicsError
+
 
 def print_tree(d, indent_str=' -> ', indent_count=1):
     """Read a nested dict (with strings as keys) and print its structure.
