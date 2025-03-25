@@ -605,6 +605,7 @@ class XML(FileReader):
 
 
 class ParamParser(XML):
+    """A subclass of :py:class:`XML` that handles `UserParam` elements."""
     _element_handlers = {}
     _param_elements = {'userParam', 'UserParam'}
     _param_subelements = _param_elements
@@ -716,6 +717,17 @@ class ParamParser(XML):
 
 
 class CVParamParser(ParamParser):
+    """
+    A subclass of :py:class:`ParamParser` that implements additional processing for `cvParam` elements.
+    These elements refer to the PSI-MS Controlled Vocabulary, and :py:class:`CVParamParser` uses a copy of it
+    for type checking.
+    This class requires :py:mod:`psims` to work.
+
+    Attributes
+    ----------
+
+    cv : psims.controlled_vocabulary.controlled_vocabulary.ControlledVocabulary
+    """
     cv = None
     _param_types = {'int': unitint, 'float': unitfloat, 'string': unitstr}
     _default_param_type = unitfloat
@@ -1297,6 +1309,7 @@ class IndexedXML(IndexedReaderMixin, XML):
         super(IndexedXML, cls).__init_subclass__(**kwargs)
         if hasattr(cls, '_build_index'):
             warnings.warn("The method `_build_index` has been renamed to `build_byte_index`.")
+
 
 class MultiProcessingXML(IndexedXML, TaskMappingMixin):
     """XML reader that feeds indexes to external processes

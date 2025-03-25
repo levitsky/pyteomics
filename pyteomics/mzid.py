@@ -58,9 +58,15 @@ Target-decoy approach
   :py:func:`qvalues` - get an array of scores and local FDR values for a PSM
   set using the target-decoy approach.
 
-Controlled Vocabularies
-~~~~~~~~~~~~~~~~~~~~~~~
-mzIdentML relies on controlled vocabularies to describe its contents extensibly. See
+Controlled Vocabularies and Caching
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mzIdentML relies on controlled vocabularies to describe its contents extensibly.
+Every :py:class:`MzIdentML` needs a copy of PSI-MS CV, which it handles using the :py:mod:`psims` library.
+If you want to save time when creating instances of :py:class:`MzIdentML`, consider enabling the :py:mod:`psims` cache.
+See `psims documentation <https://mobiusklein.github.io/psims/docs/build/html/controlled_vocabulary/controlled_vocabulary.html#caching>`_
+on how to enable and configure the cache (alternatively, you can handle CV creation yourself and pass a pre-created instance
+using the `cv` parameter to :py:class:`MzIdentML`).
+See also
 `Controlled Vocabulary Terms <../data.html#controlled-vocabulary-terms-in-structured-data>`_
 for more details on how they are used.
 
