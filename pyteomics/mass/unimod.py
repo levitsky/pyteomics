@@ -41,7 +41,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from . import mass
-from ..auxiliary.utils import basestring
 
 model_registry = set()
 
