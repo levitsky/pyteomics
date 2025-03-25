@@ -5,7 +5,6 @@ Bulky data structures for assertion in pyteomics test suites.
 import numpy as np
 from copy import copy
 import sys
-from pyteomics.auxiliary import basestring
 
 
 # http://stackoverflow.com/q/14246983/1258041
@@ -1490,13 +1489,13 @@ mgf_spectra_annotated_long = [
 def decode_dict(d, encoding='utf-8'):
     """Recursively decode all strings in a dict"""
     out = {}
-    if isinstance(d, basestring):
+    if isinstance(d, bytes):
         return d.decode(encoding)
     if not isinstance(d, dict):
         return d
     for k, v in d.items():
         newk = k.decode(encoding)
-        if isinstance(v, basestring):
+        if isinstance(v, bytes):
             out[newk] = v.decode(encoding)
         elif isinstance(v, dict):
             out[newk] = decode_dict(v, encoding)

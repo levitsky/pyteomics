@@ -35,17 +35,13 @@ from collections import OrderedDict, namedtuple
 from itertools import islice
 from lxml import etree
 import numpy as np
+from urllib.request import urlopen, URLError
 
-from .auxiliary import FileReader, PyteomicsError, basestring, _file_obj, HierarchicalOffsetIndex
+from .auxiliary import FileReader, PyteomicsError, _file_obj, HierarchicalOffsetIndex
 from .auxiliary import unitint, unitfloat, unitstr, cvstr
 from .auxiliary import _keepstate_method as _keepstate
 from .auxiliary import TaskMappingMixin, IndexedReaderMixin, IndexSavingMixin
 from .auxiliary.psims_util import load_psims, HasValueTypeRelationship, _has_psims
-
-try:  # Python 2.7
-    from urllib2 import urlopen, URLError
-except ImportError:  # Python 3.x
-    from urllib.request import urlopen, URLError
 
 
 def _local_name(element):
@@ -1129,7 +1125,7 @@ def ensure_bytes_single(string):
 
 
 def ensure_bytes(strings):
-    if isinstance(strings, basestring):
+    if isinstance(strings, (str, bytes)):
         strings = [strings]
     return [ensure_bytes_single(string) for string in strings]
 

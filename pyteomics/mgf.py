@@ -225,7 +225,7 @@ class MGFBase(aux.MaskedArrayConversionMixin):
                     params['pepmass'], charge = self.parse_pepmass_charge(params['pepmass'])
                     if charge is not None:
                         params['charge'] = charge
-                if isinstance(params.get('charge'), aux.basestring):
+                if isinstance(params.get('charge'), (str, bytes)):
                     params['charge'] = self.parse_precursor_charge(params['charge'], True)
                 if 'rtinseconds' in params:
                     params['rtinseconds'] = aux.unitfloat(params['rtinseconds'], 'second')

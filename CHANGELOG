@@ -1,13 +1,17 @@
-4.7.6a1
--------
+5.0a2
+-----
 
  - Implement type checking using :py:mod:`psims` when parsing `cvParam` elements in mzML, mzIdentML and TraML files.
    :py:mod:`psims` is now required to parse these formats. Every parser instance now uses a copy of the
    `PSI-MS controlled vocabulary <https://github.com/HUPO-PSI/psi-ms-CV>`_. A pre-created object can be passed during
    parser creation, or it will be constructed on the fly. Consider enabling and configuring
    `OBO cache <https://mobiusklein.github.io/psims/docs/build/html/controlled_vocabulary/controlled_vocabulary.html#caching>`_ to save time.
+ - **Drop Python 2 support.** See `#167 <https://github.com/levitsky/pyteomics/discussions/167>`_ for the announcement.
  - Improve :py:mod:`spectrum_utils` integration.
  - Retain StPeter output in :py:func:`pyteomics.protxml.DataFrame`.
+ - Fix `#163 <https://github.com/levitsky/pyteomics/issues/163>`_
+   (`#164 <https://github.com/levitsky/pyteomics/pull/164>`_ by Dikshant jha).
+ - In :py:mod:`pyteomics.achrom`, return regular Python types instead of NumPy scalars.
 
 
 4.7.5

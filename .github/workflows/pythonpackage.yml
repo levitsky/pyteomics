@@ -13,10 +13,10 @@ on:
 jobs:
   build:
 
-    runs-on: 'ubuntu-20.04'
+    runs-on: 'ubuntu-24.04'
     strategy:
       matrix:
-        python-version: ['3.6', '3.7', '3.8', '3.9', '3.10', '3.11', '3.12']
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
 
     steps:
     - uses: actions/checkout@v4
@@ -35,22 +35,3 @@ jobs:
     - name: Run the tests
       run: |
         cd tests; find . -name 'test_*.py' -print0 | xargs -0 -n1 python
-
-  tests-py2:
-    runs-on: 'ubuntu-20.04'
-    container:
-      image: python:2.7.18-buster
-    steps:
-    - uses: actions/checkout@v4
-    - name: Install dependencies
-      run: |
-        apt-get update
-        apt-get install -y --no-install-recommends libhdf5-serial-dev
-        python -m pip install --upgrade pip
-        pip install numpy
-        pip install -r test-requirements.txt
-    - name: Print Python version
-      run: python -V
-    - name: Run the tests
-      run: |
-        cd tests; find . -name 'test_*.py' -print0 | xargs -0 -n1 env PYTHONPATH=.. python

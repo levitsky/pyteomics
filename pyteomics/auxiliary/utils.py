@@ -1,14 +1,7 @@
-from __future__ import print_function
-
 import base64
 import zlib
 from functools import wraps
 from collections import namedtuple
-
-try:
-    basestring = basestring
-except NameError:
-    basestring = (str, bytes)
 
 try:
     import numpy as np

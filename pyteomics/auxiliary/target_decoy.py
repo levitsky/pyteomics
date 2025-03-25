@@ -1,12 +1,6 @@
-from __future__ import absolute_import
 import re
 import operator as op
 import math
-
-try:
-    basestring
-except NameError:
-    basestring = (str, bytes)
 
 try:
     from collections.abc import Container, Sized
@@ -20,7 +14,7 @@ except ImportError:
     pd = None
 
 from .structures import PyteomicsError
-from .file_helpers import _keepstate, IteratorContextManager, _make_chain, ChainBase, TableJoiner
+from .file_helpers import _keepstate, IteratorContextManager, _make_chain, ChainBase
 
 
 def _fix_docstring(f, **defaults):
@@ -104,13 +98,13 @@ def _qvalues_df(psms, keyf, isdecoy, **kwargs):
         keyf = psms.apply(keyf, axis=1)
     if callable(isdecoy):
         isdecoy = psms.apply(isdecoy, axis=1)
-    if not isinstance(keyf, basestring):
+    if not isinstance(keyf, (str, bytes)):
         if psms.shape[0]:
             psms[score_label] = keyf
         else:
             psms[score_label] = []
         keyf = kwargs['score_label']
-    if not isinstance(isdecoy, basestring):
+    if not isinstance(isdecoy, (str, bytes)):
         if psms.shape[0]:
             psms[decoy_or_pep_label] = isdecoy
         else:
@@ -157,7 +151,7 @@ def _qvalues_df(psms, keyf, isdecoy, **kwargs):
 def _decoy_or_pep_label(**kwargs):
     peps = kwargs.get('pep')
     return kwargs.get('decoy_label', 'is decoy') if peps is None else kwargs.get(
-        'pep_label', peps if isinstance(peps, basestring) else 'PEP')
+        'pep_label', peps if isinstance(peps, (str, bytes)) else 'PEP')
 
 
 def _construct_dtype(*args, **kwargs):
@@ -331,7 +325,7 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
                     for func in (keyf, isdecoy):
                         if callable(func):
                             row.append(func(psm))
-                        elif isinstance(func, basestring):
+                        elif isinstance(func, (str, bytes)):
                             row.append(psm[func])
                         else:
                             row.append(func[i])
@@ -390,11 +384,11 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
             return _qvalues_df(psms, keyf, isdecoy, **kwargs)
 
         if not all(isinstance(arg, np.ndarray) for arg in args):
-            if isinstance(keyf, basestring):
+            if isinstance(keyf, (str, bytes)):
                 keyf = op.itemgetter(keyf)
-            if isinstance(isdecoy, basestring):
+            if isinstance(isdecoy, (str, bytes)):
                 isdecoy = op.itemgetter(isdecoy)
-            if isinstance(peps, basestring):
+            if isinstance(peps, (str, bytes)):
                 peps = op.itemgetter(peps)
 
         if callable(keyf) or callable(isdecoy):
@@ -404,10 +398,10 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
             if all(isinstance(arg, np.ndarray) for arg in args):
                 psms = np.concatenate(args)
 
-            if not isinstance(keyf, basestring):
+            if not isinstance(keyf, (str, bytes)):
                 keyf = np.array(keyf)
                 arr_flag = True
-            if not isinstance(isdecoy, basestring):
+            if not isinstance(isdecoy, (str, bytes)):
                 isdecoy = np.array(isdecoy)
                 arr_flag = True
 
@@ -415,7 +409,7 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
                 scores = np.empty(keyf.size if hasattr(
                     keyf, 'size') else isdecoy.size, dtype=dtype)
                 for func, label in zip((keyf, isdecoy), (score_label, decoy_or_pep_label)):
-                    if not isinstance(func, basestring):
+                    if not isinstance(func, (str, bytes)):
                         scores[label] = func
                     else:
                         scores[label] = psms[func]
@@ -451,7 +445,7 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
                                 key=lambda x: psms.dtype.fields[x][1])
                 extra = []
                 for func, label in zip((keyf, isdecoy), ('score', decoy_or_pep_label)):
-                    if not (isinstance(func, basestring) or label in psms.dtype.fields):
+                    if not (isinstance(func, (str, bytes)) or label in psms.dtype.fields):
                         extra.append(label)
                     elif label in psms.dtype.fields:
                         psms[label] = scores[label]
@@ -465,7 +459,7 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
                     psms[f] = scores[f]
             else:
                 for func, label in zip((keyf, isdecoy), ('score', decoy_or_pep_label)):
-                    if not isinstance(label, basestring):
+                    if not isinstance(label, (str, bytes)):
                         psms[label] = scores[label]
             psms[q_label] = scores[q_label]
             return psms
@@ -799,7 +793,7 @@ def _count_psms(psms, is_decoy, pep, decoy_prefix, decoy_suffix, is_decoy_prefix
             is_decoy = lambda x: is_decoy_suffix(x, decoy_suffix)
         else:
             is_decoy = lambda x: is_decoy_prefix(x, decoy_prefix)
-    if isinstance(is_decoy, basestring):
+    if isinstance(is_decoy, (str, bytes)):
         decoy = psms[is_decoy].sum()
         total = psms.shape[0]
     elif callable(is_decoy):

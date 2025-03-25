@@ -743,7 +743,7 @@ class Unimod(object):
             if mod is None:
                 raise KeyError(identifier)
             return mod
-        elif isinstance(identifier, basestring):
+        elif isinstance(identifier, (str, bytes)):
             if strict:
                 mod = self.session.query(Modification).filter(
                     (Modification.full_name == identifier) |
