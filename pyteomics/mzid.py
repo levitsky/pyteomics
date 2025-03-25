@@ -112,7 +112,7 @@ from . import auxiliary as aux
 from . import xml, _schema_defaults
 
 
-class MzIdentML(xml.CVParamParserMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
+class MzIdentML(xml.CVParamParser, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for MzIdentML files."""
     file_format = 'mzIdentML'
     _root_element = 'MzIdentML'
@@ -129,12 +129,12 @@ class MzIdentML(xml.CVParamParserMixin, xml.MultiProcessingXML, xml.IndexSavingX
                      'ProteinDetectionList', 'ProteinDetectionProtocol', 'ProteinDetection',
                      'ProteinDetectionHypothesis', 'ProteinAmbiguityGroup'}
 
-    _element_handlers = xml.CVParamParserMixin._element_handlers.copy()
+    _element_handlers = xml.CVParamParser._element_handlers.copy()
     _element_handlers.update({
-        "Modification": xml.CVParamParserMixin._promote_empty_parameter_to_name,
-        "SpectrumIDFormat": xml.CVParamParserMixin._promote_empty_parameter_to_name,
-        "FileFormat": xml.CVParamParserMixin._promote_empty_parameter_to_name,
-        "Role": xml.CVParamParserMixin._promote_empty_parameter_to_name
+        "Modification": xml.CVParamParser._promote_empty_parameter_to_name,
+        "SpectrumIDFormat": xml.CVParamParser._promote_empty_parameter_to_name,
+        "FileFormat": xml.CVParamParser._promote_empty_parameter_to_name,
+        "Role": xml.CVParamParser._promote_empty_parameter_to_name
     })
 
     def __init__(self, *args, **kwargs):

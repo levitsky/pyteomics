@@ -604,7 +604,7 @@ class XML(FileReader):
         return self._get_info_smart(elem, **kwargs)
 
 
-class ParamParserMixin(XML):
+class ParamParser(XML):
     _element_handlers = {}
     _param_elements = {'userParam', 'UserParam'}
     _param_subelements = _param_elements
@@ -715,13 +715,13 @@ class ParamParserMixin(XML):
         return info
 
 
-class CVParamParserMixin(ParamParserMixin):
+class CVParamParser(ParamParser):
     cv = None
     _param_types = {'int': unitint, 'float': unitfloat, 'string': unitstr}
     _default_param_type = unitfloat
     _fallback_param_type = unitstr
 
-    _param_elements = ParamParserMixin._param_elements.copy()
+    _param_elements = ParamParser._param_elements.copy()
     _param_elements.add('cvParam')
     _param_subelements = _param_elements.copy()
     _param_subelements.add('referenceableParamGroupRef')
@@ -782,7 +782,7 @@ class CVParamParserMixin(ParamParserMixin):
             return self._fallback_param_type(value, uinfo)
 
     def __init__(self, *args, **kwargs):
-        super(ParamParserMixin, self).__init__(*args, **kwargs)
+        super(ParamParser, self).__init__(*args, **kwargs)
 
         if not _has_psims:
             raise PyteomicsError('Parsing PSI formats requires `psims`.')

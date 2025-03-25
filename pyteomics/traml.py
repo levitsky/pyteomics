@@ -74,7 +74,7 @@ import warnings
 from . import xml, _schema_defaults, auxiliary as aux
 
 
-class TraML(xml.CVParamParserMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
+class TraML(xml.CVParamParser, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for TraML files."""
     file_format = 'TraML'
     _root_element = 'TraML'
@@ -91,11 +91,11 @@ class TraML(xml.CVParamParserMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
         'Compound',
     }
 
-    _element_handlers = xml.ParamParserMixin._element_handlers.copy()
+    _element_handlers = xml.ParamParser._element_handlers.copy()
     _element_handlers.update({
-        'Modification': xml.ParamParserMixin._promote_empty_parameter_to_name,
-        'Interpretation': xml.ParamParserMixin._promote_empty_parameter_to_name,
-        'Software': xml.ParamParserMixin._promote_empty_parameter_to_name,
+        'Modification': xml.ParamParser._promote_empty_parameter_to_name,
+        'Interpretation': xml.ParamParser._promote_empty_parameter_to_name,
+        'Software': xml.ParamParser._promote_empty_parameter_to_name,
     })
 
     def __init__(self, *args, **kwargs):
