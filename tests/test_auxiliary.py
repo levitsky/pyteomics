@@ -997,7 +997,7 @@ class UtilTest(unittest.TestCase):
             pairs.extend(pairs_other)
         for inp, out in pairs:
             try:
-                self.assertEqual(aux.ensure_prefix(inp), out)
+                self.assertEqual(aux.ensure_url_prefix(inp), out)
             except Exception:
                 print('Failed with:', inp, out)
                 raise
