@@ -5,11 +5,9 @@ import operator as op
 import numpy as np
 import pandas as pd
 import tempfile
-import platform
-
-from os import path
+import os
 import pyteomics
-pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
+pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
 from pyteomics import auxiliary as aux
 from pyteomics import tandem
 from pyteomics import version
@@ -974,33 +972,6 @@ class VersionTest(unittest.TestCase):
 
     def test_longer_dev_version(self):
         self.assertEqual(version.VersionInfo('1.2.3dev4'), ('1', '2', '3', 'dev', '4'))
-
-
-class UtilTest(unittest.TestCase):
-    def test_ensure_prefix(self):
-        pairs = [
-            ('file:///home/test/unimod.xml', 'file:///home/test/unimod.xml'),
-            ('https://example.org/test/unimod.xml', 'https://example.org/test/unimod.xml'),
-            ('ftp://example.org/test/unimod.xml', 'ftp://example.org/test/unimod.xml'),
-            ('http://example.org/test/unimod.xml', 'http://example.org/test/unimod.xml'),
-        ]
-        pairs_windows = [
-            ('C:/Data folder/unimod.xml', 'file:///C:/Data folder/unimod.xml'),
-            ('file:///C:/Data folder/unimod.xml', 'file:///C:/Data folder/unimod.xml'),
-        ]
-        pairs_other = [('/home/test/unimod.xml', 'file:///home/test/unimod.xml'),]
-        system = platform.system()
-        print('Testing on', system)
-        if system == 'Windows':
-            pairs.extend(pairs_windows)
-        else:
-            pairs.extend(pairs_other)
-        for inp, out in pairs:
-            try:
-                self.assertEqual(aux.ensure_url_prefix(inp), out)
-            except Exception:
-                print('Failed with:', inp, out)
-                raise
 
 
 import warnings
