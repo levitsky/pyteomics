@@ -15,8 +15,8 @@ class UtilTest(unittest.TestCase):
             ('http://example.org/test/unimod.xml', 'http://example.org/test/unimod.xml'),
         ]
         pairs_windows = [
-            ('C:/Data folder/unimod.xml', 'file:///C:/Data folder/unimod.xml'),
-            ('file:///C:/Data folder/unimod.xml', 'file:///C:/Data folder/unimod.xml'),
+            ('C:/Data folder/unimod.xml', 'file:///C:/Data%20folder/unimod.xml'),
+            ('file:///C:/Data folder/unimod.xml', 'file:///C:/Data%20folder/unimod.xml'),
         ]
         pairs_other = [('/home/test/unimod.xml', 'file:///home/test/unimod.xml'),]
         system = platform.system()
