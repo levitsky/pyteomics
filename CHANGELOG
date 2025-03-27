@@ -2,6 +2,7 @@
 -----
 
  - **Drop Python 2 support.** See `#167 <https://github.com/levitsky/pyteomics/discussions/167>`_ for the announcement.
+ - Ensure URL prefix when creating a :py:class:`mass.Unimod` object (`#169 <https://github.com/levitsky/pyteomics/pull/169>`_).
  - Improve :py:mod:`spectrum_utils` integration.
  - Retain StPeter output in :py:func:`pyteomics.protxml.DataFrame`.
  - Fix `#163 <https://github.com/levitsky/pyteomics/issues/163>`_
