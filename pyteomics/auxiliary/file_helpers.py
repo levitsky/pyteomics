@@ -463,7 +463,7 @@ class IndexedTextReader(IndexedReaderMixin, FileReader):
         last_label = None
         for offset, label, keyline in g:
             if last_label is not None:
-                index[last_label] = (last_offset, offset)
+                index[last_label.strip()] = (last_offset, offset)
             last_label = label
             last_offset = offset
         assert last_label is None

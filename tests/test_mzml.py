@@ -15,6 +15,10 @@ import operator as op
 import pynumpress
 import base64
 import zlib
+from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
+obo_cache.cache_path = '.'
+obo_cache.enabled = True
+
 
 class MzmlTest(unittest.TestCase):
     maxDiff = None
@@ -22,9 +26,9 @@ class MzmlTest(unittest.TestCase):
 
     def test_read(self):
         for rs, it, ui in product([True, False], repeat=3):
-            if rs: continue # temporarily disable retrieval of schema
-            for func in [MzML, read, chain,
-                    lambda x, **kw: chain.from_iterable([x], **kw), PreIndexedMzML]:
+            if rs:
+                continue  # temporarily disable retrieval of schema
+            for func in [MzML, read, chain, lambda x, **kw: chain.from_iterable([x], **kw), PreIndexedMzML]:
                 with func(self.path, read_schema=rs, iterative=it, use_index=ui) as r:
                     # http://stackoverflow.com/q/14246983/1258041
                     self.assertEqual(mzml_spectra, list(r))

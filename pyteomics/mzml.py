@@ -34,9 +34,15 @@ Data access
   :py:func:`chain.from_iterable` - read multiple files at once, using an
   iterable of files.
 
-Controlled Vocabularies
-~~~~~~~~~~~~~~~~~~~~~~~
-mzML relies on controlled vocabularies to describe its contents extensibly. See
+Controlled Vocabularies and Caching
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mzML relies on controlled vocabularies to describe its contents extensibly.
+Every :py:class:`MzML` needs a copy of PSI-MS CV, which it handles using the :py:mod:`psims` library.
+If you want to save time when creating instances of :py:class:`MzML`, consider enabling the :py:mod:`psims` cache.
+See `psims documentation <https://mobiusklein.github.io/psims/docs/build/html/controlled_vocabulary/controlled_vocabulary.html#caching>`_
+on how to enable and configure the cache (alternatively, you can handle CV creation yourself and pass a pre-created instance
+using the `cv` parameter to :py:class:`MzML`).
+See also
 `Controlled Vocabulary Terms <../data.html#controlled-vocabulary-terms-in-structured-data>`_
 for more details on how they are used.
 
@@ -57,7 +63,7 @@ Deprecated functions
 Dependencies
 ------------
 
-This module requires :py:mod:`lxml` and :py:mod:`numpy`.
+This module requires :py:mod:`lxml`, :py:mod:`numpy` and :py:mod:`psims`.
 
 -------------------------------------------------------------------------------
 """
@@ -117,7 +123,7 @@ STANDARD_ARRAYS = set([
 ])
 
 
-class MzML(aux.BinaryArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
+class MzML(aux.BinaryArrayConversionMixin, xml.CVParamParser, aux.TimeOrderedIndexedReaderMixin, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for mzML files."""
     file_format = 'mzML'
     _root_element = 'mzML'
@@ -357,7 +363,7 @@ class MzML(aux.BinaryArrayConversionMixin, aux.TimeOrderedIndexedReaderMixin, xm
         return scan['scanList']['scan'][0]['scan start time']
 
 
-def read(source, read_schema=False, iterative=True, use_index=False, dtype=None, huge_tree=False, decode_binary=True):
+def read(source, read_schema=False, iterative=True, use_index=False, dtype=None, huge_tree=False, decode_binary=True, cv=None):
     """Parse `source` and iterate through spectra.
 
     Parameters
@@ -395,6 +401,15 @@ def read(source, read_schema=False, iterative=True, use_index=False, dtype=None,
         Default is :py:const:`False`.
         Enable this option for trusted files to avoid XMLSyntaxError exceptions
         (e.g. `XMLSyntaxError: xmlSAX2Characters: huge text node`).
+
+    cv : psims.controlled_vocabulary.controlled_vocabulary.ControlledVocabulary, optional
+        An instance of PSI-MS CV. If provided, the parser will use it for type checking.
+        Otherwise, a CV will be loaded from the Internet or from cache, if it is configured.
+
+        .. seealso ::
+            See `psims documentation <https://mobiusklein.github.io/psims/docs/build/html/controlled_vocabulary/controlled_vocabulary.html#caching>`_
+            about cache configuration.
+
 
     Returns
     -------
