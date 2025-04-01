@@ -3,6 +3,7 @@ import shutil
 import tempfile
 import pyteomics
 from io import BytesIO
+from lxml import etree
 pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
 from itertools import product
 import unittest
@@ -225,6 +226,16 @@ class MzmlTest(unittest.TestCase):
         encoded = base64.b64encode(zlib.compress(pynumpress.encode_pic(data).tobytes())).decode('ascii')
         record = aux.BinaryDataArrayTransformer()._make_record(encoded, 'MS-Numpress positive integer compression followed by zlib compression', data.dtype)
         self.assertTrue(np.allclose(data, record.decode(), atol=0.6))
+
+    def test_userparam_units(self):
+        xml_str = '<userParam name="some quantity" value="42" unitName="cats"/>'
+        parser = etree.XMLParser()
+        parser.feed(xml_str)
+        element = parser.close()
+
+        reader = MzML(self.path)
+        param = reader._handle_param(element)
+        self.assertEqual(param.value.unit_info, 'cats')
 
 
 if __name__ == '__main__':

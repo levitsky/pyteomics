@@ -19,7 +19,7 @@ class USITest(unittest.TestCase):
         assert inst.datafile == "210320_SARS_CoV_2_T"
         assert inst.scan_identifier_type == "scan"
         assert inst.scan_identifier == "131256"
-        assert inst.interpretation == None
+        assert inst.interpretation is None
 
 
 class PROXITest(unittest.TestCase):
