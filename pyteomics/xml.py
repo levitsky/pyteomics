@@ -754,7 +754,10 @@ class CVParamParser(ParamParser):
         unit_accesssion = None
         if 'unitCvRef' in attribs or 'unitName' in attribs:
             unit_accesssion = attribs.get('unitAccession')
-            unit_info = attribs.get('unitName', unit_accesssion)
+            unit_name = attribs.get('unitName')
+            if self.cv is not None and unit_name is None and unit_accesssion is not None:
+                unit_name = self.cv[unit_accesssion].name
+            unit_info = unit_name or unit_accesssion
         return unit_info
 
     def _param_type(self, attribs):

@@ -237,6 +237,17 @@ class MzmlTest(unittest.TestCase):
         param = reader._handle_param(element)
         self.assertEqual(param.value.unit_info, 'cats')
 
+    def test_cvparam_unitname_lookup(self):
+        # uniName omitted
+        xml_str = '<cvParam cvRef="MS" accession="MS:1000504" name="base peak m/z" value="810.415283203125" unitCvRef="MS" unitAccession="MS:1000040"/>'
+        parser = etree.XMLParser()
+        parser.feed(xml_str)
+        element = parser.close()
+
+        reader = MzML(self.path)
+        param = reader._handle_param(element)
+        self.assertEqual(param.value.unit_info, 'm/z')
+
 
 if __name__ == '__main__':
     unittest.main()
