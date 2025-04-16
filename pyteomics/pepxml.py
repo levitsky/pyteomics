@@ -112,11 +112,10 @@ class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
     _default_id_attr = 'spectrum'
     _structures_to_flatten = {'search_score_summary', 'modification_info'}
     # attributes which contain unconverted values
-    _convert_items = {'float': {'calc_neutral_pep_mass', 'massdiff',
-            'probability', 'variable', 'static'},
-        'int': {'start_scan', 'end_scan', 'index', 'num_matched_peptides'},
-        'bool': {'is_rejected'},
-        'floatarray': {'all_ntt_prob'}}.items()
+    _convert_items = {'float': {'calc_neutral_pep_mass', 'massdiff', 'probability', 'variable', 'static'},
+                      'int': {'start_scan', 'end_scan', 'index', 'num_matched_peptides'},
+                      'bool': {'is_rejected'},
+                      'floatarray': {'all_ntt_prob'}}.items()
 
     def _get_info_smart(self, element, **kwargs):
         """Extract the info in a smart way depending on the element type"""
@@ -139,8 +138,8 @@ class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
                 return s
 
         converters = {'float': safe_float, 'int': int,
-                'bool': lambda x: x.lower() in {'1', 'true'},
-                'floatarray': lambda x: list(map(float, x[1:-1].split(',')))}
+                      'bool': lambda x: x.lower() in {'1', 'true'},
+                      'floatarray': lambda x: list(map(float, x[1:-1].split(',')))}
         for k, v in dict(info).items():
             for t, s in self._convert_items:
                 if k in s:
@@ -161,8 +160,7 @@ class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
             info.update(info['search_result'][0])
             del info['search_result']
         if 'protein' in info and 'peptide' in info:
-            info['proteins'] = [{'protein': info.pop('protein'),
-                'protein_descr': info.pop('protein_descr', None)}]
+            info['proteins'] = [{'protein': info.pop('protein'), 'protein_descr': info.pop('protein_descr', None)}]
             for add_key in {'peptide_prev_aa', 'peptide_next_aa', 'protein_mw'}:
                 if add_key in info:
                     info['proteins'][0][add_key] = info.pop(add_key)
@@ -170,25 +168,21 @@ class PepXML(xml.MultiProcessingXML, xml.IndexSavingXML):
             if 'alternative_protein' in info:
                 info['proteins'].extend(info['alternative_protein'])
                 del info['alternative_protein']
-        if 'peptide' in info and not 'modified_peptide' in info:
+        if 'peptide' in info and 'modified_peptide' not in info:
             info['modified_peptide'] = info['peptide']
         if 'peptide' in info:
             info['modifications'] = info.pop('mod_aminoacid_mass', [])
             if 'mod_nterm_mass' in info:
-                info['modifications'].insert(0, {'position': 0,
-                    'mass': float(info.pop('mod_nterm_mass'))})
+                info['modifications'].insert(0, {'position': 0, 'mass': float(info.pop('mod_nterm_mass'))})
             if 'mod_cterm_mass' in info:
-                info['modifications'].append({'position': 1 + len(info['peptide']),
-                    'mass': float(info.pop('mod_cterm_mass'))})
+                info['modifications'].append({'position': 1 + len(info['peptide']), 'mass': float(info.pop('mod_cterm_mass'))})
         if 'modified_peptide' in info and info['modified_peptide'] == info.get(
                 'peptide'):
             if not info.get('modifications'):
                 info['modifications'] = []
             else:
                 mp = info['modified_peptide']
-                for mod in sorted(info['modifications'],
-                        key=lambda m: m['position'],
-                        reverse=True):
+                for mod in sorted(info['modifications'], key=lambda m: m['position'], reverse=True):
                     if mod['position'] not in {0, 1+len(info['peptide'])}:
                         p = mod['position']
                         mp = mp[:p] + '[{}]'.format(int(mod['mass'])) + mp[p:]
@@ -352,12 +346,12 @@ def _is_decoy_prefix(psm, prefix='DECOY_'):
     out : bool
     """
     return all(protein['protein'].startswith(prefix)
-            for protein in psm['search_hit'][0]['proteins'])
+               for protein in psm['search_hit'][0]['proteins'])
 
 
 def _is_decoy_suffix(psm, suffix='_DECOY'):
     return all(protein['protein'].endswith(suffix)
-            for protein in psm['search_hit'][0]['proteins'])
+               for protein in psm['search_hit'][0]['proteins'])
 
 
 is_decoy = _is_decoy_prefix

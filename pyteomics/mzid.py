@@ -58,9 +58,15 @@ Target-decoy approach
   :py:func:`qvalues` - get an array of scores and local FDR values for a PSM
   set using the target-decoy approach.
 
-Controlled Vocabularies
-~~~~~~~~~~~~~~~~~~~~~~~
-mzIdentML relies on controlled vocabularies to describe its contents extensibly. See
+Controlled Vocabularies and Caching
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+mzIdentML relies on controlled vocabularies to describe its contents extensibly.
+Every :py:class:`MzIdentML` needs a copy of PSI-MS CV, which it handles using the :py:mod:`psims` library.
+If you want to save time when creating instances of :py:class:`MzIdentML`, consider enabling the :py:mod:`psims` cache.
+See `psims documentation <https://mobiusklein.github.io/psims/docs/build/html/controlled_vocabulary/controlled_vocabulary.html#caching>`_
+on how to enable and configure the cache (alternatively, you can handle CV creation yourself and pass a pre-created instance
+using the `cv` parameter to :py:class:`MzIdentML`).
+See also
 `Controlled Vocabulary Terms <../data.html#controlled-vocabulary-terms-in-structured-data>`_
 for more details on how they are used.
 
@@ -112,7 +118,7 @@ from . import auxiliary as aux
 from . import xml, _schema_defaults
 
 
-class MzIdentML(xml.MultiProcessingXML, xml.IndexSavingXML):
+class MzIdentML(xml.CVParamParser, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for MzIdentML files."""
     file_format = 'mzIdentML'
     _root_element = 'MzIdentML'
@@ -127,15 +133,14 @@ class MzIdentML(xml.MultiProcessingXML, xml.IndexSavingXML):
                      'Organization', 'AnalysisSoftware', 'BibliographicReference', 'Person', 'Provider',
                      'SpectrumIdentificationList', 'SpectrumIdentificationProtocol', 'SpectrumIdentification',
                      'ProteinDetectionList', 'ProteinDetectionProtocol', 'ProteinDetection',
-                     'ProteinDetectionHypothesis', 'ProteinAmbiguityGroup',
-                    }
+                     'ProteinDetectionHypothesis', 'ProteinAmbiguityGroup'}
 
-    _element_handlers = xml.XML._element_handlers.copy()
+    _element_handlers = xml.CVParamParser._element_handlers.copy()
     _element_handlers.update({
-        "Modification": xml.XML._promote_empty_parameter_to_name,
-        "SpectrumIDFormat": xml.XML._promote_empty_parameter_to_name,
-        "FileFormat": xml.XML._promote_empty_parameter_to_name,
-        "Role": xml.XML._promote_empty_parameter_to_name
+        "Modification": xml.CVParamParser._promote_empty_parameter_to_name,
+        "SpectrumIDFormat": xml.CVParamParser._promote_empty_parameter_to_name,
+        "FileFormat": xml.CVParamParser._promote_empty_parameter_to_name,
+        "Role": xml.CVParamParser._promote_empty_parameter_to_name
     })
 
     def __init__(self, *args, **kwargs):
@@ -150,14 +155,9 @@ class MzIdentML(xml.MultiProcessingXML, xml.IndexSavingXML):
 
         # Try not to recursively unpack the root element
         # unless the user really wants to.
-        if name == self._root_element:
-            return self._get_info(element,
-                    recursive=(rec if rec is not None else False),
-                    **kwargs)
-        else:
-            return self._get_info(element,
-                    recursive=(rec if rec is not None else True),
-                    **kwargs)
+        if rec is None:
+            rec = (name != self._root_element)
+        return self._get_info(element, recursive=rec, **kwargs)
 
     def _retrieve_refs(self, info, **kwargs):
         """Retrieves and embeds the data for each attribute in `info` that
@@ -172,6 +172,7 @@ class MzIdentML(xml.MultiProcessingXML, xml.IndexSavingXML):
                     info.update(by_id)
                     del info[k]
                     info.pop('id', None)
+
 
 def read(source, **kwargs):
     """Parse `source` and iterate through peptide-spectrum matches.
@@ -230,6 +231,7 @@ def read(source, **kwargs):
     kwargs.setdefault('retrieve_refs', True)
     kwargs['build_id_cache'] = kwargs.get('build_id_cache', kwargs.get('retrieve_refs'))
     return MzIdentML(source, **kwargs)
+
 
 def iterfind(source, path, **kwargs):
     """Parse `source` and yield info on elements with specified local
@@ -290,7 +292,9 @@ def iterfind(source, path, **kwargs):
             kwargs.get('retrieve_refs'))
     return MzIdentML(source, **kwargs).iterfind(path, **kwargs)
 
+
 version_info = xml._make_version_info(MzIdentML)
+
 
 def get_by_id(source, elem_id, **kwargs):
     """Parse `source` and return the element with `id` attribute equal
@@ -335,7 +339,7 @@ def is_decoy(psm, prefix=None):
     out : bool
     """
     return all(pe['isDecoy'] for sii in psm['SpectrumIdentificationItem']
-            for pe in sii['PeptideEvidenceRef'])
+               for pe in sii['PeptideEvidenceRef'])
 
 
 def DataFrame(*args, **kwargs):

@@ -89,9 +89,9 @@ class ProtXML(xml.MultiProcessingXML):
     _structures_to_flatten = {'annotation'}
     # attributes which contain unconverted values
     _convert_items = {'float':  {'pct_spectrum_ids'},
-        'int': {'group_number', 'prot_length'},
-        'bool': {'is_contributing_evidence', 'is_nondegenerate_evidence'}
-        }.items()
+                      'int': {'group_number', 'prot_length'},
+                      'bool': {'is_contributing_evidence', 'is_nondegenerate_evidence'}
+                      }.items()
 
     def _get_info_smart(self, element, **kwargs):
         """Extract the info in a smart way depending on the element type"""
@@ -101,16 +101,11 @@ class ProtXML(xml.MultiProcessingXML):
             name = xml._local_name(element)
         rec = kwargs.pop('recursive', None)
         if name == self._root_element:
-            info = self._get_info(element, ename=name,
-                    recursive=(rec if rec is not None else False),
-                    **kwargs)
+            info = self._get_info(element, ename=name, recursive=(rec if rec is not None else False), **kwargs)
         else:
-            info = self._get_info(element, ename=name,
-                    recursive=(rec if rec is not None else True),
-                    **kwargs)
+            info = self._get_info(element, ename=name, recursive=(rec if rec is not None else True), **kwargs)
 
-        converters = {'float': float, 'int': int,
-                'bool': lambda x: x.lower() in {'1', 'true', 'y'}}
+        converters = {'float': float, 'int': int, 'bool': lambda x: x.lower() in {'1', 'true', 'y'}}
         for k, v in dict(info).items():
             for t, s in self._convert_items:
                 if k in s:

@@ -27,9 +27,15 @@ Data access
   :py:func:`chain.from_iterable` - read multiple files at once, using an
   iterable of files.
 
-Controlled Vocabularies
-~~~~~~~~~~~~~~~~~~~~~~~
-TraML relies on controlled vocabularies to describe its contents extensibly. See
+Controlled Vocabularies and Caching
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+TraML relies on controlled vocabularies to describe its contents extensibly.
+Every :py:class:`TraML` needs a copy of PSI-MS CV, which it handles using the :py:mod:`psims` library.
+If you want to save time when creating instances of :py:class:`TraML`, consider enabling the :py:mod:`psims` cache.
+See `psims documentation <https://mobiusklein.github.io/psims/docs/build/html/controlled_vocabulary/controlled_vocabulary.html#caching>`_
+on how to enable and configure the cache (alternatively, you can handle CV creation yourself and pass a pre-created instance
+using the `cv` parameter to :py:class:`TraML`).
+See also
 `Controlled Vocabulary Terms <../data.html#controlled-vocabulary-terms-in-structured-data>`_
 for more details on how they are used.
 
@@ -74,7 +80,7 @@ import warnings
 from . import xml, _schema_defaults, auxiliary as aux
 
 
-class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
+class TraML(xml.CVParamParser, xml.MultiProcessingXML, xml.IndexSavingXML):
     """Parser class for TraML files."""
     file_format = 'TraML'
     _root_element = 'TraML'
@@ -91,11 +97,11 @@ class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
         'Compound',
     }
 
-    _element_handlers = xml.XML._element_handlers.copy()
+    _element_handlers = xml.CVParamParser._element_handlers.copy()
     _element_handlers.update({
-        'Modification': xml.XML._promote_empty_parameter_to_name,
-        'Interpretation': xml.XML._promote_empty_parameter_to_name,
-        'Software': xml.XML._promote_empty_parameter_to_name,
+        'Modification': xml.CVParamParser._promote_empty_parameter_to_name,
+        'Interpretation': xml.CVParamParser._promote_empty_parameter_to_name,
+        'Software': xml.CVParamParser._promote_empty_parameter_to_name,
     })
 
     def __init__(self, *args, **kwargs):
@@ -105,10 +111,7 @@ class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
     def _get_info_smart(self, element, **kw):
         kwargs = dict(kw)
         rec = kwargs.pop('recursive', None)
-        info = self._get_info(
-            element,
-            recursive=(rec if rec is not None else True),
-            **kwargs)
+        info = self._get_info(element, recursive=(rec if rec is not None else True), **kwargs)
         return info
 
     def _retrieve_refs(self, info, **kwargs):
@@ -135,7 +138,6 @@ class TraML(xml.MultiProcessingXML, xml.IndexSavingXML):
                         # by_id.pop('id', None)
                         info[k[:-3]] = by_id
                         del info[k]
-
 
 
 def read(source, retrieve_refs=True, read_schema=False, iterative=True, use_index=False, huge_tree=False):

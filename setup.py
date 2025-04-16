@@ -30,7 +30,7 @@ with open('README.rst') as r, open('INSTALL') as i:
     long_description = re.sub(r':py:\w+:`([^`]+)`', lambda m: '**{}**'.format(m.group(1)), ''.join(r) + '\n' + ''.join(i))
 
 
-extras_require = {'XML': ['lxml', 'numpy'],
+extras_require = {'XML': ['lxml', 'numpy', 'psims'],
                   'TDA': ['numpy'],
                   'graphics': ['matplotlib'],
                   'DF': ['pandas>=0.17'],
