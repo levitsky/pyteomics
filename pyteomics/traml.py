@@ -97,11 +97,11 @@ class TraML(xml.CVParamParser, xml.MultiProcessingXML, xml.IndexSavingXML):
         'Compound',
     }
 
-    _element_handlers = xml.ParamParser._element_handlers.copy()
+    _element_handlers = xml.CVParamParser._element_handlers.copy()
     _element_handlers.update({
-        'Modification': xml.ParamParser._promote_empty_parameter_to_name,
-        'Interpretation': xml.ParamParser._promote_empty_parameter_to_name,
-        'Software': xml.ParamParser._promote_empty_parameter_to_name,
+        'Modification': xml.CVParamParser._promote_empty_parameter_to_name,
+        'Interpretation': xml.CVParamParser._promote_empty_parameter_to_name,
+        'Software': xml.CVParamParser._promote_empty_parameter_to_name,
     })
 
     def __init__(self, *args, **kwargs):

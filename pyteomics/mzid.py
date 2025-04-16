@@ -232,6 +232,7 @@ def read(source, **kwargs):
     kwargs['build_id_cache'] = kwargs.get('build_id_cache', kwargs.get('retrieve_refs'))
     return MzIdentML(source, **kwargs)
 
+
 def iterfind(source, path, **kwargs):
     """Parse `source` and yield info on elements with specified local
     name or by specified "XPath".
@@ -291,7 +292,9 @@ def iterfind(source, path, **kwargs):
             kwargs.get('retrieve_refs'))
     return MzIdentML(source, **kwargs).iterfind(path, **kwargs)
 
+
 version_info = xml._make_version_info(MzIdentML)
+
 
 def get_by_id(source, elem_id, **kwargs):
     """Parse `source` and return the element with `id` attribute equal
@@ -336,7 +339,7 @@ def is_decoy(psm, prefix=None):
     out : bool
     """
     return all(pe['isDecoy'] for sii in psm['SpectrumIdentificationItem']
-            for pe in sii['PeptideEvidenceRef'])
+               for pe in sii['PeptideEvidenceRef'])
 
 
 def DataFrame(*args, **kwargs):

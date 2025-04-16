@@ -99,7 +99,7 @@ from .. import auxiliary as aux
 from .. import xml, _schema_defaults
 
 
-class IDXML(xml.ParamParser, xml.IndexedXML):
+class IDXML(xml.IndexedXML):
     """Parser class for idXML files."""
     file_format = 'idXML'
     _root_element = 'IdXML'

@@ -40,7 +40,7 @@ This module requres :py:mod:`lxml`.
 from .. import xml, auxiliary as aux, _schema_defaults, version
 
 
-class FeatureXML(xml.ParamParser, xml.MultiProcessingXML):
+class FeatureXML(xml.MultiProcessingXML):
     """Parser class for featureXML files."""
     file_format = 'featureXML'
     _root_element = 'featureMap'

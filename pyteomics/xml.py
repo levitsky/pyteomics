@@ -202,6 +202,13 @@ class XML(FileReader):
     _huge_tree = False
     _retrieve_refs_enabled = None  # only some subclasses implement this
     _iterative = True
+    # these se attributes deal with parsing of UserParams
+    _element_handlers = {}
+    _param_elements = {'userParam', 'UserParam'}
+    _param_subelements = _param_elements
+    _param_types = {'int': int, 'float': float, 'string': str}
+    _default_param_type = float
+    _fallback_param_type = str
 
     # Configurable plugin logic
     _converters = XMLValueConverter.converters()
@@ -394,28 +401,6 @@ class XML(FileReader):
         info = self._flatten(info)
         return info
 
-    def _get_info(self, element, **kwargs):
-        """Extract info from element's attributes, possibly recursive."""
-        try:
-            name = kwargs.pop('ename')
-        except KeyError:
-            name = _local_name(element)
-
-        info = dict(element.attrib)
-        # process subelements
-        if kwargs.get('recursive'):
-            for child in element.iterchildren():
-                cname = _local_name(child)
-                if cname not in self.schema_info['lists']:
-                    info[cname] = self._get_info_smart(child, ename=cname, **kwargs)
-                else:
-                    info.setdefault(cname, []).append(
-                        self._get_info_smart(child, ename=cname, **kwargs))
-
-        info = self._postprocess(element, name, info, **kwargs)
-
-        return info
-
     @_keepstate
     def build_tree(self):
         """Build and store the :py:class:`ElementTree` instance
@@ -599,15 +584,7 @@ class XML(FileReader):
             elem = self._id_dict[elem_id]
         return self._get_info_smart(elem, **kwargs)
 
-
-class ParamParser(XML):
-    """A subclass of :py:class:`XML` that handles `UserParam` elements."""
-    _element_handlers = {}
-    _param_elements = {'userParam', 'UserParam'}
-    _param_subelements = _param_elements
-    _param_types = {'int': int, 'float': float, 'string': str}
-    _default_param_type = float
-    _fallback_param_type = str
+    # the following methods deal with parsing of UserParams
 
     def _param_type(self, attribs):
         if attribs.get('type') in self._param_types:
@@ -665,7 +642,7 @@ class ParamParser(XML):
     def _get_info(self, element, **kwargs):
         # this method currently does not call the superclass implementation, rather relies on XML._postprocess
         try:
-            name = kwargs['ename']
+            name = kwargs.pop('ename')
         except KeyError:
             name = _local_name(element)
         if name in self._param_elements:
@@ -687,10 +664,10 @@ class ParamParser(XML):
                     params.extend(self._handle_referenceable_param_group(child, **kwargs))
                 else:
                     if cname not in self.schema_info['lists']:
-                        info[cname] = self._get_info_smart(child, **kwargs)
+                        info[cname] = self._get_info_smart(child, ename=cname, **kwargs)
                     else:
                         info.setdefault(cname, []).append(
-                            self._get_info_smart(child, **kwargs))
+                            self._get_info_smart(child, ename=cname, **kwargs))
         else:
             # handle the case where we do not want to unpack all children, but
             # *Param tags are considered part of the current entity, semantically
@@ -712,9 +689,9 @@ class ParamParser(XML):
         return info
 
 
-class CVParamParser(ParamParser):
+class CVParamParser(XML):
     """
-    A subclass of :py:class:`ParamParser` that implements additional processing for `cvParam` elements.
+    A subclass of :py:class:`XML` that implements additional processing for `cvParam` elements.
     These elements refer to the PSI-MS Controlled Vocabulary, and :py:class:`CVParamParser` uses a copy of it
     for type checking.
     This class requires :py:mod:`psims` to work.
@@ -729,7 +706,7 @@ class CVParamParser(ParamParser):
     _default_param_type = unitfloat
     _fallback_param_type = unitstr
 
-    _param_elements = ParamParser._param_elements.copy()
+    _param_elements = XML._param_elements.copy()
     _param_elements.add('cvParam')
     _param_subelements = _param_elements.copy()
     _param_subelements.add('referenceableParamGroupRef')
@@ -793,7 +770,7 @@ class CVParamParser(ParamParser):
             return self._fallback_param_type(value, uinfo)
 
     def __init__(self, *args, **kwargs):
-        super(ParamParser, self).__init__(*args, **kwargs)
+        super(CVParamParser, self).__init__(*args, **kwargs)
 
         if not _has_psims:
             raise PyteomicsError('Parsing PSI formats requires `psims`.')
