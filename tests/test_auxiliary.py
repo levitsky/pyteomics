@@ -105,9 +105,9 @@ class QvalueTest(unittest.TestCase):
     def test_qvalues_empty_dataframe(self):
         dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms = pd.DataFrame(np.array([], dtype=dtype))
-        q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1)
+        q = aux.qvalues(psms, key=self.key_df, is_decoy=self.is_decoy_df, remove_decoy=False, formula=1)
         self.assertEqual(q.shape[0], 0)
-        q = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1, full_output=True)
+        q = aux.qvalues(psms, key=self.key_df, is_decoy=self.is_decoy_df, remove_decoy=False, formula=1, full_output=True)
         self.assertEqual(q.shape[0], 0)
 
     def test_qvalues_pep_from_dataframe(self):
@@ -428,9 +428,9 @@ class FilterTest(unittest.TestCase):
     def test_filter_empty_dataframe(self):
         dtype = [('score', np.int8), ('label', np.str_, 1), ('pep', np.float64)]
         psms = pd.DataFrame(np.array([], dtype=dtype))
-        f = aux.filter(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1, fdr=0.1)
+        f = aux.filter(psms, key=self.key_df, is_decoy=self.is_decoy_df, remove_decoy=False, formula=1, fdr=0.1)
         self.assertEqual(f.shape[0], 0)
-        f = aux.qvalues(psms, key=self.key, is_decoy=self.is_decoy, remove_decoy=False, formula=1, full_output=True, fdr=0.1)
+        f = aux.qvalues(psms, key=self.key_df, is_decoy=self.is_decoy_df, remove_decoy=False, formula=1, full_output=True, fdr=0.1)
         self.assertEqual(f.shape[0], 0)
 
     def test_filter_pep_dataframe(self):
