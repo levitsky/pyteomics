@@ -1,5 +1,28 @@
-Controlled Vocabulary Terms In Structured Data
-==============================================
+Controlled Vocabularies
+=======================
+
+`Controlled Vocabularies <http://www.psidev.info/controlled-vocabularies>`_
+are the universal annotation system used in the PSI formats, including
+**mzML** and **mzIdentML**. :py:class:`pyteomics.mzml.MzML`, :py:class:`pyteomics.traml.TraML` and :py:class:`pyteomics.mzid.MzIdentML`
+retain the annotation information.
+
+Since version 5.0, **Pyteomics** requires `psims <https://github.com/mobiusklein/psims>`_ to parse the above formats.
+Every time a parser object is created, a :py:class:`ControlledVocabulary` object with
+`PSI-MS <https://github.com/HUPO-PSI/psi-ms-CV>`_ ontology terms will be loaded,
+unless explicitly provided by the user. To avoid downloading the ontology and save execution time,
+`configure the OBO caching <https://mobiusklein.github.io/psims/docs/build/html/controlled_vocabulary/controlled_vocabulary.html#caching>`_
+implemented by :py:mod:`psims`:
+
+.. code:: python
+
+    from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
+    obo_cache.cache_path = '.'
+    obo_cache.enabled = True
+
+
+Accessing Controlled Vocabulary Terms In Structured Data
+--------------------------------------------------------
+
 When parsing files with controlled vocabulary terms, especially in positions where
 those terms may be used as keys, :mod:`pyteomics` will use an instance of :class:`~.pyteomics.auxiliary.structures.cvstr`
 to represent that value. A :class:`~.pyteomics.auxiliary.structures.cvstr` is a sub-class of :class:`str`
