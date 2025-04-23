@@ -8,6 +8,10 @@ import operator as op
 from data import transitions
 from pyteomics.traml import TraML, read, chain
 
+from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
+obo_cache.cache_path = '.'
+obo_cache.enabled = True
+
 
 class TraMLTest(unittest.TestCase):
     maxDiff = None
