@@ -1,6 +1,15 @@
 5.0a2
 -----
 
+ - Implement type checking using :py:mod:`psims` when parsing `cvParam` elements in mzML, mzIdentML and TraML files.
+   `psims <https://github.com/mobiusklein/psims>`_ is now required to parse these formats. Every parser instance now uses a copy of the
+   `PSI-MS controlled vocabulary <https://github.com/HUPO-PSI/psi-ms-CV>`_. A pre-created object can be passed during
+   parser creation, or it will be constructed on the fly.
+
+   .. note::
+      Consider enabling and configuring `OBO cache <data.html#controlled-vocabularies>`_ to save time
+      when creating mzML, mzIdentML and TraML parser objects.
+
  - **Drop Python 2 support.** See `#167 <https://github.com/levitsky/pyteomics/discussions/167>`_ for the announcement.
  - Ensure URL prefix when creating a :py:class:`mass.Unimod` object (`#169 <https://github.com/levitsky/pyteomics/pull/169>`_).
  - Improve :py:mod:`spectrum_utils` integration.

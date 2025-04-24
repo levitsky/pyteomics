@@ -1,10 +1,12 @@
 import unittest
+from urllib.request import urlopen
 import os
+import shutil
 import pickle
 import pyteomics
 from io import BytesIO
 pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
-from data import mzml_spectra
+from data import mzmlb_spectra
 try:
     from pyteomics.mzmlb import MzMLb, read, chain
     reason = None
@@ -18,12 +20,22 @@ from pyteomics.auxiliary import FileReader
 class MzMLbTest(unittest.TestCase):
     maxDiff = None
     path = 'test.mzMLb'
+    url = 'https://raw.githubusercontent.com/mobiusklein/mzdata/refs/heads/main/test/data/small.mzMLb'
+    num_spectra = 1
+
+    def setUp(self):
+        if not os.path.exists(self.path):
+            with open(self.path, 'wb') as fout, urlopen(self.url) as fin:
+                shutil.copyfileobj(fin, fout)
 
     def test_read(self):
-        for func in [MzMLb, read, chain]:
+        for func in [MzMLb, read]:
             with func(self.path) as r:
                 # http://stackoverflow.com/q/14246983/1258041
-                self.assertEqual(mzml_spectra, list(r))
+                self.assertEqual(mzmlb_spectra, list(r[:self.num_spectra]))
+        # cannot use the same indexing with chain
+        with chain(self.path) as r:
+            self.assertEqual(mzmlb_spectra, list(r)[:self.num_spectra])
 
     def test_picklable(self):
         with MzMLb(self.path) as reader:

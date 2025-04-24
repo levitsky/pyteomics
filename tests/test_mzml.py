@@ -3,6 +3,7 @@ import shutil
 import tempfile
 import pyteomics
 from io import BytesIO
+from lxml import etree
 pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
 from itertools import product
 import unittest
@@ -16,15 +17,20 @@ import pynumpress
 import base64
 import zlib
 
+from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
+obo_cache.cache_path = '.'
+obo_cache.enabled = True
+
+
 class MzmlTest(unittest.TestCase):
     maxDiff = None
     path = 'test.mzML'
 
     def test_read(self):
         for rs, it, ui in product([True, False], repeat=3):
-            if rs: continue # temporarily disable retrieval of schema
-            for func in [MzML, read, chain,
-                    lambda x, **kw: chain.from_iterable([x], **kw), PreIndexedMzML]:
+            if rs:
+                continue  # temporarily disable retrieval of schema
+            for func in [MzML, read, chain, lambda x, **kw: chain.from_iterable([x], **kw), PreIndexedMzML]:
                 with func(self.path, read_schema=rs, iterative=it, use_index=ui) as r:
                     # http://stackoverflow.com/q/14246983/1258041
                     self.assertEqual(mzml_spectra, list(r))
@@ -221,6 +227,27 @@ class MzmlTest(unittest.TestCase):
         encoded = base64.b64encode(zlib.compress(pynumpress.encode_pic(data).tobytes())).decode('ascii')
         record = aux.BinaryDataArrayTransformer()._make_record(encoded, 'MS-Numpress positive integer compression followed by zlib compression', data.dtype)
         self.assertTrue(np.allclose(data, record.decode(), atol=0.6))
+
+    def test_userparam_units(self):
+        xml_str = '<userParam name="some quantity" value="42" unitName="cats"/>'
+        parser = etree.XMLParser()
+        parser.feed(xml_str)
+        element = parser.close()
+
+        reader = MzML(self.path)
+        param = reader._handle_param(element)
+        self.assertEqual(param.value.unit_info, 'cats')
+
+    def test_cvparam_unitname_lookup(self):
+        # uniName omitted
+        xml_str = '<cvParam cvRef="MS" accession="MS:1000504" name="base peak m/z" value="810.415283203125" unitCvRef="MS" unitAccession="MS:1000040"/>'
+        parser = etree.XMLParser()
+        parser.feed(xml_str)
+        element = parser.close()
+
+        reader = MzML(self.path)
+        param = reader._handle_param(element)
+        self.assertEqual(param.value.unit_info, 'm/z')
 
 
 if __name__ == '__main__':

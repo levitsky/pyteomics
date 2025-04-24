@@ -412,20 +412,3 @@ of `(from; to)` pairs corresponding to original and transformed retention times:
 As always, :py:func:`pyteomics.openms.trafoxml.read`
 and :py:class:`pyteomics.openms.trafoxml.TrafoXML` are interchangeable.
 TrafoXML parsers do not support indexing because there are no IDs for specific data points in this format.
-
-Controlled Vocabularies
-=======================
-
-`Controlled Vocabularies <http://www.psidev.info/controlled-vocabularies>`_
-are the universal annotation system used in the PSI formats, including
-**mzML** and **mzIdentML**. :py:class:`pyteomics.mzml.MzML`, :py:class:`pyteomics.traml.TraML` and :py:class:`pyteomics.mzid.MzIdentML`
-retain the annotation information. It can be accessed using the helper function, :py:func:`pyteomics.auxiliary.cvquery`::
-
-    >>> from pyteomics import auxiliary as aux, mzid, mzml
-    >>> f = mzid.MzIdentML('tests/test.mzid')
-    >>> s = next(f)
-    >>> s
-    {'SpectrumIdentificationItem': [{'ProteinScape:SequestMetaScore': 7.59488518903425, 'calculatedMassToCharge': 1507.695, 'PeptideEvidenceRef': [{'peptideEvidence_ref': 'PE1_SEQ_spec1_pep1'}], 'chargeState': 1, 'passThreshold': True, 'peptide_ref': 'prot1_pep1', 'rank': 1, 'id': 'SEQ_spec1_pep1', 'ProteinScape:IntensityCoverage': 0.3919545603809718, 'experimentalMassToCharge': 1507.696}], 'spectrumID': 'databasekey=1', 'id': 'SEQ_spec1', 'spectraData_ref': 'LCMALDI_spectra'}
-    >>> aux.cvquery(s)
-    {'MS:1001506': 7.59488518903425, 'MS:1001505': 0.3919545603809718}
-    >>> f.close()
