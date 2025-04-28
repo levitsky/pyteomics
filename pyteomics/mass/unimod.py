@@ -715,7 +715,7 @@ class Unimod(object):
                 self.session = session(path)
                 if self.session.query(Modification).first() is None:
                     raise Exception()
-            except:
+            except Exception:
                 # Database may not yet exist at that location
                 self.session = load(_unimod_xml_download_url, path)
                 self.session.query(Modification).first()
@@ -738,7 +738,7 @@ class Unimod(object):
         out : Modification
         """
         if isinstance(identifier, int):
-            mod = self.session.query(Modification).get(identifier)
+            mod = self.session.get(Modification, identifier)
             if mod is None:
                 raise KeyError(identifier)
             return mod
