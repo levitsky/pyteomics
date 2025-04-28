@@ -531,7 +531,7 @@ class Specificity(Base):
     modification_id = Column(Integer, ForeignKey(Modification.id), index=True)
     hidden = Column(Boolean, index=True)
     group = Column(Integer, index=True)
-    neutral_losses = relationship('SpecificityToNeutralLoss')
+    neutral_losses = relationship('SpecificityToNeutralLoss', back_populates='specificity')
 
     @classmethod
     def from_tag(cls, tag):
@@ -592,7 +592,7 @@ class SpecificityToNeutralLoss(Base):
 
     id = Column(Integer, primary_key=True)
     specificity_id = Column(Integer, ForeignKey(Specificity.id), index=True)
-    specificity = relationship(Specificity, uselist=False)
+    specificity = relationship(Specificity, uselist=False, back_populates='neutral_losses')
     monoisotopic_mass = Column(Numeric(12, 6, asdecimal=False), index=True)
     average_mass = Column(Numeric(12, 6, asdecimal=False), index=True)
     _composition = Column(Unicode(128))
