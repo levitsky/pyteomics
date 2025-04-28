@@ -36,6 +36,8 @@ else:
 from .structures import PyteomicsError
 from .utils import add_metaclass
 
+ctx = mp.get_context('spawn')
+
 
 def _keepstate(func):
     """Decorator to help keep the position in open files passed as
@@ -939,7 +941,7 @@ def _check_use_index(source, use_index, default):
         return use_index
 
 
-class FileReadingProcess(mp.Process):
+class FileReadingProcess(ctx.Process):
     """Process that does a share of distributed work on entries read from file.
     Reconstructs a reader object, parses an entries from given indexes,
     optionally does additional processing, sends results back.
@@ -956,7 +958,7 @@ class FileReadingProcess(mp.Process):
         self._qin = qin
         self._qout = qout
         # self._in_flag = in_flag
-        self._done_flag = mp.Event()
+        self._done_flag = ctx.Event()
         self.daemon = True
 
     def run(self):
@@ -1090,8 +1092,8 @@ class TaskMappingMixin(NoOpBaseReader):
 
         serialized = self._build_worker_spec(target, args, kwargs)
 
-        in_queue = mp.Queue(self._queue_size)
-        out_queue = mp.Queue(self._queue_size)
+        in_queue = ctx.Queue(self._queue_size)
+        out_queue = ctx.Queue(self._queue_size)
 
         workers = self._spawn_workers(serialized, in_queue, out_queue, processes)
         feeder_thread = self._spawn_feeder_thread(in_queue, iterator, processes)
