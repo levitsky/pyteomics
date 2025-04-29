@@ -90,7 +90,8 @@ def preprocess_xml(doc_path):
     -------
     out : etree.ElementTree
     """
-    tree = etree.parse(doc_path)
+    p = etree.XMLParser(no_network=False)
+    tree = etree.parse(doc_path, parser=p)
     root = tree.getroot()
     for ns in root.nsmap.values():
         remove_namespace(tree, ns)
