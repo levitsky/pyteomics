@@ -36,7 +36,19 @@ else:
 from .structures import PyteomicsError
 from .utils import add_metaclass
 
-ctx = mp.get_context('spawn')
+
+def _get_default_start_method():
+    supported_methods = mp.get_all_start_methods()
+    if supported_methods[0] == 'fork':
+        for alternative in ['forkserver', 'spawn']:
+            if alternative in supported_methods:
+                return alternative
+        else:
+            raise RuntimeError('Cannot determine a suitable process start method.')
+    return supported_methods[0]
+
+
+ctx = mp.get_context(_get_default_start_method())
 
 
 def set_start_method(method):

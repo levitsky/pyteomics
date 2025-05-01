@@ -2,6 +2,7 @@ import unittest
 import platform
 import os
 import pyteomics
+import multiprocessing as mp
 pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
 from pyteomics import auxiliary as aux
 
@@ -31,6 +32,11 @@ class UtilTest(unittest.TestCase):
             except Exception:
                 print('Failed with:', inp, out)
                 raise
+
+    def test_start_method(self):
+        self.assertNotEqual(aux.file_helpers._get_default_start_method(), 'fork')
+        if mp.get_start_method(allow_none=False) != 'fork':
+            self.assertEqual(mp.get_start_method(allow_none=False), aux.file_helpers._get_default_start_method())
 
 
 if __name__ == '__main__':
