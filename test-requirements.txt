@@ -2,7 +2,7 @@ lxml
 numpy
 matplotlib
 pandas
-sqlalchemy
+sqlalchemy >= 1.4
 cython
 h5py
 hdf5plugin < 3.0.0; python_version < '3'

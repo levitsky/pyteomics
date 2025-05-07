@@ -1,8 +1,8 @@
+import unittest
 from os import path
 import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics.mass import unimod
-import unittest
 
 
 class UnimodTests(unittest.TestCase):
@@ -61,6 +61,7 @@ class UnimodTests(unittest.TestCase):
         for name in [None, 'sqlite:///unimod.db']:
             handle = unimod.Unimod(name)
             self.assertEqual(self.handle[1], handle[1])
+
 
 if __name__ == '__main__':
     unittest.main()

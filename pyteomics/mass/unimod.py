@@ -532,7 +532,7 @@ class Specificity(Base):
     modification_id = Column(Integer, ForeignKey(Modification.id), index=True)
     hidden = Column(Boolean, index=True)
     group = Column(Integer, index=True)
-    neutral_losses = relationship('SpecificityToNeutralLoss')
+    neutral_losses = relationship('SpecificityToNeutralLoss', back_populates='specificity')
 
     @classmethod
     def from_tag(cls, tag):
@@ -593,7 +593,7 @@ class SpecificityToNeutralLoss(Base):
 
     id = Column(Integer, primary_key=True)
     specificity_id = Column(Integer, ForeignKey(Specificity.id), index=True)
-    specificity = relationship(Specificity, uselist=False)
+    specificity = relationship(Specificity, uselist=False, back_populates='neutral_losses')
     monoisotopic_mass = Column(Numeric(12, 6, asdecimal=False), index=True)
     average_mass = Column(Numeric(12, 6, asdecimal=False), index=True)
     _composition = Column(Unicode(128))
@@ -716,7 +716,7 @@ class Unimod(object):
                 self.session = session(path)
                 if self.session.query(Modification).first() is None:
                     raise Exception()
-            except:
+            except Exception:
                 # Database may not yet exist at that location
                 self.session = load(_unimod_xml_download_url, path)
                 self.session.query(Modification).first()
@@ -739,7 +739,7 @@ class Unimod(object):
         out : Modification
         """
         if isinstance(identifier, int):
-            mod = self.session.query(Modification).get(identifier)
+            mod = self.session.get(Modification, identifier)
             if mod is None:
                 raise KeyError(identifier)
             return mod

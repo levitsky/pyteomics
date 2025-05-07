@@ -34,7 +34,7 @@ extras_require = {'XML': ['lxml', 'numpy', 'psims'],
                   'TDA': ['numpy'],
                   'graphics': ['matplotlib'],
                   'DF': ['pandas>=0.17'],
-                  'Unimod': ['lxml', 'sqlalchemy'],
+                  'Unimod': ['lxml', 'sqlalchemy >= 1.4'],
                   'numpress': ['pynumpress'],
                   'mzMLb': ['h5py', 'hdf5plugin'],
                   'proforma': ['psims > v0.1.42']}
