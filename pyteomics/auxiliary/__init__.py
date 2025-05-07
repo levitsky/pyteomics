@@ -11,7 +11,7 @@ from .file_helpers import (
     FileReader, IndexedTextReader, IndexedReaderMixin, TimeOrderedIndexedReaderMixin,
     IndexSavingMixin, OffsetIndex, HierarchicalOffsetIndex, IndexSavingTextReader,
     _file_reader, _file_writer,
-    _make_chain, _check_use_index, FileReadingProcess, TaskMappingMixin,set_start_method,
+    _make_chain, _check_use_index, FileReadingProcess, TaskMappingMixin, set_start_method,
     serializer, ChainBase, TableJoiner)
 
 from .math import (
