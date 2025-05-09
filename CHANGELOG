@@ -1,7 +1,8 @@
-5.0a4
+5.0a5
 -----
 
- - Implement type checking using :py:mod:`psims` when parsing `cvParam` elements in mzML, mzIdentML and TraML files.
+ - Implement type checking using :py:mod:`psims` when parsing `cvParam` elements in mzML, mzIdentML and TraML files
+   (`#165 <https://github.com/levitsky/pyteomics/pull/165>`_).
    `psims <https://github.com/mobiusklein/psims>`_ is now required to parse these formats. Every parser instance now uses a copy of the
    `PSI-MS controlled vocabulary <https://github.com/HUPO-PSI/psi-ms-CV>`_. A pre-created object can be passed during
    parser creation, or it will be constructed on the fly.
@@ -10,6 +11,11 @@
       Consider enabling and configuring `OBO cache <data.html#controlled-vocabularies>`_ to save time
       when creating mzML, mzIdentML and TraML parser objects.
 
+ - Change the default `start method <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_
+   used by the :py:meth:`map` method of :ref:`indexing parsers <indexing>` on Linux-like platforms and add a new function,
+   :py:func:`auxiliary.set_start_method`, to configure it (`#172 <https://github.com/levitsky/pyteomics/pull/172>`_).
+
+   Read more about the new behavior and the rationale :ref:`in the docs <start_method>`.
  - **Drop Python 2 support.** See `#167 <https://github.com/levitsky/pyteomics/discussions/167>`_ for the announcement.
  - Fix compatibility with :py:mod:`lxml` 5.4.0 (`#170 <https://github.com/levitsky/pyteomics/issues/170>`_).
  - Ensure URL prefix when creating a :py:class:`mass.Unimod` object (`#169 <https://github.com/levitsky/pyteomics/pull/169>`_).

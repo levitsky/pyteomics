@@ -165,6 +165,9 @@ and :py:meth:`iterfind`::
     controllerType=0 controllerNumber=1 scan=1
     controllerType=0 controllerNumber=1 scan=2
 
+
+.. _start_method:
+
 Start method
 ............
 
