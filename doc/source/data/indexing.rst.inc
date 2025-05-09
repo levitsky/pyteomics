@@ -164,3 +164,20 @@ and :py:meth:`iterfind`::
     controllerType=0 controllerNumber=1 scan=2
     controllerType=0 controllerNumber=1 scan=1
     controllerType=0 controllerNumber=1 scan=2
+
+Start method
+............
+
+There are different `methods to start new processes <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_,
+depending on the platform, and this will affect how the mapped function works (e.g. whether it can access global variables). Since version 5.0,
+Pyteomics allows you to configure the start method using :py:func:`pyteomics.auxiliary.set_start_method`.
+Unlike :py:func:`multiprocessing.set_start_method`, it will only set the start method for Pyteomics. If you instead want to call
+:py:func:`multiprocessing.set_start_method` and have it affect Pyteomics, you should make the call before importing Pyteomics.
+
+If :py:func:`pyteomics.auxiliary.set_start_method` is not called, the default start method will generally be preserved, unless it is `fork`,
+in which case it will be changed to `forkserver`. This is because the use of `fork` is `considered unsafe <https://github.com/python/cpython/issues/84559>`_
+in a multithreaded context. See also `this thread <https://discuss.python.org/t/concerns-regarding-deprecation-of-fork-with-alive-threads/33555>`_
+for a more extensive discussion.
+Note that `starting with Python 3.14 <https://docs.python.org/3.14/whatsnew/3.14.html#whatsnew314-multiprocessing-start-method>`_,
+`fork` will not be the default on any platform. Pyteomics 5.0 makes this change happen sooner, while also giving you an option to take responsibility and
+use the start method you want on any Python version.

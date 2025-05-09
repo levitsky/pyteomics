@@ -37,6 +37,27 @@ from .structures import PyteomicsError
 from .utils import add_metaclass
 
 
+def _get_default_start_method():
+    supported_methods = mp.get_all_start_methods()
+    if supported_methods[0] == 'fork':
+        for alternative in ['forkserver', 'spawn']:
+            if alternative in supported_methods:
+                return alternative
+        else:
+            raise RuntimeError('Cannot determine a suitable process start method.')
+    return supported_methods[0]
+
+
+ctx = mp.get_context(_get_default_start_method())
+
+
+def set_start_method(method):
+    global ctx
+    ctx = mp.get_context(method)
+    FileReadingProcess.__bases__ = (ctx.Process,)
+    FileReadingProcess._event_class = ctx.Event
+
+
 def _keepstate(func):
     """Decorator to help keep the position in open files passed as
     positional arguments to functions"""
@@ -127,7 +148,7 @@ class IteratorContextManager(NoOpBaseReader):
         self._func = kwargs.pop('parser_func')
         self._args = args
         self._kwargs = kwargs
-        if type(self) == IteratorContextManager:
+        if type(self) is IteratorContextManager:
             self.reset()
         super(IteratorContextManager, self).__init__(*args, **kwargs)
 
@@ -939,13 +960,15 @@ def _check_use_index(source, use_index, default):
         return use_index
 
 
-class FileReadingProcess(mp.Process):
+class FileReadingProcess(ctx.Process):
     """Process that does a share of distributed work on entries read from file.
     Reconstructs a reader object, parses an entries from given indexes,
     optionally does additional processing, sends results back.
 
     The reader class must support the :py:meth:`__getitem__` dict-like lookup.
     """
+
+    _event_class = ctx.Event
 
     def __init__(self, reader_spec, target_spec, qin, qout, args_spec, kwargs_spec):
         super(FileReadingProcess, self).__init__(name='pyteomics-map-worker')
@@ -956,7 +979,7 @@ class FileReadingProcess(mp.Process):
         self._qin = qin
         self._qout = qout
         # self._in_flag = in_flag
-        self._done_flag = mp.Event()
+        self._done_flag = self._event_class()
         self.daemon = True
 
     def run(self):
@@ -1090,8 +1113,8 @@ class TaskMappingMixin(NoOpBaseReader):
 
         serialized = self._build_worker_spec(target, args, kwargs)
 
-        in_queue = mp.Queue(self._queue_size)
-        out_queue = mp.Queue(self._queue_size)
+        in_queue = ctx.Queue(self._queue_size)
+        out_queue = ctx.Queue(self._queue_size)
 
         workers = self._spawn_workers(serialized, in_queue, out_queue, processes)
         feeder_thread = self._spawn_feeder_thread(in_queue, iterator, processes)
