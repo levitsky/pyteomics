@@ -599,7 +599,7 @@ class GNOResolver(ModificationResolver):
         raw_mass, monosaccharides, composition = self.get_mass_from_glycan_composition(term)
 
         rec = {
-            "name":term.name,
+            "name": term.name,
             "id": term.id,
             "provider": self.name,
             "composition": composition,
@@ -1783,6 +1783,7 @@ DONE = ParserStateEnum.done
 
 VALID_AA = set("QWERTYIPASDFGHKLCVNMXUOJZB")
 TERMINAL_SPEC_CHARS = set('N-term') | set('C-term') | set("ncT: ")
+
 
 def parse(sequence):
     '''Tokenize a ProForma sequence into a sequence of amino acid+tag positions, and a

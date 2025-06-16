@@ -300,9 +300,9 @@ class Composition(BasicComposition):
 
         kw_given = self._kw_sources.intersection(kwargs)
         if len(kw_given) > 1:
-            raise PyteomicsError('Only one of {} can be specified!\n'
-                    'Given: {}'.format(', '.join(self._kw_sources),
-                        ', '.join(kw_given)))
+            raise PyteomicsError(
+                'Only one of {} can be specified!\n'
+                'Given: {}'.format(', '.join(self._kw_sources), ', '.join(kw_given)))
         elif kw_given:
             kwa = kw_given.pop()
             if kwa == 'formula':
@@ -329,10 +329,9 @@ class Composition(BasicComposition):
                 try:
                     self._from_sequence(parser.tostring(args[0], True), aa_comp)
                 except Exception:
-                    raise PyteomicsError('Could not create a Composition object'
-                            ' from `{}`. A Composition object must be '
-                            'specified by sequence, parsed or split sequence,'
-                            ' formula or dict.'.format(args[0]))
+                    raise PyteomicsError(
+                        'Could not create a Composition object from `{}`. A Composition object must be '
+                        'specified by sequence, parsed or split sequence, formula or dict.'.format(args[0]))
         else:
             self._from_composition(kwargs)
 
@@ -346,7 +345,8 @@ class Composition(BasicComposition):
             if charge:
                 raise PyteomicsError('Charge is specified both by the number of protons and `charge` in kwargs')
             else:
-                warnings.warn('charge and charge carrier should be specified when calling mass(). '
+                warnings.warn(
+                    'charge and charge carrier should be specified when calling mass(). '
                     'Support for charge in Composition.__init__ will be removed in a future version.',
                     FutureWarning)
                 self['H+'] = kwargs['charge']
@@ -528,7 +528,7 @@ std_aa_comp.update({
     'V':   Composition({'H': 9, 'C': 5, 'O': 1, 'N': 1}),
     'W':   Composition({'C': 11, 'H': 10, 'N': 2, 'O': 1}),
     'Y':   Composition({'H': 9, 'C': 9, 'O': 2, 'N': 1}),
-    'U':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1, 'Se' : 1}),
+    'U':   Composition({'H': 5, 'C': 3, 'O': 1, 'N': 1, 'Se': 1}),
     'O':   Composition({'H': 19, 'C': 12, 'O': 2, 'N': 3}),
     'H-':  Composition({'H': 1}),
     '-OH': Composition({'O': 1, 'H': 1}),

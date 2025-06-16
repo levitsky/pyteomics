@@ -142,7 +142,7 @@ def _add_raw_field(parser):
             parsed[RAW_HEADER_KEY] = descr
         elif parsed[RAW_HEADER_KEY] != descr:
             raise aux.PyteomicsError('Cannot save raw protein header, since the corresponsing'
-                                    'key ({}) already exists.'.format(RAW_HEADER_KEY))
+                                     'key ({}) already exists.'.format(RAW_HEADER_KEY))
         return parsed
 
     return _new_parser
@@ -198,7 +198,8 @@ class FASTA(FASTABase, aux.FileReader):
         encoding : str or None, optional
             File encoding (if it is given by name).
         """
-        super(FASTA, self).__init__(source, mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={},
+        super(FASTA, self).__init__(
+            source, mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={},
             encoding=encoding, ignore_comments=ignore_comments, parser=parser)
 
     def _read(self):
@@ -286,7 +287,8 @@ class IndexedFASTA(FASTABase, aux.TaskMappingMixin, aux.IndexedTextReader):
             This in combination with `label` can be used to extract fields from headers.
             However, consider using :py:class:`TwoLayerIndexedFASTA` for this purpose.
         """
-        super(IndexedFASTA, self).__init__(source, ignore_comments=ignore_comments, parser=parser,
+        super(IndexedFASTA, self).__init__(
+            source, ignore_comments=ignore_comments, parser=parser,
             parser_func=self._read, pass_file=False, args=(), kwargs={}, **kwargs)
         self._init_args = (source, ignore_comments, parser)
         self._init_kwargs = kwargs
@@ -343,8 +345,9 @@ class TwoLayerIndexedFASTA(IndexedFASTA):
     """
     header_group = 1
     header_pattern = None
+
     def __init__(self, source, header_pattern=None, header_group=None,
-        ignore_comments=False, parser=None, **kwargs):
+                 ignore_comments=False, parser=None, **kwargs):
         """Open `source` and create a two-layer index for convenient random access
         both by full header strings and extracted fields.
 
@@ -684,9 +687,8 @@ def write(entries, output=None):
         elif isinstance(descr, dict) and RAW_HEADER_KEY in descr:
             output.write('>' + descr[RAW_HEADER_KEY].replace('\n', '\n;') + '\n')
         else:
-             raise aux.PyteomicsError('Cannot use provided description: ' + repr(descr))
-        output.write(''.join([('%s\n' % seq[i:i+70])
-            for i in range(0, len(seq), 70)]) + '\n')
+            raise aux.PyteomicsError('Cannot use provided description: ' + repr(descr))
+        output.write(''.join([('%s\n' % seq[i:i+70]) for i in range(0, len(seq), 70)]) + '\n')
 
     return output.file
 
@@ -752,13 +754,11 @@ def shuffle(sequence, keep_nterm=False, keep_cterm=False, keep_nterm_M=False, fi
 
     # presereve the first position
     if (keep_nterm_M and sequence[0] == 'M') or keep_nterm:
-        return sequence[0] + shuffle(sequence[1:], keep_cterm=keep_cterm,
-                       fix_aa=fix_aa)
+        return sequence[0] + shuffle(sequence[1:], keep_cterm=keep_cterm, fix_aa=fix_aa)
 
     # presereve the last position
     if keep_cterm:
         return shuffle(sequence[:-1], fix_aa=fix_aa) + sequence[-1]
-
 
     if not isinstance(fix_aa, str):
         fix_aa = ''.join(fix_aa)
@@ -948,7 +948,7 @@ def decoy_db(source=None, mode='reverse', prefix=DECOY_PREFIX, decoy_only=False,
 
 @aux._file_writer()
 def write_decoy_db(source=None, output=None, mode='reverse', prefix=DECOY_PREFIX,
-        decoy_only=False, **kwargs):
+                   decoy_only=False, **kwargs):
     """Generate a decoy database out of a given ``source`` and write to file.
 
     If `output` is a path, the file will be open for appending, so no information
@@ -993,8 +993,7 @@ def write_decoy_db(source=None, output=None, mode='reverse', prefix=DECOY_PREFIX
 
 # auxiliary functions for parsing of FASTA headers
 def _split_pairs(s):
-    return dict(map(lambda x: x.strip(), x.split('='))
-            for x in re.split(r' (?=\w+=)', s.strip()))
+    return dict(map(lambda x: x.strip(), x.split('=')) for x in re.split(r' (?=\w+=)', s.strip()))
 
 
 def _intify(d, keys):
@@ -1003,7 +1002,8 @@ def _intify(d, keys):
             d[k] = int(d[k])
 
 
-std_parsers = {'uniprot': (UniProt, IndexedUniProt), 'uniref': (UniRef, IndexedUniRef),
+std_parsers = {
+        'uniprot': (UniProt, IndexedUniProt), 'uniref': (UniRef, IndexedUniRef),
         'uniparc': (UniParc, IndexedUniParc), 'unimes': (UniMes, IndexedUniMes),
         'spd': (SPD, IndexedSPD), 'ncbi': (NCBI, IndexedNCBI),
         'refseq': (RefSeq, IndexedRefSeq),
@@ -1013,7 +1013,8 @@ formats are those described at
 `UniProt help page <http://www.uniprot.org/help/fasta-headers>`_."""
 
 
-_std_mixins = {'uniprot': UniProtMixin, 'uniref': UniRefMixin,
+_std_mixins = {
+        'uniprot': UniProtMixin, 'uniref': UniRefMixin,
         'uniparc': UniParcMixin, 'unimes': UniMesMixin, 'spd': SPDMixin,
         'ncbi': NCBIMixin, 'refseq': RefSeqMixin}
 
@@ -1062,8 +1063,9 @@ def parse(header, flavor='auto', parsers=None):
         try:
             return parser_function(known[flavor])(header)
         except Exception as e:
-            raise aux.PyteomicsError('Could not parse header as "{}". '
-                    'The error message was: {}: {}. Header: "{}"'.format(
+            raise aux.PyteomicsError(
+                'Could not parse header as "{}". '
+                'The error message was: {}: {}. Header: "{}"'.format(
                         flavor, type(e).__name__, e.args[0], header))
     raise aux.PyteomicsError('Unknown flavor: {}'.format(flavor))
 
