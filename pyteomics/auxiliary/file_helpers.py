@@ -180,13 +180,7 @@ class IteratorContextManager(NoOpBaseReader):
         return self
 
     def __next__(self):
-        # try:
         return next(self._reader)
-        # except StopIteration:
-        # self.__exit__(None, None, None)
-        # raise
-
-    next = __next__
 
 
 @add_metaclass(ABCMeta)
@@ -583,7 +577,7 @@ def _file_reader(_mode='r'):
         def helper(*args, **kwargs):
             if args:
                 return FileReader(args[0], mode=_mode, parser_func=_func, pass_file=True, args=args[1:], kwargs=kwargs,
-                    encoding=kwargs.pop('encoding', None))
+                                  encoding=kwargs.pop('encoding', None))
             source = kwargs.pop('source', None)
             return FileReader(source, mode=_mode, parser_func=_func, pass_file=True, args=(), kwargs=kwargs, encoding=kwargs.pop('encoding', None))
         return helper
