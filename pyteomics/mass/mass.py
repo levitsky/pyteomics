@@ -85,10 +85,7 @@ from .. import parser
 from ..auxiliary import PyteomicsError, _nist_mass, BasicComposition, ensure_url_prefix
 from itertools import chain, product, combinations_with_replacement
 from collections import defaultdict
-try:
-    from urllib import urlopen
-except ImportError:
-    from urllib.request import urlopen
+from urllib.request import urlopen
 from datetime import datetime
 import re
 import operator
@@ -144,7 +141,7 @@ difference between the total elemental composition of an ion
 and the sum of elemental compositions of its constituting amino acid residues.
 """
 
-_isotope_string = r'^([A-Z][a-z+]*)(?:\[(\d+)\])?$'
+_isotope_string = r'^((?:[A-Z][a-z+]*)|e-|e\*)(?:\[(\d+)\])?$'
 _atom = r'([A-Z][a-z+]*)(?:\[(\d+)\])?([+-]?\d+)?'
 _formula = r'^({})*$'.format(_atom)
 

@@ -14,10 +14,11 @@ import re
 import warnings
 from collections import deque, namedtuple
 from functools import partial
+from itertools import chain
 from array import array as _array
 from enum import Enum
 
-from .mass import Composition, std_aa_mass, Unimod, nist_mass, calculate_mass, std_ion_comp, mass_charge_ratio
+from .mass import Composition, std_aa_mass, Unimod, nist_mass, calculate_mass, std_ion_comp, mass_charge_ratio, std_aa_comp
 from .auxiliary import PyteomicsError, BasicComposition
 from .auxiliary.utils import add_metaclass
 from .auxiliary.psims_util import load_psimod, load_xlmod, load_gno, obo_cache, _has_psims
@@ -34,8 +35,6 @@ std_aa_mass = std_aa_mass.copy()
 std_aa_mass['X'] = 0
 
 element_symbols = set(nist_mass)
-element_symbols.remove("e*")
-element_symbols.add('e')
 
 
 class ProFormaError(PyteomicsError):
@@ -1579,14 +1578,14 @@ class ChargeState(object):
     ----------
     charge : int
         The total charge state as a signed number.
-    adducts : list[str]
+    adducts : list[tuple[str, int]]
         Each charge carrier associated with the molecule.
     '''
     __slots__ = ("charge", "adducts")
 
     def __init__(self, charge, adducts=None):
         if adducts is None:
-            adducts = []
+            adducts = [('H+', charge)]
         self.charge = charge
         self.adducts = adducts
 
@@ -1594,7 +1593,7 @@ class ChargeState(object):
         tokens = [str(self.charge)]
         if self.adducts:
             tokens.append("[")
-            tokens.append(','.join(str(adduct) for adduct in self.adducts))
+            tokens.append(','.join(f'{adduct[1]}{adduct[0]}' for adduct in self.adducts))
             tokens.append("]")
         return ''.join(tokens)
 
@@ -1693,6 +1692,36 @@ class StringParser(TokenBuffer):
 
     def _transform(self, value):
         return ''.join(value)
+
+
+class AdductParser(StringParser):
+    '''A buffer which accumulates tokens related to adducts until it is asked to parse them into
+    a list of [(str, int)] tuples, where the first element is the adduct name
+    and the second element is the number of adducts of that type.
+    '''
+    token_pattern = re.compile(r'(?P<number>[+-]?\d*)(?P<adduct>[A-Za-z]+)(?P<charge>\d*[+-])')
+
+    def process(self):
+        value = []
+        for token in self.tokenize():
+            try:
+                gdict = self.token_pattern.match(''.join(token)).groupdict()
+                if gdict['adduct'] == 'H':
+                    adduct = 'H+'
+                elif gdict['adduct'] == 'e':
+                    adduct = 'e-'
+                else:
+                    adduct = gdict['adduct']
+                if gdict['number'] == '+' or gdict['number'] == '':
+                    number = 1
+                elif gdict['number'] == '-':
+                    number = -1
+                else:
+                    number = int(gdict['number'])
+                value.append((adduct, number))
+            except AttributeError:
+                raise ProFormaError("Invalid adduct token {!r} in {!r}".format(token, self.buffer))
+        return value
 
 
 class TagParser(TokenBuffer):
@@ -1851,7 +1880,7 @@ def parse(sequence):
                 state = SEQ
             else:
                 raise ProFormaError(
-                    "Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
+                    f"Error In State {state}, unexpected {c} found at index {i}", i, state)
         # The body of the amino acid sequence.
         elif state == SEQ or state == INTERVAL_INIT:
             if state == INTERVAL_INIT:
@@ -2083,12 +2112,12 @@ def parse(sequence):
                 charge_buffer.append(c)
             elif c == "[":
                 state = ADDUCT_START
-                adduct_buffer = StringParser()
+                adduct_buffer = AdductParser()
             else:
                 raise ProFormaError(
                     "Error In State {state}, unexpected {c} found at index {i}".format(**locals()), i, state)
         elif state == ADDUCT_START:
-            if c.isdigit() or c in "+-" or c in element_symbols:
+            if c.isdigit() or c in "+-" or c.isalpha():
                 adduct_buffer.append(c)
             elif c == ',':
                 adduct_buffer.bound()
@@ -2534,3 +2563,56 @@ class ProForma(object):
     @property
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
+
+    def composition(self, include_charge=False, aa_comp=None):
+        '''
+        Calculate the elemental composition of the ProForma sequence.
+
+        Parameters
+        ----------
+        include_charge : bool, optional
+            If True, the charge state will be included in the composition.
+            Otherwise, composition of the neutral molecule will be returned.
+            Defaults to False.
+        aa_comp : dict, optional
+            A dictionary mapping amino acid symbols to their respective
+            compositions. If not provided, the standard amino acid composition
+            will be used.
+
+        Returns
+        -------
+        Composition
+            :py:class:`Composition` object representing the composition of the ProForma sequence.
+        '''
+        comp = Composition()
+        if aa_comp is None:
+            aa_comp = std_aa_comp
+        try:
+            for aa, tags in self.sequence:
+                comp += aa_comp[aa]
+                for tag in tags or []:
+                    comp += tag.composition
+            for tag in chain(self.fixed_modifications, self.labile_modifications, self.unlocalized_modifications):
+                comp += tag.composition
+        except KeyError as e:
+            raise ProFormaError(f'No composition found for amino acid {aa}') from e
+        except AttributeError as e:
+            raise ProFormaError(f'No composition found for tag {tag}') from e
+        if self.n_term:
+            try:
+                comp += self.n_term.composition
+            except AttributeError as e:
+                raise ProFormaError(f'No composition found for N-terminal tag {self.n_term}') from e
+        else:
+            comp['H'] += 1  # Add hydrogen for N-terminus
+        if self.c_term:
+            try:
+                comp += self.c_term.composition
+            except AttributeError as e:
+                raise ProFormaError(f'No composition found for C-terminal tag {self.c_term}') from e
+        else:
+            comp += Composition({'O': 1, 'H': 1})  # Add -OH for C-terminus
+        if include_charge and self.charge_state:
+            for adduct, count in self.charge_state.adducts:
+                comp[adduct] += count
+        return comp

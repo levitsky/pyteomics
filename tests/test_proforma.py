@@ -113,6 +113,28 @@ class ProFormaTest(unittest.TestCase):
         assert i[1:].n_term is None
         assert i[1:].c_term is not None
 
+    def test_charge_adducts(self):
+        sequences = ['PEPTIDE/1[+2Na+,-H+]', 'PEPTIDE/-1[+e-]', 'PEPTIDE/1[+2H+,+e-]']
+        charges = [1, -1, 1]
+        adducts_list = [[('Na', 2), ('H+', -1)], [('e-', 1)], [('H+', 2), ('e-', 1)]]
+        for seq, charge, adducts in zip(sequences, charges, adducts_list):
+            i = ProForma.parse(seq)
+            self.assertEqual(i.charge_state.charge, charge)
+            self.assertEqual(i.charge_state.adducts, adducts)
+
+    def test_composition(self):
+        sequences = ['PEPTIDE/1[+2Na+,-H+]', 'PEPTIDE/-1[+e-]', 'PEPTIDE/1[+2H+,+e-]', 'PEPTIDE', 'PEPTIDE/1']
+        neutral_comp = Composition(sequence='PEPTIDE')
+        adducts_list = [Composition({'Na': 2, 'H+': -1}),
+                        Composition({'e-': 1}),
+                        Composition({'H+': 2, 'e-': 1}),
+                        Composition({}),
+                        Composition({'H+': 1})]
+        for seq, adducts in zip(sequences, adducts_list):
+            i = ProForma.parse(seq)
+            self.assertEqual(i.composition(), neutral_comp)
+            self.assertEqual(i.composition(include_charge=True), neutral_comp + adducts)
+
 
 class TestTagProcessing(unittest.TestCase):
     def test_process_tag_tokens(self):
