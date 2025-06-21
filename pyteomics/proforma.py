@@ -2592,7 +2592,10 @@ class ProForma(object):
                 comp += aa_comp[aa]
                 for tag in tags or []:
                     comp += tag.composition
-            for tag in chain(self.fixed_modifications, self.labile_modifications, self.unlocalized_modifications):
+                for rule in self.fixed_modifications:
+                    if rule.is_valid(aa, self.n_term, self.c_term):
+                        comp += rule.modification_tag.composition
+            for tag in chain(self.labile_modifications, self.unlocalized_modifications):
                 comp += tag.composition
         except KeyError as e:
             raise ProFormaError(f'No composition found for amino acid {aa}') from e
