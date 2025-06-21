@@ -2588,12 +2588,12 @@ class ProForma(object):
         if aa_comp is None:
             aa_comp = std_aa_comp
         try:
-            for aa, tags in self.sequence:
+            for i, (aa, tags) in enumerate(self.sequence):
                 comp += aa_comp[aa]
                 for tag in tags or []:
                     comp += tag.composition
                 for rule in self.fixed_modifications:
-                    if rule.is_valid(aa, self.n_term, self.c_term):
+                    if rule.is_valid(aa, i == 0, i == len(self.sequence) - 1):
                         comp += rule.modification_tag.composition
             for tag in chain(self.labile_modifications, self.unlocalized_modifications):
                 comp += tag.composition
