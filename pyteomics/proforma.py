@@ -2564,7 +2564,7 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
-    def composition(self, include_charge=False, aa_comp=None):
+    def composition(self, include_charge=False, aa_comp=None, ignore_missing=False):
         '''
         Calculate the elemental composition of the ProForma sequence.
 
@@ -2578,12 +2578,34 @@ class ProForma(object):
             A dictionary mapping amino acid symbols to their respective
             compositions. If not provided, the standard amino acid composition
             will be used.
+        ignore_missing : bool, optional
+            If True, tags with missing composition will be silently ignored. If False (default),
+            a :py:class:`ProFormaError` will be raised.
+
+            .. note::
+                Amino acids not found in `aa_mass` will result in errors even with `ignore_missing=True`.
 
         Returns
         -------
         Composition
             :py:class:`Composition` object representing the composition of the ProForma sequence.
         '''
+        if ignore_missing:
+            def get_comp(tag):
+                try:
+                    return tag.composition or Composition({})
+                except AttributeError:
+                    return Composition({})
+        else:
+            def get_comp(tag):
+                try:
+                    comp = tag.composition
+                except AttributeError as e:
+                    raise ProFormaError(f'No composition found for tag {tag}') from e
+                if comp is None:
+                    raise ProFormaError(f'No composition found for tag {tag}')
+                return comp
+
         comp = Composition()
         if aa_comp is None:
             aa_comp = std_aa_comp
@@ -2591,28 +2613,20 @@ class ProForma(object):
             for i, (aa, tags) in enumerate(self.sequence):
                 comp += aa_comp[aa]
                 for tag in tags or []:
-                    comp += tag.composition
+                    comp += get_comp(tag)
                 for rule in self.fixed_modifications:
                     if rule.is_valid(aa, i == 0, i == len(self.sequence) - 1):
-                        comp += rule.modification_tag.composition
+                        comp += get_comp(rule.modification_tag)
             for tag in chain(self.labile_modifications, self.unlocalized_modifications):
-                comp += tag.composition
+                comp += get_comp(tag)
         except KeyError as e:
             raise ProFormaError(f'No composition found for amino acid {aa}') from e
-        except AttributeError as e:
-            raise ProFormaError(f'No composition found for tag {tag}') from e
         if self.n_term:
-            try:
-                comp += self.n_term.composition
-            except AttributeError as e:
-                raise ProFormaError(f'No composition found for N-terminal tag {self.n_term}') from e
+            comp += get_comp(self.n_term)
         else:
             comp['H'] += 1  # Add hydrogen for N-terminus
         if self.c_term:
-            try:
-                comp += self.c_term.composition
-            except AttributeError as e:
-                raise ProFormaError(f'No composition found for C-terminal tag {self.c_term}') from e
+            comp += get_comp(self.c_term)
         else:
             comp += Composition({'O': 1, 'H': 1})  # Add -OH for C-terminus
         if include_charge and self.charge_state:

@@ -145,6 +145,15 @@ class ProFormaTest(unittest.TestCase):
             i = ProForma.parse(seq)
             self.assertEqual(i.composition(), comp)
 
+    def test_missing_composition(self):
+        sequences = ['P[+79.966]EPTIDE']
+        comps = [Composition(sequence='PEPTIDE')]
+        for seq, comp in zip(sequences, comps):
+            i = ProForma.parse(seq)
+            self.assertEqual(i.composition(ignore_missing=True), comp)
+            with self.assertRaises(ProFormaError):
+                ProForma.parse(seq).composition()
+
 
 class TestTagProcessing(unittest.TestCase):
     def test_process_tag_tokens(self):
