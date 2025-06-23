@@ -117,7 +117,7 @@ class ProFormaTest(unittest.TestCase):
     def test_charge_adducts(self):
         sequences = ['PEPTIDE/1[+2Na+,-H+]', 'PEPTIDE/-1[+e-]', 'PEPTIDE/1[+2H+,+e-]']
         charges = [1, -1, 1]
-        adducts_list = [[('Na', 2), ('H+', -1)], [('e-', 1)], [('H+', 2), ('e-', 1)]]
+        adducts_list = [[('Na', 1, 2), ('H', 1, -1)], [('e-', -1, 1)], [('H', 1, 2), ('e-', -1, 1)]]
         for seq, charge, adducts in zip(sequences, charges, adducts_list):
             i = ProForma.parse(seq)
             self.assertEqual(i.charge_state.charge, charge)
@@ -126,11 +126,11 @@ class ProFormaTest(unittest.TestCase):
     def test_composition_with_adducts(self):
         sequences = ['PEPTIDE/1[+2Na+,-H+]', 'PEPTIDE/-1[+e-]', 'PEPTIDE/1[+2H+,+e-]', 'PEPTIDE', 'PEPTIDE/1']
         neutral_comp = Composition(sequence='PEPTIDE')
-        adducts_list = [Composition({'Na': 2, 'H+': -1}),
+        adducts_list = [Composition({'Na': 2, 'H': -1}),
                         Composition({'e-': 1}),
-                        Composition({'H+': 2, 'e-': 1}),
+                        Composition({'H': 2, 'e-': 1}),
                         Composition({}),
-                        Composition({'H+': 1})]
+                        Composition({'H': 1})]
         for seq, adducts in zip(sequences, adducts_list):
             i = ProForma.parse(seq)
             self.assertEqual(i.composition(), neutral_comp)

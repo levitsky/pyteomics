@@ -2649,6 +2649,6 @@ class ProForma(object):
         else:
             comp += Composition({'O': 1, 'H': 1})  # Add -OH for C-terminus
         if include_charge and self.charge_state:
-            for adduct, count in self.charge_state.adducts:
+            for adduct, _, count in self.charge_state.adducts:
                 comp[adduct] += count
         return comp
