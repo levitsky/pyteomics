@@ -7,6 +7,7 @@ pyteomics.__path__ = [path.abspath(
 from pyteomics.proforma import (
     PSIModModification, ProForma, TaggedInterval, parse, MassModification, ProFormaError, TagTypeEnum,
     ModificationRule, StableIsotope, GenericModification, Composition, to_proforma, ModificationMassNotFoundError,
+    AdductParser, ChargeState,
     std_aa_comp, obo_cache, process_tag_tokens)
 
 
@@ -134,6 +135,18 @@ class ProFormaTest(unittest.TestCase):
             i = ProForma.parse(seq)
             self.assertEqual(i.composition(), neutral_comp)
             self.assertEqual(i.composition(include_charge=True), neutral_comp + adducts)
+
+    def test_adduct_formatting(self):
+        ap = AdductParser()
+        ap.buffer.extend('+2Na+')
+        ap.bound()
+        ap.buffer.extend('-H+')
+        c = ChargeState(1, adducts=ap())
+        self.assertEqual(str(c), '1[+2Na+,-H+]')
+
+    def test_default_adduct_formatting(self):
+        c = ChargeState(2, None)
+        self.assertEqual(str(c), '2')
 
     def test_composition_fixed(self):
         sequences = ['<[UNIMOD:4]@C>ATPEILTCNSIGCLK']

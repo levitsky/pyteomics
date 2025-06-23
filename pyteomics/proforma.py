@@ -1585,15 +1585,33 @@ class ChargeState(object):
 
     def __init__(self, charge, adducts=None):
         if adducts is None:
-            adducts = [('H+', charge)]
+            adducts = [('H', 1, charge)]
         self.charge = charge
         self.adducts = adducts
 
+    @staticmethod
+    def _repr_adduct_num(num):
+        if num == 1:
+            return '+'
+        elif num == -1:
+            return '-'
+        else:
+            return f'{num:+d}'
+
+    @staticmethod
+    def _repr_charge_value(num):
+        if num == 1:
+            return '+'
+        elif num == -1:
+            return '-'
+        else:
+            return str(num) + '+' if num > 0 else '-'
+
     def __str__(self):
         tokens = [str(self.charge)]
-        if self.adducts:
+        if self.adducts != [('H', 1, self.charge)]:
             tokens.append("[")
-            tokens.append(','.join(f'{adduct[1]}{adduct[0]}' for adduct in self.adducts))
+            tokens.append(','.join(f'{self._repr_adduct_num(adduct[2])}{adduct[0]}{self._repr_charge_value(adduct[1])}' for adduct in self.adducts))
             tokens.append("]")
         return ''.join(tokens)
 
@@ -1706,9 +1724,7 @@ class AdductParser(StringParser):
         for token in self.tokenize():
             try:
                 gdict = self.token_pattern.match(''.join(token)).groupdict()
-                if gdict['adduct'] == 'H':
-                    adduct = 'H+'
-                elif gdict['adduct'] == 'e':
+                if gdict['adduct'] == 'e':
                     adduct = 'e-'
                 else:
                     adduct = gdict['adduct']
@@ -1718,7 +1734,10 @@ class AdductParser(StringParser):
                     number = -1
                 else:
                     number = int(gdict['number'])
-                value.append((adduct, number))
+                charge = int(gdict['charge'][:-1]) if gdict['charge'][:-1] else 1
+                if gdict['charge'][-1] == '-':
+                    charge = -charge
+                value.append((adduct, charge, number))
             except AttributeError:
                 raise ProFormaError("Invalid adduct token {!r} in {!r}".format(token, self.buffer))
         return value
