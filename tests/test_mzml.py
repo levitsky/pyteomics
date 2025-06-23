@@ -35,10 +35,12 @@ class MzmlTest(unittest.TestCase):
                     # http://stackoverflow.com/q/14246983/1258041
                     self.assertEqual(mzml_spectra, list(r))
 
-    def test_mp_read(self):
+    def test_map_read(self):
         key = op.itemgetter('index')
         with MzML(self.path) as f:
-            self.assertEqual(sorted(mzml_spectra, key=key), sorted(list(f.map()), key=key))
+            for method in ['p', 't']:
+                with self.subTest(method=method):
+                    self.assertEqual(sorted(mzml_spectra, key=key), sorted(list(f.map(method=method)), key=key))
 
     def test_mp_requires_index(self):
         with MzML(self.path, use_index=False) as r:

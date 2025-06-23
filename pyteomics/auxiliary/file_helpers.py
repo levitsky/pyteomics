@@ -7,11 +7,13 @@ from collections import OrderedDict, defaultdict
 import json
 import multiprocessing as mp
 import threading
+from copy import copy
 import warnings
 import os
 from abc import ABCMeta
 from queue import Empty
 from collections.abc import Sequence
+from concurrent.futures import ThreadPoolExecutor
 
 try:
     import pandas as pd
@@ -1002,7 +1004,20 @@ _QUEUE_TIMEOUT = 4
 _QUEUE_SIZE = int(1e7)
 
 
-class TaskMappingMixin(NoOpBaseReader):
+class BaseTaskMappingMixin(NoOpBaseReader):
+    def _task_map_iterator(self):
+        """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
+        queue used by :meth:`map`
+
+        Returns
+        -------
+        :class:`Iteratable`
+        """
+
+        return iter(self._offset_index.keys())
+
+
+class MultiProcessingTaskMappingMixin(BaseTaskMappingMixin):
     def __init__(self, *args, **kwargs):
         '''
         Instantiate a :py:class:`TaskMappingMixin` object, set default parameters for IPC.
@@ -1022,7 +1037,7 @@ class TaskMappingMixin(NoOpBaseReader):
         self._queue_size = kwargs.pop('queue_size', _QUEUE_SIZE)
         self._queue_timeout = kwargs.pop('timeout', _QUEUE_TIMEOUT)
         self._nproc = kwargs.pop('processes', _NPROC)
-        super(TaskMappingMixin, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def _get_reader_for_worker_spec(self):
         return self
@@ -1088,10 +1103,8 @@ class TaskMappingMixin(NoOpBaseReader):
         object
             The work item returned by the target function.
         """
-        if self._offset_index is None:
-            raise PyteomicsError('The reader needs an index for map() calls. Create the reader with `use_index=True`.')
 
-        if processes < 1:
+        if processes is None or processes < 1:
             processes = self._nproc
         iterator = self._task_map_iterator()
 
@@ -1131,16 +1144,42 @@ class TaskMappingMixin(NoOpBaseReader):
                 worker.join()
         return iterate()
 
-    def _task_map_iterator(self):
-        """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
-        queue used by :meth:`map`
 
-        Returns
-        -------
-        :class:`Iteratable`
-        """
+class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
+    def map(self, target=None, threads=0, args=None, kwargs=None, **_kwargs):
+        def worker_func(key):
+            local_ns = threading.local()
+            if hasattr(local_ns, 'reader'):
+                # reuse the reader object in the thread
+                reader = local_ns.reader
+            else:
+                reader = local_ns.reader = copy(self)
+            item = reader[key]
+            if target is not None:
+                item = target(item, *args, **kwargs, **_kwargs)
+            return item
 
-        return iter(self._offset_index.keys())
+        with ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f'pyteomics-{type(self).__name__}-reader') as executor:
+            return executor.map(worker_func, self._task_map_iterator())
+
+
+class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixin):
+    pmap = MultiProcessingTaskMappingMixin.map
+    tmap = ThreadingTaskMappingMixin.map
+
+    def map(self, target=None, method='mp', workers=None, args=None, kwargs=None, **_kwargs):
+        if self._offset_index is None:
+            raise PyteomicsError('The reader needs an index for map() calls. Create the reader with `use_index=True`.')
+
+        if method in {'p', 'mp', 'multiprocessing', 'processes'}:
+            if 'processes' in _kwargs and workers is None:
+                # accept `processes` for backward compatibility
+                workers = _kwargs.pop('processes', -1)
+
+            return self.pmap(target=target, processes=workers, args=args, kwargs=kwargs, **_kwargs)
+        if method in {'t', 'threading', 'threads'}:
+            return self.tmap(target=target, threads=workers, args=args, kwargs=kwargs, **_kwargs)
+        raise PyteomicsError(f'Invalid value of `method`: {method}.')
 
 
 class ChainBase(object):
