@@ -7,7 +7,8 @@ pyteomics.__path__ = [path.abspath(
 from pyteomics.proforma import (
     PSIModModification, ProForma, TaggedInterval, parse, MassModification, ProFormaError, TagTypeEnum,
     ModificationRule, StableIsotope, GenericModification, Composition, to_proforma, ModificationMassNotFoundError,
-    obo_cache, process_tag_tokens)
+    AdductParser, ChargeState,
+    std_aa_comp, obo_cache, process_tag_tokens)
 
 
 class ProFormaTest(unittest.TestCase):
@@ -112,6 +113,59 @@ class ProFormaTest(unittest.TestCase):
 
         assert i[1:].n_term is None
         assert i[1:].c_term is not None
+
+    def test_charge_adducts(self):
+        sequences = ['PEPTIDE/1[+2Na+,-H+]', 'PEPTIDE/-1[+e-]', 'PEPTIDE/1[+2H+,+e-]']
+        charges = [1, -1, 1]
+        adducts_list = [[('Na', 1, 2), ('H', 1, -1)], [('e-', -1, 1)], [('H', 1, 2), ('e-', -1, 1)]]
+        for seq, charge, adducts in zip(sequences, charges, adducts_list):
+            i = ProForma.parse(seq)
+            self.assertEqual(i.charge_state.charge, charge)
+            self.assertEqual(i.charge_state.adducts, adducts)
+
+    def test_composition_with_adducts(self):
+        sequences = ['PEPTIDE/1[+2Na+,-H+]', 'PEPTIDE/-1[+e-]', 'PEPTIDE/1[+2H+,+e-]', 'PEPTIDE', 'PEPTIDE/1']
+        neutral_comp = Composition(sequence='PEPTIDE')
+        adducts_list = [Composition({'Na': 2, 'H': -1}),
+                        Composition({'e-': 1}),
+                        Composition({'H': 2, 'e-': 1}),
+                        Composition({}),
+                        Composition({'H': 1})]
+        for seq, adducts in zip(sequences, adducts_list):
+            i = ProForma.parse(seq)
+            self.assertEqual(i.composition(), neutral_comp)
+            self.assertEqual(i.composition(include_charge=True), neutral_comp + adducts)
+
+    def test_adduct_formatting(self):
+        ap = AdductParser()
+        ap.buffer.extend('+2Na+')
+        ap.bound()
+        ap.buffer.extend('-H+')
+        c = ChargeState(1, adducts=ap())
+        self.assertEqual(str(c), '1[+2Na+,-H+]')
+
+    def test_default_adduct_formatting(self):
+        c = ChargeState(2, None)
+        self.assertEqual(str(c), '2')
+
+    def test_composition_fixed(self):
+        sequences = ['<[UNIMOD:4]@C>ATPEILTCNSIGCLK']
+        aa_comp = std_aa_comp.copy()
+        aa_comp['cam'] = Composition(formula='H3C2NO')
+        comps = [Composition(sequence='ATPEILTcamCNSIGcamCLK', aa_comp=aa_comp)]
+
+        for seq, comp in zip(sequences, comps):
+            i = ProForma.parse(seq)
+            self.assertEqual(i.composition(), comp)
+
+    def test_missing_composition(self):
+        sequences = ['P[+79.966]EPTIDE']
+        comps = [Composition(sequence='PEPTIDE')]
+        for seq, comp in zip(sequences, comps):
+            i = ProForma.parse(seq)
+            self.assertEqual(i.composition(ignore_missing=True), comp)
+            with self.assertRaises(ProFormaError):
+                ProForma.parse(seq).composition()
 
 
 class TestTagProcessing(unittest.TestCase):
