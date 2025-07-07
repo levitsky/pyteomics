@@ -26,6 +26,7 @@ This module requires :py:mod:`lxml` and :py:mod:`sqlalchemy`.
 #   limitations under the License.
 
 import re
+from urllib.request import urlopen
 
 from lxml import etree
 try:
@@ -41,6 +42,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from . import mass
+from ..auxiliary import ensure_url_prefix
 
 model_registry = set()
 
@@ -71,7 +73,7 @@ Base.__repr__ = simple_repr
 
 def remove_namespace(doc, namespace):
     """Remove namespace in the passed document in place."""
-    ns = u'{%s}' % namespace
+    ns = f'{{{namespace}}}'
     nsl = len(ns)
     for elem in doc.getiterator():
         if elem.tag.startswith(ns):
@@ -90,8 +92,8 @@ def preprocess_xml(doc_path):
     -------
     out : etree.ElementTree
     """
-    p = etree.XMLParser(no_network=False)
-    tree = etree.parse(doc_path, parser=p)
+    urlpath = ensure_url_prefix(doc_path)
+    tree = etree.parse(urlopen(urlpath))
     root = tree.getroot()
     for ns in root.nsmap.values():
         remove_namespace(tree, ns)
