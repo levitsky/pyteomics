@@ -1146,20 +1146,21 @@ class MultiProcessingTaskMappingMixin(BaseTaskMappingMixin):
 
 
 class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
-    def map(self, target=None, threads=0, args=None, kwargs=None, **_kwargs):
+    def exec_initializer(self):
+        self._local = threading.local()
+        self._local.reader = copy(self)
+
+    def map(self, target=None, threads=0, args=(), kwargs={}, **_kwargs):
         def worker_func(key):
-            local_ns = threading.local()
-            if hasattr(local_ns, 'reader'):
-                # reuse the reader object in the thread
-                reader = local_ns.reader
-            else:
-                reader = local_ns.reader = copy(self)
-            item = reader[key]
+            print(f'Worker thread {threading.current_thread().name} processing key: {key}')
+            item = self._local.reader[key]
+            print(f'Item read for key {key}')
             if target is not None:
                 item = target(item, *args, **kwargs, **_kwargs)
+            print(f'Item processed for key {key}')
             return item
 
-        with ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f'pyteomics-{type(self).__name__}-reader') as executor:
+        with ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f'pyteomics-{type(self).__name__}-reader', initializer=self.exec_initializer) as executor:
             return executor.map(worker_func, self._task_map_iterator())
 
 
