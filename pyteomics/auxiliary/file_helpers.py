@@ -1152,12 +1152,9 @@ class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
 
     def map(self, target=None, threads=0, args=(), kwargs={}, **_kwargs):
         def worker_func(key):
-            print(f'Worker thread {threading.current_thread().name} processing key: {key}')
             item = self._local.reader[key]
-            print(f'Item read for key {key}')
             if target is not None:
                 item = target(item, *args, **kwargs, **_kwargs)
-            print(f'Item processed for key {key}')
             return item
 
         with ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f'pyteomics-{type(self).__name__}-reader', initializer=self.exec_initializer) as executor:
