@@ -1212,7 +1212,7 @@ class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixi
     pmap = MultiProcessingTaskMappingMixin.map
     tmap = ThreadingTaskMappingMixin.map
 
-    def map(self, target=None, workers=None, args=None, kwargs=None, /, method='mp', **_kwargs):
+    def map(self, target=None, workers=None, args=None, kwargs=None, method='mp', **_kwargs):
         """
         Execute the ``target`` function over entries of this object in parallel.
         The type of parallelism is determined by the ``method`` parameter.
@@ -1221,7 +1221,7 @@ class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixi
 
         Parameters
         ----------
-        method : str, keyword only, optional
+        method : str, optional
             The type of parallelism to use. Can be one of the following:
 
             - either one of 'p', 'mp', 'processes', or 'multiprocessing': use multiprocessing
