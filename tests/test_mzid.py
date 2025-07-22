@@ -46,11 +46,11 @@ class MzidTest(unittest.TestCase):
 
     def test_map(self):
         key = op.itemgetter('spectrumID')
-        for method in ['t', 'p']:
-            with self.subTest(method=method):
-                self.assertEqual(sorted(mzid_spectra[(1, 1)], key=key),
-                                 sorted(MzIdentML(self.path).map(method=method), key=key))
-                # self.assertEqual(len(mzid_spectra[(1, 1)]), sum(1 for _ in MzIdentML(self.path).map(method=method)))
+        with MzIdentML(self.path) as reader:
+            for method in ['t', 'p']:
+                with self.subTest(method=method):
+                    self.assertEqual(sorted(mzid_spectra[(1, 1)], key=key),
+                                    sorted(reader.map(method=method), key=key))
 
     def test_iterfind_map(self):
         self.assertEqual(

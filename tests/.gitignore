@@ -1,2 +1,5 @@
 *.obo
 *.mzMLb
+unimod.db
+parallel.log
+.coverage

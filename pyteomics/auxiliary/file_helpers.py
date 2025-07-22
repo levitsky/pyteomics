@@ -1019,8 +1019,8 @@ class BaseTaskMappingMixin(NoOpBaseReader):
 
 class MultiProcessingTaskMappingMixin(BaseTaskMappingMixin):
     def __init__(self, *args, **kwargs):
-        '''
-        Instantiate a :py:class:`TaskMappingMixin` object, set default parameters for IPC.
+        """
+        Instantiate a :py:class:`MultiProcessingTaskMappingMixin` object, set default parameters for IPC.
 
         Parameters
         ----------
@@ -1033,7 +1033,7 @@ class MultiProcessingTaskMappingMixin(BaseTaskMappingMixin):
         processes : int, keyword only, optional
             Number of worker processes to spawn when :py:meth:`map` is called. This can also be
             specified in the :py:meth:`map` call.
-        '''
+        """
         self._queue_size = kwargs.pop('queue_size', _QUEUE_SIZE)
         self._queue_timeout = kwargs.pop('timeout', _QUEUE_TIMEOUT)
         self._nproc = kwargs.pop('processes', _NPROC)
@@ -1076,8 +1076,8 @@ class MultiProcessingTaskMappingMixin(BaseTaskMappingMixin):
         feeder_thread.start()
         return feeder_thread
 
-    def map(self, target=None, processes=-1, args=None, kwargs=None, **_kwargs):
-        """Execute the ``target`` function over entries of this object across up to ``processes``
+    def map(self, target=None, workers=None, args=None, kwargs=None, **_kwargs):
+        """Execute the ``target`` function over entries of this object across up to ``workers``
         processes.
 
         Results will be returned out of order.
@@ -1086,17 +1086,17 @@ class MultiProcessingTaskMappingMixin(BaseTaskMappingMixin):
         ----------
         target : :class:`Callable`, optional
             The function to execute over each entry. It will be given a single object yielded by
-            the wrapped iterator as well as all of the values in ``args`` and ``kwargs``
-        processes : int, optional
-            The number of worker processes to use. If 0 or negative,
+            the wrapped iterator as well as all of the values in ``args`` and ``kwargs``.
+        workers : int or None, optional
+            The number of worker processes to use. If not a positive integer,
             defaults to the number of available CPUs.
             This parameter can also be set at reader creation.
         args : :class:`Sequence`, optional
-            Additional positional arguments to be passed to the target function
+            Additional positional arguments to be passed to the target function.
         kwargs : :class:`Mapping`, optional
-            Additional keyword arguments to be passed to the target function
+            Additional keyword arguments to be passed to the target function.
         **_kwargs
-            Additional keyword arguments to be passed to the target function
+            Additional keyword arguments to be passed to the target function.
 
         Yields
         ------
@@ -1104,8 +1104,8 @@ class MultiProcessingTaskMappingMixin(BaseTaskMappingMixin):
             The work item returned by the target function.
         """
 
-        if processes is None or processes < 1:
-            processes = self._nproc
+        if workers is None or workers < 1:
+            workers = self._nproc
         iterator = self._task_map_iterator()
 
         if args is None:
@@ -1123,9 +1123,9 @@ class MultiProcessingTaskMappingMixin(BaseTaskMappingMixin):
         in_queue = ctx.Queue(self._queue_size)
         out_queue = ctx.Queue(self._queue_size)
 
-        workers = self._spawn_workers(serialized, in_queue, out_queue, processes)
-        feeder_thread = self._spawn_feeder_thread(in_queue, iterator, processes)
-        for worker in workers:
+        worker_procs = self._spawn_workers(serialized, in_queue, out_queue, workers)
+        feeder_thread = self._spawn_feeder_thread(in_queue, iterator, workers)
+        for worker in worker_procs:
             worker.start()
 
         def iterate():
@@ -1134,30 +1134,77 @@ class MultiProcessingTaskMappingMixin(BaseTaskMappingMixin):
                     result = out_queue.get(True, self._queue_timeout)
                     yield result
                 except Empty:
-                    if all(w.is_done() for w in workers):
+                    if all(w.is_done() for w in worker_procs):
                         break
                     else:
                         continue
 
             feeder_thread.join()
-            for worker in workers:
+            for worker in worker_procs:
                 worker.join()
         return iterate()
 
 
-class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
-    def exec_initializer(self):
-        self._local = threading.local()
-        self._local.reader = copy(self)
+class ParserThreadPoolExecutor(ThreadPoolExecutor):
+    def __init__(self, reader, max_workers=None):
+        self.reader = reader
+        super().__init__(
+            max_workers=max_workers, thread_name_prefix=f'pyteomics-{type(reader).__name__.lower()}-worker',
+            initializer=self.exec_initializer)
 
-    def map(self, target=None, threads=0, args=(), kwargs={}, **_kwargs):
+    def exec_initializer(self):
+        self.reader._local.reader = copy(self.reader)
+
+
+class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
+    """
+    Mixin implementing thread-based parallelism for :py:meth:`map` calls.
+    The use of threaded parallelism is warranted in free-threaded environments,
+    such as the `experimental free-threaded CPython interpreter <https://docs.python.org/3/howto/free-threading-python.html>`_.
+    """
+    def __init__(self, *args, **kwargs):
+        self._local = threading.local()
+        super().__init__(*args, **kwargs)
+
+    def map(self, target=None, workers=None, args=(), kwargs={}, **_kwargs):
+        """
+        Execute the ``target`` function over entries of this object across up to ``workers`` threads.
+
+        Results will be returned out of order.
+
+        Parameters
+        ----------
+        target : :class:`Callable`, optional
+            The function to execute over each entry. It will be given a single object yielded by
+            the wrapped iterator as well as all of the values in ``args`` and ``kwargs``.
+
+            .. warning::
+                If ``target`` is a method that performs any additional reading from the source file, it should do so using
+                ``self._local.reader`` instead of ``self``. Otherwise, the method will not be thread-safe.
+
+        workers : int or None, optional
+            The number of worker processes to use. If not a positive integer,,
+            the default value of ``max_workers`` for the :py:class:`concurrent.futures.ThreadPoolExecutor` will be used.
+        args : :class:`Sequence`, optional
+            Additional positional arguments to be passed to the target function.
+        kwargs : :class:`Mapping`, optional
+            Additional keyword arguments to be passed to the target function.
+        **_kwargs
+            Additional keyword arguments to be passed to the target function.
+
+        Yields
+        ------
+        object
+            The work item returned by the target function.
+        """
+
         def worker_func(key):
             item = self._local.reader[key]
             if target is not None:
                 item = target(item, *args, **kwargs, **_kwargs)
             return item
 
-        with ThreadPoolExecutor(max_workers=threads, thread_name_prefix=f'pyteomics-{type(self).__name__}-reader', initializer=self.exec_initializer) as executor:
+        with ParserThreadPoolExecutor(self, max_workers=workers) as executor:
             return executor.map(worker_func, self._task_map_iterator())
 
 
@@ -1165,18 +1212,51 @@ class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixi
     pmap = MultiProcessingTaskMappingMixin.map
     tmap = ThreadingTaskMappingMixin.map
 
-    def map(self, target=None, method='mp', workers=None, args=None, kwargs=None, **_kwargs):
+    def map(self, target=None, workers=None, args=None, kwargs=None, /, method='mp', **_kwargs):
+        """
+        Execute the ``target`` function over entries of this object in parallel.
+        The type of parallelism is determined by the ``method`` parameter.
+
+        Results will be returned out of order.
+
+        Parameters
+        ----------
+        method : str, keyword only, optional
+            The type of parallelism to use. Can be one of the following:
+
+            - either one of 'p', 'mp', 'processes', or 'multiprocessing': use multiprocessing
+              This is the default. This is also equivalent to calling :meth:`pmap`, see there for details.
+
+            - either one of 't', 'threading', or 'threads': use threading
+              This is also equivalent to calling :meth:`tmap`, see there for details.
+        target : :class:`Callable`, optional
+            The function to execute over each entry. It will be given a single object yielded by
+            the wrapped iterator as well as all of the values in ``args`` and ``kwargs``.
+        workers : int, optional
+            The number of worker processes to use. The default depends on the ``method`` parameter.
+        args : :class:`Sequence`, optional
+            Additional positional arguments to be passed to the target function.
+        kwargs : :class:`Mapping`, optional
+            Additional keyword arguments to be passed to the target function.
+        **_kwargs
+            Additional keyword arguments to be passed to the target function.
+
+        Yields
+        ------
+        object
+            The work item returned by the target function.
+        """
         if self._offset_index is None:
             raise PyteomicsError('The reader needs an index for map() calls. Create the reader with `use_index=True`.')
 
         if method in {'p', 'mp', 'multiprocessing', 'processes'}:
-            if 'processes' in _kwargs and workers is None:
+            if 'processes' in _kwargs and (not workers or workers < 1):
                 # accept `processes` for backward compatibility
-                workers = _kwargs.pop('processes', -1)
+                workers = _kwargs.pop('processes', None)
 
-            return self.pmap(target=target, processes=workers, args=args, kwargs=kwargs, **_kwargs)
+            return self.pmap(target=target, workers=workers, args=args, kwargs=kwargs, **_kwargs)
         if method in {'t', 'threading', 'threads'}:
-            return self.tmap(target=target, threads=workers, args=args, kwargs=kwargs, **_kwargs)
+            return self.tmap(target=target, workers=workers, args=args, kwargs=kwargs, **_kwargs)
         raise PyteomicsError(f'Invalid value of `method`: {method}.')
 
 

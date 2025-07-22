@@ -16,6 +16,7 @@ import operator as op
 import pynumpress
 import base64
 import zlib
+from copy import copy
 
 from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
 obo_cache.cache_path = '.'
@@ -250,6 +251,15 @@ class MzmlTest(unittest.TestCase):
         reader = MzML(self.path)
         param = reader._handle_param(element)
         self.assertEqual(param.value.unit_info, 'm/z')
+
+    def test_copy_behavior(self):
+        with MzML(self.path) as reader:
+            creader = copy(reader)
+            self.assertTrue(isinstance(creader, MzML))
+            self.assertTrue(creader.index is reader.index)
+            self.assertFalse(creader._source is reader._source)
+            self.assertFalse(creader._source.fileno() == reader._source.fileno())
+            creader.close()
 
 
 if __name__ == '__main__':
