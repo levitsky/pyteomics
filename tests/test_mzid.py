@@ -18,13 +18,10 @@ class MzidTest(unittest.TestCase):
     def test_read(self):
         for rec, refs, rs, it, ui in product((True, False), repeat=5):
             for func in [MzIdentML, read, chain, lambda x, **kw: chain.from_iterable([x], **kw)]:
-                with func(self.path, recursive=rec, retrieve_refs=refs, read_schema=rs, iterative=it, use_index=ui) as reader:
-                    try:
+                with self.subTest(rec=rec, refs=refs, rs=rs, it=it, ui=ui, func=func):
+                    with func(self.path, recursive=rec, retrieve_refs=refs, read_schema=rs, iterative=it, use_index=ui) as reader:
                         psms = list(reader)
                         self.assertEqual(psms, mzid_spectra[(rec, refs)])
-                    except Exception:
-                        print('Parameters causing exception: ', rec, refs, rs, it, ui)
-                        raise
 
     def test_unit_info(self):
         with MzIdentML(self.path) as handle:
@@ -44,12 +41,14 @@ class MzidTest(unittest.TestCase):
         assert index['MS:1000774'] == 'multiple peak list nativeID format'
 
     def test_map(self):
-        self.assertEqual(len(mzid_spectra[(1, 1)]), sum(1 for _ in MzIdentML(self.path).map()))
+        with MzIdentML(self.path) as r:
+            self.assertEqual(len(mzid_spectra[(1, 1)]), sum(1 for _ in r.map()))
 
     def test_iterfind_map(self):
-        self.assertEqual(
-            len(mzid_spectra[(1, 1)]),
-            sum(1 for _ in MzIdentML(self.path).iterfind("SpectrumIdentificationResult").map()))
+        with MzIdentML(self.path) as r:
+            self.assertEqual(
+                len(mzid_spectra[(1, 1)]),
+                sum(1 for _ in r.iterfind("SpectrumIdentificationResult").map()))
 
 
 if __name__ == '__main__':
