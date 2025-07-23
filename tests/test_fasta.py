@@ -27,18 +27,18 @@ class ReadWriteTest(unittest.TestCase):
 
     def test_simple_read_long_comments(self):
         for reader in [fasta.read, fasta.FASTA]:
-            self.assertEqual(self.fasta_entries_long, list(reader(self.fasta_file)))
+            with reader(self.fasta_file) as f:
+                self.assertEqual(self.fasta_entries_long, list(f))
 
     def test_simple_read_short_comments(self):
         for reader in [fasta.read, fasta.FASTA]:
-            self.assertEqual(self.fasta_entries_short,
-                list(reader(self.fasta_file, ignore_comments=True)))
+            with reader(self.fasta_file, ignore_comments=True) as f:
+                self.assertEqual(self.fasta_entries_short, list(f))
 
     def test_indexed_read(self):
-        tlir = fasta.TwoLayerIndexedFASTA(self.fasta_file)
-        ir = fasta.IndexedFASTA(self.fasta_file)
-        for reader in [ir, tlir]:
-            self.assertEqual(self.fasta_entries_short[1:], list(reader))
+        with fasta.TwoLayerIndexedFASTA(self.fasta_file) as tlir, fasta.IndexedFASTA(self.fasta_file) as ir:
+            for reader in [ir, tlir]:
+                self.assertEqual(self.fasta_entries_short[1:], list(reader))
 
     def test_index_retrieve(self):
         key = 'test sequence 4'
@@ -54,6 +54,8 @@ class ReadWriteTest(unittest.TestCase):
         reader2 = pickle.loads(pickle.dumps(reader))
         self.assertEqual(reader2.block_size, reader.block_size)
         self.assertEqual(self.fasta_entries_short[2], reader2['4'])
+        reader.close()
+        reader2.close()
 
     def test_mp_map(self):
         with fasta.IndexedFASTA(self.fasta_file) as ir:

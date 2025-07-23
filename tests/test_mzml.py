@@ -237,9 +237,9 @@ class MzmlTest(unittest.TestCase):
         parser.feed(xml_str)
         element = parser.close()
 
-        reader = MzML(self.path)
-        param = reader._handle_param(element)
-        self.assertEqual(param.value.unit_info, 'cats')
+        with MzML(self.path) as reader:
+            param = reader._handle_param(element)
+            self.assertEqual(param.value.unit_info, 'cats')
 
     def test_cvparam_unitname_lookup(self):
         # uniName omitted
@@ -248,9 +248,9 @@ class MzmlTest(unittest.TestCase):
         parser.feed(xml_str)
         element = parser.close()
 
-        reader = MzML(self.path)
-        param = reader._handle_param(element)
-        self.assertEqual(param.value.unit_info, 'm/z')
+        with MzML(self.path) as reader:
+            param = reader._handle_param(element)
+            self.assertEqual(param.value.unit_info, 'm/z')
 
     def test_copy_behavior(self):
         with MzML(self.path) as reader:
