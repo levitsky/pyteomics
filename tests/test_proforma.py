@@ -26,7 +26,11 @@ class ProFormaTest(unittest.TestCase):
         assert properties['isotopes'][0] == StableIsotope("13C")
         assert properties['fixed_modifications'][0] == ModificationRule(
             GenericModification('Carbamidomethyl', None, None), ['C'])
-        assert to_proforma(tokens, **properties) == complicated_short
+        # The newer serializer enforces the ordering of sections
+        assert (
+            to_proforma(tokens, **properties)
+            == r"<13C><[Carbamidomethyl]@C>[Hydroxylation]?{HexNAc}[Hex]-ST[UNIMOD:Oxidation](EPP)[+18.15]ING"
+        )
         self.assertAlmostEqual(ProForma(tokens, properties).mass, 1228.6588, 3)
 
     def test_range(self):

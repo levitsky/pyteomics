@@ -2166,8 +2166,8 @@ class Parser:
             if self.current_aa:
                 self.pack_sequence_position()
             self.state = TAG_AFTER
-            if self.i >= self.n or self.sequence[self.i] != "[":
-                raise ProFormaError("Missing Closing Tag", self.i, self.state)
+            if self.i >= self.n or self.sequence[self.i + 1] != "[":
+                raise ProFormaError("Missing Opening Tag", self.i, self.state)
             self.i += 1
             self.depth = 1
         elif c == '/':
@@ -2278,7 +2278,6 @@ class Parser:
 
     def handle_post_tag_before(self, c: str):
         if c == "?":
-            breakpoint()
             self.unlocalized_modifications.extend(self.current_tag())
             self.state = BEFORE
         elif c == "-":
