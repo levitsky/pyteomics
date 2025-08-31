@@ -997,7 +997,7 @@ class MassModification(TagBase):
             TagTypeEnum.massmod, float(value), extra, group_id)
 
     def copy(self):
-        return self.__class__(self.value, [e.copy() for e in self.extra], self.group_id)
+        return self.__class__(self.value, [e.copy() for e in self.extra] if self.extra else [], self.group_id)
 
     def _format_main(self):
         if self.value >= 0:
@@ -3254,6 +3254,7 @@ class ProForma(object):
     def __iter__(self):
         return iter(self.sequence)
 
+    @property
     def charge_state(self):
         z = self._charge_state
         return z
