@@ -10,6 +10,7 @@ for more up-to-date information.
 For more details, see the :mod:`pyteomics.proforma` online.
 '''
 
+import itertools
 import re
 import warnings
 from typing import Any, Callable, Dict, Iterable, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar
@@ -102,6 +103,18 @@ class ModificationTagStyle(Enum):
     LongName = 4
 
 
+class ModificationSourceType(Enum):
+    """
+    Whether a tag was generated from explicit user input (``Explicit``), a constant
+    modification rule (``Constant``), or from a variable expansion (``Generated``).
+
+    Used to track sources in :class:`ProteoformCombinator` machinery.
+    """
+    Explicit = 0
+    Constant = 1
+    Generated = 2
+
+
 _sentinel = object()
 
 
@@ -129,7 +142,7 @@ class TagBase(object):
     group_id: str or None
         A short label denoting which group, if any, this tag belongs to
     '''
-    __slots__ = ("type", "value", "extra", "group_id")
+    __slots__ = ("type", "value", "extra", "group_id", )
 
     type: TagTypeEnum
     value: Any
@@ -145,6 +158,9 @@ class TagBase(object):
         self.value = value
         self.extra = extra
         self.group_id = group_id
+
+    def copy(self):
+        return self.__class__(self.value, [e.copy() for e in (self.extra or [])], self.group_id)
 
     def __str__(self):
         part = self._format_main()
@@ -175,6 +191,26 @@ class TagBase(object):
 
     def __ne__(self, other):
         return not self == other
+
+    def is_modification(self) -> bool:
+        return self.type in (
+            TagTypeEnum.formula,
+            TagTypeEnum.generic,
+            TagTypeEnum.glycan,
+            TagTypeEnum.gnome,
+            TagTypeEnum.unimod,
+            TagTypeEnum.massmod,
+            TagTypeEnum.psimod,
+            TagTypeEnum.custom,
+        )
+
+    def find_modification(self) -> Optional["TagBase"]:
+        if self.is_modification():
+            return self
+        for tag in self.extra:
+            if tag.is_modification:
+                return tag
+        return None
 
     def find_tag_type(self, tag_type: TagTypeEnum) -> List['TagBase']:
         '''Search this tag or tag collection for elements with a particular
@@ -281,6 +317,9 @@ class PositionModifierTag(TagBase):
     def __init__(self, value, extra=None, group_id=None):
         super().__init__(TagTypeEnum.position_modifier, value, extra, group_id)
 
+    def _format_main(self):
+        return f"{self.prefix_name}:{self.value}"
+
 
 class LimitModifierTag(TagBase):
     __slots__ = ()
@@ -288,7 +327,15 @@ class LimitModifierTag(TagBase):
     prefix_name = "Limit"
 
     def __init__(self, value, extra=None, group_id=None):
+        if not isinstance(value, (int, float)):
+            try:
+                value = int(value)
+            except (ValueError, TypeError):
+                pass
         super().__init__(TagTypeEnum.limit, value, extra, group_id)
+
+    def _format_main(self):
+        return f"{self.prefix_name}:{self.value}"
 
 
 class ColocaliseModificationsOfKnownPostionTag(TagBase):
@@ -299,6 +346,9 @@ class ColocaliseModificationsOfKnownPostionTag(TagBase):
 
     def __init__(self, extra=None, group_id=None):
         super().__init__(TagTypeEnum.comkp, None, extra, group_id)
+
+    def copy(self):
+        return self.__class__([e.copy() for e in (self.extra or [])], self.group_id)
 
     def _format_main(self):
         return self.short_prefix
@@ -312,6 +362,9 @@ class ColocaliseModificationsOfUnknownPostionTag(TagBase):
 
     def __init__(self, extra=None, group_id=None):
         super().__init__(TagTypeEnum.comup, None, extra, group_id)
+
+    def copy(self):
+        return self.__class__([e.copy() for e in self.extra or []], self.group_id)
 
     def _format_main(self):
         return self.short_prefix
@@ -405,7 +458,20 @@ class ModificationResolver(object):
         cache_key = (name, id, frozenset(kwargs.items()))
         if cache_key in self._cache:
             return self._cache[cache_key].copy()
-        value = self._resolve_impl(name, id, **kwargs)
+        try:
+            value = self._resolve_impl(name, id, **kwargs)
+        except KeyError:
+            if name.startswith(("+", "-")):
+                value = {
+                    "composition": None,
+                    "mass": float(name),
+                    "name": name,
+                    "id": None,
+                    "provider": self.name,
+                    "source": self,
+                }
+            else:
+                raise
         self._cache[cache_key] = value
         return value.copy()
 
@@ -763,7 +829,9 @@ class ModificationBase(TagBase):
     '''
 
     _tag_type = None
-    __slots__ = ('_definition', 'style')
+    __slots__ = ('_definition', 'style', '_generated')
+
+    _generated: ModificationSourceType
 
     def __init__(self, value, extra=None, group_id=None, style=None):
         if style is None:
@@ -771,7 +839,11 @@ class ModificationBase(TagBase):
         super(ModificationBase, self).__init__(
             self._tag_type, value, extra, group_id)
         self._definition = None
+        self._generated = ModificationSourceType.Explicit
         self.style = style
+
+    def copy(self):
+        return self.__class__(self.value, [e.copy() for e in self.extra], self.group_id, self.style)
 
     def __reduce__(self):
         return self.__class__, (self.value, self.extra, self.group_id, self.style), self.__getstate__()
@@ -909,9 +981,10 @@ class MassModification(TagBase):
 
     The value of a :class:`MassModification` is always a :class:`float`
     '''
-    __slots__ = ('_significant_figures', )
+    __slots__ = ('_significant_figures', '_generated')
 
     prefix_name = "Obs"
+    _generated: ModificationSourceType
 
     def __init__(self, value, extra=None, group_id=None):
         if isinstance(value, str):
@@ -919,8 +992,12 @@ class MassModification(TagBase):
         else:
             sigfigs = 4
         self._significant_figures = sigfigs
+        self._generated = ModificationSourceType.Explicit
         super(MassModification, self).__init__(
             TagTypeEnum.massmod, float(value), extra, group_id)
+
+    def copy(self):
+        return self.__class__(self.value, [e.copy() for e in self.extra], self.group_id)
 
     def _format_main(self):
         if self.value >= 0:
@@ -977,7 +1054,8 @@ class FormulaModification(ModificationBase):
     isotope_pattern: re.Pattern = re.compile(r'\[(?P<isotope>\d+)(?P<element>[A-Z][a-z]*)(?P<quantity>[\-+]?\d+)\]')
     _tag_type = TagTypeEnum.formula
 
-    def _normalize_isotope_notation(self, match):
+    @staticmethod
+    def _normalize_isotope_notation(match):
         '''Rewrite ProForma isotope notation to Pyteomics-compatible
         isotope notation.
 
@@ -993,22 +1071,35 @@ class FormulaModification(ModificationBase):
         parts = match.groupdict()
         return "{element}[{isotope}]{quantity}".format(**parts)
 
-    def resolve(self):
-        normalized = self.value.replace(' ', '')
+    @classmethod
+    def parse(cls, value: str):
+        normalized = value.replace(" ", "")
         # If there is a [ character in the formula, we know there are isotopes which
         # need to be normalized.
-        if '[' in normalized:
-            normalized = self.isotope_pattern.sub(self._normalize_isotope_notation, normalized)
-        if ':z' in normalized:
-            matched = self.charge_carrier_pattern.search(normalized)
+        if "[" in normalized:
+            normalized = cls.isotope_pattern.sub(
+                cls._normalize_isotope_notation, normalized
+            )
+        if ":z" in normalized:
+            matched = cls.charge_carrier_pattern.search(normalized)
             if not matched:
-                raise ProFormaError('{normalized!r} is a malformed formula'.format(normalized=normalized), None, None)
+                raise ProFormaError(
+                    "{normalized!r} is a malformed formula".format(
+                        normalized=normalized
+                    ),
+                    None,
+                    None,
+                )
             charge = matched.group(1)
             charge = int(charge)
-            normalized = self.charge_carrier_pattern.sub('', normalized)
+            normalized = cls.charge_carrier_pattern.sub("", normalized)
         else:
             charge = None
         composition = Composition(formula=normalized)
+        return composition, charge
+
+    def resolve(self):
+        composition, charge = self.parse(self.value)
         return {
             "mass": composition.mass(),
             "composition": composition,
@@ -1481,10 +1572,10 @@ class ModificationTarget(object):
 
     def is_valid(self, aa: str, n_term: bool, c_term: bool) -> bool:
         if (n_term and self.n_term) or (c_term and self.c_term):
-            if (self.aa and aa == self.aa) or self.aa is None:
+            if (self.aa and aa.upper() == self.aa.upper()) or self.aa is None:
                 return True
             return False
-        return self.aa == aa or self.aa is None
+        return self.aa.upper() == aa.upper() or self.aa is None
 
 
 class ModificationRule(object):
@@ -1518,7 +1609,9 @@ class ModificationRule(object):
         elif not isinstance(self.targets, list):
             self.targets = [self.targets]
         for target in self.targets:
-            if target in VALID_AA:
+            if isinstance(target, ModificationTarget):
+                validated_targets.append(target)
+            elif target in VALID_AA:
                 validated_targets.append(ModificationTarget(target, False, False))
             elif target in ("N-term", "C-term"):
                 n_term = target == "N-term"
@@ -1586,6 +1679,9 @@ class StableIsotope(object):
     def __init__(self, isotope):
         self.isotope = isotope
 
+    def copy(self):
+        return self.__class__(self.isotope)
+
     def __eq__(self, other):
         if other is None:
             return False
@@ -1637,6 +1733,14 @@ class TaggedInterval(object):
         self.tags = tags
         self.ambiguous = ambiguous
 
+    def copy(self):
+        return self.__class__(
+            self.start,
+            self.end,
+            [v.copy() for v in self.tags] if self.tags else [],
+            self.ambiguous
+        )
+
     def __eq__(self, other):
         if other is None:
             return False
@@ -1659,9 +1763,6 @@ class TaggedInterval(object):
 
     def __contains__(self, i):
         return self.contains(i)
-
-    def copy(self):
-        return self.__class__(self.start, self.end, self.tags)
 
     def _check_slice(self, qstart, qend, warn_ambiguous):
         # Fully contained interval
@@ -2010,6 +2111,7 @@ PEPTIDOFORM_NAME_CLOSE = ParserStateEnum.peptidoform_name_close
 DONE = ParserStateEnum.done
 
 VALID_AA = set("QWERTYIPASDFGHKLCVNMXUOJZB")
+VALID_AA |= {s.lower() for s in VALID_AA}
 TERMINAL_SPEC_CHARS = set('N-term') | set('C-term') | set("ncT: ")
 
 
@@ -2054,6 +2156,7 @@ class Parser:
         self.current_interval = None
         self.current_tag = TagParser()
         self.current_aa_targets = StringParser()
+        self.current_unlocalized_count = NumberParser()
 
         self.unlocalized_modifications = []
         self.labile_modifications = []
@@ -3033,14 +3136,14 @@ def to_proforma(
     return "".join(primary)
 
 
-class _ProFormaProperty(object):
+class _ProFormaProperty(Generic[T]):
     def __init__(self, name):
         self.name = name
 
-    def __get__(self, obj, cls):
+    def __get__(self, obj, cls) -> T:
         return obj.properties[self.name]
 
-    def __set__(self, obj, value):
+    def __set__(self, obj, value: T):
         obj.properties[self.name] = value
 
     def __repr__(self):
@@ -3083,20 +3186,23 @@ class ProForma(object):
         and unlocalized modifications. **Does not include stable isotopes at this time**
     '''
 
+    sequence: List[Tuple[str, Optional[List[TagBase]]]]
+    properties: Dict[str, Any]
+
     def __init__(self, sequence, properties):
         self.sequence = sequence
         self.properties = properties
 
-    isotopes = _ProFormaProperty('isotopes')
-    charge_state = _ProFormaProperty('charge_state')
+    isotopes = _ProFormaProperty[List[StableIsotope]]('isotopes')
+    _charge_state = _ProFormaProperty('charge_state')
 
-    intervals = _ProFormaProperty('intervals')
-    fixed_modifications = _ProFormaProperty('fixed_modifications')
-    labile_modifications = _ProFormaProperty('labile_modifications')
-    unlocalized_modifications = _ProFormaProperty('unlocalized_modifications')
+    intervals = _ProFormaProperty[List[TaggedInterval]]('intervals')
+    fixed_modifications = _ProFormaProperty[List[ModificationRule]]("fixed_modifications")
+    labile_modifications = _ProFormaProperty[List[TagBase]]('labile_modifications')
+    unlocalized_modifications = _ProFormaProperty[List[TagBase]]("unlocalized_modifications")
 
-    n_term = _ProFormaProperty('n_term')
-    c_term = _ProFormaProperty('c_term')
+    n_term = _ProFormaProperty[List[TagBase]]("n_term")
+    c_term = _ProFormaProperty[List[TagBase]]("c_term")
 
     group_ids = _ProFormaProperty('group_ids')
 
@@ -3131,6 +3237,9 @@ class ProForma(object):
         else:
             return self.sequence[i]
 
+    def __setitem__(self, i, val: Tuple[str, Optional[List[TagBase]]]):
+        self.sequence[i] = val
+
     def __eq__(self, other):
         if isinstance(other, str):
             return str(self) == other
@@ -3141,6 +3250,13 @@ class ProForma(object):
 
     def __ne__(self, other):
         return not self == other
+
+    def __iter__(self):
+        return iter(self.sequence)
+
+    def charge_state(self):
+        z = self._charge_state
+        return z
 
     @classmethod
     def parse(cls, string):
@@ -3166,7 +3282,7 @@ class ProForma(object):
         n_term_v = 0
         c_term_v = len(self) - 1
         for i, position in enumerate(self.sequence):
-            aa = position[0]
+            aa = position[0].upper()
             try:
                 mass += std_aa_mass[aa]
             except KeyError:
@@ -3374,6 +3490,29 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
+    def generate_variable_proteoforms(self):
+        return iter(ProteoformCombinator(self))
+
+    def copy(self):
+        sequence = []
+        for (aa, tags) in self:
+            if tags:
+                tags = [t.copy() for t in tags]
+            sequence.append((aa, tags))
+        properties = self.properties.copy()
+        for k in [
+            "labile_modifications",
+            "n_term",
+            "c_term",
+            "unlocalized_modifications",
+            "fixed_modifications",
+            "isotopes",
+        ]:
+            properties[k] = [v.copy() for v in properties[k]]
+        properties['names'] = properties['names'].copy()
+        return self.__class__(sequence, properties)
+
+
     def composition(self, include_charge=False, aa_comp=None, ignore_missing=False):
         '''
         Calculate the elemental composition of the ProForma sequence.
@@ -3443,3 +3582,187 @@ class ProForma(object):
             for adduct, _, count in self.charge_state.adducts:
                 comp[adduct] += count
         return comp
+
+
+class GeneratorModificationRuleDirective:
+    """
+    A helper for :class:`ProteoformCombinator` that maps modification rules to sequence locations.
+
+    This type probably shouldn't be created directly.
+
+    TODO: limit directives, position group_id tags
+    """
+    rule: ModificationRule
+    region: Optional[TaggedInterval] = None
+    colocal_known: bool = False
+    colocal_unknown: bool = False
+    limit: int = 1
+
+    def __init__(self, rule, region=None, colocal_known: bool = False, colocal_unknown: bool = False, limit: int = 1):
+        self.rule = rule
+        self.region = region
+        self.colocal_known = colocal_known
+        self.colocal_unknown = colocal_unknown
+        self.limit = limit
+
+    def create(self) -> TagBase:
+        return self.rule.modification_tag.copy()
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.rule}, {self.region}, {self.colocal_known}, {self.colocal_unknown})"
+
+    def find_positions(self, sequence: ProForma) -> List[int]:
+        n = len(sequence) - 1
+        positions = []
+        group_id = self.rule.modification_tag.group_id
+        for i, (aa, tags) in enumerate(sequence):
+            if self.region and not self.region.contains(i):
+                continue
+            elif group_id is not None:
+                if not tags:
+                    continue
+                for tag in tags:
+                    # TODO: Implement combinatoric limits here
+                    if tag.group_id == group_id:
+                        positions.append(i)
+            elif self.rule.is_valid(aa, i == 0, i == n):
+                if not tags:
+                    positions.append(i)
+                else:
+                    known = []
+                    unknown = []
+                    for tag in tags:
+                        if isinstance(tag, (ModificationBase, MassModification)):
+                            if tag._generated in (ModificationSourceType.Explicit, ModificationSourceType.Constant):
+                                known.append(tag)
+                            elif tag._generated == ModificationSourceType.Generated:
+                                unknown.append(tag)
+                    total_at = len(known) + len(unknown)
+                    can_known = (known and self.colocal_known) or not known
+                    can_unknown = (unknown and self.colocal_unknown) or not unknown
+                    if ((can_known and can_unknown) or (not can_known and not can_unknown)) and total_at < self.limit:
+                        positions.append(i)
+        return positions
+
+    @classmethod
+    def from_unlocalized_rule(cls, tag: TagBase) -> "GeneratorModificationRuleDirective":
+        mod = tag.find_modification()
+        if not mod:
+            return
+        position_constraints = tag.find_tag_type(TagTypeEnum.position_modifier)
+        targets = [ModificationTarget(v.value) for v in position_constraints]
+        colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
+        colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
+        rule = ModificationRule(modification_tag=mod, targets=targets)
+        limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
+        return cls(rule, None, colocal_known, colocal_unknown, limit)
+
+    @classmethod
+    def from_region_rule(cls, region: TaggedInterval) -> List['GeneratorModificationRuleDirective']:
+        rules = []
+        for tag in (region.tags or []):
+            mod = tag.find_modification()
+            if not mod:
+                continue
+            position_constraints = tag.find_tag_type(TagTypeEnum.position_modifier)
+            targets = [v.value for v in position_constraints]
+            colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
+            colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
+            rule = ModificationRule(modification_tag=mod, targets=targets)
+            limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
+            rules.append(cls(rule, region, colocal_known, colocal_unknown, limit))
+        return rules
+
+
+class ProteoformCombinator:
+    """
+    Generate combinations of modification (co)localizations for
+    modifications that aren't at a fixed position specified in
+    the original sequence.
+
+    Attributes
+    ----------
+    template: :class:`ProForma`
+        The template sequence to apply any combination of rules to
+    variable_rules: list[:class:`GeneratorModificationRuleDirective`]
+        The rules to apply in combinations to the template sequence
+    """
+    template: ProForma
+    variable_rules: List[GeneratorModificationRuleDirective]
+
+    def __init__(self, base_proteoform: ProForma):
+        self.template = base_proteoform.copy()
+        self.variable_rules = []
+        self._extract_rules()
+        self._apply_fixed_modifications()
+        self._iter = self.generate()
+
+    def _apply_fixed_modifications(self):
+        for c in self.template.fixed_modifications:
+            rule = GeneratorModificationRuleDirective(c)
+            positions = rule.find_positions(self.template)
+            for i in positions:
+                (aa, tags) = self.template[i]
+                if not tags:
+                    tags = []
+                tag = rule.create()
+                if isinstance(tag, (MassModification, ModificationBase)):
+                    tag._generated = ModificationSourceType.Constant
+                tags.append(tag)
+                self.template[i] = (aa, tags)
+        self.template.fixed_modifications.clear()
+
+    def _extract_rules(self) -> List[GeneratorModificationRuleDirective]:
+        rules = []
+        remains = []
+        for iv in self.template.intervals:
+            block = GeneratorModificationRuleDirective.from_region_rule(iv)
+            if block:
+                rules.extend(block)
+                iv = iv.copy()
+                iv.tags = [t for t in iv.tags if not t.is_modification()]
+                remains.append(iv)
+            else:
+                remains.append(iv)
+        self.template.intervals = remains
+
+        remains = []
+        for rule in self.template.unlocalized_modifications:
+            rule_ = GeneratorModificationRuleDirective.from_unlocalized_rule(rule)
+            if rule_:
+                rules.append(rule_)
+            else:
+                remains.append(rule)
+        self.template.unlocalized_modifications = remains
+        self.variable_rules = rules
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return next(self._iter)
+
+    def generate(self):
+        position_choices = []
+        for rule in self.variable_rules:
+            positions_for = rule.find_positions(self.template)
+            position_choices.append([None] + positions_for)
+
+        for slots in itertools.product(*position_choices):
+            template = self.template.copy()
+            valid = True
+            for rule, idx in zip(self.variable_rules, slots):
+                if idx is None:
+                    continue
+                if idx not in rule.find_positions(template):
+                    valid = False
+                    break
+                (aa, tags) = template[idx]
+                if not tags:
+                    tags = []
+                tag = rule.create()
+                tag._generated = ModificationSourceType.Generated
+                tags.append(tag)
+                template[idx] = (aa, tags)
+            if valid:
+                yield template
