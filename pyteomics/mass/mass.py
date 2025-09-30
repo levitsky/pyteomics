@@ -425,7 +425,7 @@ class Composition(BasicComposition):
         if charge:
             mass /= charge
         if charge and charge < 0 and absolute:
-            mass = abs(mass)
+            mass = -mass
         return mass
 
     def mass(self, **kwargs):
@@ -931,6 +931,9 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         If not 0 then m/z is calculated: the mass is increased
         by the corresponding number of proton masses and divided
         by z.
+    absolute : bool, optional
+        If :py:const:`True` (default), the m/z value returned will always be positive,
+        even for negatively charged ions.
     mass_data : dict, optional
         A dict with the masses of chemical elements (the default
         value is :py:data:`nist_mass`).
@@ -947,6 +950,7 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         Monoisotopic mass or m/z of a peptide molecule/ion.
     """
     aa_mass = kwargs.get('aa_mass', std_aa_mass)
+    absolute = kwargs.get('absolute', True)
     try:
         mass = sum(aa_mass[i] for i in sequence)
     except KeyError as e:
@@ -965,6 +969,8 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
 
     if charge:
         mass = (mass + mass_data['H+'][0][0] * charge) / charge
+        if charge < 0 and absolute:
+            mass = -mass
 
     return mass
 
@@ -985,6 +991,9 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
         If not 0 then m/z is calculated: the mass is increased
         by the corresponding number of proton masses and divided
         by z.
+    absolute : bool, optional
+        If :py:const:`True` (default), the m/z value returned will always be positive,
+        even for negatively charged ions.
     mass_data : dict, optional
         A dict with the masses of chemical elements (the default
         value is :py:data:`nist_mass`).
@@ -1002,6 +1011,7 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
     """
     aa_mass = kwargs.get('aa_mass', std_aa_mass)
     mass_data = kwargs.get('mass_data', nist_mass)
+    absolute = kwargs.get('absolute', True)
     try:
         comp = parser.amino_acid_composition(sequence,
                 show_unmodified_termini=True,
@@ -1043,6 +1053,8 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
 
     if charge:
         mass = (mass + mass_data['H+'][0][0] * charge) / charge
+        if charge < 0 and absolute:
+            mass = -mass
 
     return mass
 
