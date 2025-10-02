@@ -2152,12 +2152,29 @@ PEPTIDOFORM_NAME_CLOSE = ParserStateEnum.peptidoform_name_close
 
 DONE = ParserStateEnum.done
 
-VALID_AA = set("QWERTYIPASDFGHKLCVNMXUOJZB")
-VALID_AA |= {s.lower() for s in VALID_AA}
+VALID_AA_UPPER = set("QWERTYIPASDFGHKLCVNMXUOJZB")
+VALID_AA = {s.lower() for s in VALID_AA_UPPER} | VALID_AA_UPPER
 TERMINAL_SPEC_CHARS = set('N-term') | set('C-term') | set("ncT: ")
 
 
 class Parser:
+    """
+    A parser for the ProForma 2 syntax.
+
+    Attributes
+    ----------
+    sequence : str
+        The sequence to be parsed
+    index : int
+        The current index parsing from
+    depth : int
+        The current depth of the brace type being parsed within
+    length : int
+        The total length in characters of the sequence to parse
+    state : ParserStateEnum
+        The state of the parser is currently in, dictating how it will interpret
+        the next token read.
+    """
     sequence: str
     index: int
     depth: int
@@ -2180,12 +2197,24 @@ class Parser:
     charge_buffer: Optional[NumberParser]
     adduct_buffer: Optional[AdductParser]
 
-    def __init__(self, sequence: str):
+    def __init__(self, sequence: str, case_sensitive_aa: bool=False):
+        """
+        Instantiate a ProForma 2 parser for the specified sequence.
+
+        Parameters
+        ----------
+        sequence : str
+            The sequence to parse
+        case_sensitive_aa : bool
+            Whether to treat amino acids as case sensitive (older behavior) while the specification
+            states they should be handled insensitively.
+        """
         self.sequence = sequence
         self.index = 0
         self.depth = 0
         self.length = len(sequence)
         self.state = ParserStateEnum.before_sequence
+        self._VALID_AA = VALID_AA if not case_sensitive_aa else VALID_AA_UPPER
 
         self.n_term = []
         self.c_term = []
@@ -2240,7 +2269,7 @@ class Parser:
             self.depth = 1
         elif c == '<':
             self.state = FIXED
-        elif c in VALID_AA:
+        elif c in self._VALID_AA:
             self.current_aa = c
             self.state = SEQ
         elif c == '(':
@@ -2269,7 +2298,7 @@ class Parser:
                     self.current_interval.ambiguous = True
                 # continue
                 return True
-        if c in VALID_AA:
+        if c in self._VALID_AA:
             if self.current_aa is not None:
                 self.pack_sequence_position()
             self.current_aa = c
@@ -2392,7 +2421,7 @@ class Parser:
         if c == "[":
             self.current_tag.bound()
             self.state = INTERVAL_TAG
-        elif c in VALID_AA:
+        elif c in self._VALID_AA:
             self.current_aa = c
             self.current_interval.tags = self.current_tag()
             self.intervals.append(self.current_interval)
@@ -2482,7 +2511,7 @@ class Parser:
             )
 
     def handle_post_global_aa(self, c: str):
-        if c in VALID_AA or c in TERMINAL_SPEC_CHARS:
+        if c in self._VALID_AA or c in TERMINAL_SPEC_CHARS:
             self.current_aa_targets.append(c)
         elif c == ",":
             # the next character should be another amino acid
@@ -2673,6 +2702,18 @@ class Parser:
     def finish(
         self,
     ) -> Tuple[List[Tuple[str, Optional[List[TagBase]]]], Dict[str, Any]]:
+        """
+        Post-process the parser's accumulated parsed token data and return the parsed
+        sequence and metadata.
+
+        Returns
+        -------
+        sequence : List[Tuple[str, Optional[List[TagBase]]]]
+            The primary amino acid sequence of the ProForma string
+        metadata : Dict[str, Any]
+            All other information outside the main sequence, including unlocalized, labile, or global modifications,
+            names, charge states, and more.
+        """
         if self.charge_buffer:
             charge_number = self.charge_buffer()
             if self.adduct_buffer:
@@ -2721,7 +2762,7 @@ class Parser:
         return self.parse()
 
 
-def parse(sequence: str) -> Tuple[List[Tuple[str, Optional[List[TagBase]]]], Dict[str, Any]]:
+def parse(sequence: str, **kwargs) -> Tuple[List[Tuple[str, Optional[List[TagBase]]]], Dict[str, Any]]:
     """
     Tokenize a ProForma sequence into a sequence of amino acid+tag positions, and a
     mapping of sequence-spanning modifiers.
@@ -2734,6 +2775,8 @@ def parse(sequence: str) -> Tuple[List[Tuple[str, Optional[List[TagBase]]]], Dic
     ----------
     sequence: str
         The sequence to parse
+    **kwargs :
+        Forwarded to :class:`Parser`
 
     Returns
     -------
@@ -2743,7 +2786,7 @@ def parse(sequence: str) -> Tuple[List[Tuple[str, Optional[List[TagBase]]]], Dic
         A mapping listing the labile modifications, fixed modifications, stable isotopes, unlocalized
         modifications, tagged intervals, and group IDs
     """
-    parser = Parser(sequence)
+    parser = Parser(sequence, **kwargs)
     return parser.parse()
 
 
@@ -3238,6 +3281,15 @@ class ProForma(object):
     properties: Dict[str, Any]
 
     def __init__(self, sequence, properties):
+        """
+        Initialize a :class:`ProForma` instance from a parse tree.
+
+        To construct an instance from a string directly, see :meth:`ProForma.parse`.
+
+        See Also
+        --------
+        :meth:`ProForma.parse`
+        """
         self.sequence = sequence
         self.properties = properties
 
@@ -3308,19 +3360,20 @@ class ProForma(object):
         return z
 
     @classmethod
-    def parse(cls, string):
+    def parse(cls, string, **kwargs):
         '''Parse a ProForma string.
 
         Parameters
         ----------
         string : str
             The string to parse
-
+        **kwargs :
+            Forwarded to :class:`Parser`
         Returns
         -------
         ProForma
         '''
-        return cls(*parse(string))
+        return cls(*parse(string, **kwargs))
 
     @property
     def mass(self):
@@ -3459,7 +3512,7 @@ class ProForma(object):
         for i in iterator:
             position = self.sequence[i]
 
-            aa = position[0]
+            aa = position[0].upper()
             try:
                 mass += std_aa_mass[aa]
             except KeyError:
