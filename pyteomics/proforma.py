@@ -13,7 +13,7 @@ For more details, see the :mod:`pyteomics.proforma` online.
 import itertools
 import re
 import warnings
-from typing import Any, Callable, Dict, Iterable, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar
+from typing import Any, Callable, Dict, Iterable, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple
 from collections import deque, namedtuple
 from functools import partial
 from itertools import chain
@@ -1822,49 +1822,55 @@ class TaggedInterval(object):
         return new
 
 
+class Adduct(NamedTuple):
+    name: str
+    charge: int
+    count: int
+
+    def __str__(self):
+        base = f"{self.name}:z{'+' if self.charge > 0 else ''}{self.charge}"
+        if self.count > 1:
+            return base + f"^{self.count}"
+        return base
+
+
 class ChargeState(object):
-    '''Describes the charge and adduct types of the structure.
+    """Describes the charge and adduct types of the structure.
 
     Attributes
     ----------
     charge : int
         The total charge state as a signed number.
-    adducts : list[tuple[str, int]]
+    adducts : list[Adduct]
         Each charge carrier associated with the molecule.
-    '''
+    """
     __slots__ = ("charge", "adducts")
+
+    charge: int
+    adducts: List[Adduct]
+
+    @classmethod
+    def from_adducts(cls, adducts: List[Adduct]):
+        acc = 0
+        for a in adducts:
+            acc += a.charge * a.count
+        return cls(acc, adducts)
 
     def __init__(self, charge, adducts=None):
         if adducts is None:
-            adducts = [('H', 1, charge)]
+            adducts = [Adduct("H", 1, charge)]
         self.charge = charge
         self.adducts = adducts
 
-    @staticmethod
-    def _repr_adduct_num(num):
-        if num == 1:
-            return '+'
-        elif num == -1:
-            return '-'
-        else:
-            return f'{num:+d}'
-
-    @staticmethod
-    def _repr_charge_value(num):
-        if num == 1:
-            return '+'
-        elif num == -1:
-            return '-'
-        else:
-            return str(num) + '+' if num > 0 else '-'
-
     def __str__(self):
-        tokens = [str(self.charge)]
-        if self.adducts != [('H', 1, self.charge)]:
+        if len(self.adducts) > 1 or self.adducts[0].name != 'H':
+            tokens = []
             tokens.append("[")
-            tokens.append(','.join(f'{self._repr_adduct_num(adduct[2])}{adduct[0]}{self._repr_charge_value(adduct[1])}' for adduct in self.adducts))
+            tokens.append(','.join((map(str, self.adducts))))
             tokens.append("]")
-        return ''.join(tokens)
+            return ''.join(tokens)
+        else:
+            return f'{self.charge:d}'
 
     def __repr__(self):
         template = "{self.__class__.__name__}({self.charge}, {self.adducts})"
@@ -1984,26 +1990,62 @@ class AdductParser(StringParser):
     and the second element is the number of adducts of that type.
     '''
     token_pattern = re.compile(r'(?P<number>[+-]?\d*)(?P<adduct>[A-Za-z]+)(?P<charge>\d*[+-])')
+    token_pattern2 = re.compile(r'(?P<adduct>[A-Za-z]+):[zZ](?P<charge>(-|\+)\d+)(?:\^(?P<number>\d+))?')
+
+    def parse_form1(self, token: str) -> Optional[Tuple[str, int, int]]:
+        parsed = self.token_pattern.match(token)
+        if not parsed:
+            return None
+        gdict = parsed.groupdict()
+        if gdict['adduct'] == 'e':
+            adduct = 'e-'
+        else:
+            adduct = gdict['adduct']
+        if gdict['number'] == '+' or gdict['number'] == '':
+            number = 1
+        elif gdict['number'] == '-':
+            number = -1
+        else:
+            number = int(gdict['number'])
+        charge = int(gdict['charge'][:-1]) if gdict['charge'][:-1] else 1
+        if gdict['charge'][-1] == '-':
+            charge = -charge
+        return (adduct, charge, number)
+
+    def parse_form2(self, token: str):
+        parsed = self.token_pattern2.match(token)
+        if not parsed:
+            return None
+        gdict = parsed.groupdict()
+        if gdict['adduct'] == 'e':
+            adduct = 'e-'
+        else:
+            adduct = gdict['adduct']
+        if gdict['number'] == '+' or gdict['number'] == '':
+            number = 1
+        elif gdict['number'] == '-':
+            number = -1
+        elif gdict['number'] is not None:
+            number = int(gdict['number'])
+        else:
+            number = 1
+        charge = int(gdict['charge']) if gdict['charge'] else 1
+        return (adduct, charge, number)
 
     def process(self):
         value = []
         for token in self.tokenize():
+            if not isinstance(token, str):
+                token = ''.join(token)
             try:
-                gdict = self.token_pattern.match(''.join(token)).groupdict()
-                if gdict['adduct'] == 'e':
-                    adduct = 'e-'
-                else:
-                    adduct = gdict['adduct']
-                if gdict['number'] == '+' or gdict['number'] == '':
-                    number = 1
-                elif gdict['number'] == '-':
-                    number = -1
-                else:
-                    number = int(gdict['number'])
-                charge = int(gdict['charge'][:-1]) if gdict['charge'][:-1] else 1
-                if gdict['charge'][-1] == '-':
-                    charge = -charge
-                value.append((adduct, charge, number))
+                adduct = self.parse_form1(token)
+                if not adduct:
+                    adduct = self.parse_form2(token)
+                if not adduct:
+                    raise ProFormaError(
+                        "Invalid adduct token {!r} in {!r}".format(token, self.buffer)
+                    )
+                value.append(Adduct(*adduct))
             except AttributeError:
                 raise ProFormaError("Invalid adduct token {!r} in {!r}".format(token, self.buffer))
         return value
@@ -2276,6 +2318,7 @@ class Parser:
         elif c == '/':
             self.state = CHARGE_START
             self.charge_buffer = NumberParser()
+            self.adduct_buffer = AdductParser()
         elif c == '+':
             raise ProFormaError(
                 f"Error In State {self.state}, {c} found at index {self.i}. Chimeric representation not supported",
@@ -2492,6 +2535,8 @@ class Parser:
                 self.i,
                 self.state,
             )
+        elif c == '[':
+            self.state = ParserStateEnum.charge_state_adduct_start
         else:
             raise ProFormaError(
                 f"Error In State {self.state}, unexpected {c} found at index {self.i}",
@@ -2513,7 +2558,7 @@ class Parser:
             )
 
     def handle_adduct_start(self, c: str):
-        if c.isdigit() or c in "+-" or c.isalpha():
+        if c.isdigit() or c in "+:-" or c.isalpha():
             self.adduct_buffer.append(c)
         elif c == ",":
             self.adduct_buffer.bound()
@@ -2635,6 +2680,9 @@ class Parser:
             else:
                 adducts = None
             charge_state = ChargeState(charge_number, adducts)
+        elif self.adduct_buffer:
+            adducts = self.adduct_buffer()
+            charge_state = ChargeState.from_adducts(adducts)
         else:
             charge_state = None
         if self.current_aa:
