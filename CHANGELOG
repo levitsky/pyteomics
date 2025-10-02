@@ -1,4 +1,4 @@
-5.0a6
+5.0a8
 -----
 
  - Implement type checking using :py:mod:`psims` when parsing `cvParam` elements in mzML, mzIdentML and TraML files
@@ -26,6 +26,9 @@
    (`#164 <https://github.com/levitsky/pyteomics/pull/164>`_ by Dikshant jha).
  - In :py:mod:`pyteomics.achrom`, return regular Python types instead of NumPy scalars.
  - Fix SQLAlchemy warnings in :py:mod:`unimod` (`#171 <https://github.com/levitsky/pyteomics/pull/171>`_), require `sqlalchemy >= 1.4`.
+ - New function :py:func:`pyteomics.mass.fragment_series` to calculate m/z for series of fragment ions.
+ - The default backend in :py:func:`pyteomics.pylab_aux.annotate_spectrum` now supports ProForma sequences.
+ - Add an `absolute` parameter (True by default) for :py:func:`pyteomics.mass.fast_mass` and :py:func:`pyteomics.mass.fast_mass2`.
 
 
 4.7.5
