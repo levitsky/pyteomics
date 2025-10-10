@@ -1833,6 +1833,12 @@ class Adduct(NamedTuple):
             return base + f"^{self.count}"
         return base
 
+    def mass(self) -> float:
+        return Composition(self.name).mass * self.count
+
+    def total_charge(self) -> int:
+        return self.charge * self.count
+
 
 class ChargeState(object):
     """Describes the charge and adduct types of the structure.
@@ -1861,6 +1867,24 @@ class ChargeState(object):
             adducts = [Adduct("H", 1, charge)]
         self.charge = charge
         self.adducts = adducts
+
+    def for_mz_calculation(self) -> Tuple[float, int]:
+        """
+        Get the total mass of the charge carrier(s) and their collective charge
+        to plug into the formula for mass-to-charge-ratio, ``(mass of molecule + mass of charge carrier) / charge``
+
+        Returns
+        -------
+        charge_carrier_mass : float
+            The total mass of the charge carriers(s) in the adducting group(s)
+        charge : int
+            The total charge contributed by all the charge carriers
+            in the adducting group(s)
+        """
+        mass = 0.0
+        for a in self.adducts:
+            mass += a.mass()
+        return (mass, self.charge)
 
     def __str__(self):
         if len(self.adducts) > 1 or self.adducts[0].name != 'H':
@@ -3475,7 +3499,7 @@ class ProForma(object):
 
         intervals = self.intervals
         if intervals:
-            intervals = sorted(intervals, key=lambda x: x.start)
+            intervals = sorted(intervals, key=lambda x: x.start, reverse=reverse)
         intervals = deque(intervals)
 
         if not include_labile:
