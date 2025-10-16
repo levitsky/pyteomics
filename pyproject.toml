@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["version"]
+name = "pyteomics"
+description = "A framework for proteomics data analysis."
+authors = [
+    {name = "Anton Goloborodko"},
+    {name = "Lev Levitsky", email = "pyteomics@googlegroups.com"},
+    {name = "Joshua Klein"}
+]
+readme = "README.rst"
+requires-python = ">= 3.8"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3",
+    "Topic :: Education",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development :: Libraries"
+]
+
+[tool.setuptools]
+packages = ["pyteomics", "pyteomics.mass", "pyteomics.openms", "pyteomics.auxiliary"]
+
+[project.optional-dependencies]
+XML = ["lxml", "numpy", "psims"]
+TDA = ["numpy"]
+graphics = ["matplotlib"]
+DF = ["pandas>=0.17"]
+Unimod = ["lxml", "sqlalchemy >= 1.4"]
+numpress = ["pynumpress"]
+mzMLb = ["h5py", "hdf5plugin"]
+proforma = ["psims > 0.1.42"]
+all = ["lxml", "numpy", "psims>0.1.42", "matplotlib", "pandas>=0.17", "sqlalchemy>=1.4", "pynumpress", "h5py", "hdf5plugin", "spectrum_utils>=0.4"]
+
+[project.urls]
+Documentation = "http://pyteomics.readthedocs.io"
+"Source Code" = "https://github.com/levitsky/pyteomics"
+"Issue Tracker" = "https://github.com/levitsky/pyteomics/issues"
+"Mailing List" = "https://groups.google.com/group/pyteomics"
+
+[tool.setuptools.dynamic]
+version = {attr = "pyteomics.version.__version__"}
