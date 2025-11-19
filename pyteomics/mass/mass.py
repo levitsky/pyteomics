@@ -425,7 +425,7 @@ class Composition(BasicComposition):
         if charge:
             mass /= charge
         if charge and charge < 0 and absolute:
-            mass = abs(mass)
+            mass = -mass
         return mass
 
     def mass(self, **kwargs):
@@ -931,6 +931,9 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         If not 0 then m/z is calculated: the mass is increased
         by the corresponding number of proton masses and divided
         by z.
+    absolute : bool, optional
+        If :py:const:`True` (default), the m/z value returned will always be positive,
+        even for negatively charged ions.
     mass_data : dict, optional
         A dict with the masses of chemical elements (the default
         value is :py:data:`nist_mass`).
@@ -947,6 +950,7 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
         Monoisotopic mass or m/z of a peptide molecule/ion.
     """
     aa_mass = kwargs.get('aa_mass', std_aa_mass)
+    absolute = kwargs.get('absolute', True)
     try:
         mass = sum(aa_mass[i] for i in sequence)
     except KeyError as e:
@@ -965,6 +969,8 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
 
     if charge:
         mass = (mass + mass_data['H+'][0][0] * charge) / charge
+        if charge < 0 and absolute:
+            mass = -mass
 
     return mass
 
@@ -985,6 +991,9 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
         If not 0 then m/z is calculated: the mass is increased
         by the corresponding number of proton masses and divided
         by z.
+    absolute : bool, optional
+        If :py:const:`True` (default), the m/z value returned will always be positive,
+        even for negatively charged ions.
     mass_data : dict, optional
         A dict with the masses of chemical elements (the default
         value is :py:data:`nist_mass`).
@@ -1002,6 +1011,7 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
     """
     aa_mass = kwargs.get('aa_mass', std_aa_mass)
     mass_data = kwargs.get('mass_data', nist_mass)
+    absolute = kwargs.get('absolute', True)
     try:
         comp = parser.amino_acid_composition(sequence,
                 show_unmodified_termini=True,
@@ -1043,6 +1053,8 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
 
     if charge:
         mass = (mass + mass_data['H+'][0][0] * charge) / charge
+        if charge < 0 and absolute:
+            mass = -mass
 
     return mass
 
@@ -1260,3 +1272,103 @@ def neutral_mass(mz, z, charge_carrier=_nist_mass[PROTON][0][0]):
 
 def mass_charge_ratio(neutral_mass, z, charge_carrier=_nist_mass[PROTON][0][0]):
     return (neutral_mass + (z * charge_carrier)) / abs(z)
+
+
+def _ion_name(ion, index, charge):
+    return f"{ion[0]}{index}{ion[1:]}{'+' * charge if charge > 0 else '-' * (-charge)}"
+
+
+def fragment_series(peptide, ion_types=('b', 'y'), maxcharge=1, aa_mass=None, mass_data=None, ion_comp=None) -> dict[str, dict[str, float]]:
+    """Generate fragment m/z and name series for ProForma and modX sequences.
+
+    Parameters
+    ----------
+    peptide : str
+        A modX or ProForma sequence.
+    ion_types : Container, optional
+        Ion types to be considered. Default is ('b', 'y').
+    maxcharge : int, optional
+        Maximum charge state for fragment ions. Default is 1.
+    aa_mass : dict, optional
+        A dictionary of amino acid residue masses. Only used for modX sequences.
+        Default is :py:data:`std_aa_mass`.
+    mass_data : dict, optional
+        A dictionary of element masses. Only used for modX sequences.
+        Default is :py:data:`nist_mass`.
+    ion_comp : dict, optional
+        A dictionary defining ion compositions. Only used for modX sequences.
+        Default is :py:data:`std_ion_comp`.
+
+    Returns
+    -------
+    out : dict
+        Nested dictionary with ion types as first-level keys, and individual ion labels as second-level keys.
+        The values are the corresponding m/z values.
+
+    Examples
+    --------
+    >>> fragments = fragment_series('PEPTIDE')
+    >>> fragments['b']['b1+']  # doctest: +SKIP
+    97.05276384885
+    >>> list(fragments['b'].keys())  # doctest: +SKIP
+    ['b1+', 'b2+', 'b3+', 'b4+', 'b5+', 'b6+']
+    >>> fragments = fragment_series('PEPTIDE', maxcharge=2)
+    >>> list(fragments['b'].keys())[:4]  # doctest: +SKIP
+    ['b1+', 'b2+', 'b3+', 'b4+']
+    >>> fragments['b']['b1++']  # doctest: +SKIP
+    48.52974924125
+    >>> fragments = fragment_series('PEP[+15.994915]TIDE')  # ProForma format
+    >>> fragments['b']['b1+']  # doctest: +SKIP
+    97.05276384885
+    """
+    from .. import proforma  # avoid circular import
+
+    if aa_mass is None:
+        aa_mass = std_aa_mass
+    if mass_data is None:
+        mass_data = nist_mass
+    if ion_comp is None:
+        ion_comp = std_ion_comp
+
+    out = {}
+
+    # Try to parse as ProForma first, then fallback to modX
+    parsed_proforma = None
+    parsed = None
+    try:
+        parsed_proforma = proforma.ProForma.parse(peptide)
+    except Exception:
+        # Fallback to modX parsing
+        try:
+            parsed = parser.parse(peptide, True, labels=list(aa_mass) + [parser.std_cterm, parser.std_nterm])
+            n = len(parsed)  # includes 2 terminal groups
+        except Exception:
+            raise PyteomicsError("Cannot parse {} as ProForma or modX sequence".format(peptide))
+
+    if parsed_proforma is not None:
+        # Use ProForma fragments method for ProForma sequences
+        for ion in ion_types:
+            for charge in range(1, maxcharge + 1):
+                fragments_mz = parsed_proforma.fragments(ion, charge=charge)
+                names = [_ion_name(ion, i + 1, charge) for i in range(len(fragments_mz))]
+                out.setdefault(ion, {}).update(dict(zip(names, fragments_mz)))
+    else:
+        # Use original modX approach for modX sequences
+        if parsed is None:
+            raise PyteomicsError("Failed to parse sequence in both ProForma and modX formats")
+        for ion in ion_types:
+            for charge in range(1, maxcharge + 1):
+                if ion[0] in 'abc':
+                    for i in range(2, n - 1):
+                        mz = fast_mass2(parsed[:i] + [parser.std_cterm], aa_mass=aa_mass, charge=charge,
+                                        ion_type=ion, mass_data=mass_data, ion_comp=ion_comp)
+                        name = _ion_name(ion, i - 1, charge)
+                        out.setdefault(ion, {})[name] = mz
+                else:
+                    for i in range(1, n - 2):
+                        mz = fast_mass2([parser.std_nterm] + parsed[n - (i + 1):], aa_mass=aa_mass, charge=charge,
+                                        ion_type=ion, mass_data=mass_data, ion_comp=ion_comp)
+                        name = _ion_name(ion, i, charge)
+                        out.setdefault(ion, {})[name] = mz
+
+    return out

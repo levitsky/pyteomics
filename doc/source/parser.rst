@@ -1,10 +1,7 @@
-Peptide sequence formats. *Parser* module
-=========================================
+*modX* format and the *parser* module
+-------------------------------------
 
-modX
-----
-
-**Pyteomics** uses a custom IUPAC-derived peptide sequence notation named **modX**.
+**Pyteomics** historically uses a custom IUPAC-derived peptide sequence notation named **modX**.
 As in the IUPAC notation, each amino acid residue is represented by a capital
 letter, but it may preceded by an arbitrary number of small letters to show
 modification. Terminal groups are separated from the backbone sequence by
@@ -14,9 +11,6 @@ shown explicitly by 'H-' for N-terminal hydrogen and '-OH' for C-terminal hydrox
 ``“H-HoxMMdaN-OH”`` is an example of a valid sequence in *modX*. See
 :doc:`api/parser` for additional information. Note that it is recommended to include
 either 0 or 2 terminal groups in a *modX* sequence.
-
-Sequence operations
--------------------
 
 Parsing
 .......
@@ -130,7 +124,8 @@ All possible modified sequences of a peptide can be obtained with
 
     >>> from pyteomics import parser
     >>> forms = parser.isoforms('PEPTIDE', variable_mods={'p': ['T'], 'ox': ['P']})
-    >>> for seq in forms: print seq
+    >>> for seq in forms:
+    ...    print(seq)
     ...
     oxPEPpTIDE
     oxPEPTIDE

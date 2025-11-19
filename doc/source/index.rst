@@ -34,7 +34,7 @@ Contents:
 
    intro
    installation
-   parser
+   sequences
    properties
    data
    api
