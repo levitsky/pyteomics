@@ -3550,9 +3550,9 @@ class ProForma(object):
                 f"Expected a charge state-like type, got {type(charge_state)}"
             )
         if charge_state is None:
-            warnings.warn(
-                "Requested an m/z value without providing a charge state and the peptidoform does "
-                "not have a charge state itself. This will produce a neutral mass instead!"
+            raise ValueError(
+                f"Requested an m/z value without providing a charge state and the peptidoform {self!r} does "
+                "not have a charge state itself."
             )
         try:
             composition = self.composition(include_charge=charge_state, ignore_missing=False)
