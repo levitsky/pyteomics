@@ -19,6 +19,7 @@ from functools import partial
 from itertools import chain
 from array import array as _array
 from enum import Enum
+from numbers import Integral
 
 from .mass import Composition, std_aa_mass, Unimod, nist_mass, calculate_mass, std_ion_comp, mass_charge_ratio, std_aa_comp
 from .auxiliary import PyteomicsError, BasicComposition
@@ -248,6 +249,9 @@ class TagBase(object):
         -------
         bool
         """
+        return False
+
+    def has_composition(self) -> bool:
         return False
 
 
@@ -488,6 +492,7 @@ class ModificationResolver(object):
         return hash(self.name)
 
 
+
 class UnimodResolver(ModificationResolver):
     def __init__(self, **kwargs):
         super(UnimodResolver, self).__init__("unimod", **kwargs)
@@ -561,23 +566,41 @@ class PSIModResolver(ModificationResolver):
             defn = self.database['MOD:{:05d}'.format(id)]
         else:
             raise ValueError("Must provide one of `name` or `id`")
-        try:
-            mass = float(defn.DiffMono)
-        except (KeyError, TypeError, ValueError):
-            raise ModificationMassNotFoundError("Could not resolve the mass of %r from %r" % ((name, id), defn))
-        if defn.DiffFormula is not None:
-            composition = Composition()
-            diff_formula_tokens = defn.DiffFormula.strip().split(" ")
-            for i in range(0, len(diff_formula_tokens), 2):
-                element = diff_formula_tokens[i]
-                count = diff_formula_tokens[i + 1]
-                if count:
-                    count = int(count)
-                if element.startswith("("):
-                    j = element.index(")")
-                    isotope = element[1:j]
-                    element = "%s[%s]" % (element[j + 1:], isotope)
-                composition[element] += count
+
+        # Non-standard amino acids are listed with `DiffMono` = `none`
+        # but have a valid `MassMono` definition. Normally, `MassMono` is
+        # the full mass of the residue plus the modification so it'd double count the
+        # amino acid to use that value. Non-standard amino acids are a special case
+        # because they *should* only be used with the amino acid X
+        mass = None
+        for key in ["DiffMono", "MassMono"]:
+            if key in defn:
+                try:
+                    mass = float(defn[key])
+                    break
+                except (KeyError, TypeError, ValueError):
+                    continue
+        else:
+            raise ModificationMassNotFoundError(
+                "Could not resolve the mass of %r from %r" % ((name, id), defn)
+            )
+
+        # As with `DiffMono` for non-standard amino acids, but for chemical formulas -> Compositions
+        for key in ["DiffFormula", "Formula"]:
+            if key in defn and defn[key] is not None:
+                composition = Composition()
+                diff_formula_tokens = defn[key].strip().split(" ")
+                for i in range(0, len(diff_formula_tokens), 2):
+                    element = diff_formula_tokens[i]
+                    count = diff_formula_tokens[i + 1]
+                    if count:
+                        count = int(count)
+                    if element.startswith("("):
+                        j = element.index(")")
+                        isotope = element[1:j]
+                        element = "%s[%s]" % (element[j + 1:], isotope)
+                    composition[element] += count
+                break
         else:
             composition = None
             warnings.warn("No formula was found for %r in PSI-MOD, composition will be missing" % ((name, id), ))
@@ -911,6 +934,9 @@ class ModificationBase(TagBase):
         """
         return True
 
+    def has_composition(self):
+        return True
+
     @property
     def composition(self) -> Optional[Composition]:
         '''The chemical composition shift this modification applies'''
@@ -1037,6 +1063,9 @@ class MassModification(TagBase):
         bool
         """
         return True
+
+    def has_composition(self) -> bool:
+        return False
 
     def __eq__(self, other):
         if isinstance(other, ModificationToken):
@@ -1833,8 +1862,13 @@ class Adduct(NamedTuple):
             return base + f"^{self.count}"
         return base
 
+    def composition(self) -> Composition:
+        if self.name == 'e-':
+            return Composition({"e-": self.count})
+        return Composition(formula=self.name) * self.count
+
     def mass(self) -> float:
-        return Composition(self.name).mass * self.count
+        return Composition(formula=self.name).mass * self.count
 
     def total_charge(self) -> int:
         return self.charge * self.count
@@ -1885,6 +1919,12 @@ class ChargeState(object):
         for a in self.adducts:
             mass += a.mass()
         return (mass, self.charge)
+
+    def composition(self):
+        comp = Composition()
+        for a in self.adducts:
+            comp += a.composition()
+        return comp
 
     def __str__(self):
         if len(self.adducts) > 1 or self.adducts[0].name != 'H':
@@ -2818,6 +2858,11 @@ def _parse(sequence):
     '''Tokenize a ProForma sequence into a sequence of amino acid+tag positions, and a
     mapping of sequence-spanning modifiers.
 
+    .. warning::
+        This is the older parser which was designed for ProForma v2.0. There are some syntactic
+        constructs that were introduced in v2.1 that are not compatible. This function is retained
+        for handling sequences in the older format only.
+
     .. note::
         This is a state machine parser, but with certain sub-state paths
         unrolled to avoid an explosion of formal intermediary states.
@@ -3357,7 +3402,27 @@ class ProForma(object):
             if not (i.stop is None or i.stop >= n):
                 props['c_term'] = None
 
-            return self.__class__(self.sequence[i], props)
+            subseq = self.__class__(self.sequence[i], props)
+            if subseq.group_ids:
+                kept_group_ids = []
+                for group_id in subseq.group_ids:
+                    tag_hits = subseq.find_tags_by_id(group_id, include_position=True)
+                    if not tag_hits:
+                        continue
+                    kept_group_ids.append(group_id)
+                    # We sliced the sequence, but only the localization markers were captured,
+                    # not the actual modification definition. Update the first occurrence of the
+                    # localization marker with a group id marked modification tag.
+                    if all(not isinstance(v, LocalizationMarker) for _, v in tag_hits):
+                        i = tag_hits[0]
+                        val: TagBase
+                        for val in self.find_tags_by_id(group_id, include_position=False):
+                            if not isinstance(val, LocalizationMarker):
+                                val = val.copy()
+                                for j, tag in enumerate(subseq[i][1]):
+                                    if tag.group_id == group_id:
+                                        subseq[i][1][j] = val
+            return subseq
         else:
             return self.sequence[i]
 
@@ -3379,7 +3444,7 @@ class ProForma(object):
         return iter(self.sequence)
 
     @property
-    def charge_state(self):
+    def charge_state(self) -> Optional[ChargeState]:
         z = self._charge_state
         return z
 
@@ -3401,6 +3466,11 @@ class ProForma(object):
 
     @property
     def mass(self):
+        '''
+        Compute the *total* monoisotopic neutral mass of the peptidoform.
+
+        This does not include the adduct.
+        '''
         mass = 0.0
 
         fixed_modifications = self.properties['fixed_modifications']
@@ -3444,6 +3514,52 @@ class ProForma(object):
                 if tag.has_mass():
                     mass += tag.mass
         return mass
+
+    def mz(self, charge_state: Union[int, ChargeState, None] = None, **kwargs) -> float:
+        """
+        Compute the *total* m/z of the peptidoform in the specified charge state, or fall back
+        to the peptidoform ion's defined charge state and adduction.
+
+        This method first tries to get the composition of the peptidoform ion with :meth:`composition`
+        and then forwards ``kwargs`` to :meth:`Composition.mass` to compute m/z with full flexibility,
+        but if that fails due to missing modification compositions, this method falls back to directly
+        computing monoisotopic mass and uses the charge state to get the m/z.
+
+        .. warning::
+            If no charge state of any kind is available, this will compute a neutral mass.
+
+        Parameters
+        ----------
+        charge_state : int or :class:`ChargeState`, optional
+            The charge state either as in integer number of protons gained/lost,
+            or a :class:`ChargeState` instance. If not provided, :attr:`charge_state`
+            will be used.
+        **kwargs :
+            Forwarded to :meth:`Composition.mass`
+
+        Returns
+        -------
+        float
+        """
+        if charge_state is None:
+            charge_state = self.charge_state
+        elif isinstance(charge_state, Integral):
+            charge_state = ChargeState(int(charge_state))
+        elif not isinstance(charge_state, ChargeState):
+            raise TypeError(
+                f"Expected a charge state-like type, got {type(charge_state)}"
+            )
+        if charge_state is None:
+            warnings.warn(
+                "Requested an m/z value without providing a charge state and the peptidoform does "
+                "not have a charge state itself. This will produce a neutral mass instead!"
+            )
+        try:
+            composition = self.composition(include_charge=charge_state, ignore_missing=False)
+            return composition.mass(**kwargs)
+        except ProFormaError:
+            charge_carrier_mass, charge = charge_state.for_mz_calculation()
+            return (self.mass + charge_carrier_mass) / abs(charge)
 
     def fragments(self, ion_shift, charge=1, reverse=None, include_labile=True, include_unlocalized=True):
         """
@@ -3537,10 +3653,11 @@ class ProForma(object):
             position = self.sequence[i]
 
             aa = position[0].upper()
-            try:
-                mass += std_aa_mass[aa]
-            except KeyError:
-                warnings.warn("%r does not have an exact mass" % (aa, ))
+            if aa != 'X':
+                try:
+                    mass += std_aa_mass[aa]
+                except KeyError:
+                    warnings.warn("%r does not have an exact mass" % (aa, ))
 
             n_term = i == n_term_v
             c_term = i == c_term_v
@@ -3638,21 +3755,22 @@ class ProForma(object):
         properties['names'] = properties['names'].copy()
         return self.__class__(sequence, properties)
 
-
-    def composition(self, include_charge=False, aa_comp=None, ignore_missing=False):
+    def composition(self, include_charge: Union[bool, ChargeState]=False, aa_comp=None, ignore_missing=False) -> Composition:
         '''
         Calculate the elemental composition of the ProForma sequence.
 
         Parameters
         ----------
-        include_charge : bool, optional
-            If True, the charge state will be included in the composition.
-            Otherwise, composition of the neutral molecule will be returned.
-            Defaults to False.
+        include_charge : bool or :class:`ChargeState`, optional
+            If True, then :attr:`charge_state` will be included in the composition.
+            If a :class:`ChargeState` instance is passed, this charge and adduction
+            will be included instead. Otherwise, composition of the neutral molecule
+            will be returned. Defaults to False.
         aa_comp : dict, optional
             A dictionary mapping amino acid symbols to their respective
             compositions. If not provided, the standard amino acid composition
-            will be used.
+            will be used. ``X`` *always* has a mass of 0.0, regardless of this
+            argument.
         ignore_missing : bool, optional
             If True, tags with missing composition will be silently ignored. If False (default),
             a :py:class:`ProFormaError` will be raised.
@@ -3686,8 +3804,13 @@ class ProForma(object):
             aa_comp = std_aa_comp
         try:
             for i, (aa, tags) in enumerate(self.sequence):
-                comp += aa_comp[aa]
+                if aa != 'X':
+                    comp += aa_comp[aa]
                 for tag in tags or []:
+                    if not tag.has_composition():
+                        if isinstance(tag, MassModification) and not ignore_missing:
+                            raise ProFormaError(f"No composition found for tag {tag}")
+                        continue
                     comp += get_comp(tag)
                 for rule in self.fixed_modifications:
                     if rule.is_valid(aa, i == 0, i == len(self.sequence) - 1):
@@ -3705,8 +3828,7 @@ class ProForma(object):
         else:
             comp += Composition({'O': 1, 'H': 1})  # Add -OH for C-terminus
         if include_charge and self.charge_state:
-            for adduct, _, count in self.charge_state.adducts:
-                comp[adduct] += count
+            comp += self.charge_state.composition()
         return comp
 
 

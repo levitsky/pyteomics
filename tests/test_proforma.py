@@ -359,6 +359,13 @@ class ProFormaTest(unittest.TestCase):
             parsed = ProForma.parse(seq)
             assert parsed is not None
 
+    def test_nonstandard_amino_acid(self):
+        seq = ProForma.parse("PEPTX[MOD:01001]IDE")
+        bad_seq = ProForma.parse("PEPTXIDE")
+        assert seq.mass != bad_seq.mass
+        self.assertAlmostEqual(seq.mass, 884.4127280267099, 4)
+
+
 class TestTagProcessing(unittest.TestCase):
     def test_process_tag_tokens(self):
         tokens = list('UNIMOD:Deamidation')
