@@ -3815,7 +3815,8 @@ class ProForma(object):
                 for rule in self.fixed_modifications:
                     if rule.is_valid(aa, i == 0, i == len(self.sequence) - 1):
                         comp += get_comp(rule.modification_tag)
-            for tag in chain(self.labile_modifications, self.unlocalized_modifications):
+            for tag in chain(self.labile_modifications, self.unlocalized_modifications,
+                             chain.from_iterable(interval.tags for interval in self.intervals)):
                 comp += get_comp(tag)
         except KeyError as e:
             raise ProFormaError(f'No composition found for amino acid {aa}') from e

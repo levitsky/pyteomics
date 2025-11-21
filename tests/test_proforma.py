@@ -176,6 +176,19 @@ class ProFormaTest(unittest.TestCase):
             with self.assertRaises(ProFormaError):
                 ProForma.parse(seq).composition()
 
+    def test_localization_composition(self):
+        seq0 = "EMEVT[Phospho]SESPEK"
+        test_seq = [
+            "[Phospho]?EMEVTSESPEK",
+            "EMEVT[#g1]S[#g1]ES[Phospho#g1]PEK",
+            "EMEV(TS)[Phospho]ESPEK"
+        ]
+        base_comp = ProForma.parse(seq0).composition()
+        for seq in test_seq:
+            with self.subTest(seq=seq):
+                i = ProForma.parse(seq)
+                self.assertEqual(i.composition(), base_comp)
+
     def test_from_spec(self):
         positive = [
             "AA",
