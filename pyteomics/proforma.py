@@ -127,6 +127,10 @@ class CompositionNotFoundError(ProFormaError):
     pass
 
 
+class MissingChargeStateError(ProFormaError):
+    pass
+
+
 class UnknownMonosaccharideError(ProFormaError):
     pass
 
@@ -3530,7 +3534,7 @@ class ProForma(object):
         computing monoisotopic mass and uses the charge state to get the m/z.
 
         .. warning::
-            If no charge state of any kind is available, this will compute a neutral mass.
+            If no charge state of any kind is available, this will raise a :py:class:`MissingChargeStateError`.
 
         Parameters
         ----------
@@ -3554,7 +3558,7 @@ class ProForma(object):
                 f"Expected a charge state-like type, got {type(charge_state)}"
             )
         if charge_state is None:
-            raise ValueError(
+            raise MissingChargeStateError(
                 f"Requested an m/z value without providing a charge state and the peptidoform {self!r} does "
                 "not have a charge state itself."
             )
