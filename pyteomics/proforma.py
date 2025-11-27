@@ -123,6 +123,10 @@ class ModificationMassNotFoundError(ProFormaError):
     pass
 
 
+class CompositionNotFoundError(ProFormaError):
+    pass
+
+
 class UnknownMonosaccharideError(ProFormaError):
     pass
 
@@ -3773,7 +3777,7 @@ class ProForma(object):
             argument.
         ignore_missing : bool, optional
             If True, tags with missing composition will be silently ignored. If False (default),
-            a :py:class:`ProFormaError` will be raised.
+            a :py:class:`CompositionNotFoundError` will be raised.
 
             .. note::
                 Amino acids not found in `aa_mass` will result in errors even with `ignore_missing=True`.
@@ -3794,9 +3798,9 @@ class ProForma(object):
                 try:
                     comp = tag.composition
                 except AttributeError as e:
-                    raise ProFormaError(f'No composition found for tag {tag}') from e
+                    raise CompositionNotFoundError(f'No composition found for tag {tag}') from e
                 if comp is None:
-                    raise ProFormaError(f'No composition found for tag {tag}')
+                    raise CompositionNotFoundError(f'No composition found for tag {tag}')
                 return comp
 
         comp = Composition()
@@ -3809,7 +3813,7 @@ class ProForma(object):
                 for tag in tags or []:
                     if not tag.has_composition():
                         if isinstance(tag, MassModification) and not ignore_missing:
-                            raise ProFormaError(f"No composition found for tag {tag}")
+                            raise CompositionNotFoundError(f"No composition found for tag {tag}")
                         continue
                     comp += get_comp(tag)
                 for rule in self.fixed_modifications:
@@ -3819,7 +3823,7 @@ class ProForma(object):
                              chain.from_iterable(interval.tags for interval in self.intervals)):
                 comp += get_comp(tag)
         except KeyError as e:
-            raise ProFormaError(f'No composition found for amino acid {aa}') from e
+            raise CompositionNotFoundError(f'No composition found for amino acid {aa}') from e
         if self.n_term:
             comp += get_comp(self.n_term)
         else:
