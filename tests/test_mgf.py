@@ -211,7 +211,7 @@ class MGFTest(unittest.TestCase):
             with self.subTest(method=method):
                 with mgf.IndexedMGF(self.path) as reader:
                     spectra = sorted(list(reader.map(method=method)), key=lambda s: s['params']['title'])
-        self.assertEqual(data.mgf_spectra_long, spectra)
+                    self.assertEqual(data.mgf_spectra_long, spectra)
 
     def test_prebuild_index(self):
         test_dir = tempfile.mkdtemp()

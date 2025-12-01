@@ -256,9 +256,9 @@ class MzmlTest(unittest.TestCase):
         with MzML(self.path) as reader:
             creader = copy(reader)
             self.assertTrue(isinstance(creader, MzML))
-            self.assertTrue(creader.index is reader.index)
-            self.assertFalse(creader._source is reader._source)
-            self.assertFalse(creader._source.fileno() == reader._source.fileno())
+            self.assertIs(creader.index, reader.index)
+            self.assertIsNot(creader._source, reader._source)
+            self.assertNotEqual(creader._source.fileno(), reader._source.fileno())
             creader.close()
 
 

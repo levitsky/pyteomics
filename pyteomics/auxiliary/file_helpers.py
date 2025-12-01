@@ -1006,12 +1006,12 @@ _QUEUE_SIZE = int(1e7)
 
 class BaseTaskMappingMixin(NoOpBaseReader):
     def _task_map_iterator(self):
-        """Returns the :class:`Iteratable` to use when dealing work items onto the input IPC
+        """Returns the :class:`Iterable` to use when dealing work items onto the input IPC
         queue used by :meth:`map`
 
         Returns
         -------
-        :class:`Iteratable`
+        :class:`Iterable`
         """
 
         return iter(self._offset_index.keys())
@@ -1183,7 +1183,7 @@ class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
                 ``self._local.reader`` instead of ``self``. Otherwise, the method will not be thread-safe.
 
         workers : int or None, optional
-            The number of worker processes to use. If not a positive integer,,
+            The number of worker threads to use. If not a positive integer,
             the default value of ``max_workers`` for the :py:class:`concurrent.futures.ThreadPoolExecutor` will be used.
         args : :class:`Sequence`, optional
             Additional positional arguments to be passed to the target function.
@@ -1233,7 +1233,7 @@ class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixi
             The function to execute over each entry. It will be given a single object yielded by
             the wrapped iterator as well as all of the values in ``args`` and ``kwargs``.
         workers : int, optional
-            The number of worker processes to use. The default depends on the ``method`` parameter.
+            The number of worker threads or processes to use. The default depends on the ``method`` parameter.
         args : :class:`Sequence`, optional
             Additional positional arguments to be passed to the target function.
         kwargs : :class:`Mapping`, optional
@@ -1250,7 +1250,13 @@ class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixi
             raise PyteomicsError('The reader needs an index for map() calls. Create the reader with `use_index=True`.')
 
         if method in {'p', 'mp', 'multiprocessing', 'processes'}:
-            if 'processes' in _kwargs and (not workers or workers < 1):
+            # Always pop 'processes' from _kwargs if present
+            if 'processes' in _kwargs:
+                if workers is not None and workers > 0:
+                    raise PyteomicsError(
+                        "Cannot specify both 'workers' and legacy 'processes' arguments. "
+                        "Please use only 'workers'."
+                    )
                 # accept `processes` for backward compatibility
                 workers = _kwargs.pop('processes', None)
 
