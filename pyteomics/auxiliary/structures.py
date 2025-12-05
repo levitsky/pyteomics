@@ -66,8 +66,11 @@ class Charge(int):
         except ValueError as e:
             if isinstance(args[0], (str, bytes)):
                 try:
-                    num, sign = re.match(r'^(\d+)(\+|-)$', args[0]).groups()
-                    return super(Charge, cls).__new__(cls, sign + num, *args[1:], **kwargs)
+                    num, sign = re.match(r'^([\.\d]+)([\+|-]?)$', args[0]).groups()
+                    if not sign:
+                        sign = '+'
+                    num = int(float(num))
+                    return super(Charge, cls).__new__(cls, f'{sign}{num}', *args[1:], **kwargs)
                 except Exception:
                     pass
             raise PyteomicsError(*e.args)
