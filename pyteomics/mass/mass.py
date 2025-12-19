@@ -1336,7 +1336,7 @@ def fragment_series(peptide, ion_types=('b', 'y'), maxcharge=1, aa_mass=None, ma
     parsed_proforma = None
     parsed = None
     try:
-        parsed_proforma = proforma.ProForma.parse(peptide)
+        parsed_proforma = proforma.ProForma.parse(peptide, case_sensitive_aa=True)
     except Exception:
         # Fallback to modX parsing
         try:
