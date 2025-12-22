@@ -1146,14 +1146,14 @@ class MultiProcessingTaskMappingMixin(BaseTaskMappingMixin):
 
 
 class ParserThreadPoolExecutor(ThreadPoolExecutor):
-    def __init__(self, reader, max_workers=None):
+    def __init__(self, reader: 'ThreadingTaskMappingMixin', max_workers=None):
         self.reader = reader
         super().__init__(
             max_workers=max_workers, thread_name_prefix=f'pyteomics-{type(reader).__name__.lower()}-worker',
             initializer=self.exec_initializer)
 
     def exec_initializer(self):
-        self.reader._local.reader = copy(self.reader)
+        self.reader._local.reader = copy(self.reader)  # if `_local` does not exist, the reader is not a ThreadingTaskMappingMixin instance
 
 
 class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
@@ -1179,7 +1179,7 @@ class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
             the wrapped iterator as well as all of the values in ``args`` and ``kwargs``.
 
             .. warning::
-                If ``target`` is a method that performs any additional reading from the source file, it should do so using
+                If ``target`` is a custom bound method that performs any additional reading from the source file, it should do so using
                 ``self._local.reader`` instead of ``self``. Otherwise, the method will not be thread-safe.
 
         workers : int or None, optional
