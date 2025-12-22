@@ -279,5 +279,14 @@ class UtilityTest(unittest.TestCase):
             self.assertEqual(spectra[0]['params'], spectra[1]['params'])
             self.assertEqual(spectra[0]['params'], spectra[2]['params'])
 
+    def test_fragment_charge_parsing(self):
+        for s in ['1+', '1', '1.0', '+1.0']:
+            with self.subTest(s=s):
+                self.assertEqual(mgf.MGFBase.parse_peak_charge(s), 1)
+        for s in ['1-', '-1', '-1.0']:
+            with self.subTest(s=s):
+                self.assertEqual(mgf.MGFBase.parse_peak_charge(s), -1)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -61,16 +61,32 @@ class Charge(int):
     also in that format.
     """
     def __new__(cls, *args, **kwargs):
+        exc = None
         try:
             return super(Charge, cls).__new__(cls, *args)
         except ValueError as e:
-            if isinstance(args[0], (str, bytes)):
+            exc = e
+        if isinstance(args[0], (str, bytes)):
+            match = re.match(r'^(\d+)(\+|-)$', args[0])
+            if match:
+                num, sign = match.groups()
                 try:
-                    num, sign = re.match(r'^(\d+)(\+|-)$', args[0]).groups()
                     return super(Charge, cls).__new__(cls, sign + num, *args[1:], **kwargs)
-                except Exception:
-                    pass
-            raise PyteomicsError(*e.args)
+                except ValueError as e:
+                    exc = e
+            else:
+                # try to parse as a float
+                try:
+                    float_val = float(args[0])
+                    if not float_val.is_integer():
+                        raise PyteomicsError(
+                            f"Cannot convert non-integer float string to Charge: {args[0]}")
+                    int_val = int(float_val)
+                    return super(Charge, cls).__new__(cls, int_val, *args[1:], **kwargs)
+                except ValueError as e:
+                    exc = e
+
+        raise PyteomicsError(f"Cannot convert {args[0]!r} to Charge") from exc
 
     def __str__(self):
         return str(abs(self)) + '+-'[self < 0]
