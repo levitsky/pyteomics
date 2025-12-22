@@ -7,13 +7,13 @@ from collections import OrderedDict, defaultdict
 import json
 import multiprocessing as mp
 import threading
+import queue
 from copy import copy
 import warnings
 import os
 from abc import ABCMeta
 from queue import Empty
 from collections.abc import Sequence
-from concurrent.futures import ThreadPoolExecutor
 
 try:
     import pandas as pd
@@ -1145,28 +1145,14 @@ class MultiProcessingTaskMappingMixin(BaseTaskMappingMixin):
         return iterate()
 
 
-class ParserThreadPoolExecutor(ThreadPoolExecutor):
-    def __init__(self, reader: 'ThreadingTaskMappingMixin', max_workers=None):
-        self.reader = reader
-        super().__init__(
-            max_workers=max_workers, thread_name_prefix=f'pyteomics-{type(reader).__name__.lower()}-worker',
-            initializer=self.exec_initializer)
-
-    def exec_initializer(self):
-        self.reader._local.reader = copy(self.reader)  # if `_local` does not exist, the reader is not a ThreadingTaskMappingMixin instance
-
-
 class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
     """
     Mixin implementing thread-based parallelism for :py:meth:`map` calls.
     The use of threaded parallelism is warranted in free-threaded environments,
     such as the `experimental free-threaded CPython interpreter <https://docs.python.org/3/howto/free-threading-python.html>`_.
     """
-    def __init__(self, *args, **kwargs):
-        self._local = threading.local()
-        super().__init__(*args, **kwargs)
 
-    def map(self, target=None, workers=None, args=(), kwargs={}, **_kwargs):
+    def map(self, target=None, workers=None, args=None, kwargs=None, **_kwargs):
         """
         Execute the ``target`` function over entries of this object across up to ``workers`` threads.
 
@@ -1179,12 +1165,11 @@ class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
             the wrapped iterator as well as all of the values in ``args`` and ``kwargs``.
 
             .. warning::
-                If ``target`` is a custom bound method that performs any additional reading from the source file, it should do so using
-                ``self._local.reader`` instead of ``self``. Otherwise, the method will not be thread-safe.
+                `target` must be thread-safe. The target function cannot interact with the underlying file object directly.
 
         workers : int or None, optional
             The number of worker threads to use. If not a positive integer,
-            the default value of ``max_workers`` for the :py:class:`concurrent.futures.ThreadPoolExecutor` will be used.
+            defaults to the number of available CPUs.
         args : :class:`Sequence`, optional
             Additional positional arguments to be passed to the target function.
         kwargs : :class:`Mapping`, optional
@@ -1197,15 +1182,100 @@ class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
         object
             The work item returned by the target function.
         """
+        if args is None:
+            args = tuple()
+        else:
+            args = tuple(args)
+        if kwargs is None:
+            kwargs = dict()
+        else:
+            kwargs = dict(kwargs)
+        kwargs.update(_kwargs)
 
-        def worker_func(key):
-            item = self._local.reader[key]
-            if target is not None:
-                item = target(item, *args, **kwargs, **_kwargs)
-            return item
+        # Determine number of workers
+        if workers is None or workers < 1:
+            workers = _NPROC
 
-        with ParserThreadPoolExecutor(self, max_workers=workers) as executor:
-            return executor.map(worker_func, self._task_map_iterator())
+        def worker_func(key, queue, local_reader):
+            try:
+                item = local_reader[key]
+                if target is not None:
+                    item = target(item, *args, **kwargs)
+                queue.put((True, item))
+            except Exception as e:
+                queue.put((False, e))
+
+        # Queues for distributing work and collecting results
+        output_queue = queue.Queue()
+        key_queue = queue.Queue()
+        worker_threads = []
+        _SENTINEL = object()
+
+        def producer():
+            """Iterate over task keys in a single thread and enqueue them for workers."""
+            try:
+                for key in self._task_map_iterator():
+                    key_queue.put(key)
+            finally:
+                # Signal completion to all worker threads
+                for _ in range(workers):
+                    key_queue.put(_SENTINEL)
+
+        def thread_worker():
+            # Initialize thread-local reader copy on first access
+            local_reader = copy(self)
+            try:
+                while True:
+                    key = key_queue.get()
+                    if key is _SENTINEL:
+                        # Do not put the sentinel back; each worker consumes one
+                        break
+                    worker_func(key, output_queue, local_reader)
+            finally:
+                # Explicitly close the thread-local reader copy
+                if hasattr(local_reader, 'close'):
+                    local_reader.close()
+
+        # Start producer thread to feed keys to workers
+        producer_thread = threading.Thread(
+            target=producer,
+            name=f'pyteomics-{type(self).__name__.lower()}-producer'
+        )
+        producer_thread.daemon = True
+        producer_thread.start()
+        # Spawn worker threads
+        for _ in range(workers):
+            t = threading.Thread(
+                target=thread_worker,
+                name=f'pyteomics-{type(self).__name__.lower()}-worker'
+            )
+
+            t.start()
+            worker_threads.append(t)
+
+        def iterate():
+            results_received = 0
+            total_items = len(self._offset_index)  # must exist for map() to work
+
+            while results_received < total_items:
+                try:
+                    success, result = output_queue.get(timeout=_QUEUE_TIMEOUT)
+                    results_received += 1
+                    if success:
+                        yield result
+                    else:
+                        raise result
+                except queue.Empty:
+                    # Check if all threads are still alive
+                    if not any(t.is_alive() for t in worker_threads):
+                        break
+                    continue
+
+            # Wait for all worker threads to finish
+            for t in worker_threads:
+                t.join()
+
+        return iterate()
 
 
 class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixin):
