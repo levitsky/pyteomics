@@ -413,7 +413,7 @@ class MGF(MGFBase, aux.FileReader):
     """
 
     def __init__(self, source=None, use_header=True, convert_arrays=2, read_charges=True,
-            read_ions=False, dtype=None, encoding=None):
+                 read_ions=False, dtype=None, encoding=None):
         """
         Create an :py:class:`MGF` (text-mode) reader for a given MGF file.
 
@@ -457,7 +457,8 @@ class MGF(MGFBase, aux.FileReader):
         out : MGF
             The reader object.
         """
-        super(MGF, self).__init__(source, mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={},
+        super(MGF, self).__init__(
+            source, mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={},
             encoding=encoding, use_header=use_header, convert_arrays=convert_arrays, read_charges=read_charges,
             read_ions=read_ions, dtype=dtype)
 
@@ -834,14 +835,11 @@ def write(spectra, output=None, header='', key_order=_default_key_order, fragmen
                 success = False
 
             if not success:
-                for m, i, c in zip(spectrum['m/z array'],
-                        spectrum['intensity array'],
-                        spectrum.get('charge array', it.cycle((None,))) if write_charges else
-                            spectrum.get('ion array', it.cycle((None,))) if write_ions else
-                            it.cycle((None,))):
-                    output.write(format_str.format(
-                        m, i,
-                        (c if c not in nones else '')))
+                for m, i, c in zip(spectrum['m/z array'], spectrum['intensity array'],
+                                   spectrum.get('charge array', it.cycle((None,))) if write_charges else
+                                   spectrum.get('ion array', it.cycle((None,))) if write_ions else
+                                   it.cycle((None,))):
+                    output.write(format_str.format(m, i, (c if c not in nones else '')))
         except KeyError:
             raise aux.PyteomicsError("'m/z array' and 'intensity array' must be present in all spectra.")
         output.write('END IONS\n\n')

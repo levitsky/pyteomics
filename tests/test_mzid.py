@@ -6,6 +6,7 @@ from pyteomics.mzid import MzIdentML, read, chain
 from pyteomics import auxiliary as aux
 from data import mzid_spectra
 from itertools import product
+import operator as op
 from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
 obo_cache.cache_path = '.'
 obo_cache.enabled = True
@@ -41,8 +42,13 @@ class MzidTest(unittest.TestCase):
         assert index['MS:1000774'] == 'multiple peak list nativeID format'
 
     def test_map(self):
-        with MzIdentML(self.path) as r:
-            self.assertEqual(len(mzid_spectra[(1, 1)]), sum(1 for _ in r.map()))
+        key = op.itemgetter('spectrumID')
+        with MzIdentML(self.path) as reader:
+            reader.chunksize = 1
+            for method in ['t', 'p']:
+                with self.subTest(method=method):
+                    self.assertEqual(sorted(mzid_spectra[(1, 1)], key=key),
+                                    sorted(reader.map(method=method), key=key))
 
     def test_iterfind_map(self):
         with MzIdentML(self.path) as r:
