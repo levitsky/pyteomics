@@ -44,6 +44,7 @@ class MzidTest(unittest.TestCase):
     def test_map(self):
         key = op.itemgetter('spectrumID')
         with MzIdentML(self.path) as reader:
+            reader.chunksize = 1
             for method in ['t', 'p']:
                 with self.subTest(method=method):
                     self.assertEqual(sorted(mzid_spectra[(1, 1)], key=key),
