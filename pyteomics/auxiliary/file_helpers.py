@@ -1151,8 +1151,9 @@ class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
     The use of threaded parallelism is warranted in free-threaded environments,
     such as the `experimental free-threaded CPython interpreter <https://docs.python.org/3/howto/free-threading-python.html>`_.
     """
+    chunksize: int = 100
 
-    def map(self, target=None, workers=None, args=None, kwargs=None, **_kwargs):
+    def map(self, target=None, workers=None, args=None, kwargs=None, chunksize=None, **_kwargs):
         """
         Execute the ``target`` function over entries of this object across up to ``workers`` threads.
 
@@ -1174,6 +1175,9 @@ class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
             Additional positional arguments to be passed to the target function.
         kwargs : :class:`Mapping`, optional
             Additional keyword arguments to be passed to the target function.
+        chunksize : int, optional
+            The number of work items to hand out to each worker thread at a time. If not specified,
+            defaults to :attr:`chunksize` attribute of this object.
         **_kwargs
             Additional keyword arguments to be passed to the target function.
 
@@ -1190,20 +1194,13 @@ class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
             kwargs = dict()
         else:
             kwargs = dict(kwargs)
+        if chunksize is None:
+            chunksize = self.chunksize
         kwargs.update(_kwargs)
 
         # Determine number of workers
         if workers is None or workers < 1:
             workers = _NPROC
-
-        def worker_func(key, queue, local_reader):
-            try:
-                item = local_reader[key]
-                if target is not None:
-                    item = target(item, *args, **kwargs)
-                queue.put((True, item))
-            except Exception as e:
-                queue.put((False, e))
 
         # Queues for distributing work and collecting results
         output_queue = queue.Queue()
@@ -1214,8 +1211,14 @@ class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
         def producer():
             """Iterate over task keys in a single thread and enqueue them for workers."""
             try:
+                batch = []
                 for key in self._task_map_iterator():
-                    key_queue.put(key)
+                    batch.append(key)
+                    if len(batch) >= chunksize:
+                        key_queue.put(batch)
+                        batch = []
+                if batch:
+                    key_queue.put(batch)
             finally:
                 # Signal completion to all worker threads
                 for _ in range(workers):
@@ -1226,11 +1229,18 @@ class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
             local_reader = copy(self)
             try:
                 while True:
-                    key = key_queue.get()
-                    if key is _SENTINEL:
+                    batch = key_queue.get()
+                    if batch is _SENTINEL:
                         # Do not put the sentinel back; each worker consumes one
                         break
-                    worker_func(key, output_queue, local_reader)
+                    for key in batch:
+                        try:
+                            item = local_reader[key]
+                            if target is not None:
+                                item = target(item, *args, **kwargs)
+                            output_queue.put((True, item))
+                        except Exception as e:
+                            output_queue.put((False, e))
             finally:
                 # Explicitly close the thread-local reader copy
                 if hasattr(local_reader, 'close'):
@@ -1249,7 +1259,7 @@ class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
                 target=thread_worker,
                 name=f'pyteomics-{type(self).__name__.lower()}-worker'
             )
-
+            t.daemon = True
             t.start()
             worker_threads.append(t)
 
