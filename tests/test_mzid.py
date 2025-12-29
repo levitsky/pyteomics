@@ -42,7 +42,9 @@ class MzidTest(unittest.TestCase):
         assert index['MS:1000774'] == 'multiple peak list nativeID format'
 
     def test_map(self):
-        key = op.itemgetter('spectrumID')
+        def key(x):
+            return (x['spectrumID'], x['SpectrumIdentificationItem'][0]['PeptideSequence'], len(x['SpectrumIdentificationItem']))
+
         with MzIdentML(self.path) as reader:
             reader.chunksize = 1
             for method in ['t', 'p']:
