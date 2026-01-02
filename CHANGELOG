@@ -1,6 +1,7 @@
-5.0a8
+5.0a10
 -----
 
+ - Support ProForma 2.1 (`#183 <https://github.com/levitsky/pyteomics/pull/183>`_ by Joshua Klein).
  - Implement type checking using :py:mod:`psims` when parsing `cvParam` elements in mzML, mzIdentML and TraML files
    (`#165 <https://github.com/levitsky/pyteomics/pull/165>`_).
    `psims <https://github.com/mobiusklein/psims>`_ is now required to parse these formats. Every parser instance now uses a copy of the
@@ -29,6 +30,7 @@
  - New function :py:func:`pyteomics.mass.fragment_series` to calculate m/z for series of fragment ions.
  - The default backend in :py:func:`pyteomics.pylab_aux.annotate_spectrum` now supports ProForma sequences.
  - Add an `absolute` parameter (True by default) for :py:func:`pyteomics.mass.fast_mass` and :py:func:`pyteomics.mass.fast_mass2`.
+ - Allow fragment charges formatted as :py:class:`float` in MGF (issue `#185 <https://github.com/levitsky/pyteomics/issues/185>`_).
 
 
 4.7.5
