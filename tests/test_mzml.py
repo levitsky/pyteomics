@@ -43,6 +43,13 @@ class MzmlTest(unittest.TestCase):
                 with self.subTest(method=method):
                     self.assertEqual(sorted(mzml_spectra, key=key), sorted(list(f.map(method=method)), key=key))
 
+    def test_map_chain(self):
+        key = op.itemgetter('index')
+        with chain(self.path, self.path) as f:
+            for method in ['p', 't']:
+                with self.subTest(method=method):
+                    self.assertEqual(sorted(mzml_spectra * 2, key=key), sorted(list(f.map(method=method)), key=key))
+
     def test_mp_requires_index(self):
         with MzML(self.path, use_index=False) as r:
             self.assertRaises(aux.PyteomicsError, r.map)

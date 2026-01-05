@@ -1030,13 +1030,13 @@ class MultiProcessingTaskMappingMixin(BaseTaskMappingMixin):
             all workers are done.
         queue_size : int, keyword only, optional
             The length of IPC queue used.
-        processes : int, keyword only, optional
-            Number of worker processes to spawn when :py:meth:`map` is called. This can also be
+        workers : int, keyword only, optional
+            Number of worker processes or threads to spawn when :py:meth:`map` is called. This can also be
             specified in the :py:meth:`map` call.
         """
         self._queue_size = kwargs.pop('queue_size', _QUEUE_SIZE)
         self._queue_timeout = kwargs.pop('timeout', _QUEUE_TIMEOUT)
-        self._nproc = kwargs.pop('processes', _NPROC)
+        self._nproc = kwargs.pop('workers', _NPROC)
         super().__init__(*args, **kwargs)
 
     def _get_reader_for_worker_spec(self):
@@ -1292,6 +1292,9 @@ class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixi
     pmap = MultiProcessingTaskMappingMixin.map
     tmap = ThreadingTaskMappingMixin.map
 
+    def _has_index(self):
+        return self._offset_index is not None
+
     def map(self, target=None, workers=None, args=None, kwargs=None, method='mp', **_kwargs):
         """
         Execute the ``target`` function over entries of this object in parallel.
@@ -1301,14 +1304,6 @@ class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixi
 
         Parameters
         ----------
-        method : str, optional
-            The type of parallelism to use. Can be one of the following:
-
-            - either one of 'p', 'mp', 'processes', or 'multiprocessing': use multiprocessing
-              This is the default. This is also equivalent to calling :meth:`pmap`, see there for details.
-
-            - either one of 't', 'threading', or 'threads': use threading
-              This is also equivalent to calling :meth:`tmap`, see there for details.
         target : :class:`Callable`, optional
             The function to execute over each entry. It will be given a single object yielded by
             the wrapped iterator as well as all of the values in ``args`` and ``kwargs``.
@@ -1318,6 +1313,14 @@ class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixi
             Additional positional arguments to be passed to the target function.
         kwargs : :class:`Mapping`, optional
             Additional keyword arguments to be passed to the target function.
+        method : str, optional
+            The type of parallelism to use. Can be one of the following:
+
+            - either one of 'p', 'mp', 'processes', or 'multiprocessing': use multiprocessing
+              This is the default. This is also equivalent to calling :meth:`pmap`, see there for details.
+
+            - either one of 't', 'threading', or 'threads': use threading
+              This is also equivalent to calling :meth:`tmap`, see there for details.
         **_kwargs
             Additional keyword arguments to be passed to the target function.
 
@@ -1326,7 +1329,7 @@ class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixi
         object
             The work item returned by the target function.
         """
-        if self._offset_index is None:
+        if not self._has_index():
             raise PyteomicsError('The reader needs an index for map() calls. Create the reader with `use_index=True`.')
 
         if method in {'p', 'mp', 'multiprocessing', 'processes'}:
@@ -1346,7 +1349,7 @@ class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixi
         raise PyteomicsError(f'Invalid value of `method`: {method}.')
 
 
-class ChainBase(object):
+class ChainBase(TaskMappingMixin):
     """Chain :meth:`sequence_maker` for several sources into a
     single iterable. Positional arguments should be sources like
     file names or file objects. Keyword arguments are passed to
@@ -1414,39 +1417,23 @@ class ChainBase(object):
     def next(self):
         return self.__next__()
 
-    def map(self, target=None, processes=-1, queue_timeout=_QUEUE_TIMEOUT, args=None, kwargs=None, **_kwargs):
-        """Execute the ``target`` function over entries of this object across up to ``processes``
-        processes.
+    def _has_index(self):
+        return True  # do not create all indexed parsers in advance, check them later
 
-        Results will be returned out of order.
-
-        Parameters
-        ----------
-        target : :class:`Callable`, optional
-            The function to execute over each entry. It will be given a single object yielded by
-            the wrapped iterator as well as all of the values in ``args`` and ``kwargs``
-        processes : int, optional
-            The number of worker processes to use. If negative, the number of processes
-            will match the number of available CPUs.
-        queue_timeout : float, optional
-            The number of seconds to block, waiting for a result before checking to see if
-            all workers are done.
-        args : :class:`Sequence`, optional
-            Additional positional arguments to be passed to the target function
-        kwargs : :class:`Mapping`, optional
-            Additional keyword arguments to be passed to the target function
-        **_kwargs
-            Additional keyword arguments to be passed to the target function
-
-        Yields
-        ------
-        object
-            The work item returned by the target function.
-        """
+    def _map(self, method_name, *args, **kwargs):
         for f in self.sources:
             with self._create_sequence(f) as r:
-                for result in r.map(target, processes, queue_timeout, args, kwargs, **_kwargs):
+                if not r._has_index():
+                    raise PyteomicsError(f'The reader for {f} needs an index for map() calls. Create the reader with `use_index=True`: {r!r}')
+                method = getattr(r, method_name)
+                for result in method(*args, **kwargs):
                     yield result
+
+    def tmap(self, *args, **kwargs):
+        return self._map('tmap', *args, **kwargs)
+
+    def pmap(self, *args, **kwargs):
+        return self._map('pmap', *args, **kwargs)
 
 
 class TableJoiner(ChainBase):
