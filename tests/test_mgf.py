@@ -41,8 +41,12 @@ class MGFTest(unittest.TestCase):
     def test_read(self):
         for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
             # http://stackoverflow.com/q/14246983/1258041
-            self.assertEqual(data.mgf_spectra_long, list(func(self.path)))
-            self.assertEqual(data.mgf_spectra_short, list(func(self.path, False)))
+            r = func(self.path)
+            self.assertEqual(data.mgf_spectra_long, list(r))
+            r.close()
+            r = func(self.path, False)
+            self.assertEqual(data.mgf_spectra_short, list(r))
+            r.close()
             with func(self.path) as reader:
                 self.assertEqual(data.mgf_spectra_long, list(reader))
             with func(self.path, False) as reader:
@@ -50,19 +54,21 @@ class MGFTest(unittest.TestCase):
 
     def test_read_source_kw(self):
         for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
-            self.assertEqual(data.mgf_spectra_long, list(func(source=self.path)))
+            with func(source=self.path) as r:
+                self.assertEqual(data.mgf_spectra_long, list(r))
 
     def test_read_decoding(self):
         for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
-            self.assertEqual(data.mgf_spectra_long_decoded,
-                             list(func(self.path, encoding=self._encoding)))
-            self.assertEqual(data.mgf_spectra_short_decoded,
-                             list(func(self.path, False, encoding=self._encoding)))
+            r = func(self.path, encoding=self._encoding)
+            self.assertEqual(data.mgf_spectra_long_decoded, list(r))
+            r.close()
+            r = func(self.path, False, encoding=self._encoding)
+            self.assertEqual(data.mgf_spectra_short_decoded, list(r))
+            r.close()
             with func(self.path, encoding=self._encoding) as reader:
                 self.assertEqual(data.mgf_spectra_long_decoded, list(reader))
             with func(self.path, False, encoding=self._encoding) as reader:
                 self.assertEqual(data.mgf_spectra_short_decoded, list(reader))
-            self.assertEqual(data.mgf_spectra_long_decoded, list(func(self.path)))
 
     def test_read_no_charges(self):
         with mgf.read(self.path, read_charges=False) as reader:
@@ -160,6 +166,7 @@ class MGFTest(unittest.TestCase):
         tmpfile.seek(0)
         tmpreader = mgf.read(tmpfile)
         self.assertEqual(data.mgf_spectra_long, list(tmpreader))
+        tmpfile.close()
 
     def test_read_dtype(self):
         dtypes = {'m/z array': np.float32, 'intensity array': np.int32}
@@ -174,6 +181,7 @@ class MGFTest(unittest.TestCase):
             f = klass(self.path)
             self.assertEqual(data.mgf_spectra_long[1], f[key])
             self.assertEqual(data.mgf_spectra_long[1], f.get_spectrum(key))
+            f.close()
         self.assertEqual(data.mgf_spectra_long[1], mgf.get_spectrum(self.path, key))
 
     def test_key_access_ions(self):
@@ -203,7 +211,7 @@ class MGFTest(unittest.TestCase):
             with self.subTest(method=method):
                 with mgf.IndexedMGF(self.path) as reader:
                     spectra = sorted(list(reader.map(method=method)), key=lambda s: s['params']['title'])
-        self.assertEqual(data.mgf_spectra_long, spectra)
+                    self.assertEqual(data.mgf_spectra_long, spectra)
 
     def test_prebuild_index(self):
         test_dir = tempfile.mkdtemp()
@@ -272,6 +280,15 @@ class UtilityTest(unittest.TestCase):
             self.assertEqual(len(spectra), 3)
             self.assertEqual(spectra[0]['params'], spectra[1]['params'])
             self.assertEqual(spectra[0]['params'], spectra[2]['params'])
+
+    def test_fragment_charge_parsing(self):
+        for s in ['1+', '1', '1.0', '+1.0']:
+            with self.subTest(s=s):
+                self.assertEqual(mgf.MGFBase.parse_peak_charge(s), 1)
+        for s in ['1-', '-1', '-1.0']:
+            with self.subTest(s=s):
+                self.assertEqual(mgf.MGFBase.parse_peak_charge(s), -1)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -12,12 +12,15 @@ class MS1Test(unittest.TestCase):
     def setUp(self):
         self.path = 'test.ms1'
         self.header = read_header(self.path)
-        self.spectra = list(read(self.path))
+        with read(self.path) as reader:
+            self.spectra = list(reader)
         self.ns = len(self.spectra)
 
     def test_read(self):
         # http://stackoverflow.com/q/14246983/1258041
-        self.assertEqual(data.ms1_spectra, list(read(self.path)))
+        r = read(self.path)
+        self.assertEqual(data.ms1_spectra, list(r))
+        r.close()
         for reader in [read, MS1, IndexedMS1, chain]:
             with reader(self.path) as reader:
                 self.assertEqual(data.ms1_spectra, list(reader))

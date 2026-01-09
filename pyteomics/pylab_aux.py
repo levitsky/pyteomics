@@ -472,28 +472,16 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
                 adjust = True
     # end of backend-specific kwargs
 
-    parsed = parser.parse(peptide, True, labels=list(aa_mass) + [parser.std_cterm, parser.std_nterm])
-    n = len(parsed)
+    # Generate fragment m/z and name series
+    series = mass.fragment_series(peptide, ion_types=types, maxcharge=maxcharge,
+                                    aa_mass=aa_mass, mass_data=mass_data, ion_comp=ion_comp)
+
     maxpeak = spectrum['intensity array'].max()
-    mz, names = {}, {}
-    for ion in types:
-        for charge in range(1, maxcharge + 1):
-            if ion[0] in 'abc':
-                for i in range(2, n):
-                    mz.setdefault(ion, []).append(
-                        mass.fast_mass2(parsed[:i] + [parser.std_cterm], aa_mass=aa_mass, charge=charge,
-                                        ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
-                    names.setdefault(ion, []).append(ion[0] + str(i - 1) + ion[1:])
-            else:
-                for i in range(1, n - 1):
-                    mz.setdefault(ion, []).append(
-                        mass.fast_mass2([parser.std_nterm] + parsed[n - (i + 1):], aa_mass=aa_mass, charge=charge,
-                                        ion_type=ion, mass_data=mass_data, ion_comp=ion_comp))
-                    names.setdefault(ion, []).append(ion[0] + str(i) + ion[1:])
     texts = []
     for ion in types:
+        names, mz = zip(*series[ion].items())
         c = colors.get(ion, colors.get(ion[0], 'blue'))
-        matrix = np.abs(spectrum['m/z array'] - np.array(mz[ion]).reshape(-1, 1))
+        matrix = np.abs(spectrum['m/z array'] - np.array(mz).reshape(-1, 1))
         if ftol is not None:
             match = np.where(matrix < ftol)
         else:
@@ -503,7 +491,7 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
         for j, i in zip(*match):
             x = spectrum['m/z array'][i]
             y = spectrum['intensity array'][i] + maxpeak * 0.02
-            name = names[ion][j]
+            name = names[j]
             texts.append(pylab.text(x, y, name, color=c, **text_kw))
     if adjust:
         adjust_text(texts, **adjust_kw)
@@ -596,7 +584,7 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     prefix = kwargs.get('prefix')
 
     try:
-        parsed_proforma = proforma.ProForma.parse(peptide)
+        parsed_proforma = proforma.ProForma.parse(peptide, case_sensitive_aa=True)
         peptide_pro = peptide
     except Exception:
         parsed_proforma = None
@@ -675,7 +663,7 @@ def annotate_spectrum(spectrum, peptide, *args, **kwargs):
     spectrum : dict
         A spectrum as returned by Pyteomics parsers. Needs to have 'm/z array' and 'intensity array' keys.
     peptide : str
-        A modX sequence.
+        A modX or ProForma sequence.
     backend : str, keyword only, optional
         One of `{'default', 'spectrum_utils', 'spectrum_utils.iplot'}`.
         The `spectrum_utils` backend requires installing :py:mod:`spectrum_utils`.

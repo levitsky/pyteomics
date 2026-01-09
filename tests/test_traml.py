@@ -24,9 +24,10 @@ class TraMLTest(unittest.TestCase):
                     self.assertEqual(transitions[rr], list(r))
 
     def test_map(self):
-        self.assertEqual(
-            sorted(transitions[1], key=op.itemgetter('id')),
-            sorted(TraML(self.path).map(), key=op.itemgetter('id')))
+        with TraML(self.path) as r:
+            self.assertEqual(
+                sorted(transitions[1], key=op.itemgetter('id')),
+                sorted(r.map(), key=op.itemgetter('id')))
 
 
 if __name__ == '__main__':
