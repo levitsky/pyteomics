@@ -16,6 +16,7 @@ import operator as op
 import pynumpress
 import base64
 import zlib
+from copy import copy
 
 from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
 obo_cache.cache_path = '.'
@@ -35,10 +36,19 @@ class MzmlTest(unittest.TestCase):
                     # http://stackoverflow.com/q/14246983/1258041
                     self.assertEqual(mzml_spectra, list(r))
 
-    def test_mp_read(self):
+    def test_map_read(self):
         key = op.itemgetter('index')
         with MzML(self.path) as f:
-            self.assertEqual(sorted(mzml_spectra, key=key), sorted(list(f.map()), key=key))
+            for method in ['p', 't']:
+                with self.subTest(method=method):
+                    self.assertEqual(sorted(mzml_spectra, key=key), sorted(list(f.map(method=method)), key=key))
+
+    def test_map_chain(self):
+        key = op.itemgetter('index')
+        with chain(self.path, self.path) as f:
+            for method in ['p', 't']:
+                with self.subTest(method=method):
+                    self.assertEqual(sorted(mzml_spectra * 2, key=key), sorted(list(f.map(method=method)), key=key))
 
     def test_mp_requires_index(self):
         with MzML(self.path, use_index=False) as r:
@@ -248,6 +258,15 @@ class MzmlTest(unittest.TestCase):
         with MzML(self.path) as reader:
             param = reader._handle_param(element)
             self.assertEqual(param.value.unit_info, 'm/z')
+
+    def test_copy_behavior(self):
+        with MzML(self.path) as reader:
+            creader = copy(reader)
+            self.assertTrue(isinstance(creader, MzML))
+            self.assertIs(creader.index, reader.index)
+            self.assertIsNot(creader._source, reader._source)
+            self.assertNotEqual(creader._source.fileno(), reader._source.fileno())
+            creader.close()
 
 
 if __name__ == '__main__':

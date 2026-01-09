@@ -33,6 +33,7 @@ from traceback import format_exc
 import warnings
 from collections import OrderedDict, namedtuple
 from itertools import islice
+from numbers import Integral
 from lxml import etree
 import numpy as np
 from urllib.request import urlopen, URLError
@@ -1441,3 +1442,17 @@ class IndexedIterfind(TaskMappingMixin, Iterfind):
     def __len__(self):
         index = self._index
         return len(index)
+
+    def __getitem__(self, key):
+        index = self._index
+        if isinstance(key, slice) and not (isinstance(key.start, (Integral, type(None))) and
+                                           isinstance(key.stop, (Integral, type(None))) and
+                                           isinstance(key.step, (Integral, type(None)))):
+                keys = index.between(key.start, key.stop)
+                if key.step is not None:
+                    keys = keys[::key.step]
+                return self.parser.get_by_ids(keys)
+        if isinstance(key, str):
+            return self.parser.get_by_id(key)
+        # fallback to parent behavior: integer key or integer slice
+        return super().__getitem__(key)
