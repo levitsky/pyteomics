@@ -46,7 +46,6 @@ class MzidTest(unittest.TestCase):
             return (x['spectrumID'], x['SpectrumIdentificationItem'][0]['PeptideSequence'], len(x['SpectrumIdentificationItem']))
 
         with MzIdentML(self.path) as reader:
-            reader.chunksize = 1
             for method in ['t', 'p']:
                 with self.subTest(method=method):
                     self.assertEqual(sorted(mzid_spectra[(1, 1)], key=key),
@@ -59,7 +58,6 @@ class MzidTest(unittest.TestCase):
                     self.assertEqual(
                         len(mzid_spectra[(1, 1)]),
                         sum(1 for _ in r.iterfind("SpectrumIdentificationResult").map(method=method)))
-
 
 
 if __name__ == '__main__':

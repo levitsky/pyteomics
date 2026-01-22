@@ -1292,7 +1292,7 @@ class TaskMappingMixin(MultiProcessingTaskMappingMixin, ThreadingTaskMappingMixi
     pmap = MultiProcessingTaskMappingMixin.map
     tmap = ThreadingTaskMappingMixin.map
 
-    def _has_index(self):
+    def _has_index(self) -> bool:
         return self._offset_index is not None
 
     def map(self, target=None, workers=None, args=None, kwargs=None, method='mp', **_kwargs):
