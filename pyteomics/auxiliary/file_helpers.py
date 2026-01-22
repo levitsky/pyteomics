@@ -1151,7 +1151,7 @@ class ThreadingTaskMappingMixin(BaseTaskMappingMixin):
     The use of threaded parallelism is warranted in free-threaded environments,
     such as the `experimental free-threaded CPython interpreter <https://docs.python.org/3/howto/free-threading-python.html>`_.
     """
-    chunk_size: int = 100
+    chunk_size: int = 1
 
     def map(self, target=None, workers=None, args=None, kwargs=None, chunk_size=None, **_kwargs):
         """
