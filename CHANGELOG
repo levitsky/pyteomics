@@ -1,7 +1,13 @@
-5.0a10
+5.0b1
 -----
 
- - Support ProForma 2.1 (`#183 <https://github.com/levitsky/pyteomics/pull/183>`_ by Joshua Klein).
+ - Support **ProForma 2.1** (`#183 <https://github.com/levitsky/pyteomics/pull/183>`_ by Joshua Klein).
+ - Implement **thread-based parallelism**.
+   Following the introduction of `official free-threading Python implementations <https://docs.python.org/3/howto/free-threading-python.html>`_
+   users are now able to use theads through the :py:meth:`map` interface of :ref:`indexing parsers`.
+   The default behavior of :py:meth:`map` is still to use multiprocessing, but the user can pass ``method='t'`` to use worker threads.
+   Also, methods :py:meth:`pmap` and :py:meth:`tmap` can be used to directly invoke process-based or thread-based mapping, respectively.
+
  - Implement type checking using :py:mod:`psims` when parsing `cvParam` elements in mzML, mzIdentML and TraML files
    (`#165 <https://github.com/levitsky/pyteomics/pull/165>`_).
    `psims <https://github.com/mobiusklein/psims>`_ is now required to parse these formats. Every parser instance now uses a copy of the

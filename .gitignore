@@ -6,6 +6,3 @@ __pycache__
 .ipynb_checkpoints
 .vscode
 *.diff
-tests/unimod.db
-tests/parallel.log
-tests/.coverage

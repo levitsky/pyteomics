@@ -207,9 +207,11 @@ class MGFTest(unittest.TestCase):
             self.assertEqual(data.mgf_spectra_lists[0], next(reader))
 
     def test_map(self):
-        with mgf.IndexedMGF(self.path) as reader:
-            spectra = sorted(list(reader.map()), key=lambda s: s['params']['title'])
-        self.assertEqual(data.mgf_spectra_long, spectra)
+        for method in ['t', 'p']:
+            with self.subTest(method=method):
+                with mgf.IndexedMGF(self.path) as reader:
+                    spectra = sorted(list(reader.map(method=method)), key=lambda s: s['params']['title'])
+                    self.assertEqual(data.mgf_spectra_long, spectra)
 
     def test_prebuild_index(self):
         test_dir = tempfile.mkdtemp()

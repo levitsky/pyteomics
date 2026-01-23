@@ -33,6 +33,8 @@ from traceback import format_exc
 import warnings
 from collections import OrderedDict, namedtuple
 from itertools import islice
+from numbers import Integral
+from copy import copy
 from lxml import etree
 import numpy as np
 from urllib.request import urlopen, URLError
@@ -1349,8 +1351,7 @@ class Iterfind(object):
     def next(self):
         return self.__next__()
 
-    @property
-    def is_indexed(self):
+    def has_index(self) -> bool:
         return False
 
     def reset(self):
@@ -1414,13 +1415,12 @@ class IndexedIterfind(TaskMappingMixin, Iterfind):
             yield self.parser.get_by_id(key, **self.config)
 
     def _make_iterator(self):
-        if self.is_indexed:
+        if self.has_index():
             return self._yield_from_index()
         warnings.warn("Non-indexed iterator created from %r" % (self, ))
         return super(IndexedIterfind, self)._make_iterator()
 
-    @property
-    def is_indexed(self):
+    def has_index(self) -> bool:
         if hasattr(self.parser, 'index'):
             if self.parser.index is not None:
                 index = self.parser.index
@@ -1441,3 +1441,21 @@ class IndexedIterfind(TaskMappingMixin, Iterfind):
     def __len__(self):
         index = self._index
         return len(index)
+
+    def __getitem__(self, key):
+        index = self._index
+        if isinstance(key, slice) and not (isinstance(key.start, (Integral, type(None))) and
+                                           isinstance(key.stop, (Integral, type(None))) and
+                                           isinstance(key.step, (Integral, type(None)))):
+                keys = index.between(key.start, key.stop)
+                if key.step is not None:
+                    keys = keys[::key.step]
+                return self.parser.get_by_ids(keys)
+        if isinstance(key, str):
+            return self.parser.get_by_id(key)
+        # fallback to parent behavior: integer key or integer slice
+        return super().__getitem__(key)
+
+    def __copy__(self):
+        # explicitly copy the parser to avoid sharing state
+        return self.__class__(copy(self.parser), self.tag_name, **self.config)

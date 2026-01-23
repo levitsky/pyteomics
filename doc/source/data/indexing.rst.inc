@@ -118,11 +118,11 @@ RT lookup is performed using binary search.
 When retrieving ranges, the closest spectra to the start and end of the range
 are used as endpoints, so it is possible that they are slightly outside the range.
 
-Multiprocessing
----------------
+Parallel processing
+-------------------
 
-Indexed parsers provide a unified interface for multiprocessing: :py:meth:`map`.
-The method applies a user-defined function to entries from the file, calling it in different processes.
+Indexed parsers provide a unified interface for pralallel processing: :py:meth:`map`.
+The method applies a user-defined function to entries from the file, calling it in different worker processes or threads.
 If the function is not provided, the parsing itself is parallelized. Depending on the format,
 this may speed up or slow down the parsing overall.
 :py:meth:`map` is a generator and yields items as they become available, not preserving the original order::
@@ -143,9 +143,16 @@ this may speed up or slow down the parsing overall.
     controllerType=0 controllerNumber=1 scan=1
     controllerType=0 controllerNumber=1 scan=2
 
+Worker processes or threads
+...........................
+
+:py:meth:`map` can use either :py:mod:`multiprocessing` or :py:mod:`threading` to spawn workers.
+The default for now is to use processes, as Python's support for `free threading <https://docs.python.org/3/howto/free-threading-python.html>`_
+is still somewhat experimental. You can directly invoke the `multiprocessing` or the `threading` implementation by calling
+:py:meth:`pmap` or :py:meth:`tmap`, respectively, or by passing ``method='p'`` or ``method='t'`` to :py:meth:`map`.
 
 .. note ::
-  To use :py:meth:`map` with lambda functions (and in some other corner cases, like
+  To use `multiprocessing` :py:meth:`map` with lambda functions (and in some other corner cases, like
   parsers instantiated with pre-opened file objects), the :py:mod:`dill` package is required.
   This is because the target callable and the parser itself need to be pickled for multiprocessing to work.
 
@@ -172,7 +179,7 @@ Start method
 ............
 
 There are different `methods to start new processes <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_,
-depending on the platform, and this will affect how the mapped function works (e.g. whether it can access global variables). Since version 5.0,
+depending on the platform, and this will affect how the mapped function works (e.g. whether it can access global variables).
 Pyteomics allows you to configure the start method using :py:func:`pyteomics.auxiliary.set_start_method`.
 Unlike :py:func:`multiprocessing.set_start_method`, it will only set the start method for Pyteomics. If you instead want to call
 :py:func:`multiprocessing.set_start_method` and have it affect Pyteomics, you should make the call before importing Pyteomics.
@@ -182,5 +189,5 @@ in which case it will be changed to `forkserver`. This is because the use of `fo
 in a multithreaded context. See also `this thread <https://discuss.python.org/t/concerns-regarding-deprecation-of-fork-with-alive-threads/33555>`_
 for a more extensive discussion.
 Note that `starting with Python 3.14 <https://docs.python.org/3.14/whatsnew/3.14.html#whatsnew314-multiprocessing-start-method>`_,
-`fork` will not be the default on any platform. Pyteomics 5.0 makes this change happen sooner, while also giving you an option to take responsibility and
-use the start method you want on any Python version.
+`fork` will not be the default on any platform. If you're on an older Python, Pyteomics 5.0 makes this change happen sooner,
+while also giving you an option to take responsibility and use the start method you want on any Python version.
