@@ -5,7 +5,7 @@ pandas
 sqlalchemy >= 1.4
 cython
 h5py
-hdf5plugin < 3.0.0; python_version < '3'
-hdf5plugin; python_version > '3.1'
+hdf5plugin
 pynumpress
 psims > 0.1.42
+spectrum_utils
