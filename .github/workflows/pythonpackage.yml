@@ -5,10 +5,12 @@ on:
     paths:
       - '**.py'
       - '.github/workflows/pythonpackage.yml'
+      - 'test-requirements.txt'
   pull_request:
     paths:
       - '**.py'
       - '.github/workflows/pythonpackage.yml'
+      - 'test-requirements.txt'
 
 jobs:
   build:
