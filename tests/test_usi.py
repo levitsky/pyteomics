@@ -4,6 +4,7 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 
 import unittest
+from urllib.error import HTTPError
 
 from pyteomics.usi import USI, proxi, AGGREGATOR_KEY
 from pyteomics.auxiliary import PyteomicsError
@@ -25,7 +26,13 @@ class USITest(unittest.TestCase):
 class PROXITest(unittest.TestCase):
     def test_request(self):
         usi_str = "mzspec:MSV000085202:210320_SARS_CoV_2_T:scan:131256"
-        response = proxi(usi_str, backend='massive')
+        try:
+            response = proxi(usi_str, backend='massive')
+        except HTTPError as e:
+            if e.code in {500, 502, 503, 504}:
+                self.skipTest(f'PROXI service is unavailable ({e.code})')
+            else:
+                raise
 
         assert set(usi_proxi_data.keys()) <= set(response.keys())
 
