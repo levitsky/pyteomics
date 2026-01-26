@@ -107,7 +107,7 @@ class _file_obj(object):
                          }[mode[0]]
             self._file_spec = None
         elif isinstance(f, (str, bytes)):
-            self.file = codecs.open(f, mode, encoding)
+            self.file = open(f, mode, encoding=encoding)
             self._file_spec = f
         else:
             self._file_spec = f
