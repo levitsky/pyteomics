@@ -189,6 +189,20 @@ class ProFormaTest(unittest.TestCase):
                 i = ProForma.parse(seq)
                 self.assertEqual(i.composition(), base_comp)
 
+    def test_proteoform_copiable(self):
+        test_seq = [
+            "[Phospho]?EMEVTSESPEK",
+            "EMEVT[#g1]S[#g1]ES[Phospho#g1]PEK",
+            "EMEV(TS)[Phospho]ESPEK"
+        ]
+        for seq in test_seq:
+            with self.subTest(seq=seq):
+                i = ProForma.parse(seq)
+                icopy = i.copy()
+                self.assertEqual(i, icopy)
+                self.assertEqual(i.mass, icopy.mass)
+                self.assertEqual(i.composition(), icopy.composition())
+
     def test_from_spec(self):
         positive = [
             "AA",
