@@ -1,7 +1,7 @@
 import unittest
 import numpy as np
 import pylab
-from pyteomics import pylab_aux, mass, parser
+from pyteomics import pylab_aux, mgf, mzml
 from pyteomics.auxiliary import PyteomicsError
 
 """
@@ -215,7 +215,11 @@ class PlotSpectrumTest(unittest.TestCase):
         pylab.clf()
         self.spectrum = {
             'm/z array': np.array([100, 150, 200, 250, 300]),
-            'intensity array': np.array([10, 50, 100, 30, 20])
+            'intensity array': np.array([10, 50, 100, 30, 20]),
+            'params': {
+                'charge': [2],
+                'pepmass': (250.4, 1100)
+            }
         }
 
     def tearDown(self):
@@ -230,6 +234,12 @@ class PlotSpectrumTest(unittest.TestCase):
         """Test spectrum plot with default backend, profile"""
         result = pylab_aux.plot_spectrum(self.spectrum, backend='default', centroided=False)
         self.assertIsNotNone(result)
+
+    def test_plot_spectrum(self):
+        for backend in ['default', 'spectrum_utils']:
+            with self.subTest(backend=backend):
+                result = pylab_aux.plot_spectrum(self.spectrum, backend=backend)
+                self.assertIsNotNone(result)
 
     def test_plot_spectrum_custom_labels(self):
         """Test spectrum plot with custom labels"""
@@ -262,72 +272,45 @@ class AnnotateSpectrumTest(unittest.TestCase):
         }
         self.peptide = 'PEPTIDE'
 
+    def try_annotate_spectrum(self, **kwargs):
+        for backend in ['default', 'spectrum_utils']:
+            with self.subTest(backend=backend):
+                kwargs['backend'] = backend
+                result = pylab_aux.annotate_spectrum(
+                    self.spectrum,
+                    self.peptide,
+                    **kwargs
+                )
+                self.assertIsNotNone(result)
+
     def tearDown(self):
         pylab.close('all')
 
-    def test_annotate_spectrum_default_backend(self):
-        """Test spectrum annotation with default backend"""
-        result = pylab_aux.annotate_spectrum(
-            self.spectrum,
-            self.peptide,
-            backend='default',
-            precursor_charge=2
-        )
-        self.assertIsNotNone(result)
+    def test_annotate_spectrum(self):
+        """Test spectrum annotation with default settings"""
+        self.try_annotate_spectrum()
 
     def test_annotate_spectrum_custom_ion_types(self):
         """Test spectrum annotation with custom ion types"""
-        result = pylab_aux.annotate_spectrum(
-            self.spectrum,
-            self.peptide,
-            backend='default',
-            precursor_charge=2,
-            ion_types=('b', 'y', 'a')
-        )
-        self.assertIsNotNone(result)
+        ion_types = ['a', 'b', 'y']
+        self.try_annotate_spectrum(ion_types=ion_types)
 
     def test_annotate_spectrum_custom_tolerance(self):
         """Test spectrum annotation with custom tolerance"""
-        result = pylab_aux.annotate_spectrum(
-            self.spectrum,
-            self.peptide,
-            backend='default',
-            precursor_charge=2,
-            ftol=0.5
-        )
-        self.assertIsNotNone(result)
+        self.try_annotate_spectrum(ftol=0.5)
 
-    def test_annotate_spectrum_extract_charge(self):
-        """Test automatic charge extraction from spectrum"""
-        result = pylab_aux.annotate_spectrum(
-            self.spectrum,
-            self.peptide,
-            backend='default'
-        )
-        self.assertIsNotNone(result)
+    def test_annotate_spectrum_override_charge(self):
+        """Test spectrum annotation with overridden precursor charge"""
+        self.try_annotate_spectrum(precursor_charge=3)
 
     def test_annotate_spectrum_custom_colors(self):
         """Test spectrum annotation with custom colors"""
         colors = {'b': '#FF0000', 'y': '#0000FF'}
-        result = pylab_aux.annotate_spectrum(
-            self.spectrum,
-            self.peptide,
-            backend='default',
-            precursor_charge=2,
-            colors=colors
-        )
-        self.assertIsNotNone(result)
+        self.try_annotate_spectrum(colors=colors)
 
     def test_annotate_spectrum_with_title(self):
         """Test spectrum annotation with title"""
-        result = pylab_aux.annotate_spectrum(
-            self.spectrum,
-            self.peptide,
-            backend='default',
-            precursor_charge=2,
-            title='Annotated Spectrum'
-        )
-        self.assertIsNotNone(result)
+        self.try_annotate_spectrum(title='Annotated Spectrum')
 
 
 class MirrorTest(unittest.TestCase):
@@ -338,10 +321,16 @@ class MirrorTest(unittest.TestCase):
         self.spec_top = {
             'm/z array': np.array([100, 150, 200, 250, 300]),
             'intensity array': np.array([10, 50, 100, 30, 20]),
+            'params': {
+                'charge': [2],
+                'pepmass': (250.4, 1100)}
         }
         self.spec_bottom = {
             'm/z array': np.array([100, 120, 200, 250, 300]),
             'intensity array': np.array([5, 40, 90, 25, 15]),
+            'params': {
+                'charge': [2],
+                'pepmass': (250.5, 1000)}
         }
         self.peptide = 'PEPTIDE'
 
@@ -352,7 +341,7 @@ class MirrorTest(unittest.TestCase):
         """Test mirror plot without peptide (no annotation)"""
         if pylab_aux.sus is None:
             self.skipTest("spectrum_utils not available")
-        result = pylab_aux.mirror(self.spec_top, self.spec_bottom, precursor_mz=250.5, precursor_charge=2, backend='spectrum_utils')
+        result = pylab_aux.mirror(self.spec_top, self.spec_bottom, precursor_mz=250.5, precursor_charge=2)
         self.assertIsNotNone(result)
 
     def test_mirror_with_peptide_spectrum_utils_missing(self):
@@ -362,10 +351,37 @@ class MirrorTest(unittest.TestCase):
         result = pylab_aux.mirror(
             self.spec_top, self.spec_bottom,
             peptide=self.peptide,
-            backend='spectrum_utils',
             precursor_charge=2
         )
         self.assertIsNotNone(result)
+
+
+class ExtractPrecursorInfoTest(unittest.TestCase):
+    mgf_file = 'test.mgf'
+    mzml_file = 'tiny.pwiz.1.1.mzML'
+
+    def test_mgf_extraction(self):
+        with mgf.IndexedMGF(self.mgf_file) as reader:
+            spectrum = reader[0]
+            charge = pylab_aux._get_precursor_charge(spectrum)
+            mz = pylab_aux._get_precursor_mz(spectrum)
+            self.assertEqual(charge, 2)
+            self.assertAlmostEqual(mz, 983.6)
+
+    def test_mzml_extraction(self):
+        with mzml.MzML(self.mzml_file) as reader:
+            spectrum = reader[1]
+            charge = pylab_aux._get_precursor_charge(spectrum)
+            mz = pylab_aux._get_precursor_mz(spectrum)
+            self.assertEqual(charge, 2)
+            self.assertAlmostEqual(mz, 445.34)
+
+    def test_kwarg_override(self):
+        spectrum = {}
+        charge = pylab_aux._get_precursor_charge(spectrum, precursor_charge=3)
+        mz = pylab_aux._get_precursor_mz(spectrum, precursor_mz=500.2)
+        self.assertEqual(charge, 3)
+        self.assertAlmostEqual(mz, 500.2)
 
 
 if __name__ == '__main__':

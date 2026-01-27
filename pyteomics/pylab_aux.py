@@ -395,6 +395,19 @@ def plot_spectrum(spectrum, *args, **kwargs):
     **kwargs
         When using `default` backend: given to :py:func:`pylab.plot` or :py:func:`pylab.bar` (depending on `centroided`).
 
+    precursor_mz : float, keyword only, optional
+        Precursor m/z value.
+
+        .. note::
+            If not given, an attempt will be made to extract it from `spectrum`.
+            `spectrum_utils` backends require this value to be specified or extractable.
+    precursor_charge : int, keyword only, optional
+        Precursor charge state.
+
+        .. note::
+            If not given, an attempt will be made to extract it from `spectrum`.
+            `spectrum_utils` backends require this value to be specified or extractable.
+
     min_intensity : float, keyword only, optional
         Remove low-intensity peaks; this is a factor of maximum peak intensity. Default is 0 (no filtering).
         Only works with `spectrum_utils` and `spectrum_utils.iplot` backends.
@@ -447,11 +460,14 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
         rtol = kwargs.pop('rtol', 1e-5)
     text_kw = kwargs.pop('text_kw', dict(ha='center', clip_on=True, backgroundcolor='#ffffff99'))
     precursor_charge = kwargs.pop('precursor_charge', None)
-    if precursor_charge is None:
-        precursor_charge = _get_precursor_charge(spectrum)
-    if precursor_charge is None:
-        raise PyteomicsError('Could not extract precursor charge from spectrum. Please specify `precursor_charge` kwarg.')
-    maxcharge = kwargs.pop('maxcharge', max(1, precursor_charge - 1))
+
+    precursor_charge = _get_precursor_charge(spectrum, strict=False)
+    maxcharge = kwargs.pop('maxcharge', None)
+    if maxcharge is None:
+        if precursor_charge is not None:
+            maxcharge = max(1, precursor_charge - 1)
+        else:
+            maxcharge = 1
     ax = kwargs.get('ax', None)
     # end of common kwargs
 
@@ -499,7 +515,15 @@ def _default_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     return plot_spectrum(spectrum, *args, centroided=centroided, **kwargs)
 
 
-def _get_precursor_charge(spectrum):
+def _get_precursor_charge(spectrum: dict, **kwargs):
+    """
+    Inspect kwargs and spectrum to get precursor charge.
+    If found in kwargs, return that value. Otherwise, try to extract from spectrum.
+    If not found and `strict` kwarg is True (default), raise PyteomicsError.
+    """
+    provided = kwargs.get('precursor_charge')
+    if provided is not None:
+        return provided
     try:
         return mgf.MGFBase.parse_precursor_charge(spectrum['params']['charge'], list_only=True)[0]
     except (PyteomicsError, KeyError):
@@ -508,10 +532,19 @@ def _get_precursor_charge(spectrum):
         return int(spectrum['precursorList']['precursor'][0]['selectedIonList']['selectedIon'][0]['charge state'])
     except KeyError:
         pass
-    return None
+    if kwargs.get('strict', True):
+        raise PyteomicsError('Could not extract precursor charge from spectrum. Please specify `precursor_charge` kwarg.')
 
 
-def _get_precursor_mz(spectrum):
+def _get_precursor_mz(spectrum: dict, **kwargs):
+    """
+    Inspect kwargs and spectrum to get precursor m/z.
+    If found in kwargs, return that value. Otherwise, try to extract from spectrum.
+    If not found and `strict` kwarg is True (default), raise PyteomicsError.
+    """
+    provided = kwargs.get('precursor_mz')
+    if provided is not None:
+        return provided
     try:
         return spectrum['params']['pepmass'][0]
     except KeyError:
@@ -524,7 +557,8 @@ def _get_precursor_mz(spectrum):
         for attr in spectrum['attributes']:
             if attr in {"MS:1000827", "MS:1000744", "MS:1002234"}:
                 return spectrum['attributes'][attr]
-    return None
+    if kwargs.get('strict', True):
+        raise PyteomicsError('Could not extract precursor m/z from spectrum. Please specify `precursor_mz` kwarg.')
 
 
 def _spectrum_utils_create_spectrum(spectrum, *args, **kwargs):
@@ -538,8 +572,10 @@ def _spectrum_utils_create_spectrum(spectrum, *args, **kwargs):
     max_num_peaks = kwargs.pop('max_num_peaks', None)
     scaling = kwargs.pop('scaling', None)
     max_intensity = kwargs.pop('max_intensity', None)
+    precursor_mz = _get_precursor_mz(spectrum, **kwargs)
+    precursor_charge = _get_precursor_charge(spectrum, **kwargs)
     spectrum = sus.MsmsSpectrum(
-        'None', kwargs.pop('precursor_mz', None), kwargs.pop('precursor_charge', None),
+        'None', precursor_mz, precursor_charge,
         spectrum['m/z array'], spectrum['intensity array'])
     if mz_range:
         spectrum = spectrum.set_mz_range(*mz_range)
@@ -564,13 +600,7 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
 
     # kwargs.pop('text_kw', None)  # not used
 
-    precursor_charge = kwargs.pop('precursor_charge', None)
-    if precursor_charge is None:
-        precursor_charge = _get_precursor_charge(spectrum)
-    if precursor_charge is None:
-        raise PyteomicsError(
-            'Could not extract precursor charge from spectrum. '
-            'Please specify `precursor_charge` keyword argument.')
+    precursor_charge = _get_precursor_charge(spectrum, **kwargs, strict=False)
 
     maxcharge = kwargs.pop('maxcharge', max(1, precursor_charge - 1))
     # end of common kwargs
@@ -593,9 +623,7 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
         except Exception:
             raise PyteomicsError("Cannot parse {} as ProForma or convert from modX".format(peptide))
 
-    precursor_mz = kwargs.pop('precursor_mz', None)
-    if precursor_mz is None:
-        precursor_mz = _get_precursor_mz(spectrum)
+    precursor_mz = _get_precursor_mz(spectrum, **kwargs, strict=False)
     if precursor_mz is None:
         try:
             if aa_comp:
@@ -606,6 +634,11 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
                 precursor_mz = mass.mass_charge_ratio(parsed_proforma.mass, precursor_charge)
         except PyteomicsError:
             raise PyteomicsError('Cannot obtain precursor m/z, please specify `precursor_mz` argument.')
+    if precursor_charge is None:
+        if parsed_proforma and parsed_proforma.charge_state is not None:
+            precursor_charge = parsed_proforma.charge_state.charge
+        else:
+            raise PyteomicsError('Cannot obtain precursor charge, please specify `precursor_charge` argument.')
 
     spectrum = _spectrum_utils_create_spectrum(spectrum, *args,
         precursor_mz=precursor_mz, precursor_charge=precursor_charge, **kwargs)
