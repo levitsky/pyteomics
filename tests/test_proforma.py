@@ -432,8 +432,8 @@ class PSIModModificationResolverTest(unittest.TestCase):
         self.assertRaises(ModificationMassNotFoundError, lambda: state.resolve())
 
 
-class ModificationHashingTest(unittest.TestCase):
-    def test_mass_modification(self):
+class ModificationTest(unittest.TestCase):
+    def test_mass_modification_hashable(self):
         mod = MassModification(57.08)
 
         container = set()
@@ -443,6 +443,16 @@ class ModificationHashingTest(unittest.TestCase):
         mod2 = MassModification(57.08 + 1e-19)
         self.assertIn(mod2.key, container)
         self.assertIn(mod2, container)
+
+    def test_generic_modifications_copiable(self):
+        mod = GenericModification("Phospho")
+        modcopy = mod.copy()
+        self.assertEqual(mod, modcopy)
+
+    def test_mass_modifications_copiable(self):
+        mod = MassModification(57.08)
+        modcopy = mod.copy()
+        self.assertEqual(mod, modcopy)
 
 
 class ModificationPicklingTest(unittest.TestCase):
@@ -455,6 +465,14 @@ class ModificationPicklingTest(unittest.TestCase):
         payload = pickle.dumps(mod)
         dup = pickle.loads(payload)
         self.assertEqual(mod, dup)
+
+
+class ProteoformCombinatorTest(unittest.TestCase):
+    def test_range(self):
+        seq = "EMEV(TS)[Phospho]ESPEK"
+        pf = ProForma.parse(seq)
+        proteoforms = list(pf.generate_proteoforms())
+        self.assertEqual(len(proteoforms), 2)   # Phospho on T or S
 
 
 if __name__ == '__main__':

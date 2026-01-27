@@ -856,7 +856,7 @@ class ModificationBase(TagBase):
     While :class:`ModificationBase` is hashable, its equality testing
     brings in additional tag-related information. For pure modification
     identity comparison, use :attr:`key` to get a :class:`ModificationToken`
-    free of these concerns..
+    free of these concerns.
     '''
 
     _tag_type = None
@@ -3741,7 +3741,7 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
-    def generate_variable_proteoforms(self):
+    def generate_proteoforms(self):
         return iter(ProteoformCombinator(self))
 
     def copy(self):
