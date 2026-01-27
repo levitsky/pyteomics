@@ -2,6 +2,10 @@
 -----
 
  - Support **ProForma 2.1** (`#183 <https://github.com/levitsky/pyteomics/pull/183>`_ by Joshua Klein).
+   You can calculate compositions for :py:class:`ProForma` objects using :py:meth:`pyteomics.proforma.Proforma.composition`
+   and get m/z with annotated or user-provided charge state using :py:meth:`pyteomics.proforma.Proforma.mz`.
+   You can also iterate through possible peptidoforms when a ProForma sequence is annotated with some ambiguity using
+   :py:meth:`pyteomics.proforma.Proforma.generate_proteoforms`.
  - Implement **thread-based parallelism**.
    Following the introduction of `official free-threading Python implementations <https://docs.python.org/3/howto/free-threading-python.html>`_
    users are now able to use theads through the :py:meth:`map` interface of :ref:`indexing parsers`.
@@ -18,14 +22,14 @@
       Consider enabling and configuring `OBO cache <data.html#controlled-vocabularies>`_ to save time
       when creating mzML, mzIdentML and TraML parser objects.
 
- - Change the default `start method <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_
+ - Change the default `subprocess start method <https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods>`_
    used by the :py:meth:`map` method of :ref:`indexing parsers <indexing>` on Linux-like platforms and add a new function,
    :py:func:`auxiliary.set_start_method`, to configure it (`#172 <https://github.com/levitsky/pyteomics/pull/172>`_).
 
    Read more about the new behavior and the rationale :ref:`in the docs <start_method>`.
  - **Drop Python 2 support.** See `#167 <https://github.com/levitsky/pyteomics/discussions/167>`_ for the announcement.
  - Pyteomics now uses the `implicit namespace mechanism <https://peps.python.org/pep-0420/>`_.
- - Fix compatibility with :py:mod:`lxml` 5.4.0 (`#170 <https://github.com/levitsky/pyteomics/issues/170>`_).
+ - Fix compatibility with :py:mod:`lxml` 5.4.0 and newer (`#170 <https://github.com/levitsky/pyteomics/issues/170>`_).
  - Ensure URL prefix when creating a :py:class:`mass.Unimod` object (`#169 <https://github.com/levitsky/pyteomics/pull/169>`_).
  - Improve :py:mod:`spectrum_utils` integration.
  - Retain StPeter output in :py:func:`pyteomics.protxml.DataFrame`.
