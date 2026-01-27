@@ -474,6 +474,18 @@ class ProteoformCombinatorTest(unittest.TestCase):
         proteoforms = list(pf.generate_proteoforms())
         self.assertEqual(len(proteoforms), 2)   # Phospho on T or S
 
+    def test_localization_tag(self):
+        seq = "EMEVT[#g1]S[#g1]ES[Phospho#g1]PEK"
+        pf = ProForma.parse(seq)
+        proteoforms = list(pf.generate_proteoforms())
+        self.assertEqual(len(proteoforms), 3)
+
+    def test_unlocalized_modification(self):
+        seq = "[Phospho]?EMEVTSESPEK"
+        pf = ProForma.parse(seq)
+        proteoforms = list(pf.generate_proteoforms())
+        self.assertEqual(len(proteoforms), len(pf))
+
 
 if __name__ == '__main__':
     unittest.main()
