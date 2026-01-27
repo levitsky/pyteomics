@@ -169,7 +169,7 @@ class TagBase(object):
         self.group_id = group_id
 
     def copy(self):
-        return self.__class__(self.type, self.value, [e.copy() for e in self.extra], self.group_id)
+        return self.__class__(self.value, [e.copy() for e in self.extra], self.group_id)
 
     def __str__(self):
         part = self._format_main()
