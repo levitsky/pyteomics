@@ -165,11 +165,11 @@ class TagBase(object):
     def __init__(self, type, value, extra=None, group_id=None):
         self.type = type
         self.value = value
-        self.extra = extra
+        self.extra = extra or []
         self.group_id = group_id
 
     def copy(self):
-        return self.__class__(self.value, [e.copy() for e in (self.extra or [])], self.group_id)
+        return self.__class__(self.value, [e.copy() for e in self.extra], self.group_id)
 
     def __str__(self):
         part = self._format_main()
