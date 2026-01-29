@@ -2,6 +2,7 @@ from os import path
 import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import unittest
+import numpy as np
 from pyteomics import parser
 from string import ascii_uppercase as uppercase
 import random
@@ -164,6 +165,19 @@ class ParserTest(unittest.TestCase):
                     bad = s.replace(aa, 'Z')
                     self.assertFalse(parser.fast_valid(bad, labels=self.labels))
                     self.assertFalse(parser.valid(bad, labels=self.labels))
+
+    def test_coverage_mask(self):
+        protein = 'PEPTIDES'
+        peptides = ['PEP', 'EPT']
+        mask = parser.coverage_mask(protein, peptides)
+        expected_mask = np.array([1, 2, 2, 1, 0, 0, 0, 0], dtype=np.int8)
+        np.testing.assert_array_equal(mask, expected_mask)
+
+    def test_coverage(self):
+        protein = 'PEPTIDES'
+        peptides = ['PEP', 'EPT']
+        cov = parser.coverage(protein, peptides)
+        self.assertAlmostEqual(cov, 0.5)
 
 
 if __name__ == '__main__':

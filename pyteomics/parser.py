@@ -1140,7 +1140,7 @@ def coverage_mask(protein: str, peptides: Iterable[str]) -> 'np.ndarray':
         indices = [m.start() for m in re.finditer(
             '(?={})'.format(re.sub(r'[^A-Z]', '', peptide)), protein)]
         for i in indices:
-            mask[i:i + len(peptide)] = 1
+            mask[i:i + len(peptide)] += 1
     return mask
 
 
@@ -1172,7 +1172,7 @@ def coverage(protein, peptides):
     0.5
     """
     mask = coverage_mask(protein, peptides)
-    return float(mask.sum(dtype=float) / mask.size)
+    return (mask > 0).sum(dtype=float) / mask.size
 
 
 if __name__ == "__main__":
