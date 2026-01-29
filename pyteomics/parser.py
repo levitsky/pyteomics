@@ -50,7 +50,7 @@ Operations on polypeptide sequences
 Auxiliary commands
 ------------------
 
-  :py:func:`coverage` - calculate the sequence coverage of a protein by peptides.
+  :py:func:`coverage` and :py:func:`coverage_mask` - calculate the sequence coverage of a protein by peptides.
 
   :py:func:`length` - calculate the number of amino acid
   residues in a polypeptide.
@@ -103,6 +103,7 @@ Data
 import re
 from collections import deque
 import itertools as it
+from typing import Iterable
 import warnings
 from .auxiliary import PyteomicsError, memoize, BasicComposition, cvstr, cvquery
 
@@ -1108,6 +1109,41 @@ def isoforms(sequence, **kwargs):
         raise PyteomicsError('Unsupported value of "format": {}'.format(format_))
 
 
+def coverage_mask(protein: str, peptides: Iterable[str]) -> 'np.ndarray':
+    """Calculate a coverage mask of `protein` by `peptides`.
+    Peptides can overlap. If a peptide is found multiple times in `protein`,
+    it contributes more to the overall coverage.
+
+    Requires :py:mod:`numpy`.
+
+    .. note::
+        Modifications and terminal groups are discarded.
+
+    Parameters
+    ----------
+    protein : str
+        A protein sequence.
+    peptides : iterable
+        An iterable of peptide sequences.
+
+    Returns
+    -------
+    out : numpy.ndarray
+        A 1D array of integers, with length equal to that of `protein`.
+        Each position indicates how many peptides cover the corresponding
+        residue in `protein`.
+    """
+    import numpy as np
+    protein = re.sub(r'[^A-Z]', '', protein)
+    mask = np.zeros(len(protein), dtype=np.int8)
+    for peptide in peptides:
+        indices = [m.start() for m in re.finditer(
+            '(?={})'.format(re.sub(r'[^A-Z]', '', peptide)), protein)]
+        for i in indices:
+            mask[i:i + len(peptide)] = 1
+    return mask
+
+
 def coverage(protein, peptides):
     """Calculate how much of `protein` is covered by `peptides`.
     Peptides can overlap. If a peptide is found multiple times in `protein`,
@@ -1135,14 +1171,7 @@ def coverage(protein, peptides):
     >>> coverage('PEPTIDES'*100, ['PEP', 'EPT'])
     0.5
     """
-    import numpy as np
-    protein = re.sub(r'[^A-Z]', '', protein)
-    mask = np.zeros(len(protein), dtype=np.int8)
-    for peptide in peptides:
-        indices = [m.start() for m in re.finditer(
-            '(?={})'.format(re.sub(r'[^A-Z]', '', peptide)), protein)]
-        for i in indices:
-            mask[i:i + len(peptide)] = 1
+    mask = coverage_mask(protein, peptides)
     return float(mask.sum(dtype=float) / mask.size)
 
 
