@@ -337,17 +337,15 @@ class MirrorTest(unittest.TestCase):
     def tearDown(self):
         pylab.close('all')
 
-    def test_mirror_no_peptide_spectrum_utils_missing(self):
+    @unittest.skipIf(pylab_aux.sus is None, "spectrum_utils not available")
+    def test_mirror_no_peptide(self):
         """Test mirror plot without peptide (no annotation)"""
-        if pylab_aux.sus is None:
-            self.skipTest("spectrum_utils not available")
         result = pylab_aux.mirror(self.spec_top, self.spec_bottom, precursor_mz=250.5, precursor_charge=2)
         self.assertIsNotNone(result)
 
-    def test_mirror_with_peptide_spectrum_utils_missing(self):
+    @unittest.skipIf(pylab_aux.sus is None, "spectrum_utils not available")
+    def test_mirror_with_peptide(self):
         """Test mirror plot with peptide (with annotation)"""
-        if pylab_aux.sus is None:
-            self.skipTest("spectrum_utils not available")
         result = pylab_aux.mirror(
             self.spec_top, self.spec_bottom,
             peptide=self.peptide,

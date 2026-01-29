@@ -601,6 +601,7 @@ def _spectrum_utils_annotate_spectrum(spectrum, peptide, *args, **kwargs):
     # kwargs.pop('text_kw', None)  # not used
 
     precursor_charge = _get_precursor_charge(spectrum, **kwargs, strict=False)
+    kwargs.pop('precursor_charge', None)  # avoid duplication in calling _spectrum_utils_create_spectrum
 
     maxcharge = kwargs.pop('maxcharge', max(1, precursor_charge - 1))
     # end of common kwargs
