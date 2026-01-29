@@ -44,7 +44,7 @@ Operations on polypeptide sequences
 
   :py:func:`num_sites` - count the number of cleavage sites in a sequence.
 
-  :py:func:`isoforms` - generate all unique modified peptide sequences
+  :py:func:`peptidoforms` - generate all unique modified peptide sequences
   given the initial sequence and modifications.
 
 Auxiliary commands
@@ -956,7 +956,7 @@ Use :py:func:`pyteomics.auxiliary.cvquery` for accession access::
 
 _psims_index = cvquery(psims_rules)
 
-def isoforms(sequence, **kwargs):
+def peptidoforms(sequence, **kwargs):
     """
     Apply variable and fixed modifications to the polypeptide and yield
     the unique modified sequences.
@@ -1157,6 +1157,8 @@ def isoforms(sequence, **kwargs):
     else:
         raise PyteomicsError('Unsupported value of "format": {}'.format(format_))
 
+
+isoforms = peptidoforms
 
 def coverage_mask(protein: str, peptides: Iterable, fast: bool=True) -> 'np.ndarray':
     """Calculate a coverage mask of `protein` by `peptides`.
