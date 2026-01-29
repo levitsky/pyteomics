@@ -55,6 +55,8 @@ Auxiliary commands
   :py:func:`length` - calculate the number of amino acid
   residues in a polypeptide.
 
+  :py:func:`strip` - remove all modifications and terminal groups from a modX sequence.
+
   :py:func:`valid` - check if a sequence can be parsed successfully.
 
   :py:func:`fast_valid` - check if a sequence contains of known one-letter
@@ -103,8 +105,10 @@ Data
 import re
 from collections import deque
 import itertools as it
-from typing import Iterable
+from typing import Iterable, TYPE_CHECKING
 import warnings
+if TYPE_CHECKING:
+    from .proforma import ProForma
 from .auxiliary import PyteomicsError, memoize, BasicComposition, cvstr, cvquery
 
 
@@ -411,7 +415,7 @@ def fast_valid(sequence, labels=set(std_labels)):
     return set(sequence).issubset(labels)
 
 
-def to_string(parsed_sequence, show_unmodified_termini=True):
+def to_string(parsed_sequence: Iterable[str] | Iterable[tuple], show_unmodified_termini=True):
     """Create a string from a parsed sequence.
 
     Parameters
@@ -430,19 +434,19 @@ def to_string(parsed_sequence, show_unmodified_termini=True):
     -------
     sequence : str
     """
-    parsed_sequence = list(parsed_sequence)
+    parsed_list = list(parsed_sequence)
     labels = []
-    nterm = parsed_sequence[0]
-    cterm = parsed_sequence[-1]
+    nterm = parsed_list[0]
+    cterm = parsed_list[-1]
 
     if isinstance(nterm, str):
         if nterm != std_nterm or show_unmodified_termini:
             labels.append(nterm)
-        labels.extend(parsed_sequence[1:-1])
-        if len(parsed_sequence) > 1 and (cterm != std_cterm or show_unmodified_termini):
+        labels.extend(parsed_list[1:-1])
+        if len(parsed_list) > 1 and (cterm != std_cterm or show_unmodified_termini):
             labels.append(cterm)
     else:
-        if len(parsed_sequence) == 1:
+        if len(parsed_list) == 1:
             g = nterm
             if nterm[0] == std_nterm and not show_unmodified_termini:
                 g = g[1:]
@@ -453,8 +457,8 @@ def to_string(parsed_sequence, show_unmodified_termini=True):
             labels.append(''.join(nterm))
         else:
             labels.append(''.join(nterm[1:]))
-        labels.extend(''.join(g) for g in parsed_sequence[1:-1])
-        if len(parsed_sequence) > 1:
+        labels.extend(''.join(g) for g in parsed_list[1:-1])
+        if len(parsed_list) > 1:
             if cterm[-1] != std_cterm or show_unmodified_termini:
                 labels.append(''.join(cterm))
             else:
@@ -463,6 +467,51 @@ def to_string(parsed_sequence, show_unmodified_termini=True):
 
 
 tostring = to_string
+
+
+def strip(sequence: str | Iterable[str] | Iterable[tuple] | 'ProForma') -> str:
+    """
+    Remove all modifications and terminal groups from a modX sequence, parsed sequence or ProForma object,
+    and return a one-letter sequence string.
+
+    Examples
+    --------
+    >>> strip('Ac-oxMYPEPTIDE-OH')
+    'MYPEPTIDE'
+    >>> strip(['Ac-', 'oxM', 'Y', 'P', 'E', 'pP', 'T', 'I', 'D', 'E', '-OH'])
+    'MYPEPTIDE'
+    """
+    from .proforma import ProForma
+
+    if isinstance(sequence, ProForma):
+        return ''.join(item[0] for item in sequence.sequence)
+    if isinstance(sequence, str):
+        parsed_sequence = parse(sequence)
+    else:
+        parsed_sequence = sequence
+
+    stripped_sequence = []
+    for item in parsed_sequence:
+        if isinstance(item, str):
+            if is_term_group(item):
+                continue
+            else:
+                if len(item) == 1:
+                    aa = item
+                else:
+                    mod, aa = _split_label(item)
+                stripped_sequence.append(aa)
+        else:
+            # item is a tuple
+            i = len(item) - 1
+            if is_term_group(item[i]):
+                i -= 1
+            aa = item[i]
+            if not (len(aa) == 1 and aa.isupper()):
+                raise PyteomicsError('Invalid group in parsed sequence: {}'.format(item))
+            stripped_sequence.append(aa)
+
+    return ''.join(stripped_sequence)
 
 
 def to_proforma(sequence, **kwargs):
@@ -1109,7 +1158,7 @@ def isoforms(sequence, **kwargs):
         raise PyteomicsError('Unsupported value of "format": {}'.format(format_))
 
 
-def coverage_mask(protein: str, peptides: Iterable[str]) -> 'np.ndarray':
+def coverage_mask(protein: str, peptides: Iterable, fast: bool=True) -> 'np.ndarray':
     """Calculate a coverage mask of `protein` by `peptides`.
     Peptides can overlap. If a peptide is found multiple times in `protein`,
     it contributes more to the overall coverage.
@@ -1125,6 +1174,10 @@ def coverage_mask(protein: str, peptides: Iterable[str]) -> 'np.ndarray':
         A protein sequence.
     peptides : iterable
         An iterable of peptide sequences.
+    fast : bool, optional
+        If :py:const:`True` (default), assume that all sequences are one-letter
+        uppercase and contain no modifications or terminal groups.
+        If :py:const:`False`, clean up sequences before processing.
 
     Returns
     -------
@@ -1134,17 +1187,19 @@ def coverage_mask(protein: str, peptides: Iterable[str]) -> 'np.ndarray':
         residue in `protein`.
     """
     import numpy as np
-    protein = re.sub(r'[^A-Z]', '', protein)
-    mask = np.zeros(len(protein), dtype=np.int8)
+    if not fast:
+        protein = re.sub(r'[^A-Z]', '', protein)
+        peptides = [strip(p) for p in peptides]
+
+    mask = np.zeros(len(protein), dtype=int)
     for peptide in peptides:
-        indices = [m.start() for m in re.finditer(
-            '(?={})'.format(re.sub(r'[^A-Z]', '', peptide)), protein)]
+        indices = [m.start() for m in re.finditer(f'(?={peptide})', protein)]
         for i in indices:
             mask[i:i + len(peptide)] += 1
     return mask
 
 
-def coverage(protein, peptides):
+def coverage(protein, peptides, fast: bool=True) -> float:
     """Calculate how much of `protein` is covered by `peptides`.
     Peptides can overlap. If a peptide is found multiple times in `protein`,
     it contributes more to the overall coverage.
@@ -1160,7 +1215,10 @@ def coverage(protein, peptides):
         A protein sequence.
     peptides : iterable
         An iterable of peptide sequences.
-
+    fast : bool, optional
+        If :py:const:`True` (default), assume that all sequences are one-letter
+        uppercase and contain no modifications or terminal groups.
+        If :py:const:`False`, clean up sequences before processing.
     Returns
     -------
     out : float
@@ -1171,8 +1229,8 @@ def coverage(protein, peptides):
     >>> coverage('PEPTIDES'*100, ['PEP', 'EPT'])
     0.5
     """
-    mask = coverage_mask(protein, peptides)
-    return (mask > 0).sum(dtype=float) / mask.size
+    mask = coverage_mask(protein, peptides, fast=fast)
+    return float((mask > 0).mean())
 
 
 if __name__ == "__main__":

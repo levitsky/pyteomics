@@ -3,7 +3,7 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import unittest
 import numpy as np
-from pyteomics import parser
+from pyteomics import parser, proforma
 from string import ascii_uppercase as uppercase
 import random
 
@@ -178,6 +178,24 @@ class ParserTest(unittest.TestCase):
         peptides = ['PEP', 'EPT']
         cov = parser.coverage(protein, peptides)
         self.assertAlmostEqual(cov, 0.5)
+
+    def test_coverage_strip(self):
+        protein = 'PEPTIDES'
+        peptides = ['pPEP', 'Ac-EphosphoPT-OH']
+        cov = parser.coverage(protein, peptides, fast=False)
+        self.assertAlmostEqual(cov, 0.5)
+
+    def test_strip(self):
+        inputs = [
+            'Ac-oxMYPEPTIDE-OH',
+            ['Ac-', 'oxM', 'Y', 'P', 'E', 'pP', 'T', 'I', 'D', 'E', '-OH'],
+            [('Ac-', 'ox', 'M'), ('Y',), ('P',), ('E',), ('p', 'P'), ('T',), ('I',), ('D',), ('E', '-OH')],
+            proforma.ProForma.parse('[Acetyl]-M[Oxidation]YPEPTIDE-[Amidated]')
+        ]
+        for seq in inputs:
+            with self.subTest(seq=seq):
+                self.assertEqual(parser.strip(seq), 'MYPEPTIDE')
+
 
 
 if __name__ == '__main__':
