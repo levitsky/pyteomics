@@ -1636,6 +1636,10 @@ class ModificationRule(object):
         self.targets = targets
         self._validate_targets()
 
+    def is_not_specific(self) -> bool:
+        '''If there are no explicit targets, this rule might apply everywhere'''
+        return not self.targets
+
     def is_valid(self, aa: str, n_term: bool, c_term: bool) -> bool:
         return any(target.is_valid(aa, n_term, c_term) for target in self.targets)
 
@@ -1698,6 +1702,27 @@ class ModificationRule(object):
 
     def __repr__(self):
         return "{self.__class__.__name__}({self.modification_tag!r}, {self.targets})".format(self=self)
+
+
+class _SiteAssociation(object):
+    modification_tag: TagBase
+    group_id: str
+
+    def __init__(self, modification_tag: TagBase, group_id: str):
+        self.modification_tag = modification_tag
+        self.group_id = group_id
+
+    def find_positions(self, sequence: "ProForma") -> List[int]:
+        positions = []
+        for i, (_, tags) in enumerate(sequence):
+            if tags:
+                for tag in tags:
+                    if tag.group_id == self.group_id:
+                        positions.append(i)
+        return positions
+
+    def __repr__(self):
+        return f"{self.__class__.__name__}({self.modification_tag}, {self.group_id})"
 
 
 class StableIsotope(object):
@@ -3741,8 +3766,8 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
-    def generate_proteoforms(self):
-        return iter(ProteoformCombinator(self))
+    def generate_proteoforms(self, include_unmodified: bool = False):
+        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified))
 
     def copy(self):
         sequence = []
@@ -3882,7 +3907,7 @@ class GeneratorModificationRuleDirective:
                     # TODO: Implement combinatoric limits here
                     if tag.group_id == group_id:
                         positions.append(i)
-            elif self.rule.is_valid(aa, i == 0, i == n):
+            elif self.rule.is_valid(aa, i == 0, i == n) or self.rule.is_not_specific():
                 if not tags:
                     positions.append(i)
                 else:
@@ -3900,6 +3925,19 @@ class GeneratorModificationRuleDirective:
                     if ((can_known and can_unknown) or (not can_known and not can_unknown)) and total_at < self.limit:
                         positions.append(i)
         return positions
+
+    @classmethod
+    def from_tagged_modification(cls, tag: TagBase) -> "GeneratorModificationRuleDirective":
+        mod = tag.find_modification()
+        if not mod:
+            return
+        elif not mod.group_id:
+            return
+        rule = ModificationRule(tag, [])
+        colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
+        colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
+        limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
+        return cls(rule, None, colocal_known, colocal_unknown, limit)
 
     @classmethod
     def from_unlocalized_rule(cls, tag: TagBase) -> "GeneratorModificationRuleDirective":
@@ -3945,10 +3983,12 @@ class ProteoformCombinator:
         The rules to apply in combinations to the template sequence
     """
     template: ProForma
+    include_unmodified: bool
     variable_rules: List[GeneratorModificationRuleDirective]
 
-    def __init__(self, base_proteoform: ProForma):
+    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False):
         self.template = base_proteoform.copy()
+        self.include_unmodified = include_unmodified
         self.variable_rules = []
         self._extract_rules()
         self._apply_fixed_modifications()
@@ -3991,6 +4031,20 @@ class ProteoformCombinator:
             else:
                 remains.append(rule)
         self.template.unlocalized_modifications = remains
+
+        for (_, tags) in self.template:
+            if tags:
+                tmp = []
+                for tag in tags:
+                    if tag.group_id and tag.is_modification():
+                        rule_ = GeneratorModificationRuleDirective.from_tagged_modification(tag)
+                        if rule_:
+                            rules.append(rule_)
+                        tmp.append(PositionLabelTag(group_id=tag.group_id))
+                    else:
+                        tmp.append(tag)
+                tags[:] = tmp
+
         self.variable_rules = rules
 
     def __iter__(self):
@@ -4003,7 +4057,9 @@ class ProteoformCombinator:
         position_choices = []
         for rule in self.variable_rules:
             positions_for = rule.find_positions(self.template)
-            position_choices.append([None] + positions_for)
+            if self.include_unmodified or not positions_for:
+                positions_for = [None] + positions_for
+            position_choices.append(positions_for)
 
         for slots in itertools.product(*position_choices):
             template = self.template.copy()
