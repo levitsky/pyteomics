@@ -1704,27 +1704,6 @@ class ModificationRule(object):
         return "{self.__class__.__name__}({self.modification_tag!r}, {self.targets})".format(self=self)
 
 
-class _SiteAssociation(object):
-    modification_tag: TagBase
-    group_id: str
-
-    def __init__(self, modification_tag: TagBase, group_id: str):
-        self.modification_tag = modification_tag
-        self.group_id = group_id
-
-    def find_positions(self, sequence: "ProForma") -> List[int]:
-        positions = []
-        for i, (_, tags) in enumerate(sequence):
-            if tags:
-                for tag in tags:
-                    if tag.group_id == self.group_id:
-                        positions.append(i)
-        return positions
-
-    def __repr__(self):
-        return f"{self.__class__.__name__}({self.modification_tag}, {self.group_id})"
-
-
 class StableIsotope(object):
     '''
     Define a fixed isotope that is applied globally to all amino acids.
