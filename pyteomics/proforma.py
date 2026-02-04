@@ -13,7 +13,7 @@ For more details, see the :mod:`pyteomics.proforma` online.
 import itertools
 import re
 import warnings
-from typing import Any, Callable, Dict, Iterable, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple
+from typing import Any, Callable, Dict, Generator, Iterable, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple
 from collections import deque, namedtuple
 from functools import partial
 from itertools import chain
@@ -3477,7 +3477,7 @@ class ProForma(object):
         return cls(*parse(string, **kwargs))
 
     @property
-    def mass(self):
+    def mass(self) -> float:
         '''
         Compute the *total* monoisotopic neutral mass of the peptidoform.
 
@@ -3745,10 +3745,26 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
-    def generate_proteoforms(self, include_unmodified: bool = False):
-        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified))
+    def generate_proteoforms(self, include_unmodified: bool = False, include_labile: bool = False) -> Generator["ProForma"]:
+        """
+        Generate combinatorial localizations of modifications defined on this ProForma sequence.
 
-    def copy(self):
+        Parameters
+        ----------
+        include_unmodified : :class:`bool`
+            For all non-fixed modifications, include the case where the modification is not included anywhere. This is equivalent to
+            how variable modification rules are applied in search engines.
+        include_labile : :class:`bool`
+            For all labile modifications, include the case where the modification is localized at every possible location or as
+            a remaining labile modification.
+
+        Yields
+        ------
+        :class:`ProForma`
+        """
+        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile))
+
+    def copy(self) -> "ProForma":
         sequence = []
         for (aa, tags) in self:
             if tags:
@@ -3850,21 +3866,21 @@ class GeneratorModificationRuleDirective:
     A helper for :class:`ProteoformCombinator` that maps modification rules to sequence locations.
 
     This type probably shouldn't be created directly.
-
-    TODO: limit directives, position group_id tags
     """
     rule: ModificationRule
     region: Optional[TaggedInterval] = None
     colocal_known: bool = False
     colocal_unknown: bool = False
     limit: int = 1
+    labile: bool = False
 
-    def __init__(self, rule, region=None, colocal_known: bool = False, colocal_unknown: bool = False, limit: int = 1):
+    def __init__(self, rule, region=None, colocal_known: bool = False, colocal_unknown: bool = False, limit: int = 1, labile: bool = False):
         self.rule = rule
         self.region = region
         self.colocal_known = colocal_known
         self.colocal_unknown = colocal_unknown
         self.limit = limit
+        self.labile = labile
 
     def create(self) -> TagBase:
         return self.rule.modification_tag.copy()
@@ -3947,6 +3963,19 @@ class GeneratorModificationRuleDirective:
             rules.append(cls(rule, region, colocal_known, colocal_unknown, limit))
         return rules
 
+    @classmethod
+    def from_labile_rule(cls, tag: TagBase) -> "GeneratorModificationRuleDirective":
+        mod = tag.find_modification()
+        if not mod:
+            return
+        position_constraints = tag.find_tag_type(TagTypeEnum.position_modifier)
+        targets = [ModificationTarget(v.value) for v in position_constraints]
+        colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
+        colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
+        rule = ModificationRule(modification_tag=mod, targets=targets)
+        limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
+        return cls(rule, None, colocal_known, colocal_unknown, limit, labile=True)
+
 
 class ProteoformCombinator:
     """
@@ -3960,14 +3989,20 @@ class ProteoformCombinator:
         The template sequence to apply any combination of rules to
     variable_rules: list[:class:`GeneratorModificationRuleDirective`]
         The rules to apply in combinations to the template sequence
+    include_unmodified : :class:`bool`
+        For all non-fixed modifications, include the case where the modification is not included anywhere
+    include_labile : :class:`bool`
+        For all labile modifications, include the case where the modification is localized at every possible location
     """
     template: ProForma
     include_unmodified: bool
+    include_labile: bool
     variable_rules: List[GeneratorModificationRuleDirective]
 
-    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False):
+    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False):
         self.template = base_proteoform.copy()
         self.include_unmodified = include_unmodified
+        self.include_labile = include_labile
         self.variable_rules = []
         self._extract_rules()
         self._apply_fixed_modifications()
@@ -4024,6 +4059,16 @@ class ProteoformCombinator:
                         tmp.append(tag)
                 tags[:] = tmp
 
+        if self.include_labile:
+            remains = []
+            for rule in self.template.labile_modifications:
+                rule_ = GeneratorModificationRuleDirective.from_labile_rule(rule)
+                if rule_:
+                    rules.append(rule_)
+                else:
+                    remains.append(rule)
+            self.template.labile_modifications = remains
+
         self.variable_rules = rules
 
     def __iter__(self):
@@ -4036,15 +4081,20 @@ class ProteoformCombinator:
         position_choices = []
         for rule in self.variable_rules:
             positions_for = rule.find_positions(self.template)
-            if self.include_unmodified or not positions_for:
+            if rule.labile:
+                positions_for = [None] + list(range(len(self.template)))
+            elif self.include_unmodified or not positions_for:
                 positions_for = [None] + positions_for
             position_choices.append(positions_for)
 
         for slots in itertools.product(*position_choices):
             template = self.template.copy()
             valid = True
+            labile_remaining = []
             for rule, idx in zip(self.variable_rules, slots):
                 if idx is None:
+                    if rule.labile:
+                        labile_remaining.append(rule.create())
                     continue
                 if idx not in rule.find_positions(template):
                     valid = False
@@ -4057,4 +4107,6 @@ class ProteoformCombinator:
                 tags.append(tag)
                 template[idx] = (aa, tags)
             if valid:
+                if labile_remaining:
+                    template.labile_modifications = labile_remaining
                 yield template

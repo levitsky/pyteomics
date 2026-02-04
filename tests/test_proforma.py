@@ -500,6 +500,20 @@ class ProteoformCombinatorTest(unittest.TestCase):
         proteoforms = list(pf.generate_proteoforms())
         self.assertEqual(len(proteoforms), len(pf))
 
+    def test_comup_stacking(self):
+        seq = "[Phospho|Position:S|Position:T|comup|Limit:2]^2?EMEVTESPEK"
+        pf = ProForma.parse(seq)
+        proteoforms = list(pf.generate_proteoforms())
+        self.assertEqual(len(proteoforms), 4)
+        proteoforms = list(pf.generate_proteoforms(True))
+        self.assertEqual(len(proteoforms), 9)
+
+    def test_labile(self):
+        seq = "{Phosphpo}EMEVTESPEK"
+        pf = ProForma.parse(seq)
+        proteoforms = list(pf.generate_proteoforms(False, True))
+        self.assertEqual(len(proteoforms), 11)
+
 
 if __name__ == '__main__':
     unittest.main()
