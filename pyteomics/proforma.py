@@ -13,7 +13,7 @@ For more details, see the :mod:`pyteomics.proforma` online.
 import itertools
 import re
 import warnings
-from typing import Any, Callable, Dict, Generator, Iterable, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple
 from collections import deque, namedtuple
 from functools import partial
 from itertools import chain
@@ -3745,7 +3745,7 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
-    def generate_proteoforms(self, include_unmodified: bool = False, include_labile: bool = False) -> Generator["ProForma"]:
+    def generate_proteoforms(self, include_unmodified: bool = False, include_labile: bool = False) -> Iterator["ProForma"]:
         """
         Generate combinatorial localizations of modifications defined on this ProForma sequence.
 
