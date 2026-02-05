@@ -485,20 +485,26 @@ class ProteoformCombinatorTest(unittest.TestCase):
     def test_range(self):
         seq = "EMEV(TS)[Phospho]ESPEK"
         pf = ProForma.parse(seq)
-        proteoforms = list(pf.generate_proteoforms())
-        self.assertEqual(len(proteoforms), 2)   # Phospho on T or S
+        for include_unmodified in [False, True]:
+            with self.subTest(include_unmodified=include_unmodified):
+                proteoforms = list(pf.generate_proteoforms(include_unmodified=include_unmodified))
+                self.assertEqual(len(proteoforms), 2 + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
 
     def test_localization_tag(self):
         seq = "EMEVT[#g1]S[#g1]ES[Phospho#g1]PEK"
         pf = ProForma.parse(seq)
-        proteoforms = list(pf.generate_proteoforms())
-        self.assertEqual(len(proteoforms), 3)
+        for include_unmodified in [False, True]:
+            with self.subTest(include_unmodified=include_unmodified):
+                proteoforms = list(pf.generate_proteoforms(include_unmodified=include_unmodified))
+                self.assertEqual(len(proteoforms), 3 + include_unmodified)
 
     def test_unlocalized_modification(self):
         seq = "[Phospho]?EMEVTSESPEK"
         pf = ProForma.parse(seq)
-        proteoforms = list(pf.generate_proteoforms())
-        self.assertEqual(len(proteoforms), len(pf))
+        for include_unmodified in [False, True]:
+            with self.subTest(include_unmodified=include_unmodified):
+                proteoforms = list(pf.generate_proteoforms(include_unmodified=include_unmodified))
+                self.assertEqual(len(proteoforms), len(pf) + include_unmodified)
 
     def test_comup_stacking(self):
         seq = "[Phospho|Position:S|Position:T|comup|Limit:2]^2?EMEVTESPEK"

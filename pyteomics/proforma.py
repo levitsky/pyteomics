@@ -4023,7 +4023,7 @@ class ProteoformCombinator:
                 self.template[i] = (aa, tags)
         self.template.fixed_modifications.clear()
 
-    def _extract_rules(self) -> List[GeneratorModificationRuleDirective]:
+    def _extract_rules(self) -> None:
         rules = []
         remains = []
         for iv in self.template.intervals:
