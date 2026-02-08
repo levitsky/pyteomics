@@ -1006,7 +1006,7 @@ _QUEUE_SIZE = int(1e7)
 
 class BaseTaskMappingMixin(NoOpBaseReader):
     def _task_map_iterator(self):
-        """Returns the :class:`Iterable` to use when dealing work items onto the input IPC
+        """Returns the :class:`Iterable` to use when dealing work items onto the input
         queue used by :meth:`map`
 
         Returns
