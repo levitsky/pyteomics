@@ -134,12 +134,14 @@ amino acid residues, selenocysteine, pyrrolysine,
 and standard H- and -OH terminal groups.
 """
 
+
 std_ion_comp = {}
 """A dict with relative elemental compositions of the standard peptide
 fragment ions. An elemental composition of a fragment ion is calculated as a
 difference between the total elemental composition of an ion
 and the sum of elemental compositions of its constituting amino acid residues.
 """
+
 
 _isotope_string = r'^((?:[A-Z][a-z+]*)|e-|e\*)(?:\[(\d+)\])?$'
 _atom = r'([A-Z][a-z+]*)(?:\[(\d+)\])?([+-]?\d+)?'
@@ -149,6 +151,15 @@ _formula = r'^({})*$'.format(_atom)
 def _raise_term_label_exception(what='comp'):
     raise PyteomicsError("Cannot use a mod label as a terminal group. Provide correct group {0}"
                          " in `aa_{0}`.".format(what))
+
+
+def _warn_about_ion_type(ion_type, ion_comp):
+    """Temporarily warn about the changes in affected std_ion_comp entries."""
+    if ion_type in {'z+1', 'z+2', 'z+3'} and ion_type in ion_comp and ion_comp[ion_type] == std_ion_comp.get(ion_type):
+        warnings.warn(
+            'The compositions of z+1, z+2 and z+3 ions in `std_ion_comp` have been changed in Pyteomics v5.0 '
+            'to reflect the most common interpretation of these labels. '
+            )
 
 
 class Composition(BasicComposition):
@@ -334,7 +345,9 @@ class Composition(BasicComposition):
 
         ion_comp = kwargs.get('ion_comp', std_ion_comp)
         if 'ion_type' in kwargs:
-            self += ion_comp[kwargs['ion_type']]
+            ion_type = kwargs['ion_type']
+            _warn_about_ion_type(ion_type, ion_comp)
+            self += ion_comp[ion_type]
 
         # Charge is not supported in kwargs
         charge = self['H+']
@@ -537,6 +550,7 @@ std_ion_comp.update({
     'M-H2O':    Composition(formula='H-2O-1'),
     'M-NH3':    Composition(formula='N-1H-3'),
     'a':        Composition(formula='H-2O-1' + 'C-1O-1'),
+    'a+1':      Composition(formula='H-2O-1' + 'C-1O-1' + 'H1'),
     'a-H2O':    Composition(formula='H-2O-1' + 'C-1O-1' + 'H-2O-1'),
     'a-NH3':    Composition(formula='H-2O-1' + 'C-1O-1' + 'N-1H-3'),
     'b':        Composition(formula='H-2O-1'),
@@ -550,6 +564,7 @@ std_ion_comp.update({
     'c-H2O':    Composition(formula='H-2O-1' + 'NH3' + 'H-2O-1'),
     'c-NH3':    Composition(formula='H-2O-1'),
     'x':        Composition(formula='H-2O-1' + 'CO2'),
+    'x+1':      Composition(formula='H-2O-1' + 'CO2' + 'H1'),
     'x-H2O':    Composition(formula='H-2O-1' + 'CO2' + 'H-2O-1'),
     'x-NH3':    Composition(formula='H-2O-1' + 'CO2' + 'N-1H-3'),
     'y':        Composition(formula=''),
@@ -557,9 +572,9 @@ std_ion_comp.update({
     'y-NH3':    Composition(formula='N-1H-3'),
     'z':        Composition(formula='H-2O-1' + 'ON-1H-1'),
     'z-dot':    Composition(formula='H-2O-1' + 'ON-1'),
-    'z+1':      Composition(formula='H-2O-1' + 'ON-1H1'),
-    'z+2':      Composition(formula='H-2O-1' + 'ON-1H2'),
-    'z+3':      Composition(formula='H-2O-1' + 'ON-1H3'),
+    'z+1':      Composition(formula='H-2O-1' + 'ON-1'),
+    'z+2':      Composition(formula='H-2O-1' + 'ON-1H1'),
+    'z+3':      Composition(formula='H-2O-1' + 'ON-1H2'),
     'z-H2O':    Composition(formula='H-2O-1' + 'ON-1H-1' + 'H-2O-1'),
     'z-NH3':    Composition(formula='H-2O-1' + 'ON-1H-1' + 'N-1H-3'),
     })
@@ -960,11 +975,12 @@ def fast_mass(sequence, ion_type=None, charge=None, **kwargs):
     mass += mass_data['H'][0][0] * 2 + mass_data['O'][0][0]
 
     if ion_type:
+        ion_comp = kwargs.get('ion_comp', std_ion_comp)
         try:
-            icomp = kwargs.get('ion_comp', std_ion_comp)[ion_type]
+            icomp = ion_comp[ion_type]
         except KeyError:
             raise PyteomicsError('Unknown ion type: {}'.format(ion_type))
-
+        _warn_about_ion_type(ion_type, ion_comp)
         mass += sum(mass_data[element][0][0] * num for element, num in icomp.items())
 
     if charge:
@@ -1043,13 +1059,13 @@ def fast_mass2(sequence, ion_type=None, charge=None, **kwargs):
         raise PyteomicsError('Unspecified mass for modification: "{}"'.format(e.args[0]))
 
     if ion_type:
+        ion_comp = kwargs.get('ion_comp', std_ion_comp)
         try:
-            icomp = kwargs.get('ion_comp', std_ion_comp)[ion_type]
+            icomp = ion_comp[ion_type]
         except KeyError:
             raise PyteomicsError('Unknown ion type: {}'.format(ion_type))
-
-        mass += sum(mass_data[element][0][0] * num
-             for element, num in icomp.items())
+        _warn_about_ion_type(ion_type, ion_comp)
+        mass += sum(mass_data[element][0][0] * num for element, num in icomp.items())
 
     if charge:
         mass = (mass + mass_data['H+'][0][0] * charge) / charge
@@ -1230,7 +1246,7 @@ class Unimod():
             The full name of the modification(s).
         strict : bool, optional
             If :py:const:`False`, the search will return all modifications
-            whose full name **contains** `title`, otherwise equality is
+            whose full name **contains** `name`, otherwise equality is
             required. :py:const:`True` by default.
 
         Returns

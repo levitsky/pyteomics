@@ -1,11 +1,22 @@
-5.0b5
+5.0c0
 -----
+
+ - Update the standard ion compositions to be more consistent with the adopted ion type notation.
+   The `"z+1"` and `"c+1"` ions now represent compositions described as "c-ion plus a hydrogen" and "z-ion plus a hydrogen",
+   respectively.
+   The `"z-dot"` and `"c-dot"` notations are retained unchanged for partial backward compatibility,
+   they are now equivalent to `"z+1"` and `"c+1"`.
+
+   .. warning ::
+      Make sure to check what ion types you are using in mass and composition calculations!
+      In short, `z+1`, `z+2`, `z+3` have all been reduced by one hydrogen.
 
  - Support **ProForma 2.1** (`#183 <https://github.com/levitsky/pyteomics/pull/183>`_ by Joshua Klein).
    You can calculate compositions for :py:class:`ProForma` objects using :py:meth:`pyteomics.proforma.Proforma.composition`
    and get m/z with annotated or user-provided charge state using :py:meth:`pyteomics.proforma.Proforma.mz`.
    You can also iterate through possible peptidoforms when a ProForma sequence is annotated with some ambiguity using
    :py:meth:`pyteomics.proforma.Proforma.generate_proteoforms`.
+
  - Implement **thread-based parallelism**.
    Following the introduction of `official free-threading Python implementations <https://docs.python.org/3/howto/free-threading-python.html>`_
    users are now able to use theads through the :py:meth:`map` interface of :ref:`indexing parsers`.
@@ -27,6 +38,7 @@
    :py:func:`auxiliary.set_start_method`, to configure it (`#172 <https://github.com/levitsky/pyteomics/pull/172>`_).
 
    Read more about the new behavior and the rationale :ref:`in the docs <start_method>`.
+
  - **Drop Python 2 support.** See `#167 <https://github.com/levitsky/pyteomics/discussions/167>`_ for the announcement.
  - Pyteomics now uses the `implicit namespace mechanism <https://peps.python.org/pep-0420/>`_.
  - Fix compatibility with :py:mod:`lxml` 5.4.0 and newer (`#170 <https://github.com/levitsky/pyteomics/issues/170>`_).
