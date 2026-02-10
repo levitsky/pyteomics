@@ -330,6 +330,16 @@ class MassTest(unittest.TestCase):
                     continue
                 if '-1' in ion_type:
                     self.assertEqual(comp + {'H': 1}, mass.std_ion_comp[ion_type[:-2]])
+                elif '+1' in ion_type:
+                    self.assertEqual(comp - {'H': 1}, mass.std_ion_comp[ion_type[:-2]])
+                elif '+2' in ion_type:
+                    self.assertEqual(comp - {'H': 2}, mass.std_ion_comp[ion_type[:-2]])
+                elif '+3' in ion_type:
+                    self.assertEqual(comp - {'H': 3}, mass.std_ion_comp[ion_type[:-2]])
+                elif '-H2O' in ion_type:
+                    self.assertEqual(comp + {'H': 2, 'O': 1}, mass.std_ion_comp[ion_type[:-4]])
+                elif '-NH3' in ion_type:
+                    self.assertEqual(comp + {'N': 1, 'H': 3}, mass.std_ion_comp[ion_type[:-4]])
 
     def test_nist_mass(self):
         self.assertTrue(all(abs(g[0][1] - 1) < 1e-6 for g in mass.nist_mass.values()))
