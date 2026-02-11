@@ -570,6 +570,7 @@ std_ion_comp.update({
     'y':        Composition(formula=''),
     'y-H2O':    Composition(formula='H-2O-1'),
     'y-NH3':    Composition(formula='N-1H-3'),
+    'z-1':      Composition(formula='H-2O-1' + 'ON-1H-2'),
     'z':        Composition(formula='H-2O-1' + 'ON-1H-1'),
     'z-dot':    Composition(formula='H-2O-1' + 'ON-1'),
     'z+1':      Composition(formula='H-2O-1' + 'ON-1'),
