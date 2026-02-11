@@ -297,6 +297,50 @@ class MassTest(unittest.TestCase):
         self.assertEqual(record, db.by_title(rec_title))
         self.assertEqual(record, db.by_name(rec_name))
 
+    def test_compare_ion_comp_with_Unimod(self):
+        db = mass.Unimod(gzip.open('unimod.xml.gz'))
+        for ion_type in 'abcxz':
+            with self.subTest(ion_type=ion_type):
+                unimod_ion = db.by_title(f'{ion_type}-type-ion')
+                if unimod_ion:
+                    self.assertEqual(unimod_ion['composition'], mass.std_ion_comp[ion_type])
+                else:
+                    self.skipTest(f'Saved Unimod does not contain a record for {ion_type}-type-ion')
+
+    def test_ion_complementarity(self):
+        for pair in [('a+1', 'x+1'), ('b', 'y'), ('c', 'z')]:
+            with self.subTest(pair=pair):
+                ion1, ion2 = pair
+                comp1 = mass.std_ion_comp[ion1]
+                comp2 = mass.std_ion_comp[ion2]
+                self.assertEqual(comp1 + comp2, -mass.Composition({'H': 2, 'O': 1}))
+
+    def test_ion_dot_notation(self):
+        for key in mass.std_ion_comp:
+            if key.endswith('-dot'):
+                with self.subTest(key=key):
+                    comp_dot = mass.std_ion_comp[key]
+                    comp_p1 = mass.std_ion_comp[key[:-4] + '+1']
+                    self.assertEqual(comp_dot, comp_p1)
+
+    def test_ion_comp_consistency(self):
+        for ion_type, comp in mass.std_ion_comp.items():
+            with self.subTest(ion_type=ion_type):
+                if '-dot' in ion_type:
+                    continue
+                if '-1' in ion_type:
+                    self.assertEqual(comp + {'H': 1}, mass.std_ion_comp[ion_type[:-2]])
+                elif '+1' in ion_type:
+                    self.assertEqual(comp - {'H': 1}, mass.std_ion_comp[ion_type[:-2]])
+                elif '+2' in ion_type:
+                    self.assertEqual(comp - {'H': 2}, mass.std_ion_comp[ion_type[:-2]])
+                elif '+3' in ion_type:
+                    self.assertEqual(comp - {'H': 3}, mass.std_ion_comp[ion_type[:-2]])
+                elif '-H2O' in ion_type:
+                    self.assertEqual(comp + {'H': 2, 'O': 1}, mass.std_ion_comp[ion_type[:-4]])
+                elif '-NH3' in ion_type:
+                    self.assertEqual(comp + {'N': 1, 'H': 3}, mass.std_ion_comp[ion_type[:-4]])
+
     def test_nist_mass(self):
         self.assertTrue(all(abs(g[0][1] - 1) < 1e-6 for g in mass.nist_mass.values()))
         for g in mass.nist_mass.values():
