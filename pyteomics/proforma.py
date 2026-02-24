@@ -1880,7 +1880,7 @@ class Adduct(NamedTuple):
         return Composition(formula=self.name) * self.count
 
     def mass(self) -> float:
-        return Composition(formula=self.name).mass * self.count
+        return Composition(formula=self.name).mass() * self.count
 
     def total_charge(self) -> int:
         return self.charge * self.count
