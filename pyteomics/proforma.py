@@ -3527,7 +3527,7 @@ class ProForma(object):
                     mass += tag.mass
         return mass
 
-    def mz(self, charge_state: Union[int, ChargeState, None] = None, **kwargs) -> float:
+    def mz(self, charge: Union[int, ChargeState, None] = None, **kwargs) -> float:
         """
         Compute the *total* m/z of the peptidoform in the specified charge state, or fall back
         to the peptidoform ion's defined charge state and adduction.
@@ -3542,7 +3542,7 @@ class ProForma(object):
 
         Parameters
         ----------
-        charge_state : int or :class:`ChargeState`, optional
+        charge : int or :class:`ChargeState`, optional
             The charge state either as in integer number of protons gained/lost,
             or a :class:`ChargeState` instance. If not provided, :attr:`charge_state`
             will be used.
@@ -3553,6 +3553,7 @@ class ProForma(object):
         -------
         float
         """
+        charge_state = charge
         if charge_state is None:
             charge_state = self.charge_state
         elif isinstance(charge_state, Integral):
