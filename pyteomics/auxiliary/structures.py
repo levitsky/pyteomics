@@ -190,6 +190,9 @@ class BasicComposition(defaultdict, Counter):
             result[elem] -= cnt
         return result
 
+    def __neg__(self):
+        return self * (-1)
+
     def __isub__(self, other):
         for elem, cnt in other.items():
             self[elem] -= cnt
