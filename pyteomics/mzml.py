@@ -511,7 +511,7 @@ class PreIndexedMzML(MzML):
             for event, elem in etree.iterparse(self._source, events=('start', 'end'), remove_comments=True):
                 if event == 'start':
                     if elem.tag == 'index':
-                        index = {}
+                        index = index_map._inner_type()
                         index_map[elem.attrib['name']] = index
                 else:
                     if elem.tag == 'offset':
