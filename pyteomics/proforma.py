@@ -1614,6 +1614,43 @@ class ModificationTarget(object):
             return False
         return self.aa.upper() == aa.upper() or self.aa is None
 
+    @classmethod
+    def from_str(cls, target: str):
+        target_lower = target.lower()
+        if target in VALID_AA:
+            return cls(target, False, False)
+        elif target_lower in ("n-term", "c-term"):
+            n_term = target_lower == "n-term"
+            c_term = target_lower == "c-term"
+            return cls(None, n_term, c_term)
+        elif target_lower.startswith(("n-term:", "c-term:")):
+            tokens = target.split(":")
+            if len(tokens) == 2:
+                if tokens[1] in VALID_AA:
+                    t = tokens[0].lower()
+                    n_term = t == "n-term"
+                    c_term = t == "c-term"
+                    cls(tokens[1], n_term, c_term)
+                else:
+                    raise PyteomicsError(
+                        "Modification target has an invalid amino acid specific terminal target {1} in {0}".format(
+                            target,
+                            tokens[1]
+                        )
+                    )
+            else:
+                raise PyteomicsError(
+                    "Modification rule target {0} has an empty amino acid specific terminal target".format(
+                        target
+                    )
+                )
+        else:
+            raise PyteomicsError(
+                "Modification rule target {0} is invalid".format(
+                    target
+                )
+            )
+
 
 class ModificationRule(object):
     '''Define a fixed modification rule which dictates a modification tag is
@@ -1652,39 +1689,10 @@ class ModificationRule(object):
         for target in self.targets:
             if isinstance(target, ModificationTarget):
                 validated_targets.append(target)
-            elif target in VALID_AA:
-                validated_targets.append(ModificationTarget(target, False, False))
-            elif target in ("N-term", "C-term"):
-                n_term = target == "N-term"
-                c_term = target == "C-term"
-                validated_targets.append(ModificationTarget(None, n_term, c_term))
-            elif target.startswith(("N-term:", "C-term:")):
-                tokens = target.split(":")
-                if len(tokens) == 2:
-                    if tokens[1] in VALID_AA:
-                        n_term = tokens[0] == "N-term"
-                        c_term = tokens[0] == "C-term"
-                        validated_targets.append(ModificationTarget(tokens[1], n_term, c_term))
-                    else:
-                        raise PyteomicsError(
-                            "Modification rule {0} has an invalid amino acid specific terminal target {2} in {1}".format(
-                                self,
-                                target,
-                                tokens[1]
-                            )
-                        )
-                else:
-                    raise PyteomicsError(
-                        "Modification rule {0} has an empty amino acid specific terminal target {1}".format(
-                            self, target
-                        )
-                    )
-            else:
-                raise PyteomicsError(
-                    "Modification rule {0} has an invalid target {1}".format(
-                        self, target
-                    )
-                )
+            try:
+                validated_targets.append(ModificationTarget.from_str(target))
+            except PyteomicsError as err:
+                raise PyteomicsError(f"While parsing {self}, encountered error {err}") from err
 
         self.targets = validated_targets
 
@@ -3941,7 +3949,7 @@ class GeneratorModificationRuleDirective:
         if not mod:
             return
         position_constraints = tag.find_tag_type(TagTypeEnum.position_modifier)
-        targets = [ModificationTarget(v.value) for v in position_constraints]
+        targets = [v.value for v in position_constraints]
         colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
         rule = ModificationRule(modification_tag=mod, targets=targets)
@@ -3976,6 +3984,54 @@ class GeneratorModificationRuleDirective:
         rule = ModificationRule(modification_tag=mod, targets=targets)
         limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
         return cls(rule, None, colocal_known, colocal_unknown, limit, labile=True)
+
+
+def _coerce_string_to_modification(item) -> TagBase:
+    if isinstance(item, TagBase):
+        return item.copy()
+    elif isinstance(item, str):
+        return TagParser(item)()[0]
+    else:
+        raise TypeError(f"Don't know how to coerce {item} of type {type(item)} to a modification")
+
+
+def modify_with(peptide: ProForma,
+                variable_modifications: Optional[Union[List[TagBase], dict[str, TagBase]]] = None,
+                fixed_modifications: Optional[Union[List[TagBase], dict[str, TagBase]]] = None,
+                include_unmodified: bool = True, include_labile: bool = False):
+    template = peptide.copy()
+    if variable_modifications:
+        if isinstance(variable_modifications, list):
+            template.unlocalized_modifications.extend(map(_coerce_string_to_modification, variable_modifications))
+        elif isinstance(variable_modifications, dict):
+            extra_rules = []
+            for target, tag in variable_modifications.items():
+                if isinstance(target, str):
+                    target = PositionModifierTag(target)
+                tag = _coerce_string_to_modification(tag)
+                tag.extra.append(target)
+                extra_rules.append(tag)
+            template.unlocalized_modifications.extend(extra_rules)
+        else:
+            raise TypeError(f"Expected variable_modifications to be a list or a dict, got {type(variable_modifications)}")
+    if fixed_modifications:
+        if isinstance(fixed_modifications, list):
+            template.fixed_modifications.extend(map(_coerce_string_to_modification, fixed_modifications))
+        elif isinstance(fixed_modifications, dict):
+            extra_rules = []
+            for target, tag in fixed_modifications.items():
+                if isinstance(target, str):
+                    target = PositionModifierTag(target)
+                tag = _coerce_string_to_modification(tag)
+                tag.extra.append(target)
+                extra_rules.append(tag)
+            template.fixed_modifications.extend(extra_rules)
+        else:
+            raise TypeError(
+                f"Expected fixed_modifications to be a list or a dict, got {type(fixed_modifications)}"
+            )
+
+    return template.generate_proteoforms(include_unmodified=include_unmodified, include_labile=include_labile)
 
 
 class ProteoformCombinator:
