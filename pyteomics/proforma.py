@@ -262,6 +262,11 @@ class TagBase(object):
     def has_composition(self) -> bool:
         return False
 
+    def __or__(self, other):
+        this = self.copy()
+        this.extra.append(other.copy())
+        return this
+
 
 class GroupLabelBase(TagBase):
     __slots__ = ()
@@ -274,6 +279,9 @@ class GroupLabelBase(TagBase):
         else:
             label = part
         return '%s' % label
+
+    def __hash__(self):
+        return hash(str(self))
 
 
 class PositionLabelTag(GroupLabelBase):
@@ -1154,16 +1162,38 @@ class GlycanModification(ModificationBase):
     _tag_type = TagTypeEnum.glycan
 
     valid_monosaccharides = {
-        "Hex": monosaccharide_description(162.0528, Composition("C6H10O5"), 'Hex'),
-        "HexNAc": monosaccharide_description(203.0793, Composition("C8H13N1O5"), 'HexNAc'),
-        "HexS": monosaccharide_description(242.009, Composition("C6H10O8S1"), 'HexS'),
-        "HexP": monosaccharide_description(242.0191, Composition("C6H11O8P1"), 'HexP'),
-        "HexNAcS": monosaccharide_description(283.0361, Composition("C8H13N1O8S1"), 'HexNAcS'),
-        "dHex": monosaccharide_description(146.0579, Composition("C6H10O4"), 'dHex'),
-        "NeuAc": monosaccharide_description(291.0954, Composition("C11H17N1O8"), 'NeuAc'),
-        "NeuGc": monosaccharide_description(307.0903, Composition("C11H17N1O9"), 'NeuGc'),
-        "Pen": monosaccharide_description(132.0422, Composition("C5H8O4"), 'Pen'),
-        "Fuc": monosaccharide_description(146.0579, Composition("C6H10O4"), 'Fuc')
+        "Hex": monosaccharide_description(162.0528, Composition("C6H10O5"), "Hex"),
+        "HexNAc": monosaccharide_description(
+            203.0793, Composition("C8H13N1O5"), "HexNAc"
+        ),
+        "HexS": monosaccharide_description(242.009, Composition("C6H10O8S1"), "HexS"),
+        "HexP": monosaccharide_description(242.0191, Composition("C6H11O8P1"), "HexP"),
+        "HexNAcS": monosaccharide_description(
+            283.0361, Composition("C8H13N1O8S1"), "HexNAcS"
+        ),
+        "dHex": monosaccharide_description(146.0579, Composition("C6H10O4"), "dHex"),
+        "NeuAc": monosaccharide_description(
+            291.0954, Composition("C11H17N1O8"), "NeuAc"
+        ),
+        "NeuGc": monosaccharide_description(
+            307.0903, Composition("C11H17N1O9"), "NeuGc"
+        ),
+        "Pen": monosaccharide_description(132.0422, Composition("C5H8O4"), "Pen"),
+        "Fuc": monosaccharide_description(146.0579, Composition("C6H10O4"), "Fuc"),
+        "Kdn": monosaccharide_description(
+            250.06886740546, Composition({"C": 9, "H": 14, "O": 8}), "Kdn"
+        ),
+        "Kdo": monosaccharide_description(
+            220.05830272176, Composition({"C": 8, "H": 12, "O": 7}), "Kdo"
+        ),
+        "Phospho": monosaccharide_description(
+            79.96633052075, Composition({"P": 1, "O": 3, "H": 1}), "Phospho"
+        ),
+        "Sulfo": monosaccharide_description(
+            79.95681485867999,
+            Composition({"S": 1, "O": 3, "H": 0}),
+            "Sulfo"
+        ),
     }
 
     valid_monosaccharides['Neu5Ac'] = valid_monosaccharides['NeuAc']
@@ -1173,7 +1203,18 @@ class GlycanModification(ModificationBase):
 
     monomer_tokenizer = re.compile(
         r"|".join(sorted(valid_monosaccharides.keys(), key=len, reverse=True)))
-    tokenizer = re.compile(r"(%s|[A-Za-z]+)\s*(\d*)\s*" % monomer_tokenizer.pattern)
+    tokenizer = re.compile(
+        r"""(?:
+        (?P<known_name>%s)|
+        (?P<base_name>[A-Za-z]+)|
+        (?P<charged_formula>\{
+                [^\}]+?
+        \})
+        )
+        \s*(?P<count>\d*)\s*"""
+        % monomer_tokenizer.pattern,
+        re.X,
+    )
 
     @property
     def monosaccharides(self):
@@ -1181,38 +1222,72 @@ class GlycanModification(ModificationBase):
 
     def resolve(self):
         composite = BasicComposition()
-        for tok, cnt in self.tokenizer.findall(self.value):
+        mass = 0
+        chemcomp = Composition()
+        charge = 0
+        for hit in self.tokenizer.finditer(self.value):
+            hit = hit.groupdict()
+            cnt = hit['count']
+
+            tok = hit.get('known_name')
+            base_name = hit.get('base_name')
+            formula = hit.get('charged_formula')
+
             if cnt:
                 cnt = int(cnt)
             else:
                 cnt = 1
-            if tok not in self.valid_monosaccharides:
-                parts = self.monomer_tokenizer.findall(tok)
+            if tok is not None:
+                if tok not in self.valid_monosaccharides:
+                    parts = self.monomer_tokenizer.findall(tok)
+                    t = 0
+                    for p in parts:
+                        if p not in self.valid_monosaccharides:
+                            break
+                        t += len(p)
+                    if t != len(tok):
+                        raise ValueError("{tok!r} is not a valid monosaccharide name".format(tok=tok))
+                    else:
+                        for p in parts:
+                            if p not in self.valid_monosaccharides:
+                                raise UnknownMonosaccharideError(p)
+                            m, c, sym = self.valid_monosaccharides[p]
+                            mass += m * cnt
+                            chemcomp += c * cnt
+                            composite[sym] += cnt
+                else:
+                    m, c, sym = self.valid_monosaccharides[tok]
+                    mass += m * cnt
+                    chemcomp += c * cnt
+                    composite[sym] += cnt
+            elif formula is not None:
+                inner = FormulaModification(formula[1:-1]).resolve()
+                mass += inner['mass'] * cnt
+                chemcomp += inner['composition'] * cnt
+                composite[formula] += cnt
+                charge += inner['charge'] * cnt
+            elif base_name is not None:
+                parts = self.monomer_tokenizer.findall(base_name)
                 t = 0
                 for p in parts:
                     if p not in self.valid_monosaccharides:
                         break
                     t += len(p)
-                if t != len(tok):
-                    raise ValueError("{tok!r} is not a valid monosaccharide name".format(tok=tok))
+                if t != len(base_name):
+                    raise ValueError(
+                        f"{base_name!r} is not a valid monosaccharide name"
+                    )
                 else:
-                    for p in parts[:-1]:
-                        sym = self.valid_monosaccharides[p].symbol
-                        composite[sym] += 1
-                    sym = self.valid_monosaccharides[parts[-1]].symbol
-                    composite[sym] += cnt
+                    for p in parts:
+                        if p not in self.valid_monosaccharides:
+                            raise UnknownMonosaccharideError(p)
+                        m, c, sym = self.valid_monosaccharides[p]
+                        mass += m * cnt
+                        chemcomp += c * cnt
+                        composite[sym] += cnt
             else:
-                sym = self.valid_monosaccharides[tok].symbol
-                composite[sym] += cnt
-        mass = 0
-        chemcomp = Composition()
-        for key, cnt in composite.items():
-            try:
-                m, c, sym = self.valid_monosaccharides[key]
-            except KeyError:
-                raise UnknownMonosaccharideError(key)
-            mass += m * cnt
-            chemcomp += c * cnt
+                raise NotImplementedError(f"I do not know how to decode the impossible, {hit}")
+
         return {
             "mass": mass,
             "composition": chemcomp,
@@ -3995,22 +4070,104 @@ def _coerce_string_to_modification(item) -> TagBase:
         raise TypeError(f"Don't know how to coerce {item} of type {type(item)} to a modification")
 
 
-def modify_with(peptide: ProForma,
-                variable_modifications: Optional[Union[List[TagBase], dict[str, TagBase]]] = None,
-                fixed_modifications: Optional[Union[List[TagBase], dict[str, TagBase]]] = None,
-                include_unmodified: bool = True, include_labile: bool = False):
+def peptidoforms(
+    peptide: Union[ProForma, str],
+    variable_modifications: Optional[
+        Union[
+            List[Union[TagBase, str]],
+            dict[Union[TagBase, str], List[Union[str, TagBase]]],
+        ]
+    ] = None,
+    fixed_modifications: Optional[
+        Union[
+            List[Union[TagBase, str]],
+            dict[Union[TagBase, str], List[Union[str, TagBase]]],
+        ]
+    ] = None,
+    include_unmodified: bool = True,
+    include_labile: bool = False,
+) -> Iterator[ProForma]:
+    """
+    Generate the combinatorial cross-product of modifications for ``peptide``, given by
+    a set of variable and fixed modification rules, as in a classical peptide search engine.
+
+    This is similar to :func:`parser.peptidoforms`, but using :class:`ProForma` as the representation.
+    This uses ProForma 2.1's position limiting rules to give the caller greater control over how modifications
+    are applied, if desired.
+
+    Internally, this delegates to :class:`ProteoformCombinator` and would mirror the behavior of embedding all
+    of the modification rules directly in the sequence and calling :meth:`ProForma.generate_proteoforms`.
+
+    Parameters
+    ----------
+    peptide : :class:`ProForma` or :class:`str`
+        The base peptide to modify. If a string is provided, it will be parsed with :meth:`ProForma.parse`.
+        If ``peptide`` itself encodes modification rules or unlocalized modifications of any kind, they **will**
+        also be applied.
+    variable_modifications : :class:`list` of :class:`str` or :class:`TagBase` modification rules, or a :class:`dict` mapping :class:`str` or :class:`TagBase` modifications to a list of :class:`str` or :class:`TagBase` targets
+        The variable modifications that will be combined. If a list is provided, the values are assumed to either
+        be strings encoding a modification tag in ProForma notation or pre-parsed :class:`TagBase` modifications
+        with position limiting rules added with ``|`` separators. If a :class:`dict` is provided, keys are assumed
+        to be :class:`TagBase` modifications, as in the list-case, but the values of those keys are expected to be
+        :class:`TagBase` position limiters like :class:`PositionModifierTag`, or strings that will be coerced as
+        such.
+    fixed_modifications : :class:`list` of :class:`str` or :class:`TagBase` modification rules, or a :class:`dict` mapping :class:`str` or :class:`TagBase` modifications to a list of :class:`str` or :class:`TagBase` targets
+        The fixed modifications that will be applied to all combinations, even the unmodified version if ``include_unmodified``
+        is specified. See ``variable_modifications`` for an explanation of type coercion.
+    include_unmodified : :class:`bool`
+        For all non-fixed modifications, include the case where the modification is not included anywhere
+    include_labile : :class:`bool`
+        For all labile modifications, include the case where the modification is localized at every possible location
+
+    Yields
+    ------
+    :class:`ProForma`
+
+    Examples
+    --------
+    This example shows how to use the :class:`dict`-based modification rule approach.
+
+    >>> from pyteomics import proforma
+    >>> isos = proforma.peptidoforms(
+    ... "EMEVTESPEK",
+    ... variable_modifications={"Oxidation": ['M']})
+    >>> for i in isos:
+    ...     print(i)
+    EMEVTESPEK
+    EM[Oxidation|Position:M]EVTESPEK
+
+    Using parsed objects to get the equivalent behavior, and avoids needing to re-parse the rules
+    on every invocation.
+
+    >>> from pyteomics import proforma
+    >>> isos = proforma.peptidoforms(
+    ... ProForma.parse("EMEVTESPEK"),
+    ... variable_modifications={proforma.GenericModification("Oxidation"): [proforma.PositionModifierTag('M')]})
+    >>> for i in isos:
+    ...     print(i)
+    EMEVTESPEK
+    EM[Oxidation|Position:M]EVTESPEK
+
+    """
+    if isinstance(peptide, str):
+        peptide = ProForma.parse(peptide)
     template = peptide.copy()
+    seen = set()
     if variable_modifications:
         if isinstance(variable_modifications, list):
             template.unlocalized_modifications.extend(map(_coerce_string_to_modification, variable_modifications))
         elif isinstance(variable_modifications, dict):
             extra_rules = []
-            for target, tag in variable_modifications.items():
-                if isinstance(target, str):
-                    target = PositionModifierTag(target)
-                tag = _coerce_string_to_modification(tag)
-                tag.extra.append(target)
-                extra_rules.append(tag)
+            for tag, targets in variable_modifications.items():
+                seen.clear()
+                for target in targets:
+                    if isinstance(target, str):
+                        target = PositionModifierTag(target)
+                    if target in seen:
+                        continue
+                    seen.add(target)
+                    tag = _coerce_string_to_modification(tag)
+                    extra_rules.append(tag | target)
             template.unlocalized_modifications.extend(extra_rules)
         else:
             raise TypeError(f"Expected variable_modifications to be a list or a dict, got {type(variable_modifications)}")
@@ -4019,12 +4176,16 @@ def modify_with(peptide: ProForma,
             template.fixed_modifications.extend(map(_coerce_string_to_modification, fixed_modifications))
         elif isinstance(fixed_modifications, dict):
             extra_rules = []
-            for target, tag in fixed_modifications.items():
-                if isinstance(target, str):
-                    target = PositionModifierTag(target)
-                tag = _coerce_string_to_modification(tag)
-                tag.extra.append(target)
-                extra_rules.append(tag)
+            for tag, targets in fixed_modifications.items():
+                seen.clear()
+                for target in targets:
+                    if isinstance(target, str):
+                        target = PositionModifierTag(target)
+                    if target in seen:
+                        continue
+                    seen.add(target)
+                    tag = _coerce_string_to_modification(tag)
+                    extra_rules.append(tag | target)
             template.fixed_modifications.extend(extra_rules)
         else:
             raise TypeError(
