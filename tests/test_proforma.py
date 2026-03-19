@@ -1,13 +1,15 @@
 from os import path
 import unittest
 import pickle
+import math
 import pyteomics
 pyteomics.__path__ = [path.abspath(
     path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics.proforma import (
     PSIModModification, ProForma, TaggedInterval, parse, MassModification, ProFormaError, TagTypeEnum,
     ModificationRule, StableIsotope, GenericModification, Composition, to_proforma, ModificationMassNotFoundError,
-    AdductParser, ChargeState,
+    UnimodModification, PSIModModification, ModificationTarget,
+    AdductParser, ChargeState, proteoforms, _coerce_string_to_modification,
     std_aa_comp, obo_cache, process_tag_tokens)
 
 
@@ -487,15 +489,25 @@ class ProteoformCombinatorTest(unittest.TestCase):
         pf = ProForma.parse(seq)
         for include_unmodified in [False, True]:
             with self.subTest(include_unmodified=include_unmodified):
-                proteoforms = list(pf.generate_proteoforms(include_unmodified=include_unmodified))
+                proteoforms = list(pf.proteoforms(include_unmodified=include_unmodified))
                 self.assertEqual(len(proteoforms), 2 + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
+
+    def test_unlocalized_position_list_and_count(self):
+        seq = "[Phospho|Position:S|Position:T]^2?EMEVTSESPEK"
+        nsites = 3
+        k = 2
+        pf = ProForma.parse(seq)
+        for include_unmodified in [False, True]:
+            with self.subTest(include_unmodified=include_unmodified):
+                proteoforms = list(pf.proteoforms(include_unmodified=include_unmodified))
+                self.assertEqual(len(proteoforms), math.comb(nsites, k) + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
 
     def test_localization_tag(self):
         seq = "EMEVT[#g1]S[#g1]ES[Phospho#g1]PEK"
         pf = ProForma.parse(seq)
         for include_unmodified in [False, True]:
             with self.subTest(include_unmodified=include_unmodified):
-                proteoforms = list(pf.generate_proteoforms(include_unmodified=include_unmodified))
+                proteoforms = list(pf.proteoforms(include_unmodified=include_unmodified))
                 self.assertEqual(len(proteoforms), 3 + include_unmodified)
 
     def test_unlocalized_modification(self):
@@ -503,23 +515,49 @@ class ProteoformCombinatorTest(unittest.TestCase):
         pf = ProForma.parse(seq)
         for include_unmodified in [False, True]:
             with self.subTest(include_unmodified=include_unmodified):
-                proteoforms = list(pf.generate_proteoforms(include_unmodified=include_unmodified))
+                proteoforms = list(pf.proteoforms(include_unmodified=include_unmodified))
                 self.assertEqual(len(proteoforms), len(pf) + include_unmodified)
 
     def test_comup_stacking(self):
         seq = "[Phospho|Position:S|Position:T|comup|Limit:2]^2?EMEVTESPEK"
         pf = ProForma.parse(seq)
-        proteoforms = list(pf.generate_proteoforms())
+        proteoforms = list(pf.proteoforms())
         self.assertEqual(len(proteoforms), 4)
-        proteoforms = list(pf.generate_proteoforms(True))
+        proteoforms = list(pf.proteoforms(True))
         self.assertEqual(len(proteoforms), 9)
 
     def test_labile(self):
         seq = "{Phosphpo}EMEVTESPEK"
         pf = ProForma.parse(seq)
-        proteoforms = list(pf.generate_proteoforms(False, True))
+        proteoforms = list(pf.proteoforms(False, True))
         self.assertEqual(len(proteoforms), 11)
 
+
+class ProteoformsFunctionTest(unittest.TestCase):
+    def test_proteoforms(self):
+        seq = "EMEV(TS)[Phospho]ESPEK"
+        pf = ProForma.parse(seq)
+        for include_unmodified in [False, True]:
+            with self.subTest(include_unmodified=include_unmodified):
+                forms = list(proteoforms(pf, include_unmodified=include_unmodified))
+                self.assertEqual(len(forms), 2 + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
+
+    def test_coerce_modification(self):
+        for s, m in [("Phospho", GenericModification("Phospho")),
+                     ("UNIMOD:21", UnimodModification("21")),
+                     ("MOD:00046", PSIModModification("00046"))]:
+            with self.subTest(s=s):
+                self.assertEqual(_coerce_string_to_modification(s), m)
+
+    def test_modification_target_from_str(self):
+        for s, t in [("S", ModificationTarget('S')),
+                     ("T", ModificationTarget('T')),
+                     ("N-term", ModificationTarget(None, True, False)),
+                     ("C-term", ModificationTarget(None, False, True)),
+                     ("N-term:K", ModificationTarget('K', True, False)),
+                     ("C-term:Y", ModificationTarget('Y', False, True))]:
+            with self.subTest(s=s):
+                self.assertEqual(ModificationTarget.from_str(s), t)
 
 if __name__ == '__main__':
     unittest.main()

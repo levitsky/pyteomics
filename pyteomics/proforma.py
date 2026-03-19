@@ -1705,7 +1705,7 @@ class ModificationTarget(object):
                     t = tokens[0].lower()
                     n_term = t == "n-term"
                     c_term = t == "c-term"
-                    cls(tokens[1], n_term, c_term)
+                    return cls(tokens[1], n_term, c_term)
                 else:
                     raise PyteomicsError(
                         "Modification target has an invalid amino acid specific terminal target {1} in {0}".format(
@@ -1743,9 +1743,9 @@ class ModificationRule(object):
     modification_tag: TagBase
     targets: List[ModificationTarget]
 
-    def __init__(self, modification_tag: TagBase, targets: Union[ModificationTarget, List[ModificationTarget], None]=None):
+    def __init__(self, modification_tag: TagBase, targets: Union[ModificationTarget, List[ModificationTarget], List[str], None]=None):
         self.modification_tag = modification_tag
-        self.targets = targets
+        self.targets = targets  # type: ignore
         self._validate_targets()
 
     def is_not_specific(self) -> bool:
@@ -1764,10 +1764,11 @@ class ModificationRule(object):
         for target in self.targets:
             if isinstance(target, ModificationTarget):
                 validated_targets.append(target)
-            try:
-                validated_targets.append(ModificationTarget.from_str(target))
-            except PyteomicsError as err:
-                raise PyteomicsError(f"While parsing {self}, encountered error {err}") from err
+            else:
+                try:
+                    validated_targets.append(ModificationTarget.from_str(target))
+                except PyteomicsError as err:
+                    raise PyteomicsError(f"While parsing {self}, encountered error {err}") from err
 
         self.targets = validated_targets
 
@@ -3829,7 +3830,7 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
-    def generate_proteoforms(self, include_unmodified: bool = False, include_labile: bool = False) -> Iterator["ProForma"]:
+    def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False) -> Iterator["ProForma"]:
         """
         Generate combinatorial localizations of modifications defined on this ProForma sequence.
 
@@ -3847,6 +3848,8 @@ class ProForma(object):
         :class:`ProForma`
         """
         return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile))
+
+    peptidoforms = proteoforms
 
     def copy(self) -> "ProForma":
         sequence = []
@@ -4096,7 +4099,7 @@ def peptidoforms(
     are applied, if desired.
 
     Internally, this delegates to :class:`ProteoformCombinator` and would mirror the behavior of embedding all
-    of the modification rules directly in the sequence and calling :meth:`ProForma.generate_proteoforms`.
+    of the modification rules directly in the sequence and calling :meth:`ProForma.proteoforms`.
 
     Parameters
     ----------
@@ -4104,14 +4107,16 @@ def peptidoforms(
         The base peptide to modify. If a string is provided, it will be parsed with :meth:`ProForma.parse`.
         If ``peptide`` itself encodes modification rules or unlocalized modifications of any kind, they **will**
         also be applied.
-    variable_modifications : :class:`list` of :class:`str` or :class:`TagBase` modification rules, or a :class:`dict` mapping :class:`str` or :class:`TagBase` modifications to a list of :class:`str` or :class:`TagBase` targets
+    variable_modifications : :class:`list` of :class:`str` or :class:`TagBase` modification rules, or a :class:`dict`
+        mapping :class:`str` or :class:`TagBase` modifications to a list of :class:`str` or :class:`TagBase` targets
         The variable modifications that will be combined. If a list is provided, the values are assumed to either
         be strings encoding a modification tag in ProForma notation or pre-parsed :class:`TagBase` modifications
         with position limiting rules added with ``|`` separators. If a :class:`dict` is provided, keys are assumed
         to be :class:`TagBase` modifications, as in the list-case, but the values of those keys are expected to be
         :class:`TagBase` position limiters like :class:`PositionModifierTag`, or strings that will be coerced as
         such.
-    fixed_modifications : :class:`list` of :class:`str` or :class:`TagBase` modification rules, or a :class:`dict` mapping :class:`str` or :class:`TagBase` modifications to a list of :class:`str` or :class:`TagBase` targets
+    fixed_modifications : :class:`list` of :class:`str` or :class:`TagBase` modification rules, or a :class:`dict`
+        mapping :class:`str` or :class:`TagBase` modifications to a list of :class:`str` or :class:`TagBase` targets
         The fixed modifications that will be applied to all combinations, even the unmodified version if ``include_unmodified``
         is specified. See ``variable_modifications`` for an explanation of type coercion.
     include_unmodified : :class:`bool`
@@ -4192,7 +4197,10 @@ def peptidoforms(
                 f"Expected fixed_modifications to be a list or a dict, got {type(fixed_modifications)}"
             )
 
-    return template.generate_proteoforms(include_unmodified=include_unmodified, include_labile=include_labile)
+    return template.proteoforms(include_unmodified=include_unmodified, include_labile=include_labile)
+
+
+proteoforms = peptidoforms
 
 
 class ProteoformCombinator:
