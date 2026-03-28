@@ -3960,6 +3960,7 @@ class GeneratorModificationRuleDirective:
     colocal_unknown: bool = False
     limit: int = 1
     labile: bool = False
+    token: Optional[ModificationToken] = None
 
     def __init__(self, rule, region=None, colocal_known: bool = False, colocal_unknown: bool = False, limit: int = 1, labile: bool = False):
         self.rule = rule
@@ -3968,6 +3969,7 @@ class GeneratorModificationRuleDirective:
         self.colocal_unknown = colocal_unknown
         self.limit = limit
         self.labile = labile
+        self.token = getattr(self.rule.modification_tag, "key", None)
 
     def create(self) -> TagBase:
         return self.rule.modification_tag.copy()
@@ -4313,13 +4315,17 @@ class ProteoformCombinator:
                 positions_for = [None] + positions_for
             position_choices.append(positions_for)
 
+        seen = set()
+
         for slots in itertools.product(*position_choices):
+            state = set()
             template = self.template.copy()
             valid = True
             labile_remaining = []
             for rule, idx in zip(self.variable_rules, slots):
                 if idx is None:
                     if rule.labile:
+                        state.add((None, rule.token))
                         labile_remaining.append(rule.create())
                     continue
                 if idx not in rule.find_positions(template):
@@ -4332,7 +4338,13 @@ class ProteoformCombinator:
                 tag._generated = ModificationSourceType.Generated
                 tags.append(tag)
                 template[idx] = (aa, tags)
+                state.add((idx, rule.token))
             if valid:
+                state = frozenset(state)
+                if state in seen:
+                    continue
+                else:
+                    seen.add(state)
                 if labile_remaining:
                     template.labile_modifications = labile_remaining
                 yield template

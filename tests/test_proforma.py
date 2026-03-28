@@ -500,7 +500,13 @@ class ProteoformCombinatorTest(unittest.TestCase):
         for include_unmodified in [False, True]:
             with self.subTest(include_unmodified=include_unmodified):
                 proteoforms = list(pf.proteoforms(include_unmodified=include_unmodified))
-                self.assertEqual(len(proteoforms), math.comb(nsites, k) + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
+                if not include_unmodified:
+                    self.assertEqual(len(proteoforms), math.comb(nsites, k))   # Phospho on T or S (+ no phospho if include_unmodified)
+                else:
+                    self.assertEqual(
+                        len(proteoforms),
+                        sum([math.comb(nsites, i) for i in range(k + 1)]),
+                    )
 
     def test_localization_tag(self):
         seq = "EMEVT[#g1]S[#g1]ES[Phospho#g1]PEK"
@@ -522,12 +528,12 @@ class ProteoformCombinatorTest(unittest.TestCase):
         seq = "[Phospho|Position:S|Position:T|comup|Limit:2]^2?EMEVTESPEK"
         pf = ProForma.parse(seq)
         proteoforms = list(pf.proteoforms())
-        self.assertEqual(len(proteoforms), 4)
+        self.assertEqual(len(proteoforms), 3)
         proteoforms = list(pf.proteoforms(True))
-        self.assertEqual(len(proteoforms), 9)
+        self.assertEqual(len(proteoforms), 4)
 
     def test_labile(self):
-        seq = "{Phosphpo}EMEVTESPEK"
+        seq = "{Phospho}EMEVTESPEK"
         pf = ProForma.parse(seq)
         proteoforms = list(pf.proteoforms(False, True))
         self.assertEqual(len(proteoforms), 11)
