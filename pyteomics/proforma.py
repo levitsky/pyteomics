@@ -4147,10 +4147,10 @@ def peptidoforms(
     on every invocation.
 
     >>> from pyteomics import proforma
-    >>> isos = proforma.peptidoforms(
+    >>> pforms = proforma.peptidoforms(
     ... ProForma.parse("EMEVTESPEK"),
     ... variable_modifications={proforma.GenericModification("Oxidation"): [proforma.PositionModifierTag('M')]})
-    >>> for i in isos:
+    >>> for i in pforms:
     ...     print(i)
     EMEVTESPEK
     EM[Oxidation|Position:M]EVTESPEK

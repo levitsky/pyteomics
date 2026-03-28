@@ -565,5 +565,14 @@ class ProteoformsFunctionTest(unittest.TestCase):
             with self.subTest(s=s):
                 self.assertEqual(ModificationTarget.from_str(s), t)
 
+    def test_from_simple_dict(self):
+        seq = "EMEVTSESPEK"
+        variable_mods = {"Phospho": ["S", "T"]}
+        pf = ProForma.parse(seq)
+        for include_unmodified in [False, True]:
+            with self.subTest(include_unmodified=include_unmodified):
+                forms = list(proteoforms(pf, variable_modifications=variable_mods, include_unmodified=include_unmodified))
+                self.assertEqual(len(forms), 3 + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
+
 if __name__ == '__main__':
     unittest.main()
