@@ -10,7 +10,7 @@ from pyteomics.proforma import (
     ModificationRule, StableIsotope, GenericModification, Composition, to_proforma, ModificationMassNotFoundError,
     UnimodModification, PSIModModification, ModificationTarget,
     AdductParser, ChargeState, proteoforms, _coerce_string_to_modification,
-    std_aa_comp, obo_cache, process_tag_tokens)
+    std_aa_comp, obo_cache, process_tag_tokens, peptidoforms)
 
 
 class ProFormaTest(unittest.TestCase):
@@ -530,13 +530,29 @@ class ProteoformCombinatorTest(unittest.TestCase):
         proteoforms = list(pf.proteoforms())
         self.assertEqual(len(proteoforms), 3)
         proteoforms = list(pf.proteoforms(True))
-        self.assertEqual(len(proteoforms), 4)
+        self.assertEqual(len(proteoforms), 6)
 
     def test_labile(self):
         seq = "{Phospho}EMEVTESPEK"
         pf = ProForma.parse(seq)
         proteoforms = list(pf.proteoforms(False, True))
         self.assertEqual(len(proteoforms), 11)
+
+    def test_expand(self):
+        seq = "EMEVTSESPEK"
+        variable_mods = {"Phospho": ["S", "T"], "Oxidation": "M"}
+        pf = ProForma.parse(seq)
+        combos = peptidoforms(
+            pf,
+            variable_modifications=variable_mods,
+            expand_rules=True,
+        )
+        variants = list(combos)
+        self.assertEqual(len(variants), 16)
+        self.assertEqual(
+            8,
+            sum(['Oxidation' in str(p) for p in variants])
+        )
 
 
 class ProteoformsFunctionTest(unittest.TestCase):
@@ -572,7 +588,10 @@ class ProteoformsFunctionTest(unittest.TestCase):
         for include_unmodified in [False, True]:
             with self.subTest(include_unmodified=include_unmodified):
                 forms = list(proteoforms(pf, variable_modifications=variable_mods, include_unmodified=include_unmodified))
-                self.assertEqual(len(forms), 3 + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
+                if include_unmodified:
+                    self.assertEqual(len(forms), 6)
+                else:
+                    self.assertEqual(len(forms), 2)
 
 if __name__ == '__main__':
     unittest.main()

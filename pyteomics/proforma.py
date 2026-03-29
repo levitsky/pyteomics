@@ -13,8 +13,8 @@ For more details, see the :mod:`pyteomics.proforma` online.
 import itertools
 import re
 import warnings
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple
-from collections import deque, namedtuple
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple, DefaultDict
+from collections import Counter, deque, namedtuple
 from functools import partial
 from itertools import chain
 from array import array as _array
@@ -336,6 +336,12 @@ class PositionModifierTag(TagBase):
 
     def __init__(self, value, extra=None, group_id=None):
         super().__init__(TagTypeEnum.position_modifier, value, extra, group_id)
+
+    def __eq__(self, other):
+        return super().__eq__(other)
+
+    def __hash__(self):
+        return hash(self.value)
 
     def _format_main(self):
         return f"{self.prefix_name}:{self.value}"
@@ -3830,7 +3836,7 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
-    def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False) -> Iterator["ProForma"]:
+    def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False, expand_rules: bool = False) -> Iterator["ProForma"]:
         """
         Generate combinatorial localizations of modifications defined on this ProForma sequence.
 
@@ -3838,16 +3844,21 @@ class ProForma(object):
         ----------
         include_unmodified : :class:`bool`
             For all non-fixed modifications, include the case where the modification is not included anywhere. This is equivalent to
-            how variable modification rules are applied in search engines.
+            how variable modification rules are applied in search engines. It still respects the number of copies of modifications included
+            in the input. See ``expand_rules``.
         include_labile : :class:`bool`
             For all labile modifications, include the case where the modification is localized at every possible location or as
             a remaining labile modification.
+        expand_rules : :class:`bool`
+            For all variable modifications, allow any number of copies of the modification to be included in the result.
+            This mirrors the expected behavior of many search engines' variable modification rules, though it is not strictly
+            how ProForma's rules work. This forces ``include_unmodified`` to be :const:`True`.
 
         Yields
         ------
         :class:`ProForma`
         """
-        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile))
+        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile, expand_rules=expand_rules))
 
     peptidoforms = proteoforms
 
@@ -3961,6 +3972,24 @@ class GeneratorModificationRuleDirective:
     limit: int = 1
     labile: bool = False
     token: Optional[ModificationToken] = None
+
+    def __eq__(self, other):
+        if other is None:
+            return False
+        return (
+            self.rule == other.rule and
+            self.region == other.region and
+            self.colocal_known == other.colocal_known and
+            self.colocal_unknown == other.colocal_unknown and
+            self.limit == other.limit and
+            self.labile == other.labile
+        )
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash(self.token)
 
     def __init__(self, rule, region=None, colocal_known: bool = False, colocal_unknown: bool = False, limit: int = 1, labile: bool = False):
         self.rule = rule
@@ -4091,6 +4120,7 @@ def peptidoforms(
     ] = None,
     include_unmodified: bool = True,
     include_labile: bool = False,
+    expand_rules: bool = False,
 ) -> Iterator[ProForma]:
     """
     Generate the combinatorial cross-product of modifications for ``peptide``, given by
@@ -4125,6 +4155,11 @@ def peptidoforms(
         For all non-fixed modifications, include the case where the modification is not included anywhere
     include_labile : :class:`bool`
         For all labile modifications, include the case where the modification is localized at every possible location
+    expand_rules : :class:`bool`
+        For all variable modifications, allow any number of copies of the modification to be included in the result.
+        This mirrors the expected behavior of many search engines' variable modification rules, though it is not strictly
+        how ProForma's rules work. This forces :attr:`include_unmodified` to be :const:`True`. This behavior is currently
+        incompatible with modification stacking with ``Limit`` and ``CoMUP`` tag modifiers.
 
     Yields
     ------
@@ -4155,6 +4190,30 @@ def peptidoforms(
     EMEVTESPEK
     EM[Oxidation|Position:M]EVTESPEK
 
+    To expand rules so that they might apply to as many positions as are available, as is often done when
+    build a combinatorial search space, use the ``expand_rules`` argument.
+    >>> from pyteomics import proforma
+    >>> isos = proforma.peptidoforms(
+    ... "EMEVTESPEK",
+    ... variable_modifications={"Oxidation": ['M'], "Phospho": ['S', 'T']}, expand_rules=True)
+    >>> for i in isos:
+    ...     print(i)
+    EM[Oxidation|Position:M]EVT[Phospho|Position:T]S[Phospho|Position:S]ES[Phospho|Position:S]PEK
+    EMEVT[Phospho|Position:T]S[Phospho|Position:S]ES[Phospho|Position:S]PEK
+    EM[Oxidation|Position:M]EVTS[Phospho|Position:S]ES[Phospho|Position:S]PEK
+    EMEVTS[Phospho|Position:S]ES[Phospho|Position:S]PEK
+    EM[Oxidation|Position:M]EVT[Phospho|Position:T]S[Phospho|Position:S]ESPEK
+    EMEVT[Phospho|Position:T]S[Phospho|Position:S]ESPEK
+    EM[Oxidation|Position:M]EVTS[Phospho|Position:S]ESPEK
+    EMEVTS[Phospho|Position:S]ESPEK
+    EM[Oxidation|Position:M]EVT[Phospho|Position:T]SES[Phospho|Position:S]PEK
+    EMEVT[Phospho|Position:T]SES[Phospho|Position:S]PEK
+    EM[Oxidation|Position:M]EVTSES[Phospho|Position:S]PEK
+    EMEVTSES[Phospho|Position:S]PEK
+    EM[Oxidation|Position:M]EVT[Phospho|Position:T]SESPEK
+    EMEVT[Phospho|Position:T]SESPEK
+    EM[Oxidation|Position:M]EVTSESPEK
+    EMEVTSESPEK
     """
     if isinstance(peptide, str):
         peptide = ProForma.parse(peptide)
@@ -4199,7 +4258,11 @@ def peptidoforms(
                 f"Expected fixed_modifications to be a list or a dict, got {type(fixed_modifications)}"
             )
 
-    return template.proteoforms(include_unmodified=include_unmodified, include_labile=include_labile)
+    return template.proteoforms(
+        include_unmodified=include_unmodified,
+        include_labile=include_labile,
+        expand_rules=expand_rules,
+    )
 
 
 proteoforms = peptidoforms
@@ -4218,19 +4281,31 @@ class ProteoformCombinator:
     variable_rules: list[:class:`GeneratorModificationRuleDirective`]
         The rules to apply in combinations to the template sequence
     include_unmodified : :class:`bool`
-        For all non-fixed modifications, include the case where the modification is not included anywhere
+        For all non-fixed modifications, include the case where the modification is not included anywhere. This is equivalent to
+        how variable modification rules are applied in search engines. It still respects the number of copies of modifications included
+        in the input. See :attr:`expand_rules`.
     include_labile : :class:`bool`
         For all labile modifications, include the case where the modification is localized at every possible location
+    expand_rules : :class:`bool`
+        For all variable modifications, allow any number of copies of the modification to be included in the result.
+        This mirrors the expected behavior of many search engines' variable modification rules, though it is not strictly
+        how ProForma's rules work. This forces :attr:`include_unmodified` to be :const:`True`. This behavior is currently
+        incompatible with modification stacking with ``Limit`` and ``CoMUP`` tag modifiers.
     """
     template: ProForma
     include_unmodified: bool
     include_labile: bool
     variable_rules: List[GeneratorModificationRuleDirective]
 
-    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False):
+    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False, expand_rules: bool=False):
+        if expand_rules:
+            if not include_unmodified:
+                warnings.warn("Forcing `include_unmodified = True` from `expand_rules`")
+            include_unmodified = True
         self.template = base_proteoform.copy()
         self.include_unmodified = include_unmodified
         self.include_labile = include_labile
+        self.expand_rules = expand_rules
         self.variable_rules = []
         self._extract_rules()
         self._apply_fixed_modifications()
@@ -4305,7 +4380,30 @@ class ProteoformCombinator:
     def __next__(self):
         return next(self._iter)
 
-    def generate(self):
+    def _invert_position_rules(self, rules: List[GeneratorModificationRuleDirective], positions: List[List[Optional[int]]]) -> List[List[Tuple[Optional[int], GeneratorModificationRuleDirective]]]:
+        index = DefaultDict(list)
+
+        for rule, positions in zip(rules, positions):
+            if rule.labile:
+                index[None].append(rule)
+            for position in positions:
+                if position is None:
+                    continue
+                index[position].append(rule)
+
+        if self.include_unmodified:
+            for k in index:
+                index[k].append(None)
+
+        stacks = []
+        for idx, options in index.items():
+            stack = []
+            for opt in options:
+                stack.append((idx, opt))
+            stacks.append(stack)
+        return stacks
+
+    def _build_position_map(self):
         position_choices = []
         for rule in self.variable_rules:
             positions_for = rule.find_positions(self.template)
@@ -4314,18 +4412,31 @@ class ProteoformCombinator:
             elif self.include_unmodified or not positions_for:
                 positions_for = [None] + positions_for
             position_choices.append(positions_for)
+        return position_choices
 
+    def _build_modification_iter(self) -> Iterator[List[Tuple[Optional[int], Optional[GeneratorModificationRuleDirective]]]]:
+        position_choices = self._build_position_map()
+        if self.expand_rules:
+            return itertools.product(*self._invert_position_rules(
+                self.variable_rules, position_choices
+            ))
+        else:
+            return map(lambda pos: zip(pos, self.variable_rules), itertools.product(*position_choices))
+
+    def generate(self):
         seen = set()
-
-        for slots in itertools.product(*position_choices):
-            state = set()
+        for slots in self._build_modification_iter():
+            state = Counter()
             template = self.template.copy()
             valid = True
             labile_remaining = []
-            for rule, idx in zip(self.variable_rules, slots):
+
+            for idx, rule in slots:
+                if rule is None:
+                    continue
                 if idx is None:
                     if rule.labile:
-                        state.add((None, rule.token))
+                        state[((None, rule.token))] += 1
                         labile_remaining.append(rule.create())
                     continue
                 if idx not in rule.find_positions(template):
@@ -4338,9 +4449,10 @@ class ProteoformCombinator:
                 tag._generated = ModificationSourceType.Generated
                 tags.append(tag)
                 template[idx] = (aa, tags)
-                state.add((idx, rule.token))
+                state[((idx, rule.token))] += 1
+
             if valid:
-                state = frozenset(state)
+                state = frozenset(state.items())
                 if state in seen:
                     continue
                 else:
