@@ -13,8 +13,8 @@ For more details, see the :mod:`pyteomics.proforma` online.
 import itertools
 import re
 import warnings
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple, DefaultDict
-from collections import Counter, deque, namedtuple
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple
+from collections import Counter, deque, namedtuple, defaultdict
 from functools import partial
 from itertools import chain
 from array import array as _array
@@ -4297,11 +4297,14 @@ class ProteoformCombinator:
     include_labile: bool
     variable_rules: List[GeneratorModificationRuleDirective]
 
-    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False, expand_rules: bool=False):
+    def __init__(self, base_proteoform: ProForma, include_unmodified: Optional[bool] = False, include_labile: bool = False, expand_rules: bool = False):
         if expand_rules:
-            if not include_unmodified:
+            if include_unmodified is False:
                 warnings.warn("Forcing `include_unmodified = True` from `expand_rules`")
             include_unmodified = True
+        else:
+            include_unmodified = bool(include_unmodified)
+
         self.template = base_proteoform.copy()
         self.include_unmodified = include_unmodified
         self.include_labile = include_labile
@@ -4381,12 +4384,12 @@ class ProteoformCombinator:
         return next(self._iter)
 
     def _invert_position_rules(self, rules: List[GeneratorModificationRuleDirective], positions: List[List[Optional[int]]]) -> List[List[Tuple[Optional[int], GeneratorModificationRuleDirective]]]:
-        index = DefaultDict(list)
+        index = defaultdict(list)
 
-        for rule, positions in zip(rules, positions):
+        for rule, position_list in zip(rules, positions):
             if rule.labile:
                 index[None].append(rule)
-            for position in positions:
+            for position in position_list:
                 if position is None:
                     continue
                 index[position].append(rule)
