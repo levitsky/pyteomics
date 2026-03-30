@@ -558,11 +558,12 @@ class ProteoformCombinatorTest(unittest.TestCase):
 class ProteoformsFunctionTest(unittest.TestCase):
     def test_proteoforms(self):
         seq = "EMEV(TS)[Phospho]ESPEK"
+        nsites = 2  # length of the range
         pf = ProForma.parse(seq)
         for include_unmodified in [False, True]:
             with self.subTest(include_unmodified=include_unmodified):
                 forms = list(proteoforms(pf, include_unmodified=include_unmodified))
-                self.assertEqual(len(forms), 2 + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
+                self.assertEqual(len(forms), nsites + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
 
     def test_coerce_modification(self):
         for s, m in [("Phospho", GenericModification("Phospho")),
@@ -590,12 +591,35 @@ class ProteoformsFunctionTest(unittest.TestCase):
             with self.subTest(include_unmodified=include_unmodified):
                 forms = list(proteoforms(pf, variable_modifications=variable_mods, include_unmodified=include_unmodified))
                 if include_unmodified:
-                    self.assertEqual(len(forms), 4)
+                    self.assertEqual(len(forms), nsites + 1)   # Phospho on T or S + no phospho
                 else:
-                    self.assertEqual(len(forms), 3)
+                    self.assertEqual(len(forms), nsites)  # Phospho on T or S
 
         forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
-        self.assertEqual(len(forms), 8)
+        self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho / no phospho on each S or T
+
+    def test_from_str(self):
+        seq = "EMEVTSESPEK"
+        variable_mods = ["Phospho|Position:S|Position:T"]
+        nsites = seq.count("S") + seq.count("T")
+        pf = ProForma.parse(seq)
+        for include_unmodified in [False, True]:
+            with self.subTest(include_unmodified=include_unmodified):
+                forms = list(proteoforms(pf, variable_modifications=variable_mods, include_unmodified=include_unmodified))
+                if include_unmodified:
+                    self.assertEqual(len(forms), nsites + 1)   # Phospho on T or S + no phospho
+                else:
+                    self.assertEqual(len(forms), nsites)  # Phospho on T or S
+        forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
+        self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho / no phospho on each S or T
+
+    def test_expand_mods_from_list(self):
+        seq = "EMEVTSESPEK"
+        variable_mods = ["Phospho|Position:S", "Phospho|Position:T"]
+        nsites = seq.count("S") + seq.count("T")
+        pf = ProForma.parse(seq)
+        forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
+        self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho on 0, 1, or 2 of the S or T
 
 if __name__ == '__main__':
     unittest.main()
