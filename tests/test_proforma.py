@@ -589,9 +589,12 @@ class ProteoformsFunctionTest(unittest.TestCase):
             with self.subTest(include_unmodified=include_unmodified):
                 forms = list(proteoforms(pf, variable_modifications=variable_mods, include_unmodified=include_unmodified))
                 if include_unmodified:
-                    self.assertEqual(len(forms), 6)
+                    self.assertEqual(len(forms), 4)
                 else:
-                    self.assertEqual(len(forms), 2)
+                    self.assertEqual(len(forms), 3)
+
+        forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
+        self.assertEqual(len(forms), 8)
 
 if __name__ == '__main__':
     unittest.main()

@@ -3836,7 +3836,7 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
-    def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False, expand_rules: bool = False) -> Iterator["ProForma"]:
+    def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False) -> Iterator["ProForma"]:
         """
         Generate combinatorial localizations of modifications defined on this ProForma sequence.
 
@@ -3849,16 +3849,12 @@ class ProForma(object):
         include_labile : :class:`bool`
             For all labile modifications, include the case where the modification is localized at every possible location or as
             a remaining labile modification.
-        expand_rules : :class:`bool`
-            For all variable modifications, allow any number of copies of the modification to be included in the result.
-            This mirrors the expected behavior of many search engines' variable modification rules, though it is not strictly
-            how ProForma's rules work. This forces ``include_unmodified`` to be :const:`True`.
 
         Yields
         ------
         :class:`ProForma`
         """
-        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile, expand_rules=expand_rules))
+        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile))
 
     peptidoforms = proteoforms
 
@@ -4158,8 +4154,7 @@ def peptidoforms(
     expand_rules : :class:`bool`
         For all variable modifications, allow any number of copies of the modification to be included in the result.
         This mirrors the expected behavior of many search engines' variable modification rules, though it is not strictly
-        how ProForma's rules work. This forces :attr:`include_unmodified` to be :const:`True`. This behavior is currently
-        incompatible with modification stacking with ``Limit`` and ``CoMUP`` tag modifiers.
+        how ProForma's rules work. This forces :attr:`include_unmodified` to be :const:`True`.
 
     Yields
     ------
@@ -4217,23 +4212,40 @@ def peptidoforms(
     """
     if isinstance(peptide, str):
         peptide = ProForma.parse(peptide)
+    if expand_rules:
+        include_unmodified = True
     template = peptide.copy()
     seen = set()
     if variable_modifications:
         if isinstance(variable_modifications, list):
-            template.unlocalized_modifications.extend(map(_coerce_string_to_modification, variable_modifications))
+            extra_rules = []
+            for rule in map(_coerce_string_to_modification, variable_modifications):
+                if expand_rules:
+                    parsed_rule = GeneratorModificationRuleDirective.from_unlocalized_rule(
+                        rule
+                    )
+                    extra_rules.extend([rule] * len(parsed_rule.find_positions(template)))
+                else:
+                    extra_rules.append(rule)
+            template.unlocalized_modifications.extend(extra_rules)
         elif isinstance(variable_modifications, dict):
             extra_rules = []
             for tag, targets in variable_modifications.items():
                 seen.clear()
+                tag = _coerce_string_to_modification(tag)
                 for target in targets:
                     if isinstance(target, str):
                         target = PositionModifierTag(target)
                     if target in seen:
                         continue
                     seen.add(target)
-                    tag = _coerce_string_to_modification(tag)
-                    extra_rules.append(tag | target)
+                    tag = tag | target
+                if expand_rules:
+                    rule = GeneratorModificationRuleDirective.from_unlocalized_rule(tag)
+                    n = len(rule.find_positions(peptide))
+                    extra_rules.extend([tag] * n)
+                else:
+                    extra_rules.append(tag)
             template.unlocalized_modifications.extend(extra_rules)
         else:
             raise TypeError(f"Expected variable_modifications to be a list or a dict, got {type(variable_modifications)}")
@@ -4261,7 +4273,6 @@ def peptidoforms(
     return template.proteoforms(
         include_unmodified=include_unmodified,
         include_labile=include_labile,
-        expand_rules=expand_rules,
     )
 
 
@@ -4286,26 +4297,16 @@ class ProteoformCombinator:
         in the input. See :attr:`expand_rules`.
     include_labile : :class:`bool`
         For all labile modifications, include the case where the modification is localized at every possible location
-    expand_rules : :class:`bool`
-        For all variable modifications, allow any number of copies of the modification to be included in the result.
-        This mirrors the expected behavior of many search engines' variable modification rules, though it is not strictly
-        how ProForma's rules work. This forces :attr:`include_unmodified` to be :const:`True`. This behavior is currently
-        incompatible with modification stacking with ``Limit`` and ``CoMUP`` tag modifiers.
     """
     template: ProForma
     include_unmodified: bool
     include_labile: bool
     variable_rules: List[GeneratorModificationRuleDirective]
 
-    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False, expand_rules: bool=False):
-        if expand_rules:
-            if not include_unmodified:
-                warnings.warn("Forcing `include_unmodified = True` from `expand_rules`")
-            include_unmodified = True
+    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False):
         self.template = base_proteoform.copy()
         self.include_unmodified = include_unmodified
         self.include_labile = include_labile
-        self.expand_rules = expand_rules
         self.variable_rules = []
         self._extract_rules()
         self._apply_fixed_modifications()
@@ -4416,12 +4417,7 @@ class ProteoformCombinator:
 
     def _build_modification_iter(self) -> Iterator[List[Tuple[Optional[int], Optional[GeneratorModificationRuleDirective]]]]:
         position_choices = self._build_position_map()
-        if self.expand_rules:
-            return itertools.product(*self._invert_position_rules(
-                self.variable_rules, position_choices
-            ))
-        else:
-            return map(lambda pos: zip(pos, self.variable_rules), itertools.product(*position_choices))
+        return map(lambda pos: zip(pos, self.variable_rules), itertools.product(*position_choices))
 
     def generate(self):
         seen = set()
