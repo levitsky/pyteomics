@@ -34,7 +34,7 @@ class PROXITest(unittest.TestCase):
             else:
                 raise
         except URLError as e:
-            if e.errno in {110, }:
+            if getattr(e.reason, 'errno', None) in {110}:
                 self.skipTest(f"PROXI service is unavailable: ({e})")
             else:
                 raise
