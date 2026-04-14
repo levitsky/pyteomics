@@ -4045,7 +4045,7 @@ class GeneratorModificationRuleDirective:
         rule = ModificationRule(tag, [])
         colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
-        limit = max([int(t.value) for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
+        limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
         return cls(rule, None, colocal_known, colocal_unknown, limit)
 
     @classmethod
@@ -4058,7 +4058,7 @@ class GeneratorModificationRuleDirective:
         colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
         rule = ModificationRule(modification_tag=mod, targets=targets)
-        limit = max([int(t.value) for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
+        limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
         return cls(rule, None, colocal_known, colocal_unknown, limit)
 
     @classmethod
@@ -4073,7 +4073,7 @@ class GeneratorModificationRuleDirective:
             colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
             colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
             rule = ModificationRule(modification_tag=mod, targets=targets)
-            limit = max([int(t.value) for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
+            limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
             rules.append(cls(rule, region, colocal_known, colocal_unknown, limit))
         return rules
 
@@ -4087,7 +4087,7 @@ class GeneratorModificationRuleDirective:
         colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
         rule = ModificationRule(modification_tag=mod, targets=targets)
-        limit = max([int(t.value) for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
+        limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
         return cls(rule, None, colocal_known, colocal_unknown, limit, labile=True)
 
 
