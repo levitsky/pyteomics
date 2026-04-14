@@ -4148,9 +4148,9 @@ def peptidoforms(
         The fixed modifications that will be applied to all combinations, even the unmodified version if ``include_unmodified``
         is specified. See ``variable_modifications`` for an explanation of type coercion.
     include_unmodified : :class:`bool`
-        For all non-fixed modifications, include the case where the modification is not included anywhere
+        For all non-fixed modifications, include the case where the modification is not included anywhere.
     include_labile : :class:`bool`
-        For all labile modifications, include the case where the modification is localized at every possible location
+        For all labile modifications, include the case where the modification is localized at every possible location.
     expand_rules : :class:`bool`
         For all variable modifications, allow any number of copies of the modification to be included in the result.
         This mirrors the expected behavior of many search engines' variable modification rules, though it is not strictly
@@ -4290,13 +4290,13 @@ class ProteoformCombinator:
     template: :class:`ProForma`
         The template sequence to apply any combination of rules to
     variable_rules: list[:class:`GeneratorModificationRuleDirective`]
-        The rules to apply in combinations to the template sequence
+        The rules to apply in combinations to the template sequence.
     include_unmodified : :class:`bool`
         For all non-fixed modifications, include the case where the modification is not included anywhere. This is equivalent to
         how variable modification rules are applied in search engines. It still respects the number of copies of modifications included
         in the input. See :attr:`expand_rules`.
     include_labile : :class:`bool`
-        For all labile modifications, include the case where the modification is localized at every possible location
+        For all labile modifications, include the case where the modification is localized at every possible location.
     """
     template: ProForma
     include_unmodified: bool
