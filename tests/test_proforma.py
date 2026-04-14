@@ -536,7 +536,7 @@ class ProteoformCombinatorTest(unittest.TestCase):
         proteoforms = list(pf.proteoforms())
         self.assertEqual(len(proteoforms), math.comb(nsites + effective_limit - 1, k))  # number of ways to place `k` indistinguishable mods on `nsites` distinguishable sites with a stack limit of `effective_limit`
         proteoforms = list(pf.proteoforms(True))
-        self.assertEqual(len(proteoforms), 6)
+        self.assertEqual(len(proteoforms), sum([math.comb(nsites + min(limit, i) - 1, i) for i in range(k + 1)]))  # number of ways to place anywhere from 0 to `k` indistinguishable mods on `nsites` distinguishable sites with a stack limit of `effective_limit`
 
     def test_labile(self):
         seq = "{Phospho}EMEVTESPEK"
@@ -626,6 +626,24 @@ class ProteoformsFunctionTest(unittest.TestCase):
         pf = ProForma.parse(seq)
         forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
         self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho on 0, 1, or 2 of the S or T
+
+    def test_expand_mods_from_dict(self):
+        seq = "EMEVTSESPEK"
+        variable_mods = {"Phospho": ["S", "T"]}
+        nsites = seq.count("S") + seq.count("T")
+        pf = ProForma.parse(seq)
+        forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
+        self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho on 0, 1, or 2 of the S or T
+
+    def test_expand_mods_comup(self):
+        seq = "EMEVTSESPEK"
+        limit = 2
+        variable_mods = [f"Phospho|Position:S|Position:T|comup|Limit:{limit}"]
+        nsites = seq.count("S") + seq.count("T")
+        pf = ProForma.parse(seq)
+        forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
+        self.assertEqual(len(forms), (limit + 1) ** nsites)  # all combinations of 0 to `limit` phosphos on each S or T
+
 
 if __name__ == '__main__':
     unittest.main()
