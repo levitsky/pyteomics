@@ -821,7 +821,7 @@ def mirror(spec_top, spec_bottom, peptide=None, spectrum_kws=None, ax=None, **kw
         A spectrum as returned by Pyteomics parsers. Needs to have 'm/z array' and 'intensity array' keys.
     spec_bottom : dict
         A spectrum as returned by Pyteomics parsers. Needs to have 'm/z array' and 'intensity array' keys.
-    peptide : str or None, optional
+    peptide : str or tuple[str, str] or None, optional
         A modX sequence or ProForma. If provided, the peaks will be annotated as peptide fragments.
     spectrum_kws : dict or None, optional
         Passed to :py:func:`spectrum_utils.plot.mirror`.
@@ -848,8 +848,12 @@ def mirror(spec_top, spec_bottom, peptide=None, spectrum_kws=None, ax=None, **kw
     """
 
     spec_gen = _spectrum_utils_create_spectrum if peptide is None else _spectrum_utils_annotate_spectrum
-    spec_top = spec_gen(spec_top, peptide, **kwargs)
-    spec_bottom = spec_gen(spec_bottom, peptide, **kwargs)
+    if isinstance(peptide, tuple):
+        peptide_top, peptide_bottom = peptide
+    else:
+        peptide_top = peptide_bottom = peptide
+    spec_top = spec_gen(spec_top, peptide_top, **kwargs)
+    spec_bottom = spec_gen(spec_bottom, peptide_bottom, **kwargs)
 
     bname = kwargs.pop('backend', 'spectrum_utils')
     backend = _mirror_backends.get(bname)

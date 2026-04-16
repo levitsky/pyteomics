@@ -44,6 +44,7 @@
  - Fix compatibility with :py:mod:`lxml` 5.4.0 and newer (`#170 <https://github.com/levitsky/pyteomics/issues/170>`_).
  - Ensure URL prefix when creating a :py:class:`mass.Unimod` object (`#169 <https://github.com/levitsky/pyteomics/pull/169>`_).
  - Improve :py:mod:`spectrum_utils` integration.
+ - :py:func:`pyteomics.pylab_aux.mirror` can now annotate spectra with two different sequences.
  - Retain StPeter output in :py:func:`pyteomics.protxml.DataFrame`.
  - Fix `#163 <https://github.com/levitsky/pyteomics/issues/163>`_
    (`#164 <https://github.com/levitsky/pyteomics/pull/164>`_ by Dikshant jha).
