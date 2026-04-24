@@ -4160,6 +4160,11 @@ def peptidoforms(
         For all non-fixed modifications, include the case where the modification is not included anywhere.
     include_labile : :class:`bool`
         For all labile modifications, include the case where the modification is localized at every possible location.
+
+        .. note ::
+            Along with all possible localizations of the labile modifications, the output will contain peptidoform(s)
+            where it is kept as a labile modification without localization.
+
     expand_rules : :class:`bool`
         For all variable modifications, allow any number of copies of the modification to be included in the result.
         This mirrors the expected behavior of many search engines' variable modification rules, though it is not strictly
@@ -4310,6 +4315,11 @@ class ProteoformCombinator:
         in the input. See :attr:`expand_rules`.
     include_labile : :class:`bool`
         For all labile modifications, include the case where the modification is localized at every possible location.
+
+        .. note ::
+            Along with all possible localizations of the labile modifications, the output will contain peptidoform(s)
+            where it is kept as a labile modification without localization.
+
     strip : :class:`bool`
         If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
         leaving only the bare modification definition.
