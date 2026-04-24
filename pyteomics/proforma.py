@@ -267,6 +267,15 @@ class TagBase(object):
         this.extra.append(other.copy())
         return this
 
+    @property
+    def limit(self) -> int:
+        limit_tags = self.find_tag_type(TagTypeEnum.limit)
+        if limit_tags:
+            if len(limit_tags) > 1:
+                warnings.warn(f"{len(limit_tags)} Limit tags were found for {self}, this is undefined behavior. Only the first tag will be used")
+            return limit_tags[0].value
+        return 1
+
 
 class GroupLabelBase(TagBase):
     __slots__ = ()
@@ -4053,8 +4062,7 @@ class GeneratorModificationRuleDirective:
         rule = ModificationRule(tag, [])
         colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
-        limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
-        return cls(rule, None, colocal_known, colocal_unknown, limit, strip=strip)
+        return cls(rule, None, colocal_known, colocal_unknown, tag.limit, strip=strip)
 
     @classmethod
     def from_unlocalized_rule(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
@@ -4066,8 +4074,7 @@ class GeneratorModificationRuleDirective:
         colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
         rule = ModificationRule(modification_tag=mod, targets=targets)
-        limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
-        return cls(rule, None, colocal_known, colocal_unknown, limit, strip=strip)
+        return cls(rule, None, colocal_known, colocal_unknown, tag.limit, strip=strip)
 
     @classmethod
     def from_region_rule(cls, region: TaggedInterval, strip: bool = False) -> List['GeneratorModificationRuleDirective']:
@@ -4081,8 +4088,7 @@ class GeneratorModificationRuleDirective:
             colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
             colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
             rule = ModificationRule(modification_tag=mod, targets=targets)
-            limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
-            rules.append(cls(rule, region, colocal_known, colocal_unknown, limit, strip=strip))
+            rules.append(cls(rule, region, colocal_known, colocal_unknown, tag.limit, strip=strip))
         return rules
 
     @classmethod
@@ -4095,8 +4101,7 @@ class GeneratorModificationRuleDirective:
         colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
         rule = ModificationRule(modification_tag=mod, targets=targets)
-        limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
-        return cls(rule, None, colocal_known, colocal_unknown, limit, labile=True, strip=strip)
+        return cls(rule, None, colocal_known, colocal_unknown, tag.limit, labile=True, strip=strip)
 
 
 def _coerce_string_to_modification(item) -> TagBase:

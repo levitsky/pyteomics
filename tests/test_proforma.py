@@ -424,6 +424,13 @@ class TestTagProcessing(unittest.TestCase):
             assert state['name'] == name
             assert state['provider'] == 'unimod'
 
+    def test_tag_limit(self):
+        tokens = list('Phospho|Position:S|Position:T|comup|Limit:2|Limit:3')
+        tag = process_tag_tokens(tokens)
+        with self.assertWarns(UserWarning):
+            effective_limit = tag.limit
+        self.assertEqual(effective_limit, 2)
+
 
 class GenericModificationResolverTest(unittest.TestCase):
     def test_generic_resolver(self):
