@@ -590,7 +590,9 @@ class ProteoformsFunctionTest(unittest.TestCase):
 
     def test_expand(self):
         seq = "EMEVTSESPEK"
-        variable_mods = {"Phospho": ["S", "T"], "Oxidation": "M"}
+        total_sites = seq.count("S") + seq.count("T") + seq.count("M")
+        oxidation_sites = seq.count("M")
+        variable_mods = {"Phospho": ["S", "T"], "Oxidation": ["M"]}
         pf = ProForma.parse(seq)
         combos = peptidoforms(
             pf,
@@ -598,10 +600,10 @@ class ProteoformsFunctionTest(unittest.TestCase):
             expand_rules=True,
         )
         variants = list(combos)
-        self.assertEqual(len(variants), 16)
-        self.assertEqual(
-            8,
-            sum(['Oxidation' in str(p) for p in variants])
+        self.assertEqual(len(variants), 2 ** total_sites)  # all combinations of phospho on S/T and oxidation on M
+        self.assertAlmostEqual(
+            (2 ** oxidation_sites) / (2 ** oxidation_sites - 1),
+            len(variants) / sum(['Oxidation' in str(p) for p in variants])
         )
 
     def test_from_str(self):
@@ -628,6 +630,14 @@ class ProteoformsFunctionTest(unittest.TestCase):
         self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho on 0, 1, or 2 of the S or T
 
     def test_expand_mods_from_dict(self):
+        seq = "EMEVTSESPEK"
+        variable_mods = {"Phospho": ["S", "T"]}
+        nsites = seq.count("S") + seq.count("T")
+        pf = ProForma.parse(seq)
+        forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
+        self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho on 0, 1, or 2 of the S or T
+
+    def test_expand_from_dict(self):
         seq = "EMEVTSESPEK"
         variable_mods = {"Phospho": ["S", "T"]}
         nsites = seq.count("S") + seq.count("T")
