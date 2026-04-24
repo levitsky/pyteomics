@@ -3836,7 +3836,7 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
-    def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False) -> Iterator["ProForma"]:
+    def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False, strip: bool = False) -> Iterator["ProForma"]:
         """
         Generate combinatorial localizations of modifications defined on this ProForma sequence.
 
@@ -3849,12 +3849,15 @@ class ProForma(object):
         include_labile : :class:`bool`
             For all labile modifications, include the case where the modification is localized at every possible location or as
             a remaining labile modification.
+        strip : :class:`bool`
+            If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
+            leaving only the bare modification definition.
 
         Yields
         ------
         :class:`ProForma`
         """
-        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile))
+        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile, strip=strip))
 
     peptidoforms = proteoforms
 
@@ -3968,6 +3971,7 @@ class GeneratorModificationRuleDirective:
     limit: int = 1
     labile: bool = False
     token: Optional[ModificationToken] = None
+    strip: bool = False
 
     def __eq__(self, other):
         if other is None:
@@ -3987,17 +3991,21 @@ class GeneratorModificationRuleDirective:
     def __hash__(self):
         return hash(self.token)
 
-    def __init__(self, rule, region=None, colocal_known: bool = False, colocal_unknown: bool = False, limit: int = 1, labile: bool = False):
+    def __init__(self, rule, region=None, colocal_known: bool = False, colocal_unknown: bool = False, limit: int = 1, labile: bool = False, strip: bool = False):
         self.rule = rule
         self.region = region
         self.colocal_known = colocal_known
         self.colocal_unknown = colocal_unknown
         self.limit = limit
         self.labile = labile
+        self.strip = strip
         self.token = getattr(self.rule.modification_tag, "key", None)
 
     def create(self) -> TagBase:
-        return self.rule.modification_tag.copy()
+        tag = self.rule.modification_tag.copy()
+        if self.strip:
+            tag.extra.clear()
+        return tag
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.rule}, {self.region}, {self.colocal_known}, {self.colocal_unknown})"
@@ -4036,7 +4044,7 @@ class GeneratorModificationRuleDirective:
         return positions
 
     @classmethod
-    def from_tagged_modification(cls, tag: TagBase) -> "GeneratorModificationRuleDirective":
+    def from_tagged_modification(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
         mod = tag.find_modification()
         if not mod:
             return
@@ -4046,10 +4054,10 @@ class GeneratorModificationRuleDirective:
         colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
         limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
-        return cls(rule, None, colocal_known, colocal_unknown, limit)
+        return cls(rule, None, colocal_known, colocal_unknown, limit, strip=strip)
 
     @classmethod
-    def from_unlocalized_rule(cls, tag: TagBase) -> "GeneratorModificationRuleDirective":
+    def from_unlocalized_rule(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
         mod = tag.find_modification()
         if not mod:
             return
@@ -4059,10 +4067,10 @@ class GeneratorModificationRuleDirective:
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
         rule = ModificationRule(modification_tag=mod, targets=targets)
         limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
-        return cls(rule, None, colocal_known, colocal_unknown, limit)
+        return cls(rule, None, colocal_known, colocal_unknown, limit, strip=strip)
 
     @classmethod
-    def from_region_rule(cls, region: TaggedInterval) -> List['GeneratorModificationRuleDirective']:
+    def from_region_rule(cls, region: TaggedInterval, strip: bool = False) -> List['GeneratorModificationRuleDirective']:
         rules = []
         for tag in (region.tags or []):
             mod = tag.find_modification()
@@ -4074,11 +4082,11 @@ class GeneratorModificationRuleDirective:
             colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
             rule = ModificationRule(modification_tag=mod, targets=targets)
             limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
-            rules.append(cls(rule, region, colocal_known, colocal_unknown, limit))
+            rules.append(cls(rule, region, colocal_known, colocal_unknown, limit, strip=strip))
         return rules
 
     @classmethod
-    def from_labile_rule(cls, tag: TagBase) -> "GeneratorModificationRuleDirective":
+    def from_labile_rule(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
         mod = tag.find_modification()
         if not mod:
             return
@@ -4088,7 +4096,7 @@ class GeneratorModificationRuleDirective:
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
         rule = ModificationRule(modification_tag=mod, targets=targets)
         limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
-        return cls(rule, None, colocal_known, colocal_unknown, limit, labile=True)
+        return cls(rule, None, colocal_known, colocal_unknown, limit, labile=True, strip=strip)
 
 
 def _coerce_string_to_modification(item) -> TagBase:
@@ -4117,6 +4125,7 @@ def peptidoforms(
     include_unmodified: bool = True,
     include_labile: bool = False,
     expand_rules: bool = False,
+    strip: bool = False,
 ) -> Iterator[ProForma]:
     """
     Generate the combinatorial cross-product of modifications for ``peptide``, given by
@@ -4155,6 +4164,9 @@ def peptidoforms(
         For all variable modifications, allow any number of copies of the modification to be included in the result.
         This mirrors the expected behavior of many search engines' variable modification rules, though it is not strictly
         how ProForma's rules work. This forces :attr:`include_unmodified` to be :const:`True`.
+    strip : :class:`bool`
+        If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
+        leaving only the bare modification definition.
 
     Yields
     ------
@@ -4222,7 +4234,7 @@ def peptidoforms(
             for rule in map(_coerce_string_to_modification, variable_modifications):
                 if expand_rules:
                     parsed_rule = GeneratorModificationRuleDirective.from_unlocalized_rule(
-                        rule
+                        rule, strip=strip
                     )
                     extra_rules.extend([rule] * len(parsed_rule.find_positions(template) * parsed_rule.limit))
                 else:
@@ -4241,8 +4253,8 @@ def peptidoforms(
                     seen.add(target)
                     tag = tag | target
                 if expand_rules:
-                    rule = GeneratorModificationRuleDirective.from_unlocalized_rule(tag)
-                    n = len(rule.find_positions(peptide))
+                    rule = GeneratorModificationRuleDirective.from_unlocalized_rule(tag, strip=strip)
+                    n = len(rule.find_positions(peptide)) * rule.limit
                     extra_rules.extend([tag] * n)
                 else:
                     extra_rules.append(tag)
@@ -4273,6 +4285,7 @@ def peptidoforms(
     return template.proteoforms(
         include_unmodified=include_unmodified,
         include_labile=include_labile,
+        strip=strip,
     )
 
 
@@ -4297,16 +4310,20 @@ class ProteoformCombinator:
         in the input. See :attr:`expand_rules`.
     include_labile : :class:`bool`
         For all labile modifications, include the case where the modification is localized at every possible location.
+    strip : :class:`bool`
+        If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
+        leaving only the bare modification definition.
     """
     template: ProForma
     include_unmodified: bool
     include_labile: bool
     variable_rules: List[GeneratorModificationRuleDirective]
 
-    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False):
+    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False, strip: bool=False):
         self.template = base_proteoform.copy()
         self.include_unmodified = include_unmodified
         self.include_labile = include_labile
+        self.strip = strip
         self.variable_rules = []
         self._extract_rules()
         self._apply_fixed_modifications()
@@ -4343,7 +4360,7 @@ class ProteoformCombinator:
 
         remains = []
         for rule in self.template.unlocalized_modifications:
-            rule_ = GeneratorModificationRuleDirective.from_unlocalized_rule(rule)
+            rule_ = GeneratorModificationRuleDirective.from_unlocalized_rule(rule, strip=self.strip)
             if rule_:
                 rules.append(rule_)
             else:
@@ -4355,7 +4372,7 @@ class ProteoformCombinator:
                 tmp = []
                 for tag in tags:
                     if tag.group_id and tag.is_modification():
-                        rule_ = GeneratorModificationRuleDirective.from_tagged_modification(tag)
+                        rule_ = GeneratorModificationRuleDirective.from_tagged_modification(tag, strip=self.strip)
                         if rule_:
                             rules.append(rule_)
                         tmp.append(PositionLabelTag(group_id=tag.group_id))
@@ -4366,7 +4383,7 @@ class ProteoformCombinator:
         if self.include_labile:
             remains = []
             for rule in self.template.labile_modifications:
-                rule_ = GeneratorModificationRuleDirective.from_labile_rule(rule)
+                rule_ = GeneratorModificationRuleDirective.from_labile_rule(rule, strip=self.strip)
                 if rule_:
                     rules.append(rule_)
                 else:
