@@ -16,6 +16,20 @@ jobs:
   build:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.event.pull_request.base.repo.full_name
     runs-on: 'ubuntu-latest'
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: pyteomics_test
+        options: >-
+          --health-cmd "pg_isready -U postgres -d pyteomics_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
     strategy:
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
@@ -34,6 +48,11 @@ jobs:
         pip install numpy
         pip install -r test-requirements.txt
         pip install .
+    - name: Run live PostgreSQL Unimod test
+      env:
+        PYTEOMICS_TEST_POSTGRES_URL: postgresql+psycopg://postgres:postgres@localhost:5432/pyteomics_test
+      run: |
+        cd tests; python -m unittest test_unimod.UnimodCompatibilityTests.test_live_postgresql_loader
     - name: Run the tests
       run: |
         cd tests; find . -name 'test_*.py' -print0 | xargs -0 -n1 python

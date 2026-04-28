@@ -5,6 +5,7 @@ export MODE="single"
 export NODEPS=0
 export PREFIX="test_pyteomics_"
 export CLEAN=0
+export PYTEOMICS_TEST_POSTGRES_URL="${PYTEOMICS_TEST_POSTGRES_URL:-}"
 JOBLOG="parallel.log"
 consequtive=("unimod")
 declare -A exitcodes
@@ -38,6 +39,47 @@ deps() {
     eval "${ROOT}/versions/${PREFIX}${1}/bin/pip" install -U -r ../test-requirements.txt
 }
 
+detect_postgres() {
+    local probe_py
+    probe_py="${ROOT}/versions/${PREFIX}$(head -n1 python-versions.txt)/bin/python"
+
+    if [[ -z "$PYTEOMICS_TEST_POSTGRES_URL" ]] && command -v psql >/dev/null 2>&1; then
+        if psql -d postgres -c 'select 1' >/dev/null 2>&1; then
+            export PYTEOMICS_TEST_POSTGRES_URL="postgresql+psycopg:///postgres"
+            echo "Detected local PostgreSQL via psql; enabling live Unimod PostgreSQL test."
+        fi
+    fi
+
+    if [[ -z "$PYTEOMICS_TEST_POSTGRES_URL" ]]; then
+        echo "PYTEOMICS_TEST_POSTGRES_URL is not set; live PostgreSQL Unimod test will be skipped."
+        return 0
+    fi
+
+    if [[ ! -x "$probe_py" ]]; then
+        echo "Could not find probe interpreter: $probe_py"
+        return 0
+    fi
+
+    if ! "$probe_py" - "$PYTEOMICS_TEST_POSTGRES_URL" <<'PY'
+import sys
+from sqlalchemy import create_engine, text
+
+url = sys.argv[1]
+engine = create_engine(url)
+try:
+    with engine.connect() as conn:
+        conn.execute(text('SELECT 1'))
+finally:
+    engine.dispose()
+PY
+    then
+        echo "Could not connect to PYTEOMICS_TEST_POSTGRES_URL; disabling live PostgreSQL test."
+        unset PYTEOMICS_TEST_POSTGRES_URL
+    else
+        echo "Live PostgreSQL Unimod test enabled via PYTEOMICS_TEST_POSTGRES_URL=$PYTEOMICS_TEST_POSTGRES_URL"
+    fi
+}
+
 run() {
     if [ -f "$2" ]; then
         fname="$2"
@@ -50,7 +92,7 @@ run() {
     eval "${ROOT}/versions/${PREFIX}${1}/bin/python" "$fname"
 }
 
-export -f create deps run
+export -f create deps detect_postgres run
 
 echo "Checking installed Python versions..."
 parallel pyenv install -s < python-versions.txt
@@ -70,6 +112,8 @@ if [[ $NODEPS == 0 ]] ; then
         eval "${ROOT}/versions/${PREFIX}${pv}/bin/pip" install -U ..
     done < python-versions.txt
 fi
+
+detect_postgres
 
 if [[ $MODE == "all" ]] ; then
     files=$(find . -name 'test_*.py' -print)

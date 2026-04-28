@@ -211,7 +211,7 @@ class AlternativeName(Base):
         return inst
 
     id = Column(Integer, primary_key=True)
-    alt_name = Column(Unicode(256), index=True)
+    alt_name = Column(UnicodeText, index=True)
     modification_id = Column(Integer, ForeignKey('Modification.id'), index=True)
 
 
@@ -300,7 +300,7 @@ class Brick(Base, HasFullNameMixin):
 
     id = Column(Integer, primary_key=True)
     brick = Column(Unicode(64), index=True, unique=True)
-    full_name = Column(Unicode(128), index=True)
+    full_name = Column(UnicodeText, index=True)
 
     elements = relationship('BrickToElement')
 
@@ -451,7 +451,7 @@ class Element(Base, HasFullNameMixin):
     id = Column(Integer, primary_key=True)
     average_mass = Column(Numeric(12, 6, asdecimal=False))
     monoisotopic_mass = Column(Numeric(12, 6, asdecimal=False))
-    full_name = Column(Unicode(64), index=True)
+    full_name = Column(UnicodeText, index=True)
     element = Column(Unicode(16), index=True, unique=True)
 
 
@@ -462,13 +462,13 @@ class Modification(Base, HasFullNameMixin):
     _tag_name = 'modifications_row'
 
     id = Column(Integer, primary_key=True)
-    username_of_poster = Column(Unicode(128))
+    username_of_poster = Column(UnicodeText)
     average_mass = Column(Numeric(12, 6, asdecimal=False), index=True)
-    ex_code_name = Column(Unicode(64), index=True)
+    ex_code_name = Column(UnicodeText, index=True)
     monoisotopic_mass = Column(Numeric(12, 6, asdecimal=False), index=True)
-    full_name = Column(Unicode(128), index=True)
-    code_name = Column(Unicode(128), index=True)
-    _composition = Column(Unicode(128), index=True)
+    full_name = Column(UnicodeText, index=True)
+    code_name = Column(UnicodeText, index=True)
+    _composition = Column(UnicodeText, index=True)
     approved = Column(Boolean, index=True)
 
     notes = relationship('MiscNotesModifications')
@@ -567,7 +567,7 @@ class NeutralLoss(Base):
         return inst
 
     id = Column(Integer, primary_key=True)
-    brick_string = Column(Unicode(64), index=True)
+    brick_string = Column(UnicodeText, index=True)
     specificity_id = Column(Integer, ForeignKey(Specificity.id), index=True)
     count = Column(Integer)
 
@@ -598,7 +598,7 @@ class SpecificityToNeutralLoss(Base):
     specificity = relationship(Specificity, uselist=False, back_populates='neutral_losses')
     monoisotopic_mass = Column(Numeric(12, 6, asdecimal=False), index=True)
     average_mass = Column(Numeric(12, 6, asdecimal=False), index=True)
-    _composition = Column(Unicode(128))
+    _composition = Column(UnicodeText)
     is_slave = Column(Boolean, index=True)
     is_peptide_neutral_loss = Column(Boolean, index=True)
     is_required_peptide_neutral_loss = Column(Boolean, index=True)
@@ -628,7 +628,7 @@ class Crossreference(Base):
     id = Column(Integer, primary_key=True)
     source_id = Column(Integer, ForeignKey(CrossreferenceSource.id), index=True)
     source = relationship(CrossreferenceSource, uselist=False)
-    url = Column(Unicode(128))
+    url = Column(UnicodeText)
     modification_id = Column(Integer, ForeignKey(Modification.id), index=True)
     text = Column(UnicodeText)
 
