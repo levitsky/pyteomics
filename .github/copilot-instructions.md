@@ -16,6 +16,7 @@ The project follows a standard Python package layout:
 - **Analysis modules**: `achrom.py` (chromatography), `electrochem.py` (electrochemistry), `pylab_aux.py` (plotting utilities)
 
 ### Tests (`tests/`)
+- Testing framework: `unittest` with individual test files for each module. Tests should be run from the `tests/` directory to ensure correct imports.
 - Test files: `test_*.py` for each module with corresponding test data files (`test.mzML`, `test.pepxml`, etc.)
 - Controlled vocabularies: OBO files for CV validation (`psi-ms.obo`, `PSI-MOD.obo`)
 - Test databases: `unimod.db` and `unimod.xml.gz` for UniMod testing
