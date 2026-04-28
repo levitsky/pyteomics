@@ -26,6 +26,7 @@ This module requires :py:mod:`lxml` and :py:mod:`sqlalchemy`.
 #   limitations under the License.
 
 import re
+import warnings
 from urllib.request import urlopen
 
 from lxml import etree
@@ -660,11 +661,43 @@ def load(doc_path, output_path='sqlite://'):
     engine = create_engine(output_path)
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine, autoflush=False)()
+    skipped_rows = 0
+    skip_stats = {}
+    skip_examples = []
+
     for model in _iter_models_in_dependency_order():
         if hasattr(model, '_tag_name') and hasattr(model, 'from_tag'):
             for tag in tree.iterfind('.//' + model._tag_name):
-                session.add(model.from_tag(tag))
+                try:
+                    row = model.from_tag(tag)
+                    # Isolate each insert in a savepoint so one bad row does not
+                    # abort loading for the rest of the dataset.
+                    with session.begin_nested():
+                        session.add(row)
+                        session.flush()
+                except Exception as err:
+                    skipped_rows += 1
+                    key = (model.__name__, err.__class__.__name__)
+                    skip_stats[key] = skip_stats.get(key, 0) + 1
+                    if len(skip_examples) < 5:
+                        skip_examples.append(
+                            '{}(record_id={}): {}'.format(
+                                model.__name__, tag.attrib.get('record_id', '?'), err.__class__.__name__))
+                    continue
     session.commit()
+    if skipped_rows:
+        details = ', '.join(
+            '{}:{}={}'.format(model_name, error_name, count)
+            for (model_name, error_name), count in sorted(skip_stats.items()))
+        message = (
+            'Skipped {} row(s) while loading Unimod into {}. '
+            'This indicates row-level data or constraint issues. '
+            'Summary [{}]. Examples [{}].'.format(
+                skipped_rows,
+                output_path,
+                details,
+                '; '.join(skip_examples)))
+        warnings.warn(message, RuntimeWarning)
     return session
 
 

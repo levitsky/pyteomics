@@ -1,12 +1,12 @@
 import unittest
 import tempfile
 import os
+import warnings
 from os import path
 from sqlalchemy import event
 from sqlalchemy import create_engine
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.schema import CreateTable
-from sqlalchemy.orm import sessionmaker as _sessionmaker
 import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics.mass import unimod
@@ -14,27 +14,30 @@ from pyteomics.mass import unimod
 # Shared handle and engine loaded exactly once for the whole module so that
 # neither UnimodTests nor the live Postgres test trigger extra downloads.
 _UNIMOD_HANDLE = None
-_UNIMOD_SQLITE_ENGINE = None
+_UNIMOD_XML_PATH = None
 
 
 def setUpModule():
-    """Download and load Unimod into an in-memory SQLite DB exactly once."""
-    global _UNIMOD_HANDLE, _UNIMOD_SQLITE_ENGINE
-    # Intercept create_engine so we can keep the SQLite engine reference
-    # independently of the SQLAlchemy version (session.bind is deprecated in 2.x).
-    _orig_ce = unimod.create_engine
+    """Download Unimod XML once and load Unimod from that local copy."""
+    global _UNIMOD_HANDLE, _UNIMOD_XML_PATH
+    with tempfile.NamedTemporaryFile('wb', suffix='.xml', delete=False) as fh:
+        with unimod.urlopen(unimod._unimod_xml_download_url) as stream:
+            fh.write(stream.read())
+        _UNIMOD_XML_PATH = fh.name
 
-    def _capturing_ce(*args, **kwargs):
-        global _UNIMOD_SQLITE_ENGINE
-        eng = _orig_ce(*args, **kwargs)
-        _UNIMOD_SQLITE_ENGINE = eng
-        return eng
-
-    unimod.create_engine = _capturing_ce
+    old_url = unimod._unimod_xml_download_url
+    unimod._unimod_xml_download_url = _UNIMOD_XML_PATH
     try:
         _UNIMOD_HANDLE = unimod.Unimod()
     finally:
-        unimod.create_engine = _orig_ce
+        unimod._unimod_xml_download_url = old_url
+
+
+def tearDownModule():
+    global _UNIMOD_XML_PATH
+    if _UNIMOD_XML_PATH is not None and path.exists(_UNIMOD_XML_PATH):
+        os.remove(_UNIMOD_XML_PATH)
+        _UNIMOD_XML_PATH = None
 
 
 class UnimodTests(unittest.TestCase):
@@ -163,6 +166,54 @@ class UnimodCompatibilityTests(unittest.TestCase):
         sql = str(CreateTable(unimod.Specificity.__table__).compile(dialect=postgresql.dialect()))
         self.assertIn('"group"', sql)
 
+    def test_loader_skips_row_errors_and_warns(self):
+        xml_path = None
+        db_path = None
+        db_url = None
+        old_create_engine = unimod.create_engine
+        try:
+            with tempfile.NamedTemporaryFile('w', suffix='.xml', delete=False) as fh:
+                fh.write('''<?xml version="1.0" encoding="UTF-8"?>
+<unimod>
+  <elements_row record_id="1" avge_mass="1.0079" mono_mass="1.0078" full_name="Hydrogen" element="H"/>
+  <bricks_row record_id="1" brick="H" full_name="Hydrogen"/>
+  <brick2element_row record_id="1" brick_key="1" num_element="1" element="H"/>
+  <brick2element_row record_id="2" brick_key="999" num_element="1" element="H"/>
+</unimod>
+''')
+                xml_path = fh.name
+            db_path = xml_path + '.db'
+            db_url = 'sqlite:///' + db_path
+
+            def _create_engine_with_fk(*args, **kwargs):
+                engine = old_create_engine(*args, **kwargs)
+                if engine.dialect.name == 'sqlite':
+                    @event.listens_for(engine, 'connect')
+                    def _enable_fk_constraints(dbapi_conn, _):
+                        cursor = dbapi_conn.cursor()
+                        cursor.execute('PRAGMA foreign_keys=ON')
+                        cursor.close()
+                return engine
+
+            unimod.create_engine = _create_engine_with_fk
+
+            with warnings.catch_warnings(record=True) as caught:
+                warnings.simplefilter('always')
+                handle = unimod.load(xml_path, db_url)
+                self.assertEqual(handle.query(unimod.BrickToElement).count(), 1)
+                handle.close()
+
+            warning_texts = [str(w.message) for w in caught]
+            self.assertTrue(any('Skipped' in text for text in warning_texts))
+        finally:
+            unimod.create_engine = old_create_engine
+            if xml_path is not None and path.exists(xml_path):
+                import os
+                os.remove(xml_path)
+            if db_path is not None and path.exists(db_path):
+                import os
+                os.remove(db_path)
+
     @unittest.skipUnless(
         os.environ.get('PYTEOMICS_TEST_POSTGRES_URL'),
         'Set PYTEOMICS_TEST_POSTGRES_URL to run live PostgreSQL integration tests.',
@@ -170,42 +221,22 @@ class UnimodCompatibilityTests(unittest.TestCase):
     def test_live_postgresql_loader(self):
         """Load full Unimod into PostgreSQL and verify data integrity.
 
-        Data is copied from the already-loaded in-memory SQLite DB (populated
-        once in setUpModule) so no additional network access is needed.
+        Data is loaded from the shared XML file downloaded once in setUpModule,
+        so no additional network access is needed.
         """
         pg_url = os.environ['PYTEOMICS_TEST_POSTGRES_URL']
         pg_engine = create_engine(pg_url)
         pg_session = None
         try:
             unimod.Base.metadata.drop_all(pg_engine)
-            unimod.Base.metadata.create_all(pg_engine)
 
-            # Bulk-copy every table from in-memory SQLite to Postgres using
-            # Core so no second download is triggered.  Each table gets its own
-            # transaction so that a FK violation in the legacy NeutralLoss table
-            # (which contains orphaned rows that SQLite silently accepts) cannot
-            # roll back already-committed tables like Modification.
-            with _UNIMOD_SQLITE_ENGINE.connect() as src:
-                for table in unimod.Base.metadata.sorted_tables:
-                    rows = src.execute(table.select()).mappings().all()
-                    if not rows:
-                        continue
-                    try:
-                        with pg_engine.begin() as dst:
-                            dst.execute(table.insert(), [dict(r) for r in rows])
-                    except Exception:
-                        pass  # skip tables with orphaned FK refs (e.g. NeutralLoss)
-
-            pg_session = _sessionmaker(bind=pg_engine)()
+            with warnings.catch_warnings(record=True):
+                warnings.simplefilter('always')
+                pg_session = unimod.load(_UNIMOD_XML_PATH, pg_url)
 
             self.assertEqual(pg_engine.dialect.name, 'postgresql')
             self.assertGreater(pg_session.query(unimod.Modification).count(), 1000)
 
-            # In current Unimod the full_name is 'Oxidation or Hydroxylation';
-            # the familiar 'Oxidation' label lives in code_name.
-            # In current Unimod: full_name='Oxidation or Hydroxylation',
-            # code_name='Hydroxylation', ex_code_name='Oxidation'.
-            # The familiar label 'Oxidation' lives in ex_code_name.
             oxidation = pg_session.query(unimod.Modification).filter(
                 unimod.Modification.ex_code_name == 'Oxidation').one()
             self.assertAlmostEqual(
@@ -218,6 +249,8 @@ class UnimodCompatibilityTests(unittest.TestCase):
         finally:
             if pg_session is not None:
                 pg_session.close()
+                if pg_session.bind is not None:
+                    pg_session.bind.dispose()
             try:
                 unimod.Base.metadata.drop_all(pg_engine)
             finally:
