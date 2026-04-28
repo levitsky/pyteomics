@@ -18,11 +18,13 @@ _UNIMOD_XML_PATH = None
 
 
 def setUpModule():
-    """Download Unimod XML once and load Unimod from that local copy."""
+    """Decompress the bundled Unimod fixture and load Unimod from it."""
     global _UNIMOD_HANDLE, _UNIMOD_XML_PATH
+    import gzip
+    fixture = path.join(path.dirname(path.abspath(__file__)), 'unimod_tables.xml.gz')
     with tempfile.NamedTemporaryFile('wb', suffix='.xml', delete=False) as fh:
-        with unimod.urlopen(unimod._unimod_xml_download_url) as stream:
-            fh.write(stream.read())
+        with gzip.open(fixture, 'rb') as gz:
+            fh.write(gz.read())
         _UNIMOD_XML_PATH = fh.name
 
     old_url = unimod._unimod_xml_download_url
