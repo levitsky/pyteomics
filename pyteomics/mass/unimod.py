@@ -243,7 +243,7 @@ class AminoAcid(Base, HasFullNameMixin):
     num_N = Column(Integer)
     num_S = Column(Integer)
     full_name = Column(Unicode(25), index=True)
-    one_letter = Column(Unicode(10), index=True)
+    one_letter = Column(Unicode(10), index=True, unique=True)
     three_letter = Column(Unicode(10), index=True)
 
 
@@ -299,7 +299,7 @@ class Brick(Base, HasFullNameMixin):
         return inst
 
     id = Column(Integer, primary_key=True)
-    brick = Column(Unicode(64), index=True)
+    brick = Column(Unicode(64), index=True, unique=True)
     full_name = Column(Unicode(128), index=True)
 
     elements = relationship('BrickToElement')
@@ -452,7 +452,7 @@ class Element(Base, HasFullNameMixin):
     average_mass = Column(Numeric(12, 6, asdecimal=False))
     monoisotopic_mass = Column(Numeric(12, 6, asdecimal=False))
     full_name = Column(Unicode(64), index=True)
-    element = Column(Unicode(16), index=True)
+    element = Column(Unicode(16), index=True, unique=True)
 
 
 @has_composition('_composition')
@@ -660,12 +660,37 @@ def load(doc_path, output_path='sqlite://'):
     engine = create_engine(output_path)
     Base.metadata.create_all(engine)
     session = sessionmaker(bind=engine, autoflush=False)()
-    for model in model_registry:
+    for model in _iter_models_in_dependency_order():
         if hasattr(model, '_tag_name') and hasattr(model, 'from_tag'):
             for tag in tree.iterfind('.//' + model._tag_name):
                 session.add(model.from_tag(tag))
-        session.commit()
+    session.commit()
     return session
+
+
+def _iter_models_in_dependency_order():
+    """Yield model classes ordered by table dependencies.
+
+    This avoids backend-specific foreign key constraint failures when loading
+    data into strict relational databases like PostgreSQL.
+    """
+    table_to_models = {}
+    for model in model_registry:
+        table = getattr(model, '__table__', None)
+        if table is not None:
+            table_to_models.setdefault(table.key, []).append(model)
+
+    yielded = set()
+    for table in Base.metadata.sorted_tables:
+        models = table_to_models.get(table.key, ())
+        for model in sorted(models, key=lambda inst: inst.__name__):
+            yielded.add(model)
+            yield model
+
+    # Include any models that are not attached to metadata ordering.
+    for model in sorted(model_registry, key=lambda inst: inst.__name__):
+        if model not in yielded and hasattr(model, '_tag_name') and hasattr(model, 'from_tag'):
+            yield model
 
 
 def session(path='sqlite:///unimod.db'):
