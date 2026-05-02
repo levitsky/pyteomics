@@ -14,7 +14,7 @@ import itertools
 import re
 import warnings
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple
-from collections import deque, namedtuple
+from collections import Counter, deque, namedtuple, defaultdict
 from functools import partial
 from itertools import chain
 from array import array as _array
@@ -262,6 +262,20 @@ class TagBase(object):
     def has_composition(self) -> bool:
         return False
 
+    def __or__(self, other):
+        this = self.copy()
+        this.extra.append(other.copy())
+        return this
+
+    @property
+    def limit(self) -> int:
+        limit_tags = self.find_tag_type(TagTypeEnum.limit)
+        if limit_tags:
+            if len(limit_tags) > 1:
+                warnings.warn(f"{len(limit_tags)} Limit tags were found for {self}, this is undefined behavior. Only the first tag will be used")
+            return limit_tags[0].value
+        return 1
+
 
 class GroupLabelBase(TagBase):
     __slots__ = ()
@@ -274,6 +288,9 @@ class GroupLabelBase(TagBase):
         else:
             label = part
         return '%s' % label
+
+    def __hash__(self):
+        return hash(str(self))
 
 
 class PositionLabelTag(GroupLabelBase):
@@ -328,6 +345,12 @@ class PositionModifierTag(TagBase):
 
     def __init__(self, value, extra=None, group_id=None):
         super().__init__(TagTypeEnum.position_modifier, value, extra, group_id)
+
+    def __eq__(self, other):
+        return super().__eq__(other)
+
+    def __hash__(self):
+        return hash(self.value)
 
     def _format_main(self):
         return f"{self.prefix_name}:{self.value}"
@@ -1154,16 +1177,38 @@ class GlycanModification(ModificationBase):
     _tag_type = TagTypeEnum.glycan
 
     valid_monosaccharides = {
-        "Hex": monosaccharide_description(162.0528, Composition("C6H10O5"), 'Hex'),
-        "HexNAc": monosaccharide_description(203.0793, Composition("C8H13N1O5"), 'HexNAc'),
-        "HexS": monosaccharide_description(242.009, Composition("C6H10O8S1"), 'HexS'),
-        "HexP": monosaccharide_description(242.0191, Composition("C6H11O8P1"), 'HexP'),
-        "HexNAcS": monosaccharide_description(283.0361, Composition("C8H13N1O8S1"), 'HexNAcS'),
-        "dHex": monosaccharide_description(146.0579, Composition("C6H10O4"), 'dHex'),
-        "NeuAc": monosaccharide_description(291.0954, Composition("C11H17N1O8"), 'NeuAc'),
-        "NeuGc": monosaccharide_description(307.0903, Composition("C11H17N1O9"), 'NeuGc'),
-        "Pen": monosaccharide_description(132.0422, Composition("C5H8O4"), 'Pen'),
-        "Fuc": monosaccharide_description(146.0579, Composition("C6H10O4"), 'Fuc')
+        "Hex": monosaccharide_description(162.0528, Composition("C6H10O5"), "Hex"),
+        "HexNAc": monosaccharide_description(
+            203.0793, Composition("C8H13N1O5"), "HexNAc"
+        ),
+        "HexS": monosaccharide_description(242.009, Composition("C6H10O8S1"), "HexS"),
+        "HexP": monosaccharide_description(242.0191, Composition("C6H11O8P1"), "HexP"),
+        "HexNAcS": monosaccharide_description(
+            283.0361, Composition("C8H13N1O8S1"), "HexNAcS"
+        ),
+        "dHex": monosaccharide_description(146.0579, Composition("C6H10O4"), "dHex"),
+        "NeuAc": monosaccharide_description(
+            291.0954, Composition("C11H17N1O8"), "NeuAc"
+        ),
+        "NeuGc": monosaccharide_description(
+            307.0903, Composition("C11H17N1O9"), "NeuGc"
+        ),
+        "Pen": monosaccharide_description(132.0422, Composition("C5H8O4"), "Pen"),
+        "Fuc": monosaccharide_description(146.0579, Composition("C6H10O4"), "Fuc"),
+        "Kdn": monosaccharide_description(
+            250.06886740546, Composition({"C": 9, "H": 14, "O": 8}), "Kdn"
+        ),
+        "Kdo": monosaccharide_description(
+            220.05830272176, Composition({"C": 8, "H": 12, "O": 7}), "Kdo"
+        ),
+        "Phospho": monosaccharide_description(
+            79.96633052075, Composition({"P": 1, "O": 3, "H": 1}), "Phospho"
+        ),
+        "Sulfo": monosaccharide_description(
+            79.95681485867999,
+            Composition({"S": 1, "O": 3, "H": 0}),
+            "Sulfo"
+        ),
     }
 
     valid_monosaccharides['Neu5Ac'] = valid_monosaccharides['NeuAc']
@@ -1173,7 +1218,18 @@ class GlycanModification(ModificationBase):
 
     monomer_tokenizer = re.compile(
         r"|".join(sorted(valid_monosaccharides.keys(), key=len, reverse=True)))
-    tokenizer = re.compile(r"(%s|[A-Za-z]+)\s*(\d*)\s*" % monomer_tokenizer.pattern)
+    tokenizer = re.compile(
+        r"""(?:
+        (?P<known_name>%s)|
+        (?P<base_name>[A-Za-z]+)|
+        (?P<charged_formula>\{
+                [^\}]+?
+        \})
+        )
+        \s*(?P<count>\d*)\s*"""
+        % monomer_tokenizer.pattern,
+        re.X,
+    )
 
     @property
     def monosaccharides(self):
@@ -1181,38 +1237,72 @@ class GlycanModification(ModificationBase):
 
     def resolve(self):
         composite = BasicComposition()
-        for tok, cnt in self.tokenizer.findall(self.value):
+        mass = 0
+        chemcomp = Composition()
+        charge = 0
+        for hit in self.tokenizer.finditer(self.value):
+            hit = hit.groupdict()
+            cnt = hit['count']
+
+            tok = hit.get('known_name')
+            base_name = hit.get('base_name')
+            formula = hit.get('charged_formula')
+
             if cnt:
                 cnt = int(cnt)
             else:
                 cnt = 1
-            if tok not in self.valid_monosaccharides:
-                parts = self.monomer_tokenizer.findall(tok)
+            if tok is not None:
+                if tok not in self.valid_monosaccharides:
+                    parts = self.monomer_tokenizer.findall(tok)
+                    t = 0
+                    for p in parts:
+                        if p not in self.valid_monosaccharides:
+                            break
+                        t += len(p)
+                    if t != len(tok):
+                        raise ValueError("{tok!r} is not a valid monosaccharide name".format(tok=tok))
+                    else:
+                        for p in parts:
+                            if p not in self.valid_monosaccharides:
+                                raise UnknownMonosaccharideError(p)
+                            m, c, sym = self.valid_monosaccharides[p]
+                            mass += m * cnt
+                            chemcomp += c * cnt
+                            composite[sym] += cnt
+                else:
+                    m, c, sym = self.valid_monosaccharides[tok]
+                    mass += m * cnt
+                    chemcomp += c * cnt
+                    composite[sym] += cnt
+            elif formula is not None:
+                inner = FormulaModification(formula[1:-1]).resolve()
+                mass += inner['mass'] * cnt
+                chemcomp += inner['composition'] * cnt
+                composite[formula] += cnt
+                charge += inner['charge'] * cnt
+            elif base_name is not None:
+                parts = self.monomer_tokenizer.findall(base_name)
                 t = 0
                 for p in parts:
                     if p not in self.valid_monosaccharides:
                         break
                     t += len(p)
-                if t != len(tok):
-                    raise ValueError("{tok!r} is not a valid monosaccharide name".format(tok=tok))
+                if t != len(base_name):
+                    raise ValueError(
+                        f"{base_name!r} is not a valid monosaccharide name"
+                    )
                 else:
-                    for p in parts[:-1]:
-                        sym = self.valid_monosaccharides[p].symbol
-                        composite[sym] += 1
-                    sym = self.valid_monosaccharides[parts[-1]].symbol
-                    composite[sym] += cnt
+                    for p in parts:
+                        if p not in self.valid_monosaccharides:
+                            raise UnknownMonosaccharideError(p)
+                        m, c, sym = self.valid_monosaccharides[p]
+                        mass += m * cnt
+                        chemcomp += c * cnt
+                        composite[sym] += cnt
             else:
-                sym = self.valid_monosaccharides[tok].symbol
-                composite[sym] += cnt
-        mass = 0
-        chemcomp = Composition()
-        for key, cnt in composite.items():
-            try:
-                m, c, sym = self.valid_monosaccharides[key]
-            except KeyError:
-                raise UnknownMonosaccharideError(key)
-            mass += m * cnt
-            chemcomp += c * cnt
+                raise NotImplementedError(f"I do not know how to decode the impossible, {hit}")
+
         return {
             "mass": mass,
             "composition": chemcomp,
@@ -1614,6 +1704,43 @@ class ModificationTarget(object):
             return False
         return self.aa.upper() == aa.upper() or self.aa is None
 
+    @classmethod
+    def from_str(cls, target: str):
+        target_lower = target.lower()
+        if target in VALID_AA:
+            return cls(target, False, False)
+        elif target_lower in ("n-term", "c-term"):
+            n_term = target_lower == "n-term"
+            c_term = target_lower == "c-term"
+            return cls(None, n_term, c_term)
+        elif target_lower.startswith(("n-term:", "c-term:")):
+            tokens = target.split(":")
+            if len(tokens) == 2:
+                if tokens[1] in VALID_AA:
+                    t = tokens[0].lower()
+                    n_term = t == "n-term"
+                    c_term = t == "c-term"
+                    return cls(tokens[1], n_term, c_term)
+                else:
+                    raise PyteomicsError(
+                        "Modification target has an invalid amino acid specific terminal target {1} in {0}".format(
+                            target,
+                            tokens[1]
+                        )
+                    )
+            else:
+                raise PyteomicsError(
+                    "Modification rule target {0} has an empty amino acid specific terminal target".format(
+                        target
+                    )
+                )
+        else:
+            raise PyteomicsError(
+                "Modification rule target {0} is invalid".format(
+                    target
+                )
+            )
+
 
 class ModificationRule(object):
     '''Define a fixed modification rule which dictates a modification tag is
@@ -1631,9 +1758,9 @@ class ModificationRule(object):
     modification_tag: TagBase
     targets: List[ModificationTarget]
 
-    def __init__(self, modification_tag: TagBase, targets: Union[ModificationTarget, List[ModificationTarget], None]=None):
+    def __init__(self, modification_tag: TagBase, targets: Union[ModificationTarget, List[ModificationTarget], List[str], None]=None):
         self.modification_tag = modification_tag
-        self.targets = targets
+        self.targets = targets  # type: ignore
         self._validate_targets()
 
     def is_not_specific(self) -> bool:
@@ -1652,39 +1779,11 @@ class ModificationRule(object):
         for target in self.targets:
             if isinstance(target, ModificationTarget):
                 validated_targets.append(target)
-            elif target in VALID_AA:
-                validated_targets.append(ModificationTarget(target, False, False))
-            elif target in ("N-term", "C-term"):
-                n_term = target == "N-term"
-                c_term = target == "C-term"
-                validated_targets.append(ModificationTarget(None, n_term, c_term))
-            elif target.startswith(("N-term:", "C-term:")):
-                tokens = target.split(":")
-                if len(tokens) == 2:
-                    if tokens[1] in VALID_AA:
-                        n_term = tokens[0] == "N-term"
-                        c_term = tokens[0] == "C-term"
-                        validated_targets.append(ModificationTarget(tokens[1], n_term, c_term))
-                    else:
-                        raise PyteomicsError(
-                            "Modification rule {0} has an invalid amino acid specific terminal target {2} in {1}".format(
-                                self,
-                                target,
-                                tokens[1]
-                            )
-                        )
-                else:
-                    raise PyteomicsError(
-                        "Modification rule {0} has an empty amino acid specific terminal target {1}".format(
-                            self, target
-                        )
-                    )
             else:
-                raise PyteomicsError(
-                    "Modification rule {0} has an invalid target {1}".format(
-                        self, target
-                    )
-                )
+                try:
+                    validated_targets.append(ModificationTarget.from_str(target))
+                except PyteomicsError as err:
+                    raise PyteomicsError(f"While parsing {self}, encountered error {err}") from err
 
         self.targets = validated_targets
 
@@ -3746,7 +3845,7 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
-    def generate_proteoforms(self, include_unmodified: bool = False, include_labile: bool = False) -> Iterator["ProForma"]:
+    def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False, strip: bool = False) -> Iterator["ProForma"]:
         """
         Generate combinatorial localizations of modifications defined on this ProForma sequence.
 
@@ -3754,16 +3853,22 @@ class ProForma(object):
         ----------
         include_unmodified : :class:`bool`
             For all non-fixed modifications, include the case where the modification is not included anywhere. This is equivalent to
-            how variable modification rules are applied in search engines.
+            how variable modification rules are applied in search engines. It still respects the number of copies of modifications included
+            in the input. See ``expand_rules``.
         include_labile : :class:`bool`
             For all labile modifications, include the case where the modification is localized at every possible location or as
             a remaining labile modification.
+        strip : :class:`bool`
+            If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
+            leaving only the bare modification definition.
 
         Yields
         ------
         :class:`ProForma`
         """
-        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile))
+        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile, strip=strip))
+
+    peptidoforms = proteoforms
 
     def copy(self) -> "ProForma":
         sequence = []
@@ -3874,17 +3979,42 @@ class GeneratorModificationRuleDirective:
     colocal_unknown: bool = False
     limit: int = 1
     labile: bool = False
+    token: Optional[ModificationToken] = None
+    strip: bool = False
 
-    def __init__(self, rule, region=None, colocal_known: bool = False, colocal_unknown: bool = False, limit: int = 1, labile: bool = False):
+    def __eq__(self, other):
+        if other is None:
+            return False
+        return (
+            self.rule == other.rule and
+            self.region == other.region and
+            self.colocal_known == other.colocal_known and
+            self.colocal_unknown == other.colocal_unknown and
+            self.limit == other.limit and
+            self.labile == other.labile
+        )
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __hash__(self):
+        return hash(self.token)
+
+    def __init__(self, rule, region=None, colocal_known: bool = False, colocal_unknown: bool = False, limit: int = 1, labile: bool = False, strip: bool = False):
         self.rule = rule
         self.region = region
         self.colocal_known = colocal_known
         self.colocal_unknown = colocal_unknown
         self.limit = limit
         self.labile = labile
+        self.strip = strip
+        self.token = getattr(self.rule.modification_tag, "key", None)
 
     def create(self) -> TagBase:
-        return self.rule.modification_tag.copy()
+        tag = self.rule.modification_tag.copy()
+        if self.strip:
+            tag.extra.clear()
+        return tag
 
     def __repr__(self):
         return f"{self.__class__.__name__}({self.rule}, {self.region}, {self.colocal_known}, {self.colocal_unknown})"
@@ -3923,7 +4053,7 @@ class GeneratorModificationRuleDirective:
         return positions
 
     @classmethod
-    def from_tagged_modification(cls, tag: TagBase) -> "GeneratorModificationRuleDirective":
+    def from_tagged_modification(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
         mod = tag.find_modification()
         if not mod:
             return
@@ -3932,24 +4062,22 @@ class GeneratorModificationRuleDirective:
         rule = ModificationRule(tag, [])
         colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
-        limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
-        return cls(rule, None, colocal_known, colocal_unknown, limit)
+        return cls(rule, None, colocal_known, colocal_unknown, tag.limit, strip=strip)
 
     @classmethod
-    def from_unlocalized_rule(cls, tag: TagBase) -> "GeneratorModificationRuleDirective":
+    def from_unlocalized_rule(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
         mod = tag.find_modification()
         if not mod:
             return
         position_constraints = tag.find_tag_type(TagTypeEnum.position_modifier)
-        targets = [ModificationTarget(v.value) for v in position_constraints]
+        targets = [v.value for v in position_constraints]
         colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
         rule = ModificationRule(modification_tag=mod, targets=targets)
-        limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
-        return cls(rule, None, colocal_known, colocal_unknown, limit)
+        return cls(rule, None, colocal_known, colocal_unknown, tag.limit, strip=strip)
 
     @classmethod
-    def from_region_rule(cls, region: TaggedInterval) -> List['GeneratorModificationRuleDirective']:
+    def from_region_rule(cls, region: TaggedInterval, strip: bool = False) -> List['GeneratorModificationRuleDirective']:
         rules = []
         for tag in (region.tags or []):
             mod = tag.find_modification()
@@ -3960,12 +4088,11 @@ class GeneratorModificationRuleDirective:
             colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
             colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
             rule = ModificationRule(modification_tag=mod, targets=targets)
-            limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
-            rules.append(cls(rule, region, colocal_known, colocal_unknown, limit))
+            rules.append(cls(rule, region, colocal_known, colocal_unknown, tag.limit, strip=strip))
         return rules
 
     @classmethod
-    def from_labile_rule(cls, tag: TagBase) -> "GeneratorModificationRuleDirective":
+    def from_labile_rule(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
         mod = tag.find_modification()
         if not mod:
             return
@@ -3974,8 +4101,205 @@ class GeneratorModificationRuleDirective:
         colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
         colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
         rule = ModificationRule(modification_tag=mod, targets=targets)
-        limit = max([t.value for t in tag.find_tag_type(TagTypeEnum.limit)] + [1])
-        return cls(rule, None, colocal_known, colocal_unknown, limit, labile=True)
+        return cls(rule, None, colocal_known, colocal_unknown, tag.limit, labile=True, strip=strip)
+
+
+def _coerce_string_to_modification(item) -> TagBase:
+    if isinstance(item, TagBase):
+        return item.copy()
+    elif isinstance(item, str):
+        return TagParser(item)()[0]
+    else:
+        raise TypeError(f"Don't know how to coerce {item} of type {type(item)} to a modification")
+
+
+def peptidoforms(
+    peptide: Union[ProForma, str],
+    variable_modifications: Optional[
+        Union[
+            List[Union[TagBase, str]],
+            dict[Union[TagBase, str], List[Union[str, TagBase]]],
+        ]
+    ] = None,
+    fixed_modifications: Optional[
+        Union[
+            List[Union[TagBase, str]],
+            dict[Union[TagBase, str], List[Union[str, TagBase]]],
+        ]
+    ] = None,
+    include_unmodified: bool = True,
+    include_labile: bool = False,
+    expand_rules: bool = False,
+    strip: bool = False,
+) -> Iterator[ProForma]:
+    """
+    Generate the combinatorial cross-product of modifications for ``peptide``, given by
+    a set of variable and fixed modification rules, as in a classical peptide search engine.
+
+    This is similar to :func:`parser.peptidoforms`, but using :class:`ProForma` as the representation.
+    This uses ProForma 2.1's position limiting rules to give the caller greater control over how modifications
+    are applied, if desired.
+
+    Internally, this delegates to :class:`ProteoformCombinator` and would mirror the behavior of embedding all
+    of the modification rules directly in the sequence and calling :meth:`ProForma.proteoforms`.
+
+    Parameters
+    ----------
+    peptide : :class:`ProForma` or :class:`str`
+        The base peptide to modify. If a string is provided, it will be parsed with :meth:`ProForma.parse`.
+        If ``peptide`` itself encodes modification rules or unlocalized modifications of any kind, they **will**
+        also be applied.
+    variable_modifications : :class:`list` of :class:`str` or :class:`TagBase` modification rules, or a :class:`dict`
+        mapping :class:`str` or :class:`TagBase` modifications to a list of :class:`str` or :class:`TagBase` targets
+        The variable modifications that will be combined. If a list is provided, the values are assumed to either
+        be strings encoding a modification tag in ProForma notation or pre-parsed :class:`TagBase` modifications
+        with position limiting rules added with ``|`` separators. If a :class:`dict` is provided, keys are assumed
+        to be :class:`TagBase` modifications, as in the list-case, but the values of those keys are expected to be
+        :class:`TagBase` position limiters like :class:`PositionModifierTag`, or strings that will be coerced as
+        such.
+    fixed_modifications : :class:`list` of :class:`str` or :class:`TagBase` modification rules, or a :class:`dict`
+        mapping :class:`str` or :class:`TagBase` modifications to a list of :class:`str` or :class:`TagBase` targets
+        The fixed modifications that will be applied to all combinations, even the unmodified version if ``include_unmodified``
+        is specified. See ``variable_modifications`` for an explanation of type coercion.
+    include_unmodified : :class:`bool`
+        For all non-fixed modifications, include the case where the modification is not included anywhere.
+    include_labile : :class:`bool`
+        For all labile modifications, include the case where the modification is localized at every possible location.
+
+        .. note ::
+            Along with all possible localizations of the labile modifications, the output will contain peptidoform(s)
+            where it is kept as a labile modification without localization.
+
+    expand_rules : :class:`bool`
+        For all variable modifications, allow any number of copies of the modification to be included in the result.
+        This mirrors the expected behavior of many search engines' variable modification rules, though it is not strictly
+        how ProForma's rules work. This forces :attr:`include_unmodified` to be :const:`True`.
+    strip : :class:`bool`
+        If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
+        leaving only the bare modification definition.
+
+    Yields
+    ------
+    :class:`ProForma`
+
+    Examples
+    --------
+    This example shows how to use the :class:`dict`-based modification rule approach.
+
+    >>> from pyteomics import proforma
+    >>> isos = proforma.peptidoforms(
+    ... "EMEVTESPEK",
+    ... variable_modifications={"Oxidation": ['M']})
+    >>> for i in isos:
+    ...     print(i)
+    EMEVTESPEK
+    EM[Oxidation|Position:M]EVTESPEK
+
+    Using parsed objects to get the equivalent behavior, and avoids needing to re-parse the rules
+    on every invocation.
+
+    >>> from pyteomics import proforma
+    >>> pforms = proforma.peptidoforms(
+    ... ProForma.parse("EMEVTESPEK"),
+    ... variable_modifications={proforma.GenericModification("Oxidation"): [proforma.PositionModifierTag('M')]})
+    >>> for i in pforms:
+    ...     print(i)
+    EMEVTESPEK
+    EM[Oxidation|Position:M]EVTESPEK
+
+    To expand rules so that they might apply to as many positions as are available, as is often done when
+    build a combinatorial search space, use the ``expand_rules`` argument.
+    >>> from pyteomics import proforma
+    >>> isos = proforma.peptidoforms(
+    ... "EMEVTESPEK",
+    ... variable_modifications={"Oxidation": ['M'], "Phospho": ['S', 'T']}, expand_rules=True)
+    >>> for i in isos:
+    ...     print(i)
+    EM[Oxidation|Position:M]EVT[Phospho|Position:T]S[Phospho|Position:S]ES[Phospho|Position:S]PEK
+    EMEVT[Phospho|Position:T]S[Phospho|Position:S]ES[Phospho|Position:S]PEK
+    EM[Oxidation|Position:M]EVTS[Phospho|Position:S]ES[Phospho|Position:S]PEK
+    EMEVTS[Phospho|Position:S]ES[Phospho|Position:S]PEK
+    EM[Oxidation|Position:M]EVT[Phospho|Position:T]S[Phospho|Position:S]ESPEK
+    EMEVT[Phospho|Position:T]S[Phospho|Position:S]ESPEK
+    EM[Oxidation|Position:M]EVTS[Phospho|Position:S]ESPEK
+    EMEVTS[Phospho|Position:S]ESPEK
+    EM[Oxidation|Position:M]EVT[Phospho|Position:T]SES[Phospho|Position:S]PEK
+    EMEVT[Phospho|Position:T]SES[Phospho|Position:S]PEK
+    EM[Oxidation|Position:M]EVTSES[Phospho|Position:S]PEK
+    EMEVTSES[Phospho|Position:S]PEK
+    EM[Oxidation|Position:M]EVT[Phospho|Position:T]SESPEK
+    EMEVT[Phospho|Position:T]SESPEK
+    EM[Oxidation|Position:M]EVTSESPEK
+    EMEVTSESPEK
+    """
+    if isinstance(peptide, str):
+        peptide = ProForma.parse(peptide)
+    if expand_rules:
+        include_unmodified = True
+    template = peptide.copy()
+    seen = set()
+    if variable_modifications:
+        if isinstance(variable_modifications, list):
+            extra_rules = []
+            for rule in map(_coerce_string_to_modification, variable_modifications):
+                if expand_rules:
+                    parsed_rule = GeneratorModificationRuleDirective.from_unlocalized_rule(
+                        rule, strip=strip
+                    )
+                    extra_rules.extend([rule] * len(parsed_rule.find_positions(template) * parsed_rule.limit))
+                else:
+                    extra_rules.append(rule)
+            template.unlocalized_modifications.extend(extra_rules)
+        elif isinstance(variable_modifications, dict):
+            extra_rules = []
+            for tag, targets in variable_modifications.items():
+                seen.clear()
+                tag = _coerce_string_to_modification(tag)
+                for target in targets:
+                    if isinstance(target, str):
+                        target = PositionModifierTag(target)
+                    if target in seen:
+                        continue
+                    seen.add(target)
+                    tag = tag | target
+                if expand_rules:
+                    rule = GeneratorModificationRuleDirective.from_unlocalized_rule(tag, strip=strip)
+                    n = len(rule.find_positions(peptide)) * rule.limit
+                    extra_rules.extend([tag] * n)
+                else:
+                    extra_rules.append(tag)
+            template.unlocalized_modifications.extend(extra_rules)
+        else:
+            raise TypeError(f"Expected variable_modifications to be a list or a dict, got {type(variable_modifications)}")
+    if fixed_modifications:
+        if isinstance(fixed_modifications, list):
+            template.fixed_modifications.extend(map(_coerce_string_to_modification, fixed_modifications))
+        elif isinstance(fixed_modifications, dict):
+            extra_rules = []
+            for tag, targets in fixed_modifications.items():
+                seen.clear()
+                for target in targets:
+                    if isinstance(target, str):
+                        target = PositionModifierTag(target)
+                    if target in seen:
+                        continue
+                    seen.add(target)
+                    tag = _coerce_string_to_modification(tag)
+                    extra_rules.append(tag | target)
+            template.fixed_modifications.extend(extra_rules)
+        else:
+            raise TypeError(
+                f"Expected fixed_modifications to be a list or a dict, got {type(fixed_modifications)}"
+            )
+
+    return template.proteoforms(
+        include_unmodified=include_unmodified,
+        include_labile=include_labile,
+        strip=strip,
+    )
+
+
+proteoforms = peptidoforms
 
 
 class ProteoformCombinator:
@@ -3989,21 +4313,32 @@ class ProteoformCombinator:
     template: :class:`ProForma`
         The template sequence to apply any combination of rules to
     variable_rules: list[:class:`GeneratorModificationRuleDirective`]
-        The rules to apply in combinations to the template sequence
+        The rules to apply in combinations to the template sequence.
     include_unmodified : :class:`bool`
-        For all non-fixed modifications, include the case where the modification is not included anywhere
+        For all non-fixed modifications, include the case where the modification is not included anywhere. This is equivalent to
+        how variable modification rules are applied in search engines. It still respects the number of copies of modifications included
+        in the input. See :attr:`expand_rules`.
     include_labile : :class:`bool`
-        For all labile modifications, include the case where the modification is localized at every possible location
+        For all labile modifications, include the case where the modification is localized at every possible location.
+
+        .. note ::
+            Along with all possible localizations of the labile modifications, the output will contain peptidoform(s)
+            where it is kept as a labile modification without localization.
+
+    strip : :class:`bool`
+        If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
+        leaving only the bare modification definition.
     """
     template: ProForma
     include_unmodified: bool
     include_labile: bool
     variable_rules: List[GeneratorModificationRuleDirective]
 
-    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False):
+    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False, strip: bool=False):
         self.template = base_proteoform.copy()
         self.include_unmodified = include_unmodified
         self.include_labile = include_labile
+        self.strip = strip
         self.variable_rules = []
         self._extract_rules()
         self._apply_fixed_modifications()
@@ -4040,7 +4375,7 @@ class ProteoformCombinator:
 
         remains = []
         for rule in self.template.unlocalized_modifications:
-            rule_ = GeneratorModificationRuleDirective.from_unlocalized_rule(rule)
+            rule_ = GeneratorModificationRuleDirective.from_unlocalized_rule(rule, strip=self.strip)
             if rule_:
                 rules.append(rule_)
             else:
@@ -4052,7 +4387,7 @@ class ProteoformCombinator:
                 tmp = []
                 for tag in tags:
                     if tag.group_id and tag.is_modification():
-                        rule_ = GeneratorModificationRuleDirective.from_tagged_modification(tag)
+                        rule_ = GeneratorModificationRuleDirective.from_tagged_modification(tag, strip=self.strip)
                         if rule_:
                             rules.append(rule_)
                         tmp.append(PositionLabelTag(group_id=tag.group_id))
@@ -4063,7 +4398,7 @@ class ProteoformCombinator:
         if self.include_labile:
             remains = []
             for rule in self.template.labile_modifications:
-                rule_ = GeneratorModificationRuleDirective.from_labile_rule(rule)
+                rule_ = GeneratorModificationRuleDirective.from_labile_rule(rule, strip=self.strip)
                 if rule_:
                     rules.append(rule_)
                 else:
@@ -4078,7 +4413,30 @@ class ProteoformCombinator:
     def __next__(self):
         return next(self._iter)
 
-    def generate(self):
+    def _invert_position_rules(self, rules: List[GeneratorModificationRuleDirective], positions: List[List[Optional[int]]]) -> List[List[Tuple[Optional[int], GeneratorModificationRuleDirective]]]:
+        index = defaultdict(list)
+
+        for rule, position_list in zip(rules, positions):
+            if rule.labile:
+                index[None].append(rule)
+            for position in position_list:
+                if position is None:
+                    continue
+                index[position].append(rule)
+
+        if self.include_unmodified:
+            for k in index:
+                index[k].append(None)
+
+        stacks = []
+        for idx, options in index.items():
+            stack = []
+            for opt in options:
+                stack.append((idx, opt))
+            stacks.append(stack)
+        return stacks
+
+    def _build_position_map(self):
         position_choices = []
         for rule in self.variable_rules:
             positions_for = rule.find_positions(self.template)
@@ -4087,14 +4445,26 @@ class ProteoformCombinator:
             elif self.include_unmodified or not positions_for:
                 positions_for = [None] + positions_for
             position_choices.append(positions_for)
+        return position_choices
 
-        for slots in itertools.product(*position_choices):
+    def _build_modification_iter(self) -> Iterator[List[Tuple[Optional[int], Optional[GeneratorModificationRuleDirective]]]]:
+        position_choices = self._build_position_map()
+        return map(lambda pos: zip(pos, self.variable_rules), itertools.product(*position_choices))
+
+    def generate(self):
+        seen = set()
+        for slots in self._build_modification_iter():
+            state = Counter()
             template = self.template.copy()
             valid = True
             labile_remaining = []
-            for rule, idx in zip(self.variable_rules, slots):
+
+            for idx, rule in slots:
+                if rule is None:
+                    continue
                 if idx is None:
                     if rule.labile:
+                        state[((None, rule.token))] += 1
                         labile_remaining.append(rule.create())
                     continue
                 if idx not in rule.find_positions(template):
@@ -4107,7 +4477,14 @@ class ProteoformCombinator:
                 tag._generated = ModificationSourceType.Generated
                 tags.append(tag)
                 template[idx] = (aa, tags)
+                state[((idx, rule.token))] += 1
+
             if valid:
+                state = frozenset(state.items())
+                if state in seen:
+                    continue
+                else:
+                    seen.add(state)
                 if labile_remaining:
                     template.labile_modifications = labile_remaining
                 yield template

@@ -4,7 +4,7 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 
 import unittest
-from urllib.error import HTTPError
+from urllib.error import HTTPError, URLError
 
 from pyteomics.usi import USI, proxi, AGGREGATOR_KEY
 from pyteomics.auxiliary import PyteomicsError
@@ -31,6 +31,11 @@ class PROXITest(unittest.TestCase):
         except HTTPError as e:
             if e.code in {500, 502, 503, 504}:
                 self.skipTest(f'PROXI service is unavailable ({e.code})')
+            else:
+                raise
+        except URLError as e:
+            if getattr(e.reason, 'errno', None) in {110}:
+                self.skipTest(f"PROXI service is unavailable: ({e})")
             else:
                 raise
 
