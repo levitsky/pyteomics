@@ -32,15 +32,6 @@ class MzidTest(unittest.TestCase):
                 parent_tolerance = protocol['ParentTolerance']
                 self.assertEqual(parent_tolerance['search tolerance plus value'].unit_info, 'parts per million')
 
-    def test_structure_normalization(self):
-        gen = read('mzid_snippet.xml').iterfind("SpectraData")
-        datum = next(gen)
-        index = aux.cvquery(datum)
-        assert index['MS:1000768'] == 'Thermo nativeID format'
-        datum = next(gen)
-        index = aux.cvquery(datum)
-        assert index['MS:1000774'] == 'multiple peak list nativeID format'
-
     def test_map(self):
         def key(x):
             return (x['spectrumID'], x['SpectrumIdentificationItem'][0]['PeptideSequence'], len(x['SpectrumIdentificationItem']))
@@ -58,6 +49,25 @@ class MzidTest(unittest.TestCase):
                     self.assertEqual(
                         len(mzid_spectra[(1, 1)]),
                         sum(1 for _ in r.iterfind("SpectrumIdentificationResult").map(method=method)))
+
+    def test_index(self):
+        with MzIdentML(self.path) as reader:
+            self.assertEqual(len(mzid_spectra[(1, 1)]), len(reader.index[MzIdentML._default_iter_tag]))
+
+
+class ExplicitNSMzidTest(MzidTest):
+    path = 'test.explicit-ns.mzid'
+
+
+class OtherTest(unittest.TestCase):
+    def test_structure_normalization(self):
+        gen = read('mzid_snippet.xml').iterfind("SpectraData")
+        datum = next(gen)
+        index = aux.cvquery(datum)
+        assert index['MS:1000768'] == 'Thermo nativeID format'
+        datum = next(gen)
+        index = aux.cvquery(datum)
+        assert index['MS:1000774'] == 'multiple peak list nativeID format'
 
 
 if __name__ == '__main__':

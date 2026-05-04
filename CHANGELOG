@@ -1,4 +1,4 @@
-5.0c0
+5.0c1
 -----
 
  - Update the standard ion compositions to be more consistent with the adopted ion type notation.
@@ -14,8 +14,10 @@
  - Support **ProForma 2.1** (`#183 <https://github.com/levitsky/pyteomics/pull/183>`_ by Joshua Klein).
    You can calculate compositions for :py:class:`ProForma` objects using :py:meth:`pyteomics.proforma.Proforma.composition`
    and get m/z with annotated or user-provided charge state using :py:meth:`pyteomics.proforma.Proforma.mz`.
-   You can also iterate through possible peptidoforms when a ProForma sequence is annotated with some ambiguity using
-   :py:meth:`pyteomics.proforma.Proforma.generate_proteoforms`.
+
+ - You can also iterate through possible peptidoforms when a ProForma sequence is annotated with some ambiguity using
+   :py:meth:`pyteomics.proforma.Proforma.proteoforms` and apply additional modification specifications to any ProForma sequence
+   using :py:func:`pyteomics.proforma.proteoforms` (`#196 <https://github.com/levitsky/pyteomics/pull/196>`_ by Joshua Klein).
 
  - Implement **thread-based parallelism**.
    Following the introduction of `official free-threading Python implementations <https://docs.python.org/3/howto/free-threading-python.html>`_
@@ -55,6 +57,7 @@
  - Add an `absolute` parameter (True by default) for :py:func:`pyteomics.mass.fast_mass` and :py:func:`pyteomics.mass.fast_mass2`.
  - Allow fragment charges formatted as :py:class:`float` in MGF (issue `#185 <https://github.com/levitsky/pyteomics/issues/185>`_).
  - New functions :py:func:`pyteomics.parser.coverage_mask` and :py:func:`pyteomics.parser.strip`.
+ - Add support for explicit XML namespaces (`#200 <https://github.com/levitsky/pyteomics/issues/200>_`).
 
 
 4.7.5

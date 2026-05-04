@@ -1,14 +1,16 @@
 from os import path
 import unittest
 import pickle
+import math
 import pyteomics
 pyteomics.__path__ = [path.abspath(
     path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics.proforma import (
     PSIModModification, ProForma, TaggedInterval, parse, MassModification, ProFormaError, TagTypeEnum,
     ModificationRule, StableIsotope, GenericModification, Composition, to_proforma, ModificationMassNotFoundError,
-    AdductParser, ChargeState,
-    std_aa_comp, obo_cache, process_tag_tokens)
+    UnimodModification, PSIModModification, ModificationTarget,
+    AdductParser, ChargeState, proteoforms, _coerce_string_to_modification,
+    std_aa_comp, obo_cache, process_tag_tokens, peptidoforms)
 
 
 class ProFormaTest(unittest.TestCase):
@@ -422,6 +424,13 @@ class TestTagProcessing(unittest.TestCase):
             assert state['name'] == name
             assert state['provider'] == 'unimod'
 
+    def test_tag_limit(self):
+        tokens = list('Phospho|Position:S|Position:T|comup|Limit:2|Limit:3')
+        tag = process_tag_tokens(tokens)
+        with self.assertWarns(UserWarning):
+            effective_limit = tag.limit
+        self.assertEqual(effective_limit, 2)
+
 
 class GenericModificationResolverTest(unittest.TestCase):
     def test_generic_resolver(self):
@@ -487,38 +496,170 @@ class ProteoformCombinatorTest(unittest.TestCase):
         pf = ProForma.parse(seq)
         for include_unmodified in [False, True]:
             with self.subTest(include_unmodified=include_unmodified):
-                proteoforms = list(pf.generate_proteoforms(include_unmodified=include_unmodified))
+                proteoforms = list(pf.proteoforms(include_unmodified=include_unmodified))
                 self.assertEqual(len(proteoforms), 2 + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
 
-    def test_localization_tag(self):
-        seq = "EMEVT[#g1]S[#g1]ES[Phospho#g1]PEK"
+    def test_unlocalized_position_list_and_count(self):
+        k = 2
+        seq = f"[Phospho|Position:S|Position:T]^{k}?EMEVTSESPEK"
+        nsites = seq.partition('?')[2].count('S') + seq.partition('?')[2].count('T')
         pf = ProForma.parse(seq)
         for include_unmodified in [False, True]:
             with self.subTest(include_unmodified=include_unmodified):
-                proteoforms = list(pf.generate_proteoforms(include_unmodified=include_unmodified))
-                self.assertEqual(len(proteoforms), 3 + include_unmodified)
+                proteoforms = list(pf.proteoforms(include_unmodified=include_unmodified))
+                if not include_unmodified:
+                    self.assertEqual(len(proteoforms), math.comb(nsites, k))   # Phospho on T or S, exactly `k` times
+                else:
+                    self.assertEqual(
+                        len(proteoforms),
+                        sum([math.comb(nsites, i) for i in range(k + 1)]),  # Phospho on T or S, anywhere from 0 to `k` times
+                    )
+
+    def test_localization_tag(self):
+        seq = "EMEVT[#g1]S[#g1]ES[Phospho#g1]PEK"
+        nsites = seq.count('#g1')
+        pf = ProForma.parse(seq)
+        for include_unmodified in [False, True]:
+            with self.subTest(include_unmodified=include_unmodified):
+                proteoforms = list(pf.proteoforms(include_unmodified=include_unmodified))
+                self.assertEqual(len(proteoforms), nsites + include_unmodified)
 
     def test_unlocalized_modification(self):
         seq = "[Phospho]?EMEVTSESPEK"
         pf = ProForma.parse(seq)
         for include_unmodified in [False, True]:
             with self.subTest(include_unmodified=include_unmodified):
-                proteoforms = list(pf.generate_proteoforms(include_unmodified=include_unmodified))
+                proteoforms = list(pf.proteoforms(include_unmodified=include_unmodified))
                 self.assertEqual(len(proteoforms), len(pf) + include_unmodified)
 
     def test_comup_stacking(self):
-        seq = "[Phospho|Position:S|Position:T|comup|Limit:2]^2?EMEVTESPEK"
+        k = 2  # number of modifications to combine
+        limit = 2  # stack limit
+        seq = f"[Phospho|Position:S|Position:T|comup|Limit:{limit}]^{k}?EMEVTESPEK"
+        nsites = seq.partition('?')[2].count('S') + seq.partition('?')[2].count('T')
+        self.assertGreaterEqual(nsites * limit, k)  # otherwise we can't place `k` mods even with stacking
+        effective_limit = min(limit, k)  # if limit >= k, then we can just treat it as a normal combinatorial expansion
         pf = ProForma.parse(seq)
-        proteoforms = list(pf.generate_proteoforms())
-        self.assertEqual(len(proteoforms), 4)
-        proteoforms = list(pf.generate_proteoforms(True))
-        self.assertEqual(len(proteoforms), 9)
+        proteoforms = list(pf.proteoforms())
+        self.assertEqual(len(proteoforms), math.comb(nsites + effective_limit - 1, k))  # number of ways to place `k` indistinguishable mods on `nsites` distinguishable sites with a stack limit of `effective_limit`
+        proteoforms = list(pf.proteoforms(True))
+        self.assertEqual(len(proteoforms), sum([math.comb(nsites + min(limit, i) - 1, i) for i in range(k + 1)]))  # number of ways to place anywhere from 0 to `k` indistinguishable mods on `nsites` distinguishable sites with a stack limit of `effective_limit`
 
     def test_labile(self):
-        seq = "{Phosphpo}EMEVTESPEK"
+        seq = "{Phospho}EMEVTESPEK"
         pf = ProForma.parse(seq)
-        proteoforms = list(pf.generate_proteoforms(False, True))
-        self.assertEqual(len(proteoforms), 11)
+        proteoforms = list(pf.proteoforms(False, True))
+        self.assertEqual(len(proteoforms), len(pf) + 1)  # all possible sites and the form where phospho is kept as labile
+
+
+class ProteoformsFunctionTest(unittest.TestCase):
+    def test_proteoforms(self):
+        seq = "EMEV(TS)[Phospho]ESPEK"
+        nsites = 2  # length of the range
+        pf = ProForma.parse(seq)
+        for include_unmodified in [False, True]:
+            with self.subTest(include_unmodified=include_unmodified):
+                forms = list(proteoforms(pf, include_unmodified=include_unmodified))
+                self.assertEqual(len(forms), nsites + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
+
+    def test_coerce_modification(self):
+        for s, m in [("Phospho", GenericModification("Phospho")),
+                     ("UNIMOD:21", UnimodModification("21")),
+                     ("MOD:00046", PSIModModification("00046"))]:
+            with self.subTest(s=s):
+                self.assertEqual(_coerce_string_to_modification(s), m)
+
+    def test_modification_target_from_str(self):
+        for s, t in [("S", ModificationTarget('S')),
+                     ("T", ModificationTarget('T')),
+                     ("N-term", ModificationTarget(None, True, False)),
+                     ("C-term", ModificationTarget(None, False, True)),
+                     ("N-term:K", ModificationTarget('K', True, False)),
+                     ("C-term:Y", ModificationTarget('Y', False, True))]:
+            with self.subTest(s=s):
+                self.assertEqual(ModificationTarget.from_str(s), t)
+
+    def test_from_simple_dict(self):
+        seq = "EMEVTSESPEK"
+        variable_mods = {"Phospho": ["S", "T"]}
+        nsites = seq.count("S") + seq.count("T")
+        pf = ProForma.parse(seq)
+        for include_unmodified in [False, True]:
+            with self.subTest(include_unmodified=include_unmodified):
+                forms = list(proteoforms(pf, variable_modifications=variable_mods, include_unmodified=include_unmodified))
+                if include_unmodified:
+                    self.assertEqual(len(forms), nsites + 1)   # Phospho on T or S + no phospho
+                else:
+                    self.assertEqual(len(forms), nsites)  # Phospho on T or S
+
+        forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
+        self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho / no phospho on each S or T
+
+    def test_expand(self):
+        seq = "EMEVTSESPEK"
+        total_sites = seq.count("S") + seq.count("T") + seq.count("M")
+        oxidation_sites = seq.count("M")
+        variable_mods = {"Phospho": ["S", "T"], "Oxidation": ["M"]}
+        pf = ProForma.parse(seq)
+        combos = peptidoforms(
+            pf,
+            variable_modifications=variable_mods,
+            expand_rules=True,
+        )
+        variants = list(combos)
+        self.assertEqual(len(variants), 2 ** total_sites)  # all combinations of phospho on S/T and oxidation on M
+        self.assertAlmostEqual(
+            (2 ** oxidation_sites) / (2 ** oxidation_sites - 1),
+            len(variants) / sum(['Oxidation' in str(p) for p in variants])
+        )
+
+    def test_from_str(self):
+        seq = "EMEVTSESPEK"
+        variable_mods = ["Phospho|Position:S|Position:T"]
+        nsites = seq.count("S") + seq.count("T")
+        pf = ProForma.parse(seq)
+        for include_unmodified in [False, True]:
+            with self.subTest(include_unmodified=include_unmodified):
+                forms = list(proteoforms(pf, variable_modifications=variable_mods, include_unmodified=include_unmodified))
+                if include_unmodified:
+                    self.assertEqual(len(forms), nsites + 1)   # Phospho on T or S + no phospho
+                else:
+                    self.assertEqual(len(forms), nsites)  # Phospho on T or S
+        forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
+        self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho / no phospho on each S or T
+
+    def test_expand_mods_from_list(self):
+        seq = "EMEVTSESPEK"
+        variable_mods = ["Phospho|Position:S", "Phospho|Position:T"]
+        nsites = seq.count("S") + seq.count("T")
+        pf = ProForma.parse(seq)
+        forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
+        self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho on 0, 1, or 2 of the S or T
+
+    def test_expand_mods_from_dict(self):
+        seq = "EMEVTSESPEK"
+        variable_mods = {"Phospho": ["S", "T"]}
+        nsites = seq.count("S") + seq.count("T")
+        pf = ProForma.parse(seq)
+        forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
+        self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho on 0, 1, or 2 of the S or T
+
+    def test_expand_from_dict(self):
+        seq = "EMEVTSESPEK"
+        variable_mods = {"Phospho": ["S", "T"]}
+        nsites = seq.count("S") + seq.count("T")
+        pf = ProForma.parse(seq)
+        forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
+        self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho on 0, 1, or 2 of the S or T
+
+    def test_expand_mods_comup(self):
+        seq = "EMEVTSESPEK"
+        limit = 2
+        variable_mods = [f"Phospho|Position:S|Position:T|comup|Limit:{limit}"]
+        nsites = seq.count("S") + seq.count("T")
+        pf = ProForma.parse(seq)
+        forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
+        self.assertEqual(len(forms), (limit + 1) ** nsites)  # all combinations of 0 to `limit` phosphos on each S or T
 
 
 if __name__ == '__main__':
