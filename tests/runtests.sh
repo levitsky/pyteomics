@@ -60,18 +60,10 @@ detect_postgres() {
         return 0
     fi
 
-    if ! "$probe_py" - "$PYTEOMICS_TEST_POSTGRES_URL" <<'PY'
-import sys
-from sqlalchemy import create_engine, text
-
-url = sys.argv[1]
-engine = create_engine(url)
-try:
-    with engine.connect() as conn:
-        conn.execute(text('SELECT 1'))
-finally:
-    engine.dispose()
-PY
+    if ! "$probe_py" -c "import sys; from sqlalchemy import create_engine, text; engine = create_engine(sys.argv[1]);
+with engine.connect() as conn:
+    conn.execute(text('SELECT 1'))
+engine.dispose()" "$PYTEOMICS_TEST_POSTGRES_URL"
     then
         echo "Could not connect to PYTEOMICS_TEST_POSTGRES_URL; disabling live PostgreSQL test."
         unset PYTEOMICS_TEST_POSTGRES_URL
@@ -92,7 +84,7 @@ run() {
     eval "${ROOT}/versions/${PREFIX}${1}/bin/python" "$fname"
 }
 
-export -f create deps detect_postgres run
+export -f create deps run
 
 echo "Checking installed Python versions..."
 parallel pyenv install -s < python-versions.txt
