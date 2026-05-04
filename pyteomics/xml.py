@@ -51,6 +51,10 @@ def _local_name(element):
     tag = element.tag
     if tag and tag[0] == '{':
         return tag.rpartition('}')[2]
+    # When parsing XML fragments without in-scope namespace declarations,
+    # lxml may leave prefixed names in "prefix:local" form.
+    if tag and ':' in tag:
+        return tag.rsplit(':', 1)[1]
     return tag
 
 
@@ -942,7 +946,8 @@ class ByteCountingXMLScanner(_file_obj):
         """
         i = 0
         packed = b"|".join(self.indexed_tags)
-        pattern = re.compile((r"^\s*<(%s)\s" % packed.decode()).encode())
+        # Allow optional namespace prefix (e.g., ns0:) before tag name
+        pattern = re.compile((r"^\s*<(?:\w+:)?(%s)\s" % packed.decode()).encode())
         attrs = re.compile(br"(\S+)=[\"']([^\"']*)[\"']")
         for line in self._chunk_iterator():
             match = pattern.match(line)
