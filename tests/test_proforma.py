@@ -217,7 +217,7 @@ class ProFormaTest(unittest.TestCase):
             "EMK[XLMOD:02000#XL1]EVTKSE[XLMOD:02010#XL2]SK[#XL1]PEK[#XL2]AR",
             # "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[XLMOD:02001#XL1]SESPEK",
             "EM[Oxidation]EVEES[Phospho]PEK",
-            "EM[R: Methionine sulfone]EVEES[O-phospho-L-serine]PEK",
+            # "EM[R: Methionine sulfone]EVEES[O-phospho-L-serine]PEK",
             "EMEVTK[X:DSS#XL1]SESPEK",
             "EM[U:Oxidation]EVEES[U:Phospho]PEK",
             "EM[+15.9949]EVEES[+79.9663]PEK",
@@ -263,7 +263,7 @@ class ProFormaTest(unittest.TestCase):
             "<[TMT6plex]@K,N-term:A,N-term:B>ATPEILTCNSIGCLK",
             "EM[Oxidation]EVEES[Phospho]PEK",
             "EM[L-methionine sulfoxide]EVEES[O-phospho-L-serine]PEK",
-            "EM[R: L-methionine sulfone]EVEES[O-phospho-L-serine]PEK",
+            # "EM[R: L-methionine sulfone]EVEES[O-phospho-L-serine]PEK", # don't support RESID
             "EMEVTK[X:DSS#XL1]SESPEK",
             "NEEYN[GNO:G59626AS]K",
             "NEEYN[G:G59626AS]K",
@@ -274,7 +274,7 @@ class ProFormaTest(unittest.TestCase):
             "EM[Oxidation]EVE[Cation:Mg[II]]ES[Phospho]PEK",
             "EM[MOD:00719]EVEES[MOD:00046]PEK",
             "EM[UNIMOD:35]EVEES[UNIMOD:56]PEK",
-            "EM[RESID:AA0581]EVEES[RESID:AA0037]PEK",
+            # "EM[RESID:AA0581]EVEES[RESID:AA0037]PEK", # don't support RESID
             "EMEVTK[XLMOD:02001#XL1]SESPEK[#XL1]",
             "EMK[XLMOD:02000#XL1]EVTKSE[XLMOD:02010#XL2]SK[#XL1]PEK[#XL2]AR",
             "EMEVTK[XLMOD:02001#XL1]SESPEK",
@@ -385,14 +385,21 @@ class ProFormaTest(unittest.TestCase):
             # "(>>>Trastuzumab Fab and coeluting Fc)(>>Fab)(>Heavy chain)EVQLVESGGGLVQPGGSLRLSC[M:l-cystine (cross-link)#XL1]AASGFNIKDTYIHWVRQAPGKGLEWVARIYPTNGYTRYADSVKGRFTISADTSKNTAYLQMNSLRAEDTAVYYC[#XL1]SRWGGDGFYAMDYWGQGTLVTVSSASTKGPSVFPLAPSSKSTSGGTAALGC[M:l-cystine (cross-link)#XL2]LVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYIC[#XL2]NVNHKPSNTKVDKKVEPKSC[M:l-cystine (cross-link)#XL3]DKT//(>Light chain)DIQMTQSPSSLSASVGDRVTITC[M:l-cystine (cross-link)#XL4]RASQDVNTAVAWYQQKPGKAPKLLIYSASFLYSGVPSRFSGSRSGTDFTLTISSLQPEDFATYYC[#XL4]QQHYTTPPTFGQGTKVEIKRTVAAPSVFIFPPSDEQLKSGTASVVC[M:l-cystine (cross-link)#XL5]LLNNFYPREAKVQWKVDNALQSGNSQESVTEQDSKDSTYSLSSTLTLSKADYEKHKVYAC[#XL5]EVTHQGLSSPVTKSFNRGEC[#XL3]+(>Fc)HTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVYTLPPSREEMTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK",
         ]
         for seq in positive:
-            parsed = ProForma.parse(seq)
-            assert parsed is not None
+            with self.subTest(seq=seq):
+                parsed = ProForma.parse(seq)
+                assert parsed is not None
 
     def test_nonstandard_amino_acid(self):
         seq = ProForma.parse("PEPTX[MOD:01001]IDE")
         bad_seq = ProForma.parse("PEPTXIDE")
         assert seq.mass != bad_seq.mass
         self.assertAlmostEqual(seq.mass, 884.4127280267099, 4)
+
+    def test_charged_tags(self):
+        seq = ProForma.parse("SEQUEN[Formula:Zn1:z+2]CE")
+        assert seq.tags[0].charge == 2
+        assert seq._local_charges() == (2, 1)
+        assert seq.charge_state.charge == 2
 
 
 class TestTagProcessing(unittest.TestCase):

@@ -1780,6 +1780,17 @@ class ModificationRule(object):
     def is_valid(self, aa: str, n_term: bool, c_term: bool) -> bool:
         return any(target.is_valid(aa, n_term, c_term) for target in self.targets)
 
+    def _find_all(self, peptide: Iterable[str], n: int) -> Iterator[int]:
+        '''
+        Tiny helper method to scan over a sequence with an external length
+        and yield matched positions.
+        '''
+        # decrement the length by 1 so that it matches the last position
+        n -= 1
+        for i, aa in enumerate(peptide):
+            if self.is_valid(aa, i == 0, i == n):
+                yield i
+
     def _validate_targets(self):
         validated_targets = []
         if self.targets is None:
@@ -1998,6 +2009,10 @@ class Adduct(NamedTuple):
 class ChargeState(object):
     """Describes the charge and adduct types of the structure.
 
+    This type *MAY* be coerced to an :class:`int`, in which case it
+    decays to it's :attr:`charge` attribute, an integer. :func:`abs` will
+    return it's absolute value.
+
     Attributes
     ----------
     charge : int
@@ -2022,6 +2037,43 @@ class ChargeState(object):
             adducts = [Adduct("H", 1, charge)]
         self.charge = charge
         self.adducts = adducts
+
+    def __int__(self) -> int:
+        """
+        Get the total charge as number.
+
+        This is equivalent to accessing :attr:`charge`
+
+        .. note::
+            This is technically a lossy operation as it discards the distinction
+            between the different charge carriers.
+
+        """
+        return self.charge
+
+    def __abs__(self):
+        """
+        Return the absolute magnitude of the charge state
+
+        See Also
+        --------
+        :meth:`__int__`
+        """
+        return abs(self.charge)
+
+    def _add_protons_for_charge(self, count: int):
+        """
+        Add ``count`` protons (H+) to the adduct list.
+
+        If ``count`` is negative, this will reflect *removing* protons,
+        as when negatively charged.
+        """
+        for i, adduct in enumerate(self.adducts):
+            if adduct.name == "H":
+                self.adducts[i] = adduct._replace(count=adduct.count + count)
+                break
+        else:
+            self.adducts.append(Adduct("H", 1, count))
 
     def for_mz_calculation(self) -> Tuple[float, int]:
         """
@@ -2342,6 +2394,55 @@ VALID_AA = {s.lower() for s in VALID_AA_UPPER} | VALID_AA_UPPER
 TERMINAL_SPEC_CHARS = set('N-term') | set('C-term') | set("ncT: ")
 
 
+def _local_charges(position_list, property_state) -> Tuple[int, int]:
+    """
+    Count the number of localized charges that the parsed ProForma
+    sequence has.
+
+    This specifically counts modifications with a registered charge
+    state like charged :class:`FormulaModification` instances.
+
+    Returns
+    -------
+    local_charges : int
+        The total charge state attributable to localized modifications
+    n_charged_modifications : int
+        The number of charged modifications on the sequence
+    """
+    z = 0
+    k = 0
+    for _, tags in position_list:
+        for tag in tags or (): # tags may be None
+            z_of = getattr(tag, "charge", 0)
+            if z_of:
+                k += 1
+                z += z_of
+    for iv in property_state.intervals:
+        for tag in iv.tags or ():
+            z_of = getattr(tag, "charge", 0)
+            if z_of:
+                k += 1
+                z += z_of
+    for tag in property_state.unlocalized_modifications:
+        z_of = getattr(tag, "charge", 0)
+        if z_of:
+            k += 1
+            z += z_of
+    for tag in property_state.labile_modifications:
+        z_of = getattr(tag, "charge", 0)
+        if z_of:
+            k += 1
+            z += z_of
+    for fixed_mod in property_state.fixed_modifications:
+        z_of = getattr(fixed_mod.modification_tag, "charge", 0)
+        if z_of:
+            for _ in fixed_mod._find_all((aa for aa, _ in property_state.positions), len(property_state.positions)):
+                z += z_of
+                k += 1
+    return z, k
+
+
+
 class Parser:
     """
     A parser for the ProForma 2 syntax.
@@ -2367,7 +2468,7 @@ class Parser:
     state: ParserStateEnum
 
     labile_modifications: List[TagBase]
-    fixed_modifications: List[TagBase]
+    fixed_modifications: List[ModificationRule]
     unlocalized_modifications: List[TagBase]
     intervals: List[TaggedInterval]
     isotopes: List[StableIsotope]
@@ -2913,6 +3014,19 @@ class Parser:
             charge_state = None
         if self.current_aa:
             self.pack_sequence_position()
+
+        z, k = self._local_charges()
+        if k:
+            if charge_state is None:
+                charge_state = ChargeState(z)
+            else:
+                charge_state.charge += z
+                # The charge contribution is NOT always from a proton, but charged
+                # modifications aren't granular enough to accurately tell you
+                # the correct mass to attribute to the charge carrier, so they
+                # look like protons to the ChargeState's helper methods anyway.
+                charge_state._add_protons_for_charge(z)
+
         if self.state in (
             ISOTOPE,
             TAG,
@@ -2937,6 +3051,9 @@ class Parser:
             "charge_state": charge_state,
             "names": self.names
         }
+
+    def _local_charges(self) -> Tuple[int, int]:
+        return _local_charges(self.positions, self)
 
     def parse(self):
         while self.step():
@@ -3566,8 +3683,62 @@ class ProForma(object):
 
     @property
     def charge_state(self) -> Optional[ChargeState]:
+        """
+        Access the :class:`ChargeState` property of the :class:`ProForma`
+        instance, which includes the total charge state and adduct list.
+
+        This implies that you have a peptidoform *ion*, not a neutral peptide.
+        """
         z = self._charge_state
         return z
+
+    def _local_charges(self) -> Tuple[int, int]:
+        """
+        Count the number of localized charges that the :class:`ProForma`
+        sequence has.
+
+        This specifically counts modifications with a registered charge
+        state like charged :class:`FormulaModification` instances.
+
+        Returns
+        -------
+        local_charges : int
+            The total charge state attributable to localized modifications
+        n_charged_modifications : int
+            The number of charged modifications on the sequence
+        """
+        return _local_charges(self.sequence, self)
+
+    @charge_state.setter
+    def charge_state(self, value: Union[int, ChargeState, None]):
+        """
+        Sets the charge state of the :class:`ProForma` instance.
+
+        When setting with :const:`None`, this removes any existing charge
+        state information. When setting with an :class:`int`, this removes
+        the adduct information.
+
+        Parameters
+        ----------
+        value : :class:`int`, :class:`ChargeState`, or :const:`None`
+            When setting with :const:`None`, this removes any existing charge
+            state information. When setting with an :class:`int`, this removes
+            the adduct information.
+        """
+        if value is None:
+            self._charge_state = None
+        elif isinstance(value, ChargeState):
+            self._charge_state = value
+        else:
+            value = int(value)
+            existing = self._charge_state
+            new = ChargeState(value)
+            if existing is None:
+                self._charge_state = new
+            else:
+                if len(existing.adducts) > 1 or existing.adducts[0].name != "H":
+                    warnings.warn(f"Overwriting {existing}'s charge value with {value}, replacing adducts with protons")
+                self._charge_state = new
 
     @classmethod
     def parse(cls, string, **kwargs):
