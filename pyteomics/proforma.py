@@ -1349,9 +1349,8 @@ class XLMODModification(ModificationBase):
     __slots__ = ()
 
     resolver = XLMODResolver()
-
     prefix_name = "XLMOD"
-    # short_prefix = 'XL'
+    short_prefix = 'X'
     _tag_type = TagTypeEnum.xlmod
 
 
