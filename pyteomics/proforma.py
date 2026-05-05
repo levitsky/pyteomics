@@ -653,6 +653,18 @@ class XLMODResolver(ModificationResolver):
     def load_database(self):
         return load_xlmod()
 
+    def _parse_formula(self, formula: str):
+        formula: str = formula.replace("D", "H[2]")
+        tokens = formula.split(' ')
+        composition = Composition()
+        for token in tokens:
+            sign = 1
+            if token.startswith("-"):
+                token = token[1:]
+                sign = -1
+            composition += Composition(token) * sign
+        return composition
+
     def _resolve_impl(self, name=None, id=None, **kwargs):
         if name is not None:
             defn = self.database[name]
@@ -665,10 +677,9 @@ class XLMODResolver(ModificationResolver):
         except (KeyError, TypeError, ValueError):
             raise ModificationMassNotFoundError("Could not resolve the mass of %r from %r" % ((name, id), defn))
         if 'deadEndFormula' in defn:
-            composition = Composition(defn['deadEndFormula'].replace(" ", '').replace("D", "H[2]"))
+            composition = self._parse_formula(defn["deadEndFormula"])
         elif 'bridgeFormula' in defn:
-            composition = Composition(
-                defn['bridgeFormula'].replace(" ", '').replace("D", "H[2]"))
+            composition = self._parse_formula(defn["bridgeFormula"])
         return {
             'mass': mass,
             'composition': composition,
