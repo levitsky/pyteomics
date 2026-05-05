@@ -3,6 +3,7 @@ numpy
 matplotlib
 pandas
 sqlalchemy >= 1.4
+psycopg[binary]
 cython
 h5py
 hdf5plugin
