@@ -4451,29 +4451,6 @@ class ProteoformCombinator:
     def __next__(self):
         return next(self._iter)
 
-    def _invert_position_rules(self, rules: List[GeneratorModificationRuleDirective], positions: List[List[Optional[int]]]) -> List[List[Tuple[Optional[int], GeneratorModificationRuleDirective]]]:
-        index = defaultdict(list)
-
-        for rule, position_list in zip(rules, positions):
-            if rule.labile:
-                index[None].append(rule)
-            for position in position_list:
-                if position is None:
-                    continue
-                index[position].append(rule)
-
-        if self.include_unmodified:
-            for k in index:
-                index[k].append(None)
-
-        stacks = []
-        for idx, options in index.items():
-            stack = []
-            for opt in options:
-                stack.append((idx, opt))
-            stacks.append(stack)
-        return stacks
-
     def _build_position_map(self) -> List[List[Optional[int]]]:
         position_choices = []
         for rule in self.variable_rules:
