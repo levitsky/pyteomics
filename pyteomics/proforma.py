@@ -1652,12 +1652,13 @@ def process_tag_tokens(tokens: List[str]) -> TagBase:
 
 
 class ModificationTarget(object):
-    aa: str
+    aa: Optional[str]
     n_term: bool
     c_term: bool
 
     def __init__(self, aa, n_term=False, c_term=False):
-        self.aa = aa
+        # Normalize amino acid to uppercase once for faster comparisons
+        self.aa = aa.upper() if aa else None
         self.n_term = n_term
         self.c_term = c_term
 
@@ -1698,11 +1699,27 @@ class ModificationTarget(object):
         return str(self)
 
     def is_valid(self, aa: str, n_term: bool, c_term: bool) -> bool:
+        """Check if this target matches the given amino acid and terminal status.
+
+        Parameters
+        ----------
+        aa : str
+            The amino acid to check (should be pre-uppercased for efficiency)
+        n_term : bool
+            Whether this is an N-terminal position
+        c_term : bool
+            Whether this is a C-terminal position
+
+        Returns
+        -------
+        bool
+            True if this target matches the given criteria
+        """
         if (n_term and self.n_term) or (c_term and self.c_term):
-            if (self.aa and aa.upper() == self.aa.upper()) or self.aa is None:
+            if (self.aa and aa == self.aa) or self.aa is None:
                 return True
             return False
-        return self.aa.upper() == aa.upper() or self.aa is None
+        return self.aa == aa or self.aa is None
 
     @classmethod
     def from_str(cls, target: str):
@@ -1768,7 +1785,11 @@ class ModificationRule(object):
         return not self.targets
 
     def is_valid(self, aa: str, n_term: bool, c_term: bool) -> bool:
-        return any(target.is_valid(aa, n_term, c_term) for target in self.targets)
+
+        for target in self.targets:
+            if target.is_valid(aa, n_term, c_term):
+                return True
+        return False
 
     def _validate_targets(self):
         validated_targets = []
@@ -4070,9 +4091,12 @@ class GeneratorModificationRuleDirective:
                     # TODO: Implement combinatoric limits here
                     if tag.group_id == group_id:
                         positions.append(i)
-            elif self.rule.is_not_specific() or self.rule.is_valid(aa, i == 0, i == n):
-                if self._can_apply_with(tags):
-                    positions.append(i)
+            else:
+                # ModificationTarget.is_valid expects uppercase
+                aa_upper = aa.upper()
+                if self.rule.is_not_specific() or self.rule.is_valid(aa_upper, i == 0, i == n):
+                    if self._can_apply_with(tags):
+                        positions.append(i)
         return positions
 
     @classmethod
