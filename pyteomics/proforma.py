@@ -4060,6 +4060,20 @@ class GeneratorModificationRuleDirective:
     def __repr__(self):
         return f"{self.__class__.__name__}({self.rule}, {self.region}, {self.colocal_known}, {self.colocal_unknown})"
 
+    @staticmethod
+    def _extract_rule_features(tag: TagBase) -> Tuple[List[Any], bool, bool]:
+        targets = []
+        colocal_known = False
+        colocal_unknown = False
+        for extra in tag.extra:
+            if extra.type == TagTypeEnum.position_modifier:
+                targets.append(extra.value)
+            elif extra.type == TagTypeEnum.comkp:
+                colocal_known = True
+            elif extra.type == TagTypeEnum.comup:
+                colocal_unknown = True
+        return targets, colocal_known, colocal_unknown
+
     def _can_apply_with(self, tags) -> bool:
         if not tags:
             return True
@@ -4107,8 +4121,7 @@ class GeneratorModificationRuleDirective:
         elif not mod.group_id:
             return
         rule = ModificationRule(tag, [])
-        colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
-        colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
+        _targets, colocal_known, colocal_unknown = cls._extract_rule_features(tag)
         return cls(rule, None, colocal_known, colocal_unknown, tag.limit, strip=strip)
 
     @classmethod
@@ -4116,10 +4129,7 @@ class GeneratorModificationRuleDirective:
         mod = tag.find_modification()
         if not mod:
             return
-        position_constraints = tag.find_tag_type(TagTypeEnum.position_modifier)
-        targets = [v.value for v in position_constraints]
-        colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
-        colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
+        targets, colocal_known, colocal_unknown = cls._extract_rule_features(tag)
         rule = ModificationRule(modification_tag=mod, targets=targets)
         return cls(rule, None, colocal_known, colocal_unknown, tag.limit, strip=strip)
 
@@ -4130,10 +4140,7 @@ class GeneratorModificationRuleDirective:
             mod = tag.find_modification()
             if not mod:
                 continue
-            position_constraints = tag.find_tag_type(TagTypeEnum.position_modifier)
-            targets = [v.value for v in position_constraints]
-            colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
-            colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
+            targets, colocal_known, colocal_unknown = cls._extract_rule_features(tag)
             rule = ModificationRule(modification_tag=mod, targets=targets)
             rules.append(cls(rule, region, colocal_known, colocal_unknown, tag.limit, strip=strip))
         return rules
@@ -4143,10 +4150,8 @@ class GeneratorModificationRuleDirective:
         mod = tag.find_modification()
         if not mod:
             return
-        position_constraints = tag.find_tag_type(TagTypeEnum.position_modifier)
-        targets = [ModificationTarget(v.value) for v in position_constraints]
-        colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
-        colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
+        targets, colocal_known, colocal_unknown = cls._extract_rule_features(tag)
+        targets = [ModificationTarget(v) for v in targets]
         rule = ModificationRule(modification_tag=mod, targets=targets)
         return cls(rule, None, colocal_known, colocal_unknown, tag.limit, labile=True, strip=strip)
 
