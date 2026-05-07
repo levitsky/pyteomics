@@ -4035,6 +4035,23 @@ class GeneratorModificationRuleDirective:
     def __repr__(self):
         return f"{self.__class__.__name__}({self.rule}, {self.region}, {self.colocal_known}, {self.colocal_unknown})"
 
+    def _can_apply_with(self, tags) -> bool:
+        if not tags:
+            return True
+        known = []
+        unknown = []
+        for tag in tags:
+            if isinstance(tag, (ModificationBase, MassModification)):
+                if tag._generated in (ModificationSourceType.Explicit, ModificationSourceType.Constant):
+                    known.append(tag)
+                elif tag._generated == ModificationSourceType.Generated:
+                    unknown.append(tag)
+        total_at = len(known) + len(unknown)
+        can_known = bool((known and self.colocal_known) or not known)
+        can_unknown = bool((unknown and self.colocal_unknown) or not unknown)
+        return ((can_known and can_unknown) or (not can_known and not can_unknown)) and total_at < self.limit
+
+
     def find_positions(self, sequence: ProForma) -> List[int]:
         n = len(sequence) - 1
         positions = []
@@ -4049,23 +4066,9 @@ class GeneratorModificationRuleDirective:
                     # TODO: Implement combinatoric limits here
                     if tag.group_id == group_id:
                         positions.append(i)
-            elif self.rule.is_valid(aa, i == 0, i == n) or self.rule.is_not_specific():
-                if not tags:
+            elif self.rule.is_not_specific() or self.rule.is_valid(aa, i == 0, i == n):
+                if self._can_apply_with(tags):
                     positions.append(i)
-                else:
-                    known = []
-                    unknown = []
-                    for tag in tags:
-                        if isinstance(tag, (ModificationBase, MassModification)):
-                            if tag._generated in (ModificationSourceType.Explicit, ModificationSourceType.Constant):
-                                known.append(tag)
-                            elif tag._generated == ModificationSourceType.Generated:
-                                unknown.append(tag)
-                    total_at = len(known) + len(unknown)
-                    can_known = (known and self.colocal_known) or not known
-                    can_unknown = (unknown and self.colocal_unknown) or not unknown
-                    if ((can_known and can_unknown) or (not can_known and not can_unknown)) and total_at < self.limit:
-                        positions.append(i)
         return positions
 
     @classmethod
@@ -4452,18 +4455,16 @@ class ProteoformCombinator:
             stacks.append(stack)
         return stacks
 
-    def _build_position_map(self):
+    def _build_position_map(self) -> List[List[Optional[int]]]:
         position_choices = []
         for rule in self.variable_rules:
             positions_for = rule.find_positions(self.template)
-            if rule.labile:
-                positions_for = [None] + list(range(len(self.template)))
-            elif self.include_unmodified or not positions_for:
+            if rule.labile or self.include_unmodified or not positions_for:
                 positions_for = [None] + positions_for
             position_choices.append(positions_for)
         return position_choices
 
-    def _build_modification_iter(self) -> Iterator[List[Tuple[Optional[int], Optional[GeneratorModificationRuleDirective]]]]:
+    def _build_modification_iter(self) -> Iterator[Iterator[Tuple[Optional[int], GeneratorModificationRuleDirective]]]:
         position_choices = self._build_position_map()
         return map(lambda pos: zip(pos, self.variable_rules), itertools.product(*position_choices))
 
@@ -4483,7 +4484,7 @@ class ProteoformCombinator:
                         state[((None, rule.token))] += 1
                         labile_remaining.append(rule.create())
                     continue
-                if idx not in rule.find_positions(template):
+                if not rule._can_apply_with(template.sequence[idx][1]):
                     valid = False
                     break
                 (aa, tags) = template[idx]
