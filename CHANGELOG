@@ -1,5 +1,5 @@
-5.0c1
------
+5.0rc2
+------
 
  - Update the standard ion compositions to be more consistent with the adopted ion type notation.
    The `"z+1"` and `"c+1"` ions now represent compositions described as "c-ion plus a hydrogen" and "z-ion plus a hydrogen",
@@ -58,6 +58,9 @@
  - Allow fragment charges formatted as :py:class:`float` in MGF (issue `#185 <https://github.com/levitsky/pyteomics/issues/185>`_).
  - New functions :py:func:`pyteomics.parser.coverage_mask` and :py:func:`pyteomics.parser.strip`.
  - Add support for explicit XML namespaces (`#200 <https://github.com/levitsky/pyteomics/issues/200>_`).
+ - Fix `#47 <https://github.com/levitsky/pyteomics/issues/47>`_ (Postgres compatibility for :py:mod:`pyteomics.mass.unimod`) in
+   `#201 <https://github.com/levitsky/pyteomics/pull/201>`_. This changes certain column types from `VARCHAR` to Unicode text.
+
 
 
 4.7.5
