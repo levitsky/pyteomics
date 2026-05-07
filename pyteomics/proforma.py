@@ -3511,7 +3511,7 @@ class ProForma(object):
     def __len__(self):
         return len(self.sequence)
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: Union[int, slice]):
         if isinstance(i, slice):
             props = self.properties.copy()
             ivs = []
@@ -3861,7 +3861,7 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
-    def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False, strip: bool = False) -> Iterator["ProForma"]:
+    def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False, strip: bool = False, deepcopy: bool = False) -> Iterator["ProForma"]:
         """
         Generate combinatorial localizations of modifications defined on this ProForma sequence.
 
@@ -3877,12 +3877,16 @@ class ProForma(object):
         strip : :class:`bool`
             If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
             leaving only the bare modification definition.
+        deepcopy : :class:`bool`
+            If :class:`True`, the generated peptidoforms will have all tags and modifications deep-copied.
+            This is necessary if the generated peptidoforms will be modified in-place after generation, but adds overhead if they will be treated as immutable.
+            Defaults to :class:`False`.
 
         Yields
         ------
         :class:`ProForma`
         """
-        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile, strip=strip))
+        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile, strip=strip, deepcopy=deepcopy))
 
     peptidoforms = proteoforms
 
@@ -4150,6 +4154,7 @@ def peptidoforms(
     include_labile: bool = False,
     expand_rules: bool = False,
     strip: bool = False,
+    deepcopy: bool = False,
 ) -> Iterator[ProForma]:
     """
     Generate the combinatorial cross-product of modifications for ``peptide``, given by
@@ -4196,6 +4201,11 @@ def peptidoforms(
     strip : :class:`bool`
         If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
         leaving only the bare modification definition.
+    deepcopy : :class:`bool`
+        If :class:`True`, the generated peptidoforms will be deep-copied from the original before modifications are applied.
+        This is more expensive, but allows for the generated peptidoforms to be modified independently of the original.
+        If :class:`False`, modifications will be applied in-place on the original and yielded as-is, which is more efficient
+        but means that modifying the generated peptidoforms will have unpredictable side effects.
 
     Yields
     ------
@@ -4315,6 +4325,7 @@ def peptidoforms(
         include_unmodified=include_unmodified,
         include_labile=include_labile,
         strip=strip,
+        deepcopy=deepcopy,
     )
 
 
@@ -4347,14 +4358,22 @@ class ProteoformCombinator:
     strip : :class:`bool`
         If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
         leaving only the bare modification definition.
+    deepcopy : :class:`bool`
+        If :class:`True`, the combinator will deepcopy the template for every generated proteoform, which is safer but more computationally expensive.
+        If :class:`False`, the combinator will attempt to reuse the same template and apply modifications in-place, which is faster but
+        may lead to unintended side effects if the generated proteoforms are modified after generation. Defaults to :class:`False`.
     """
     template: ProForma
     include_unmodified: bool
     include_labile: bool
     variable_rules: List[GeneratorModificationRuleDirective]
 
-    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False, strip: bool=False):
-        self.template = base_proteoform.copy()
+    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False, strip: bool=False, deepcopy: bool=False):
+        self.deepcopy = deepcopy
+        if deepcopy:
+            self.template = base_proteoform.copy()
+        else:
+            self.template = ProForma(base_proteoform.sequence.copy(), base_proteoform.properties.copy())
         self.include_unmodified = include_unmodified
         self.include_labile = include_labile
         self.strip = strip
@@ -4472,7 +4491,10 @@ class ProteoformCombinator:
         seen = set()
         for slots in self._build_modification_iter():
             state = Counter()
-            template = self.template.copy()
+            if self.deepcopy:
+                template = self.template.copy()
+            else:
+                template = ProForma(self.template.sequence.copy(), self.template.properties.copy())
             valid = True
             labile_remaining = []
 
