@@ -1716,7 +1716,7 @@ class ModificationTarget(object):
             True if this target matches the given criteria
         """
         if (n_term and self.n_term) or (c_term and self.c_term):
-            if (self.aa and aa == self.aa) or self.aa is None:
+            if (self.aa and aa.upper() == self.aa) or self.aa is None:
                 return True
             return False
         return self.aa == aa or self.aa is None
@@ -4106,9 +4106,7 @@ class GeneratorModificationRuleDirective:
                     if tag.group_id == group_id:
                         positions.append(i)
             else:
-                # ModificationTarget.is_valid expects uppercase
-                aa_upper = aa.upper()
-                if self.rule.is_not_specific() or self.rule.is_valid(aa_upper, i == 0, i == n):
+                if self.rule.is_not_specific() or self.rule.is_valid(aa, i == 0, i == n):
                     if self._can_apply_with(tags):
                         positions.append(i)
         return positions
