@@ -2961,6 +2961,22 @@ def parse(sequence: str, **kwargs) -> Tuple[List[Tuple[str, Optional[List[TagBas
         A mapping listing the labile modifications, fixed modifications, stable isotopes, unlocalized
         modifications, tagged intervals, and group IDs
     """
+    # short-circuiting the parser for simple sequences with no tags or modifications to avoid overhead
+    if sequence.isupper() and sequence.isalpha():
+        return (
+            [(aa, None) for aa in sequence],
+            {
+                'n_term': [],
+                'c_term': [],
+                'unlocalized_modifications': [],
+                'labile_modifications': [],
+                'fixed_modifications': [],
+                'intervals': [],
+                'isotopes': [],
+                'group_ids': [],
+                'charge_state': None,
+                'names': {}
+            })
     parser = Parser(sequence, **kwargs)
     return parser.parse()
 
