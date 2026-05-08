@@ -14,7 +14,7 @@ import itertools
 import re
 import warnings
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple
-from collections import Counter, deque, namedtuple, defaultdict
+from collections import Counter, deque, namedtuple
 from functools import partial
 from itertools import chain
 from array import array as _array
@@ -23,7 +23,7 @@ from numbers import Integral
 
 from .mass import Composition, std_aa_mass, Unimod, nist_mass, calculate_mass, std_ion_comp, mass_charge_ratio, std_aa_comp
 from .auxiliary import PyteomicsError, BasicComposition
-from .auxiliary.utils import add_metaclass
+from .auxiliary.utils import add_metaclass, memoize
 from .auxiliary.psims_util import load_psimod, load_xlmod, load_gno, obo_cache, _has_psims
 
 try:
@@ -198,6 +198,9 @@ class TagBase(object):
         return (self.type == other.type) and (self.value == other.value) and (self.extra == other.extra) \
             and (self.group_id == other.group_id)
 
+    def __hash__(self) -> int:
+        return hash((self.type, self.value, tuple(self.extra), self.group_id))
+
     def __ne__(self, other):
         return not self == other
 
@@ -217,7 +220,7 @@ class TagBase(object):
         if self.is_modification():
             return self
         for tag in self.extra:
-            if tag.is_modification:
+            if tag.is_modification():
                 return tag
         return None
 
@@ -521,7 +524,6 @@ class ModificationResolver(object):
 
     def __hash__(self):
         return hash(self.name)
-
 
 
 class UnimodResolver(ModificationResolver):
@@ -1906,6 +1908,9 @@ class TaggedInterval(object):
         if other is None:
             return False
         return self.start == other.start and self.end == other.end and self.tags == other.tags
+
+    def __hash__(self):
+        return hash((self.start, self.end, tuple(self.tags or []), self.ambiguous))
 
     def __ne__(self, other):
         return not self == other
@@ -4095,7 +4100,6 @@ class GeneratorModificationRuleDirective:
         can_unknown = bool((unknown and self.colocal_unknown) or not unknown)
         return ((can_known and can_unknown) or (not can_known and not can_unknown)) and total_at < self.limit
 
-
     def find_positions(self, sequence: ProForma) -> List[int]:
         n = len(sequence) - 1
         positions = []
@@ -4117,6 +4121,7 @@ class GeneratorModificationRuleDirective:
         return positions
 
     @classmethod
+    @memoize()
     def from_tagged_modification(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
         mod = tag.find_modification()
         if not mod:
@@ -4128,6 +4133,7 @@ class GeneratorModificationRuleDirective:
         return cls(rule, None, colocal_known, colocal_unknown, tag.limit, strip=strip)
 
     @classmethod
+    @memoize()
     def from_unlocalized_rule(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
         mod = tag.find_modification()
         if not mod:
@@ -4137,6 +4143,7 @@ class GeneratorModificationRuleDirective:
         return cls(rule, None, colocal_known, colocal_unknown, tag.limit, strip=strip)
 
     @classmethod
+    @memoize()
     def from_region_rule(cls, region: TaggedInterval, strip: bool = False) -> List['GeneratorModificationRuleDirective']:
         rules = []
         for tag in (region.tags or []):
@@ -4149,6 +4156,7 @@ class GeneratorModificationRuleDirective:
         return rules
 
     @classmethod
+    @memoize()
     def from_labile_rule(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
         mod = tag.find_modification()
         if not mod:
@@ -4159,13 +4167,20 @@ class GeneratorModificationRuleDirective:
         return cls(rule, None, colocal_known, colocal_unknown, tag.limit, labile=True, strip=strip)
 
 
-def _coerce_string_to_modification(item) -> TagBase:
+def _coerce_string_to_modification(item, copy: bool = False) -> TagBase:
     if isinstance(item, TagBase):
-        return item.copy()
+        return item.copy() if copy else item
     elif isinstance(item, str):
-        return TagParser(item)()[0]
+        if copy:
+            return TagParser(item)()[0]
+        return _coerce_string_to_modification_cached(item)
     else:
         raise TypeError(f"Don't know how to coerce {item} of type {type(item)} to a modification")
+
+
+@memoize()
+def _coerce_string_to_modification_cached(item: str) -> TagBase:
+    return TagParser(item)()[0]
 
 
 def peptidoforms(
@@ -4302,7 +4317,7 @@ def peptidoforms(
     if variable_modifications:
         if isinstance(variable_modifications, list):
             extra_rules = []
-            for rule in map(_coerce_string_to_modification, variable_modifications):
+            for rule in map(partial(_coerce_string_to_modification, copy=deepcopy), variable_modifications):
                 if expand_rules:
                     parsed_rule = GeneratorModificationRuleDirective.from_unlocalized_rule(
                         rule, strip=strip
@@ -4315,7 +4330,7 @@ def peptidoforms(
             extra_rules = []
             for tag, targets in variable_modifications.items():
                 seen.clear()
-                tag = _coerce_string_to_modification(tag)
+                tag = _coerce_string_to_modification(tag, copy=deepcopy)
                 for target in targets:
                     if isinstance(target, str):
                         target = PositionModifierTag(target)
@@ -4334,7 +4349,7 @@ def peptidoforms(
             raise TypeError(f"Expected variable_modifications to be a list or a dict, got {type(variable_modifications)}")
     if fixed_modifications:
         if isinstance(fixed_modifications, list):
-            template.fixed_modifications.extend(map(_coerce_string_to_modification, fixed_modifications))
+            template.fixed_modifications.extend(map(partial(_coerce_string_to_modification, copy=deepcopy), fixed_modifications))
         elif isinstance(fixed_modifications, dict):
             extra_rules = []
             for tag, targets in fixed_modifications.items():
@@ -4345,7 +4360,7 @@ def peptidoforms(
                     if target in seen:
                         continue
                     seen.add(target)
-                    tag = _coerce_string_to_modification(tag)
+                    tag = _coerce_string_to_modification(tag, copy=deepcopy)
                     extra_rules.append(tag | target)
             template.fixed_modifications.extend(extra_rules)
         else:
