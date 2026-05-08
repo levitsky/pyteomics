@@ -3896,12 +3896,12 @@ class ProForma(object):
             For all labile modifications, include the case where the modification is localized at every possible location or as
             a remaining labile modification.
         strip : :class:`bool`
-            If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
+            If :const:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
             leaving only the bare modification definition.
         deepcopy : :class:`bool`
-            If :class:`True`, the generated peptidoforms will have all tags and modifications deep-copied.
+            If :const:`True`, the generated peptidoforms will have all tags and modifications deep-copied.
             This is necessary if the generated peptidoforms will be modified in-place after generation, but adds overhead if they will be treated as immutable.
-            Defaults to :class:`False`.
+            Defaults to :const:`False`.
 
         Yields
         ------
@@ -4226,12 +4226,12 @@ def peptidoforms(
         This mirrors the expected behavior of many search engines' variable modification rules, though it is not strictly
         how ProForma's rules work. This forces :attr:`include_unmodified` to be :const:`True`.
     strip : :class:`bool`
-        If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
+        If :const:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
         leaving only the bare modification definition.
     deepcopy : :class:`bool`
-        If :class:`True`, the generated peptidoforms will be deep-copied from the original before modifications are applied.
+        If :const:`True`, the generated peptidoforms will be deep-copied from the original before modifications are applied.
         This is more expensive, but allows for the generated peptidoforms to be modified independently of the original.
-        If :class:`False`, modifications will be applied in-place on the original and yielded as-is, which is more efficient
+        If :const:`False`, modifications will be applied in-place on the original and yielded as-is, which is more efficient
         but means that modifying the generated peptidoforms will have unpredictable side effects.
 
     Yields
@@ -4383,12 +4383,12 @@ class ProteoformCombinator:
             where it is kept as a labile modification without localization.
 
     strip : :class:`bool`
-        If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
+        If :const:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
         leaving only the bare modification definition.
     deepcopy : :class:`bool`
-        If :class:`True`, the combinator will deepcopy the template for every generated proteoform, which is safer but more computationally expensive.
-        If :class:`False`, the combinator will attempt to reuse the same template and apply modifications in-place, which is faster but
-        may lead to unintended side effects if the generated proteoforms are modified after generation. Defaults to :class:`False`.
+        If :const:`True`, the combinator will deepcopy the template for every generated proteoform, which is safer but more computationally expensive.
+        If :const:`False`, the combinator will attempt to reuse the same template and apply modifications in-place, which is faster but
+        may lead to unintended side effects if the generated proteoforms are modified after generation. Defaults to :const:`False`.
     """
     template: ProForma
     include_unmodified: bool
