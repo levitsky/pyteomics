@@ -2957,6 +2957,21 @@ class Parser:
     def __call__(self, *args, **kwds):
         return self.parse()
 
+    @staticmethod
+    def empty_properties():
+        return {
+                'n_term': [],
+                'c_term': [],
+                'unlocalized_modifications': [],
+                'labile_modifications': [],
+                'fixed_modifications': [],
+                'intervals': [],
+                'isotopes': [],
+                'group_ids': [],
+                'charge_state': None,
+                'names': {}
+            }
+
 
 def parse(sequence: str, **kwargs) -> Tuple[List[Tuple[str, Optional[List[TagBase]]]], Dict[str, Any]]:
     """
@@ -2986,18 +3001,8 @@ def parse(sequence: str, **kwargs) -> Tuple[List[Tuple[str, Optional[List[TagBas
     if sequence.isupper() and sequence.isalpha():
         return (
             [(aa, None) for aa in sequence],
-            {
-                'n_term': [],
-                'c_term': [],
-                'unlocalized_modifications': [],
-                'labile_modifications': [],
-                'fixed_modifications': [],
-                'intervals': [],
-                'isotopes': [],
-                'group_ids': [],
-                'charge_state': None,
-                'names': {}
-            })
+            Parser.empty_properties()
+        )
     parser = Parser(sequence, **kwargs)
     return parser.parse()
 
