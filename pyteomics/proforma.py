@@ -2442,7 +2442,6 @@ def _local_charges(position_list, property_state) -> Tuple[int, int]:
     return z, k
 
 
-
 class Parser:
     """
     A parser for the ProForma 2 syntax.
@@ -3018,14 +3017,13 @@ class Parser:
         z, k = self._local_charges()
         if k:
             if charge_state is None:
-                charge_state = ChargeState(z)
-            else:
-                charge_state.charge += z
-                # The charge contribution is NOT always from a proton, but charged
-                # modifications aren't granular enough to accurately tell you
-                # the correct mass to attribute to the charge carrier, so they
-                # look like protons to the ChargeState's helper methods anyway.
-                charge_state._add_protons_for_charge(z)
+                charge_state = ChargeState(0)
+            charge_state.charge += z
+            # The charge contribution is NOT always from a proton, but charged
+            # modifications aren't granular enough to accurately tell you
+            # the correct mass to attribute to the charge carrier, so they
+            # look like protons to the ChargeState's helper methods anyway.
+            ### charge_state._add_protons_for_charge(z)
 
         if self.state in (
             ISOTOPE,
@@ -3849,7 +3847,8 @@ class ProForma(object):
             )
         try:
             composition = self.composition(include_charge=charge_state, ignore_missing=False)
-            return composition.mass(**kwargs)
+            charge = charge_state.charge
+            return composition.mass(charge=charge, **kwargs)
         except ProFormaError:
             charge_carrier_mass, charge = charge_state.for_mz_calculation()
             return (self.mass + charge_carrier_mass) / abs(charge)
