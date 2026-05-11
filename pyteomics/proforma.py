@@ -14,7 +14,7 @@ import itertools
 import re
 import warnings
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple
-from collections import Counter, deque, namedtuple, defaultdict
+from collections import Counter, deque, namedtuple
 from functools import partial
 from itertools import chain
 from array import array as _array
@@ -23,7 +23,7 @@ from numbers import Integral
 
 from .mass import Composition, std_aa_mass, Unimod, nist_mass, calculate_mass, std_ion_comp, mass_charge_ratio, std_aa_comp
 from .auxiliary import PyteomicsError, BasicComposition
-from .auxiliary.utils import add_metaclass
+from .auxiliary.utils import add_metaclass, memoize
 from .auxiliary.psims_util import load_psimod, load_xlmod, load_gno, obo_cache, _has_psims
 
 try:
@@ -198,6 +198,9 @@ class TagBase(object):
         return (self.type == other.type) and (self.value == other.value) and (self.extra == other.extra) \
             and (self.group_id == other.group_id)
 
+    def __hash__(self) -> int:
+        return hash((self.type, self.value, tuple(self.extra), self.group_id))
+
     def __ne__(self, other):
         return not self == other
 
@@ -217,7 +220,7 @@ class TagBase(object):
         if self.is_modification():
             return self
         for tag in self.extra:
-            if tag.is_modification:
+            if tag.is_modification():
                 return tag
         return None
 
@@ -521,7 +524,6 @@ class ModificationResolver(object):
 
     def __hash__(self):
         return hash(self.name)
-
 
 
 class UnimodResolver(ModificationResolver):
@@ -1652,12 +1654,13 @@ def process_tag_tokens(tokens: List[str]) -> TagBase:
 
 
 class ModificationTarget(object):
-    aa: str
+    aa: Optional[str]
     n_term: bool
     c_term: bool
 
     def __init__(self, aa, n_term=False, c_term=False):
-        self.aa = aa
+        # Normalize amino acid to uppercase once for faster comparisons
+        self.aa = aa.upper() if aa else None
         self.n_term = n_term
         self.c_term = c_term
 
@@ -1698,11 +1701,27 @@ class ModificationTarget(object):
         return str(self)
 
     def is_valid(self, aa: str, n_term: bool, c_term: bool) -> bool:
+        """Check if this target matches the given amino acid and terminal status.
+
+        Parameters
+        ----------
+        aa : str
+            The amino acid to check (should be pre-uppercased for efficiency)
+        n_term : bool
+            Whether this is an N-terminal position
+        c_term : bool
+            Whether this is a C-terminal position
+
+        Returns
+        -------
+        bool
+            True if this target matches the given criteria
+        """
         if (n_term and self.n_term) or (c_term and self.c_term):
-            if (self.aa and aa.upper() == self.aa.upper()) or self.aa is None:
+            if (self.aa and aa.upper() == self.aa) or self.aa is None:
                 return True
             return False
-        return self.aa.upper() == aa.upper() or self.aa is None
+        return self.aa == aa or self.aa is None
 
     @classmethod
     def from_str(cls, target: str):
@@ -1768,7 +1787,11 @@ class ModificationRule(object):
         return not self.targets
 
     def is_valid(self, aa: str, n_term: bool, c_term: bool) -> bool:
-        return any(target.is_valid(aa, n_term, c_term) for target in self.targets)
+
+        for target in self.targets:
+            if target.is_valid(aa, n_term, c_term):
+                return True
+        return False
 
     def _validate_targets(self):
         validated_targets = []
@@ -1885,6 +1908,9 @@ class TaggedInterval(object):
         if other is None:
             return False
         return self.start == other.start and self.end == other.end and self.tags == other.tags
+
+    def __hash__(self):
+        return hash((self.start, self.end, tuple(self.tags or []), self.ambiguous))
 
     def __ne__(self, other):
         return not self == other
@@ -2936,6 +2962,21 @@ class Parser:
     def __call__(self, *args, **kwds):
         return self.parse()
 
+    @staticmethod
+    def empty_properties():
+        return {
+                'n_term': [],
+                'c_term': [],
+                'unlocalized_modifications': [],
+                'labile_modifications': [],
+                'fixed_modifications': [],
+                'intervals': [],
+                'isotopes': [],
+                'group_ids': [],
+                'charge_state': None,
+                'names': {}
+            }
+
 
 def parse(sequence: str, **kwargs) -> Tuple[List[Tuple[str, Optional[List[TagBase]]]], Dict[str, Any]]:
     """
@@ -2961,6 +3002,12 @@ def parse(sequence: str, **kwargs) -> Tuple[List[Tuple[str, Optional[List[TagBas
         A mapping listing the labile modifications, fixed modifications, stable isotopes, unlocalized
         modifications, tagged intervals, and group IDs
     """
+    # short-circuiting the parser for simple sequences with no tags or modifications to avoid overhead
+    if sequence.isupper() and sequence.isalpha():
+        return (
+            [(aa, None) for aa in sequence],
+            Parser.empty_properties()
+        )
     parser = Parser(sequence, **kwargs)
     return parser.parse()
 
@@ -3495,7 +3542,7 @@ class ProForma(object):
     def __len__(self):
         return len(self.sequence)
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: Union[int, slice]):
         if isinstance(i, slice):
             props = self.properties.copy()
             ivs = []
@@ -3845,7 +3892,7 @@ class ProForma(object):
     def tags(self):
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
-    def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False, strip: bool = False) -> Iterator["ProForma"]:
+    def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False, strip: bool = False, deepcopy: bool = False) -> Iterator["ProForma"]:
         """
         Generate combinatorial localizations of modifications defined on this ProForma sequence.
 
@@ -3859,14 +3906,18 @@ class ProForma(object):
             For all labile modifications, include the case where the modification is localized at every possible location or as
             a remaining labile modification.
         strip : :class:`bool`
-            If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
+            If :const:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
             leaving only the bare modification definition.
+        deepcopy : :class:`bool`
+            If :const:`True`, the generated peptidoforms will have all tags and modifications deep-copied.
+            This is necessary if the generated peptidoforms will be modified in-place after generation, but adds overhead if they will be treated as immutable.
+            Defaults to :const:`False`.
 
         Yields
         ------
         :class:`ProForma`
         """
-        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile, strip=strip))
+        return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile, strip=strip, deepcopy=deepcopy))
 
     peptidoforms = proteoforms
 
@@ -4019,6 +4070,36 @@ class GeneratorModificationRuleDirective:
     def __repr__(self):
         return f"{self.__class__.__name__}({self.rule}, {self.region}, {self.colocal_known}, {self.colocal_unknown})"
 
+    @staticmethod
+    def _extract_rule_features(tag: TagBase) -> Tuple[List[Any], bool, bool]:
+        targets = []
+        colocal_known = False
+        colocal_unknown = False
+        for extra in tag.extra:
+            if extra.type == TagTypeEnum.position_modifier:
+                targets.append(extra.value)
+            elif extra.type == TagTypeEnum.comkp:
+                colocal_known = True
+            elif extra.type == TagTypeEnum.comup:
+                colocal_unknown = True
+        return targets, colocal_known, colocal_unknown
+
+    def _can_apply_with(self, tags) -> bool:
+        if not tags:
+            return True
+        known = []
+        unknown = []
+        for tag in tags:
+            if isinstance(tag, (ModificationBase, MassModification)):
+                if tag._generated in (ModificationSourceType.Explicit, ModificationSourceType.Constant):
+                    known.append(tag)
+                elif tag._generated == ModificationSourceType.Generated:
+                    unknown.append(tag)
+        total_at = len(known) + len(unknown)
+        can_known = bool((known and self.colocal_known) or not known)
+        can_unknown = bool((unknown and self.colocal_unknown) or not unknown)
+        return ((can_known and can_unknown) or (not can_known and not can_unknown)) and total_at < self.limit
+
     def find_positions(self, sequence: ProForma) -> List[int]:
         n = len(sequence) - 1
         positions = []
@@ -4033,26 +4114,14 @@ class GeneratorModificationRuleDirective:
                     # TODO: Implement combinatoric limits here
                     if tag.group_id == group_id:
                         positions.append(i)
-            elif self.rule.is_valid(aa, i == 0, i == n) or self.rule.is_not_specific():
-                if not tags:
-                    positions.append(i)
-                else:
-                    known = []
-                    unknown = []
-                    for tag in tags:
-                        if isinstance(tag, (ModificationBase, MassModification)):
-                            if tag._generated in (ModificationSourceType.Explicit, ModificationSourceType.Constant):
-                                known.append(tag)
-                            elif tag._generated == ModificationSourceType.Generated:
-                                unknown.append(tag)
-                    total_at = len(known) + len(unknown)
-                    can_known = (known and self.colocal_known) or not known
-                    can_unknown = (unknown and self.colocal_unknown) or not unknown
-                    if ((can_known and can_unknown) or (not can_known and not can_unknown)) and total_at < self.limit:
+            else:
+                if self.rule.is_not_specific() or self.rule.is_valid(aa, i == 0, i == n):
+                    if self._can_apply_with(tags):
                         positions.append(i)
         return positions
 
     @classmethod
+    @memoize()
     def from_tagged_modification(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
         mod = tag.find_modification()
         if not mod:
@@ -4060,57 +4129,58 @@ class GeneratorModificationRuleDirective:
         elif not mod.group_id:
             return
         rule = ModificationRule(tag, [])
-        colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
-        colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
+        _targets, colocal_known, colocal_unknown = cls._extract_rule_features(tag)
         return cls(rule, None, colocal_known, colocal_unknown, tag.limit, strip=strip)
 
     @classmethod
+    @memoize()
     def from_unlocalized_rule(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
         mod = tag.find_modification()
         if not mod:
             return
-        position_constraints = tag.find_tag_type(TagTypeEnum.position_modifier)
-        targets = [v.value for v in position_constraints]
-        colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
-        colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
+        targets, colocal_known, colocal_unknown = cls._extract_rule_features(tag)
         rule = ModificationRule(modification_tag=mod, targets=targets)
         return cls(rule, None, colocal_known, colocal_unknown, tag.limit, strip=strip)
 
     @classmethod
+    @memoize()
     def from_region_rule(cls, region: TaggedInterval, strip: bool = False) -> List['GeneratorModificationRuleDirective']:
         rules = []
         for tag in (region.tags or []):
             mod = tag.find_modification()
             if not mod:
                 continue
-            position_constraints = tag.find_tag_type(TagTypeEnum.position_modifier)
-            targets = [v.value for v in position_constraints]
-            colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
-            colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
+            targets, colocal_known, colocal_unknown = cls._extract_rule_features(tag)
             rule = ModificationRule(modification_tag=mod, targets=targets)
             rules.append(cls(rule, region, colocal_known, colocal_unknown, tag.limit, strip=strip))
         return rules
 
     @classmethod
+    @memoize()
     def from_labile_rule(cls, tag: TagBase, strip: bool = False) -> "GeneratorModificationRuleDirective":
         mod = tag.find_modification()
         if not mod:
             return
-        position_constraints = tag.find_tag_type(TagTypeEnum.position_modifier)
-        targets = [ModificationTarget(v.value) for v in position_constraints]
-        colocal_known = bool(tag.find_tag_type(TagTypeEnum.comkp))
-        colocal_unknown = bool(tag.find_tag_type(TagTypeEnum.comup))
+        targets, colocal_known, colocal_unknown = cls._extract_rule_features(tag)
+        targets = [ModificationTarget(v) for v in targets]
         rule = ModificationRule(modification_tag=mod, targets=targets)
         return cls(rule, None, colocal_known, colocal_unknown, tag.limit, labile=True, strip=strip)
 
 
-def _coerce_string_to_modification(item) -> TagBase:
+def _coerce_string_to_modification(item, copy: bool = False) -> TagBase:
     if isinstance(item, TagBase):
-        return item.copy()
+        return item.copy() if copy else item
     elif isinstance(item, str):
-        return TagParser(item)()[0]
+        if copy:
+            return TagParser(item)()[0]
+        return _coerce_string_to_modification_cached(item)
     else:
         raise TypeError(f"Don't know how to coerce {item} of type {type(item)} to a modification")
+
+
+@memoize()
+def _coerce_string_to_modification_cached(item: str) -> TagBase:
+    return TagParser(item)()[0]
 
 
 def peptidoforms(
@@ -4131,6 +4201,7 @@ def peptidoforms(
     include_labile: bool = False,
     expand_rules: bool = False,
     strip: bool = False,
+    deepcopy: bool = False,
 ) -> Iterator[ProForma]:
     """
     Generate the combinatorial cross-product of modifications for ``peptide``, given by
@@ -4175,8 +4246,13 @@ def peptidoforms(
         This mirrors the expected behavior of many search engines' variable modification rules, though it is not strictly
         how ProForma's rules work. This forces :attr:`include_unmodified` to be :const:`True`.
     strip : :class:`bool`
-        If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
+        If :const:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
         leaving only the bare modification definition.
+    deepcopy : :class:`bool`
+        If :const:`True`, the generated peptidoforms will be deep-copied from the original before modifications are applied.
+        This is more expensive, but allows for the generated peptidoforms to be modified independently of the original.
+        If :const:`False`, modifications will be applied in-place on the original and yielded as-is, which is more efficient
+        but means that modifying the generated peptidoforms will have unpredictable side effects.
 
     Yields
     ------
@@ -4241,7 +4317,7 @@ def peptidoforms(
     if variable_modifications:
         if isinstance(variable_modifications, list):
             extra_rules = []
-            for rule in map(_coerce_string_to_modification, variable_modifications):
+            for rule in map(partial(_coerce_string_to_modification, copy=deepcopy), variable_modifications):
                 if expand_rules:
                     parsed_rule = GeneratorModificationRuleDirective.from_unlocalized_rule(
                         rule, strip=strip
@@ -4254,7 +4330,7 @@ def peptidoforms(
             extra_rules = []
             for tag, targets in variable_modifications.items():
                 seen.clear()
-                tag = _coerce_string_to_modification(tag)
+                tag = _coerce_string_to_modification(tag, copy=deepcopy)
                 for target in targets:
                     if isinstance(target, str):
                         target = PositionModifierTag(target)
@@ -4273,7 +4349,7 @@ def peptidoforms(
             raise TypeError(f"Expected variable_modifications to be a list or a dict, got {type(variable_modifications)}")
     if fixed_modifications:
         if isinstance(fixed_modifications, list):
-            template.fixed_modifications.extend(map(_coerce_string_to_modification, fixed_modifications))
+            template.fixed_modifications.extend(map(partial(_coerce_string_to_modification, copy=deepcopy), fixed_modifications))
         elif isinstance(fixed_modifications, dict):
             extra_rules = []
             for tag, targets in fixed_modifications.items():
@@ -4284,7 +4360,7 @@ def peptidoforms(
                     if target in seen:
                         continue
                     seen.add(target)
-                    tag = _coerce_string_to_modification(tag)
+                    tag = _coerce_string_to_modification(tag, copy=deepcopy)
                     extra_rules.append(tag | target)
             template.fixed_modifications.extend(extra_rules)
         else:
@@ -4296,6 +4372,7 @@ def peptidoforms(
         include_unmodified=include_unmodified,
         include_labile=include_labile,
         strip=strip,
+        deepcopy=deepcopy,
     )
 
 
@@ -4326,16 +4403,24 @@ class ProteoformCombinator:
             where it is kept as a labile modification without localization.
 
     strip : :class:`bool`
-        If :class:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
+        If :const:`True`, the generated peptidoforms will have all modification tags stripped of any extra information,
         leaving only the bare modification definition.
+    deepcopy : :class:`bool`
+        If :const:`True`, the combinator will deepcopy the template for every generated proteoform, which is safer but more computationally expensive.
+        If :const:`False`, the combinator will attempt to reuse the same template and apply modifications in-place, which is faster but
+        may lead to unintended side effects if the generated proteoforms are modified after generation. Defaults to :const:`False`.
     """
     template: ProForma
     include_unmodified: bool
     include_labile: bool
     variable_rules: List[GeneratorModificationRuleDirective]
 
-    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False, strip: bool=False):
-        self.template = base_proteoform.copy()
+    def __init__(self, base_proteoform: ProForma, include_unmodified: bool=False, include_labile: bool=False, strip: bool=False, deepcopy: bool=False):
+        self.deepcopy = deepcopy
+        if deepcopy:
+            self.template = base_proteoform.copy()
+        else:
+            self.template = ProForma(base_proteoform.sequence.copy(), base_proteoform.properties.copy())
         self.include_unmodified = include_unmodified
         self.include_labile = include_labile
         self.strip = strip
@@ -4413,41 +4498,16 @@ class ProteoformCombinator:
     def __next__(self):
         return next(self._iter)
 
-    def _invert_position_rules(self, rules: List[GeneratorModificationRuleDirective], positions: List[List[Optional[int]]]) -> List[List[Tuple[Optional[int], GeneratorModificationRuleDirective]]]:
-        index = defaultdict(list)
-
-        for rule, position_list in zip(rules, positions):
-            if rule.labile:
-                index[None].append(rule)
-            for position in position_list:
-                if position is None:
-                    continue
-                index[position].append(rule)
-
-        if self.include_unmodified:
-            for k in index:
-                index[k].append(None)
-
-        stacks = []
-        for idx, options in index.items():
-            stack = []
-            for opt in options:
-                stack.append((idx, opt))
-            stacks.append(stack)
-        return stacks
-
-    def _build_position_map(self):
+    def _build_position_map(self) -> List[List[Optional[int]]]:
         position_choices = []
         for rule in self.variable_rules:
             positions_for = rule.find_positions(self.template)
-            if rule.labile:
-                positions_for = [None] + list(range(len(self.template)))
-            elif self.include_unmodified or not positions_for:
+            if rule.labile or self.include_unmodified or not positions_for:
                 positions_for = [None] + positions_for
             position_choices.append(positions_for)
         return position_choices
 
-    def _build_modification_iter(self) -> Iterator[List[Tuple[Optional[int], Optional[GeneratorModificationRuleDirective]]]]:
+    def _build_modification_iter(self) -> Iterator[Iterator[Tuple[Optional[int], GeneratorModificationRuleDirective]]]:
         position_choices = self._build_position_map()
         return map(lambda pos: zip(pos, self.variable_rules), itertools.product(*position_choices))
 
@@ -4455,7 +4515,10 @@ class ProteoformCombinator:
         seen = set()
         for slots in self._build_modification_iter():
             state = Counter()
-            template = self.template.copy()
+            if self.deepcopy:
+                template = self.template.copy()
+            else:
+                template = ProForma(self.template.sequence.copy(), self.template.properties.copy())
             valid = True
             labile_remaining = []
 
@@ -4467,7 +4530,7 @@ class ProteoformCombinator:
                         state[((None, rule.token))] += 1
                         labile_remaining.append(rule.create())
                     continue
-                if idx not in rule.find_positions(template):
+                if not rule._can_apply_with(template.sequence[idx][1]):
                     valid = False
                     break
                 (aa, tags) = template[idx]
