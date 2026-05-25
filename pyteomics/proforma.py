@@ -957,7 +957,7 @@ class ModificationBase(TagBase):
         return self._definition
 
     @property
-    def mass(self):
+    def mass(self) -> Optional[float]:
         '''The monoisotopic mass shift this modification applies
 
         Returns
@@ -966,7 +966,7 @@ class ModificationBase(TagBase):
         '''
         return self.definition['mass']
 
-    def has_mass(self):
+    def has_mass(self) -> bool:
         """
         Check if this tag carries a mass value.
 
@@ -1167,6 +1167,8 @@ class FormulaModification(ModificationBase):
         else:
             charge = None
         composition = Composition(formula=normalized)
+        if charge is not None:
+            composition["e-"] = -charge
         return composition, charge
 
     def resolve(self):
@@ -1997,21 +1999,24 @@ class Adduct(NamedTuple):
     def composition(self) -> Composition:
         if self.name == 'e-':
             return Composition({"e-": self.count})
-        return Composition(formula=self.name) * self.count
+        comp = FormulaModification(
+            f"{self.name}:z{'+' if self.charge > 0 else ''}{self.charge}"
+        ).composition * self.count
+        return comp
 
     def mass(self) -> float:
-        return Composition(formula=self.name).mass() * self.count
+        return self.composition().mass()
 
     def total_charge(self) -> int:
         return self.charge * self.count
 
 
-class ChargeState(object):
+class ChargeState:
     """Describes the charge and adduct types of the structure.
 
     This type *MAY* be coerced to an :class:`int`, in which case it
-    decays to it's :attr:`charge` attribute, an integer. :func:`abs` will
-    return it's absolute value.
+    decays to it's :attr:`charge` attribute, an integer. Common methods
+    like :func:`abs` and arithmetic operators will work on this value.
 
     Attributes
     ----------
@@ -2032,10 +2037,13 @@ class ChargeState(object):
             acc += a.charge * a.count
         return cls(acc, adducts)
 
-    def __init__(self, charge, adducts=None):
+    def __init__(self, charge: int, adducts=None):
         if adducts is None:
-            adducts = [Adduct("H", 1, charge)]
-        self.charge = charge
+            if charge > 0:
+                adducts = [Adduct("H", 1, charge)]
+            elif charge < 0:
+                adducts = [Adduct("e-", -1, charge)]
+        self.charge = int(charge)
         self.adducts = adducts
 
     def __int__(self) -> int:
@@ -2051,6 +2059,16 @@ class ChargeState(object):
         """
         return self.charge
 
+    def __float__(self):
+        '''See :meth:`__int__`'''
+        return float(int(self))
+
+    def __neg__(self):
+        return -int(self)
+
+    def __pos__(self):
+        return +int(self)
+
     def __abs__(self):
         """
         Return the absolute magnitude of the charge state
@@ -2061,19 +2079,37 @@ class ChargeState(object):
         """
         return abs(self.charge)
 
-    def _add_protons_for_charge(self, count: int):
-        """
-        Add ``count`` protons (H+) to the adduct list.
+    def __mul__(self, other):
+        return int(self) * other
 
-        If ``count`` is negative, this will reflect *removing* protons,
-        as when negatively charged.
-        """
-        for i, adduct in enumerate(self.adducts):
-            if adduct.name == "H":
-                self.adducts[i] = adduct._replace(count=adduct.count + count)
-                break
-        else:
-            self.adducts.append(Adduct("H", 1, count))
+    def __add__(self, other):
+        return int(self) + other
+
+    def __sub__(self, other):
+        return int(self) - other
+
+    def __div__(self, other):
+        return int(self) / other
+
+    def __rmul__(self, other):
+        return other * int(self)
+
+    def __radd__(self, other):
+        return other + int(self)
+
+    def __rsub__(self, other):
+        return other - int(self)
+
+    def __rdiv__(self, other):
+        return other / int(self)
+
+    def __eq__(self, other):
+        if not isinstance(other, ChargeState):
+            other = ChargeState(other)
+        return self.charge == other.charge and (self.adducts == other.adducts)
+
+    def __ne__(self, other):
+        return not self == other
 
     def for_mz_calculation(self) -> Tuple[float, int]:
         """
@@ -2227,7 +2263,9 @@ class AdductParser(StringParser):
     and the second element is the number of adducts of that type.
     '''
     token_pattern = re.compile(r'(?P<number>[+-]?\d*)(?P<adduct>[A-Za-z]+)(?P<charge>\d*[+-])')
-    token_pattern2 = re.compile(r'(?P<adduct>[A-Za-z]+):[zZ](?P<charge>(-|\+)\d+)(?:\^(?P<number>\d+))?')
+    token_pattern2 = re.compile(
+        r"(?P<adduct>[0-9A-Za-z\[\]]+):[zZ](?P<charge>(-|\+)\d+)(?:\^(?P<number>\d+))?"
+    )
 
     def parse_form1(self, token: str) -> Optional[Tuple[str, int, int]]:
         parsed = self.token_pattern.match(token)
@@ -2863,6 +2901,7 @@ class Parser:
             self.charge_buffer.append(c)
         elif c == "[":
             self.state = ADDUCT_START
+            self.depth = 1
             self.adduct_buffer = AdductParser()
         else:
             raise ProFormaError(
@@ -2874,10 +2913,17 @@ class Parser:
     def handle_adduct_start(self, c: str):
         if c.isdigit() or c in "+:-" or c.isalpha():
             self.adduct_buffer.append(c)
+        elif c == "[":
+            self.depth += 1
+            self.adduct_buffer.append(c)
         elif c == ",":
             self.adduct_buffer.bound()
         elif c == "]":
-            self.state = ADDUCT_END
+            self.depth -= 1
+            if self.depth == 0:
+                self.state = ADDUCT_END
+            else:
+                self.adduct_buffer.append(c)
 
     def handle_adduct_end(self, c: str):
         if c == "+":
@@ -3019,11 +3065,6 @@ class Parser:
             if charge_state is None:
                 charge_state = ChargeState(0)
             charge_state.charge += z
-            # The charge contribution is NOT always from a proton, but charged
-            # modifications aren't granular enough to accurately tell you
-            # the correct mass to attribute to the charge carrier, so they
-            # look like protons to the ChargeState's helper methods anyway.
-            ### charge_state._add_protons_for_charge(z)
 
         if self.state in (
             ISOTOPE,
@@ -3777,8 +3818,9 @@ class ProForma(object):
             c_term = i == c_term_v
             for rule in fixed_modifications:
                 if rule.is_valid(aa, n_term, c_term):
-                    if rule.modification_tag.has_mass():
-                        mass += rule.modification_tag.mass
+                    mod: ModificationBase = rule.modification_tag
+                    if mod.has_mass():
+                        mass += mod.mass
             tags = position[1]
             if tags:
                 for tag in tags:

@@ -1,3 +1,4 @@
+import os
 from os import path
 import unittest
 import pickle
@@ -8,9 +9,16 @@ pyteomics.__path__ = [path.abspath(
 from pyteomics.proforma import (
     PSIModModification, ProForma, TaggedInterval, parse, MassModification, ProFormaError, TagTypeEnum,
     ModificationRule, StableIsotope, GenericModification, Composition, to_proforma, ModificationMassNotFoundError,
-    UnimodModification, PSIModModification, ModificationTarget,
+    UnimodModification, ModificationTarget,
     AdductParser, ChargeState, proteoforms, _coerce_string_to_modification,
     std_aa_comp, obo_cache, process_tag_tokens, peptidoforms)
+
+
+CACHE_PATH = os.environ.get('OBO_CACHE_PATH')
+if CACHE_PATH:
+    obo_cache.cache_path = CACHE_PATH
+
+obo_cache.enabled = bool(os.environ.get("OBO_CACHE_ENABLED"))
 
 
 class ProFormaTest(unittest.TestCase):
@@ -132,15 +140,16 @@ class ProFormaTest(unittest.TestCase):
     def test_composition_with_adducts(self):
         sequences = ['PEPTIDE/1[+2Na+,-H+]', 'PEPTIDE/-1[+e-]', 'PEPTIDE/1[+2H+,+e-]', 'PEPTIDE', 'PEPTIDE/1']
         neutral_comp = Composition(sequence='PEPTIDE')
-        adducts_list = [Composition({'Na': 2, 'H': -1}),
+        adducts_list = [Composition({'Na': 2, 'H': -1, 'e-': -1}),
                         Composition({'e-': 1}),
-                        Composition({'H': 2, 'e-': 1}),
+                        Composition({'H': 2, 'e-': -1}),
                         Composition({}),
-                        Composition({'H': 1})]
+                        Composition({'H': 1, 'e-': -1})]
         for seq, adducts in zip(sequences, adducts_list):
-            i = ProForma.parse(seq)
-            self.assertEqual(i.composition(), neutral_comp)
-            self.assertEqual(i.composition(include_charge=True), neutral_comp + adducts)
+            with self.subTest(f'{seq} + {adducts}'):
+                i = ProForma.parse(seq)
+                self.assertEqual(i.composition(), neutral_comp)
+                self.assertEqual(i.composition(include_charge=True), neutral_comp + adducts)
 
     def test_adduct_formatting(self):
         ap = AdductParser()
