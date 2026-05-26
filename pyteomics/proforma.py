@@ -3888,9 +3888,9 @@ class ProForma(object):
                 "not have a charge state itself."
             )
         try:
-            composition = self.composition(include_charge=charge_state, ignore_missing=False)
+            composition = self.composition(include_charge=False, ignore_missing=False)
             charge = charge_state.charge
-            return composition.mass(charge=charge, **kwargs)
+            return composition.mass(charge=charge, charge_carrier=charge_state.composition(), carrier_charge=charge, **kwargs)
         except ProFormaError:
             charge_carrier_mass, charge = charge_state.for_mz_calculation()
             return (self.mass + charge_carrier_mass) / abs(charge)

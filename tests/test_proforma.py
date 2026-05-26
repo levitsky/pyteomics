@@ -12,6 +12,7 @@ from pyteomics.proforma import (
     UnimodModification, ModificationTarget,
     AdductParser, ChargeState, proteoforms, _coerce_string_to_modification,
     std_aa_comp, obo_cache, process_tag_tokens, peptidoforms)
+from pyteomics import mass
 
 
 CACHE_PATH = os.environ.get('OBO_CACHE_PATH')
@@ -409,6 +410,16 @@ class ProFormaTest(unittest.TestCase):
         assert seq.tags[0].charge == 2
         assert seq._local_charges() == (2, 1)
         assert seq.charge_state.charge == 2
+
+    def test_mass(self):
+        sequences = ["PEPTIDE", "PEPTIDE/2"]
+        for seq in sequences:
+            with self.subTest(seq=seq):
+                parsed = ProForma.parse(seq)
+                self.assertAlmostEqual(parsed.mass, mass.fast_mass(sequences[0]))
+
+    def test_mz(self):
+        self.assertAlmostEqual(ProForma.parse("PEPTIDE/2").mz(), mass.fast_mass("PEPTIDE", charge=2), 5)
 
 
 class TestTagProcessing(unittest.TestCase):
