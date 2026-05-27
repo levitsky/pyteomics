@@ -411,6 +411,20 @@ class ProFormaTest(unittest.TestCase):
         assert seq._local_charges() == (2, 1)
         assert seq.charge_state.charge == 2
 
+        # While charge state is 2+, when serializing,
+        # do not count that charge at the end of the sequence
+        assert str(seq) == "SEQUEN[Formula:Zn1:z+2]CE"
+
+        # Adapted from the spec
+        template = "SEQUEN[Formula:Zn:z+2]CE/[Na:z+1^2]"
+        mixed = ProForma.parse(template)
+        self.assertAlmostEqual(mixed.mass, seq.mass, 6)
+        # Check the physical charge state is the sum
+        assert mixed.charge_state.charge == 4
+        # Check that it collapses back down correctly rather
+        # than double counting
+        assert str(mixed) == template
+
     def test_mass(self):
         sequences = ["PEPTIDE", "PEPTIDE/2"]
         for seq in sequences:
@@ -420,6 +434,26 @@ class ProFormaTest(unittest.TestCase):
 
     def test_mz(self):
         self.assertAlmostEqual(ProForma.parse("PEPTIDE/2").mz(), mass.fast_mass("PEPTIDE", charge=2), 5)
+
+        seq = ProForma.parse("SEQUEN[Formula:Zn1:z+2]CE")
+        adducted = ProForma.parse("SEQUENCE/[Zn1:z+2]")
+
+        # Charged formulae contribute to m/z just like adducts do
+        self.assertAlmostEqual(seq.mz(), adducted.mz(), 4)
+        # But they also contribute to the total mass, unlike adducts
+        self.assertAlmostEqual(seq.mass, adducted.mass + adducted.charge_state.for_mz_calculation()[0], 4)
+
+        electron = Composition({"e-": 1}).mass()
+        # Verify that the direct mass calculation is correct
+        self.assertAlmostEqual(seq.mass, mass.fast_mass("SEQUENCE") + Composition("Zn").mass() - electron * 2)
+
+        proton = Composition("").mass(charge=1)
+        salted = ProForma.parse("SEQUEN[Cation:Zn[II]]CE/2")
+        # Per discussion, a charged modification will be a greater mass than
+        # its neutral salt cousin by as many protons as it has positive charges.
+        self.assertAlmostEqual(seq.mass, salted.mass + proton * 2, 4)
+
+
 
 
 class TestTagProcessing(unittest.TestCase):

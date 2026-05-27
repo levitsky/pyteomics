@@ -2043,6 +2043,8 @@ class ChargeState:
                 adducts = [Adduct("H", 1, charge)]
             elif charge < 0:
                 adducts = [Adduct("e-", -1, charge)]
+            else:
+                adducts = []
         self.charge = int(charge)
         self.adducts = adducts
 
@@ -2135,15 +2137,18 @@ class ChargeState:
             comp += a.composition()
         return comp
 
-    def __str__(self):
-        if len(self.adducts) > 1 or self.adducts[0].name != 'H':
+    def format_local(self, local_charge_to_remove: int=0):
+        if self.adducts and (len(self.adducts) > 1 or self.adducts[0].name != "H"):
             tokens = []
             tokens.append("[")
-            tokens.append(','.join((map(str, self.adducts))))
+            tokens.append(",".join((map(str, self.adducts))))
             tokens.append("]")
-            return ''.join(tokens)
+            return "".join(tokens)
         else:
-            return f'{self.charge:d}'
+            return f"{self.charge - local_charge_to_remove:d}"
+
+    def __str__(self):
+        return self.format_local()
 
     def __repr__(self):
         template = "{self.__class__.__name__}({self.charge}, {self.adducts})"
@@ -2432,7 +2437,13 @@ VALID_AA = {s.lower() for s in VALID_AA_UPPER} | VALID_AA_UPPER
 TERMINAL_SPEC_CHARS = set('N-term') | set('C-term') | set("ncT: ")
 
 
-def _local_charges(position_list, property_state) -> Tuple[int, int]:
+def _local_charges(
+    position_list,
+    intervals: List[TaggedInterval],
+    unlocalized_modifications: List[TagBase],
+    labile_modifications: List[TagBase],
+    fixed_modifications: List[TagBase]
+) -> Tuple[int, int]:
     """
     Count the number of localized charges that the parsed ProForma
     sequence has.
@@ -2447,37 +2458,37 @@ def _local_charges(position_list, property_state) -> Tuple[int, int]:
     n_charged_modifications : int
         The number of charged modifications on the sequence
     """
-    z = 0
-    k = 0
+    local_charges = 0
+    n_charged_modifications = 0
     for _, tags in position_list:
         for tag in tags or (): # tags may be None
             z_of = getattr(tag, "charge", 0)
             if z_of:
-                k += 1
-                z += z_of
-    for iv in property_state.intervals:
+                n_charged_modifications += 1
+                local_charges += z_of
+    for iv in intervals:
         for tag in iv.tags or ():
             z_of = getattr(tag, "charge", 0)
             if z_of:
-                k += 1
-                z += z_of
-    for tag in property_state.unlocalized_modifications:
+                n_charged_modifications += 1
+                local_charges += z_of
+    for tag in unlocalized_modifications:
         z_of = getattr(tag, "charge", 0)
         if z_of:
-            k += 1
-            z += z_of
-    for tag in property_state.labile_modifications:
+            n_charged_modifications += 1
+            local_charges += z_of
+    for tag in labile_modifications:
         z_of = getattr(tag, "charge", 0)
         if z_of:
-            k += 1
-            z += z_of
-    for fixed_mod in property_state.fixed_modifications:
+            n_charged_modifications += 1
+            local_charges += z_of
+    for fixed_mod in fixed_modifications:
         z_of = getattr(fixed_mod.modification_tag, "charge", 0)
         if z_of:
-            for _ in fixed_mod._find_all((aa for aa, _ in property_state.positions), len(property_state.positions)):
-                z += z_of
-                k += 1
-    return z, k
+            for _ in fixed_mod._find_all((aa for aa, _ in position_list), len(position_list)):
+                local_charges += z_of
+                n_charged_modifications += 1
+    return local_charges, n_charged_modifications
 
 
 class Parser:
@@ -2911,7 +2922,7 @@ class Parser:
             )
 
     def handle_adduct_start(self, c: str):
-        if c.isdigit() or c in "+:-" or c.isalpha():
+        if c.isdigit() or c in "^+:-" or c.isalpha():
             self.adduct_buffer.append(c)
         elif c == "[":
             self.depth += 1
@@ -3092,7 +3103,13 @@ class Parser:
         }
 
     def _local_charges(self) -> Tuple[int, int]:
-        return _local_charges(self.positions, self)
+        return _local_charges(
+            self.positions,
+            self.intervals,
+            self.unlocalized_modifications,
+            self.labile_modifications,
+            self.fixed_modifications
+        )
 
     def parse(self):
         while self.step():
@@ -3542,6 +3559,7 @@ def to_proforma(
         buffer.append(names[1])
         buffer.append(")")
     primary = deque()
+
     for aa, tags in sequence:
         if not tags:
             primary.append(str(aa))
@@ -3563,7 +3581,15 @@ def to_proforma(
     if c_term:
         primary.append("-" + "".join("[{!s}]".format(t) for t in c_term))
     if charge_state:
-        primary.append("/{!s}".format(charge_state))
+        local_charge, _charge_mod_count = _local_charges(
+            sequence,
+            fixed_modifications=fixed_modifications,
+            intervals=intervals,
+            unlocalized_modifications=unlocalized_modifications,
+            labile_modifications=labile_modifications,
+        )
+        if local_charge != charge_state.charge:
+            primary.append("/{!s}".format(charge_state.format_local(local_charge_to_remove=local_charge)))
     if labile_modifications:
         primary.extendleft(["{{{!s}}}".format(m) for m in labile_modifications])
     if unlocalized_modifications:
@@ -3746,7 +3772,13 @@ class ProForma(object):
         n_charged_modifications : int
             The number of charged modifications on the sequence
         """
-        return _local_charges(self.sequence, self)
+        return _local_charges(
+            self.sequence,
+            self.intervals,
+            self.unlocalized_modifications,
+            self.labile_modifications,
+            self.fixed_modifications
+        )
 
     @charge_state.setter
     def charge_state(self, value: Union[int, ChargeState, None]):
