@@ -3675,6 +3675,7 @@ class ProForma(object):
 
     n_term = _ProFormaProperty[List[TagBase]]("n_term")
     c_term = _ProFormaProperty[List[TagBase]]("c_term")
+    names = _ProFormaProperty[Dict[int, str]]("names")
 
     group_ids = _ProFormaProperty('group_ids')
 
