@@ -558,9 +558,10 @@ class ProteoformCombinatorTest(unittest.TestCase):
         seq = "EMEV(TS)[Phospho]ESPEK"
         pf = ProForma.parse(seq)
         for include_unmodified in [False, True]:
-            with self.subTest(include_unmodified=include_unmodified):
-                proteoforms = list(pf.proteoforms(include_unmodified=include_unmodified))
-                self.assertEqual(len(proteoforms), 2 + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
+            for deepcopy in [False, True]:
+                with self.subTest(include_unmodified=include_unmodified, deepcopy=deepcopy):
+                    proteoforms = list(pf.proteoforms(include_unmodified=include_unmodified, deepcopy=deepcopy))
+                    self.assertEqual(len(proteoforms), 2 + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
 
     def test_unlocalized_position_list_and_count(self):
         k = 2
@@ -621,9 +622,10 @@ class ProteoformsFunctionTest(unittest.TestCase):
         nsites = 2  # length of the range
         pf = ProForma.parse(seq)
         for include_unmodified in [False, True]:
-            with self.subTest(include_unmodified=include_unmodified):
-                forms = list(proteoforms(pf, include_unmodified=include_unmodified))
-                self.assertEqual(len(forms), nsites + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
+            for deepcopy in [False, True]:
+                with self.subTest(include_unmodified=include_unmodified, deepcopy=deepcopy):
+                    forms = list(proteoforms(pf, include_unmodified=include_unmodified, deepcopy=deepcopy))
+                    self.assertEqual(len(forms), nsites + include_unmodified)   # Phospho on T or S (+ no phospho if include_unmodified)
 
     def test_coerce_modification(self):
         for s, m in [("Phospho", GenericModification("Phospho")),
@@ -648,12 +650,13 @@ class ProteoformsFunctionTest(unittest.TestCase):
         nsites = seq.count("S") + seq.count("T")
         pf = ProForma.parse(seq)
         for include_unmodified in [False, True]:
-            with self.subTest(include_unmodified=include_unmodified):
-                forms = list(proteoforms(pf, variable_modifications=variable_mods, include_unmodified=include_unmodified))
-                if include_unmodified:
-                    self.assertEqual(len(forms), nsites + 1)   # Phospho on T or S + no phospho
-                else:
-                    self.assertEqual(len(forms), nsites)  # Phospho on T or S
+            for deepcopy in [False, True]:
+                with self.subTest(include_unmodified=include_unmodified, deepcopy=deepcopy):
+                    forms = list(proteoforms(pf, variable_modifications=variable_mods, include_unmodified=include_unmodified, deepcopy=deepcopy))
+                    if include_unmodified:
+                        self.assertEqual(len(forms), nsites + 1)   # Phospho on T or S + no phospho
+                    else:
+                        self.assertEqual(len(forms), nsites)  # Phospho on T or S
 
         forms = list(proteoforms(pf, variable_modifications=variable_mods, expand_rules=True))
         self.assertEqual(len(forms), 2 ** nsites)  # all combinations of phospho / no phospho on each S or T
