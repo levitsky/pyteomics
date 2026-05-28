@@ -2048,6 +2048,18 @@ class ChargeState:
         self.charge = int(charge)
         self.adducts = adducts
 
+    def is_complete(self) -> bool:
+        """
+        Test if the total charge recorded here is completely explained by the recorded adducts.
+
+        If not, then there is a localized charge somewhere on the source proteoform.
+
+        Returns
+        -------
+        bool
+        """
+        return self.charge == sum(a.charge * a.count for a in self.adducts)
+
     def __int__(self) -> int:
         """
         Get the total charge as number.
@@ -3920,6 +3932,14 @@ class ProForma(object):
                 f"Requested an m/z value without providing a charge state and the peptidoform {self!r} does "
                 "not have a charge state itself."
             )
+
+        if charge_state and self.charge_state is not None and charge_state != self.charge_state:
+            # Alternatively, try to guess from total charge and adducts
+            all_charge_explained_by_adducts = self.charge_state.is_complete()
+            if not all_charge_explained_by_adducts:
+                warnings.warn(
+                    "Overriding charge state on a ProForma sequence with a charged modification. Only the overriding charge state will be used"
+                )
         try:
             composition = self.composition(include_charge=False, ignore_missing=False)
             charge = charge_state.charge
@@ -3971,6 +3991,10 @@ class ProForma(object):
             if ion_shift[0] in 'xyz':
                 reverse = True
             ion_shift = std_ion_comp[ion_shift].mass(absolute=False)
+
+        z = self.charge_state
+        if z and not z.is_complete() and charge != 0 and charge != z:
+            warnings.warn("A localized charge modification was detected. Its charge contribution will be ignored")
 
         n = len(self.sequence)
         masses = _array('d')

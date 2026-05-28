@@ -425,6 +425,8 @@ class ProFormaTest(unittest.TestCase):
         # than double counting
         assert str(mixed) == template
 
+        self.assertWarns(UserWarning, lambda: mixed.mz(charge=2))
+
     def test_mass(self):
         sequences = ["PEPTIDE", "PEPTIDE/2"]
         for seq in sequences:
