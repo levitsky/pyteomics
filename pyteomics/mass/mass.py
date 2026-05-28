@@ -35,6 +35,8 @@ Mass calculations
 
   :py:func:`fast_mass2` - a version of `fast_mass` that supports *modX* notation.
 
+  :py:func:`fragment_series` - calculate the masses of a series of peptide fragments.
+
 Isotopic abundances
 -------------------
 

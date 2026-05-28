@@ -24,7 +24,7 @@
 
  - Implement **thread-based parallelism**.
    Following the introduction of `official free-threading Python implementations <https://docs.python.org/3/howto/free-threading-python.html>`_
-   users are now able to use theads through the :py:meth:`map` interface of :ref:`indexing parsers`.
+   users are now able to use threads through the :py:meth:`map` interface of :ref:`indexed parsers <indexing>`.
    The default behavior of :py:meth:`map` is still to use multiprocessing, but the user can pass ``method='t'`` to use worker threads.
    Also, methods :py:meth:`pmap` and :py:meth:`tmap` can be used to directly invoke process-based or thread-based mapping, respectively.
 
