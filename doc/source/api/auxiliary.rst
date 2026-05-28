@@ -47,6 +47,8 @@ Helpers
   for keys which are :py:class:`cvstr` instances, or objects
   with an attribute called ``accession``.
 
+  :py:func:`set_start_method` - set the method of starting multiprocessing workers.
+
 -------------------------------------------------------------------------------
 
 

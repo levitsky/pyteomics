@@ -9,7 +9,7 @@ a set of controlled vocabularies, as well as encoding uncertain or partial
 information about localization. See `ProForma specification <https://www.psidev.info/proforma>`_
 for more up-to-date information.
 
-Strictly speaking, this implementation supports ProForma v2.
+Strictly speaking, this implementation supports ProForma v2.1.
 
 .. contents::
     :depth: 2
@@ -150,6 +150,8 @@ Functions
 .. autofunction:: parse
 
 .. autofunction:: to_proforma
+
+.. autofunction:: peptidoforms
 
 Helpers
 ~~~~~~~
