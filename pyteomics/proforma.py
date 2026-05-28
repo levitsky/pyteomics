@@ -655,6 +655,18 @@ class XLMODResolver(ModificationResolver):
     def load_database(self):
         return load_xlmod()
 
+    def _parse_formula(self, formula: str):
+        formula: str = formula.replace("D", "H[2]")
+        tokens = formula.split(' ')
+        composition = Composition()
+        for token in tokens:
+            sign = 1
+            if token.startswith("-"):
+                token = token[1:]
+                sign = -1
+            composition += Composition(token) * sign
+        return composition
+
     def _resolve_impl(self, name=None, id=None, **kwargs):
         if name is not None:
             defn = self.database[name]
@@ -667,10 +679,9 @@ class XLMODResolver(ModificationResolver):
         except (KeyError, TypeError, ValueError):
             raise ModificationMassNotFoundError("Could not resolve the mass of %r from %r" % ((name, id), defn))
         if 'deadEndFormula' in defn:
-            composition = Composition(defn['deadEndFormula'].replace(" ", '').replace("D", "H[2]"))
+            composition = self._parse_formula(defn["deadEndFormula"])
         elif 'bridgeFormula' in defn:
-            composition = Composition(
-                defn['bridgeFormula'].replace(" ", '').replace("D", "H[2]"))
+            composition = self._parse_formula(defn["bridgeFormula"])
         return {
             'mass': mass,
             'composition': composition,
@@ -948,7 +959,7 @@ class ModificationBase(TagBase):
         return self._definition
 
     @property
-    def mass(self):
+    def mass(self) -> Optional[float]:
         '''The monoisotopic mass shift this modification applies
 
         Returns
@@ -957,7 +968,7 @@ class ModificationBase(TagBase):
         '''
         return self.definition['mass']
 
-    def has_mass(self):
+    def has_mass(self) -> bool:
         """
         Check if this tag carries a mass value.
 
@@ -1158,6 +1169,8 @@ class FormulaModification(ModificationBase):
         else:
             charge = None
         composition = Composition(formula=normalized)
+        if charge is not None:
+            composition["e-"] = -charge
         return composition, charge
 
     def resolve(self):
@@ -1351,9 +1364,8 @@ class XLMODModification(ModificationBase):
     __slots__ = ()
 
     resolver = XLMODResolver()
-
     prefix_name = "XLMOD"
-    # short_prefix = 'XL'
+    short_prefix = 'X'
     _tag_type = TagTypeEnum.xlmod
 
 
@@ -1793,6 +1805,17 @@ class ModificationRule(object):
                 return True
         return False
 
+    def _find_all(self, peptide: Iterable[str], n: int) -> Iterator[int]:
+        '''
+        Tiny helper method to scan over a sequence with an external length
+        and yield matched positions.
+        '''
+        # decrement the length by 1 so that it matches the last position
+        n -= 1
+        for i, aa in enumerate(peptide):
+            if self.is_valid(aa, i == 0, i == n):
+                yield i
+
     def _validate_targets(self):
         validated_targets = []
         if self.targets is None:
@@ -2002,17 +2025,24 @@ class Adduct(NamedTuple):
     def composition(self) -> Composition:
         if self.name == 'e-':
             return Composition({"e-": self.count})
-        return Composition(formula=self.name) * self.count
+        comp = FormulaModification(
+            f"{self.name}:z{'+' if self.charge > 0 else ''}{self.charge}"
+        ).composition * self.count
+        return comp
 
     def mass(self) -> float:
-        return Composition(formula=self.name).mass() * self.count
+        return self.composition().mass()
 
     def total_charge(self) -> int:
         return self.charge * self.count
 
 
-class ChargeState(object):
+class ChargeState:
     """Describes the charge and adduct types of the structure.
+
+    This type *MAY* be coerced to an :class:`int`, in which case it
+    decays to it's :attr:`charge` attribute, an integer. Common methods
+    like :func:`abs` and arithmetic operators will work on this value.
 
     Attributes
     ----------
@@ -2033,11 +2063,93 @@ class ChargeState(object):
             acc += a.charge * a.count
         return cls(acc, adducts)
 
-    def __init__(self, charge, adducts=None):
+    def __init__(self, charge: int, adducts=None):
         if adducts is None:
-            adducts = [Adduct("H", 1, charge)]
-        self.charge = charge
+            if charge > 0:
+                adducts = [Adduct("H", 1, charge)]
+            elif charge < 0:
+                adducts = [Adduct("e-", -1, charge)]
+            else:
+                adducts = []
+        self.charge = int(charge)
         self.adducts = adducts
+
+    def is_complete(self) -> bool:
+        """
+        Test if the total charge recorded here is completely explained by the recorded adducts.
+
+        If not, then there is a localized charge somewhere on the source proteoform.
+
+        Returns
+        -------
+        bool
+        """
+        return self.charge == sum(a.charge * a.count for a in self.adducts)
+
+    def __int__(self) -> int:
+        """
+        Get the total charge as number.
+
+        This is equivalent to accessing :attr:`charge`
+
+        .. note::
+            This is technically a lossy operation as it discards the distinction
+            between the different charge carriers.
+
+        """
+        return self.charge
+
+    def __float__(self):
+        '''See :meth:`__int__`'''
+        return float(int(self))
+
+    def __neg__(self):
+        return -int(self)
+
+    def __pos__(self):
+        return +int(self)
+
+    def __abs__(self):
+        """
+        Return the absolute magnitude of the charge state
+
+        See Also
+        --------
+        :meth:`__int__`
+        """
+        return abs(self.charge)
+
+    def __mul__(self, other):
+        return int(self) * other
+
+    def __add__(self, other):
+        return int(self) + other
+
+    def __sub__(self, other):
+        return int(self) - other
+
+    def __div__(self, other):
+        return int(self) / other
+
+    def __rmul__(self, other):
+        return other * int(self)
+
+    def __radd__(self, other):
+        return other + int(self)
+
+    def __rsub__(self, other):
+        return other - int(self)
+
+    def __rdiv__(self, other):
+        return other / int(self)
+
+    def __eq__(self, other):
+        if not isinstance(other, ChargeState):
+            other = ChargeState(other)
+        return self.charge == other.charge and (self.adducts == other.adducts)
+
+    def __ne__(self, other):
+        return not self == other
 
     def for_mz_calculation(self) -> Tuple[float, int]:
         """
@@ -2063,15 +2175,18 @@ class ChargeState(object):
             comp += a.composition()
         return comp
 
-    def __str__(self):
-        if len(self.adducts) > 1 or self.adducts[0].name != 'H':
+    def format_local(self, local_charge_to_remove: int=0):
+        if self.adducts and (len(self.adducts) > 1 or self.adducts[0].name != "H"):
             tokens = []
             tokens.append("[")
-            tokens.append(','.join((map(str, self.adducts))))
+            tokens.append(",".join((map(str, self.adducts))))
             tokens.append("]")
-            return ''.join(tokens)
+            return "".join(tokens)
         else:
-            return f'{self.charge:d}'
+            return f"{self.charge - local_charge_to_remove:d}"
+
+    def __str__(self):
+        return self.format_local()
 
     def __repr__(self):
         template = "{self.__class__.__name__}({self.charge}, {self.adducts})"
@@ -2191,7 +2306,9 @@ class AdductParser(StringParser):
     and the second element is the number of adducts of that type.
     '''
     token_pattern = re.compile(r'(?P<number>[+-]?\d*)(?P<adduct>[A-Za-z]+)(?P<charge>\d*[+-])')
-    token_pattern2 = re.compile(r'(?P<adduct>[A-Za-z]+):[zZ](?P<charge>(-|\+)\d+)(?:\^(?P<number>\d+))?')
+    token_pattern2 = re.compile(
+        r"(?P<adduct>[0-9A-Za-z\[\]]+):[zZ](?P<charge>(-|\+)\d+)(?:\^(?P<number>\d+))?"
+    )
 
     def parse_form1(self, token: str) -> Optional[Tuple[str, int, int]]:
         parsed = self.token_pattern.match(token)
@@ -2358,6 +2475,60 @@ VALID_AA = {s.lower() for s in VALID_AA_UPPER} | VALID_AA_UPPER
 TERMINAL_SPEC_CHARS = set('N-term') | set('C-term') | set("ncT: ")
 
 
+def _local_charges(
+    position_list,
+    intervals: List[TaggedInterval],
+    unlocalized_modifications: List[TagBase],
+    labile_modifications: List[TagBase],
+    fixed_modifications: List[TagBase]
+) -> Tuple[int, int]:
+    """
+    Count the number of localized charges that the parsed ProForma
+    sequence has.
+
+    This specifically counts modifications with a registered charge
+    state like charged :class:`FormulaModification` instances.
+
+    Returns
+    -------
+    local_charges : int
+        The total charge state attributable to localized modifications
+    n_charged_modifications : int
+        The number of charged modifications on the sequence
+    """
+    local_charges = 0
+    n_charged_modifications = 0
+    for _, tags in position_list:
+        for tag in tags or (): # tags may be None
+            z_of = getattr(tag, "charge", 0)
+            if z_of:
+                n_charged_modifications += 1
+                local_charges += z_of
+    for iv in intervals:
+        for tag in iv.tags or ():
+            z_of = getattr(tag, "charge", 0)
+            if z_of:
+                n_charged_modifications += 1
+                local_charges += z_of
+    for tag in unlocalized_modifications:
+        z_of = getattr(tag, "charge", 0)
+        if z_of:
+            n_charged_modifications += 1
+            local_charges += z_of
+    for tag in labile_modifications:
+        z_of = getattr(tag, "charge", 0)
+        if z_of:
+            n_charged_modifications += 1
+            local_charges += z_of
+    for fixed_mod in fixed_modifications:
+        z_of = getattr(fixed_mod.modification_tag, "charge", 0)
+        if z_of:
+            for _ in fixed_mod._find_all((aa for aa, _ in position_list), len(position_list)):
+                local_charges += z_of
+                n_charged_modifications += 1
+    return local_charges, n_charged_modifications
+
+
 class Parser:
     """
     A parser for the ProForma 2 syntax.
@@ -2383,7 +2554,7 @@ class Parser:
     state: ParserStateEnum
 
     labile_modifications: List[TagBase]
-    fixed_modifications: List[TagBase]
+    fixed_modifications: List[ModificationRule]
     unlocalized_modifications: List[TagBase]
     intervals: List[TaggedInterval]
     isotopes: List[StableIsotope]
@@ -2779,6 +2950,7 @@ class Parser:
             self.charge_buffer.append(c)
         elif c == "[":
             self.state = ADDUCT_START
+            self.depth = 1
             self.adduct_buffer = AdductParser()
         else:
             raise ProFormaError(
@@ -2788,12 +2960,19 @@ class Parser:
             )
 
     def handle_adduct_start(self, c: str):
-        if c.isdigit() or c in "+:-" or c.isalpha():
+        if c.isdigit() or c in "^+:-" or c.isalpha():
+            self.adduct_buffer.append(c)
+        elif c == "[":
+            self.depth += 1
             self.adduct_buffer.append(c)
         elif c == ",":
             self.adduct_buffer.bound()
         elif c == "]":
-            self.state = ADDUCT_END
+            self.depth -= 1
+            if self.depth == 0:
+                self.state = ADDUCT_END
+            else:
+                self.adduct_buffer.append(c)
 
     def handle_adduct_end(self, c: str):
         if c == "+":
@@ -2929,6 +3108,13 @@ class Parser:
             charge_state = None
         if self.current_aa:
             self.pack_sequence_position()
+
+        z, k = self._local_charges()
+        if k:
+            if charge_state is None:
+                charge_state = ChargeState(0)
+            charge_state.charge += z
+
         if self.state in (
             ISOTOPE,
             TAG,
@@ -2953,6 +3139,15 @@ class Parser:
             "charge_state": charge_state,
             "names": self.names
         }
+
+    def _local_charges(self) -> Tuple[int, int]:
+        return _local_charges(
+            self.positions,
+            self.intervals,
+            self.unlocalized_modifications,
+            self.labile_modifications,
+            self.fixed_modifications
+        )
 
     def parse(self):
         while self.step():
@@ -3423,6 +3618,7 @@ def to_proforma(
         buffer.append(names[1])
         buffer.append(")")
     primary = deque()
+
     for aa, tags in sequence:
         if not tags:
             primary.append(str(aa))
@@ -3444,7 +3640,15 @@ def to_proforma(
     if c_term:
         primary.append("-" + "".join("[{!s}]".format(t) for t in c_term))
     if charge_state:
-        primary.append("/{!s}".format(charge_state))
+        local_charge, _charge_mod_count = _local_charges(
+            sequence,
+            fixed_modifications=fixed_modifications,
+            intervals=intervals,
+            unlocalized_modifications=unlocalized_modifications,
+            labile_modifications=labile_modifications,
+        )
+        if local_charge != charge_state.charge:
+            primary.append("/{!s}".format(charge_state.format_local(local_charge_to_remove=local_charge)))
     if labile_modifications:
         primary.extendleft(["{{{!s}}}".format(m) for m in labile_modifications])
     if unlocalized_modifications:
@@ -3530,6 +3734,7 @@ class ProForma(object):
 
     n_term = _ProFormaProperty[List[TagBase]]("n_term")
     c_term = _ProFormaProperty[List[TagBase]]("c_term")
+    names = _ProFormaProperty[Dict[int, str]]("names")
 
     group_ids = _ProFormaProperty('group_ids')
 
@@ -3603,8 +3808,68 @@ class ProForma(object):
 
     @property
     def charge_state(self) -> Optional[ChargeState]:
+        """
+        Access the :class:`ChargeState` property of the :class:`ProForma`
+        instance, which includes the total charge state and adduct list.
+
+        This implies that you have a peptidoform *ion*, not a neutral peptide.
+        """
         z = self._charge_state
         return z
+
+    def _local_charges(self) -> Tuple[int, int]:
+        """
+        Count the number of localized charges that the :class:`ProForma`
+        sequence has.
+
+        This specifically counts modifications with a registered charge
+        state like charged :class:`FormulaModification` instances.
+
+        Returns
+        -------
+        local_charges : int
+            The total charge state attributable to localized modifications
+        n_charged_modifications : int
+            The number of charged modifications on the sequence
+        """
+        return _local_charges(
+            self.sequence,
+            self.intervals,
+            self.unlocalized_modifications,
+            self.labile_modifications,
+            self.fixed_modifications
+        )
+
+    @charge_state.setter
+    def charge_state(self, value: Union[int, ChargeState, None]):
+        """
+        Sets the charge state of the :class:`ProForma` instance.
+
+        When setting with :const:`None`, this removes any existing charge
+        state information. When setting with an :class:`int`, this removes
+        the adduct information.
+
+        Parameters
+        ----------
+        value : :class:`int`, :class:`ChargeState`, or :const:`None`
+            When setting with :const:`None`, this removes any existing charge
+            state information. When setting with an :class:`int`, this removes
+            the adduct information.
+        """
+        if value is None:
+            self._charge_state = None
+        elif isinstance(value, ChargeState):
+            self._charge_state = value
+        else:
+            value = int(value)
+            existing = self._charge_state
+            new = ChargeState(value)
+            if existing is None:
+                self._charge_state = new
+            else:
+                if len(existing.adducts) > 1 or existing.adducts[0].name != "H":
+                    warnings.warn(f"Overwriting {existing}'s charge value with {value}, replacing adducts with protons")
+                self._charge_state = new
 
     @classmethod
     def parse(cls, string, **kwargs):
@@ -3645,8 +3910,9 @@ class ProForma(object):
             c_term = i == c_term_v
             for rule in fixed_modifications:
                 if rule.is_valid(aa, n_term, c_term):
-                    if rule.modification_tag.has_mass():
-                        mass += rule.modification_tag.mass
+                    mod: ModificationBase = rule.modification_tag
+                    if mod.has_mass():
+                        mass += mod.mass
             tags = position[1]
             if tags:
                 for tag in tags:
@@ -3713,9 +3979,18 @@ class ProForma(object):
                 f"Requested an m/z value without providing a charge state and the peptidoform {self!r} does "
                 "not have a charge state itself."
             )
+
+        if charge_state and self.charge_state is not None and charge_state != self.charge_state:
+            # Alternatively, try to guess from total charge and adducts
+            all_charge_explained_by_adducts = self.charge_state.is_complete()
+            if not all_charge_explained_by_adducts:
+                warnings.warn(
+                    "Overriding charge state on a ProForma sequence with a charged modification. Only the overriding charge state will be used"
+                )
         try:
-            composition = self.composition(include_charge=charge_state, ignore_missing=False)
-            return composition.mass(**kwargs)
+            composition = self.composition(include_charge=False, ignore_missing=False)
+            charge = charge_state.charge
+            return composition.mass(charge=charge, charge_carrier=charge_state.composition(), carrier_charge=charge, **kwargs)
         except ProFormaError:
             charge_carrier_mass, charge = charge_state.for_mz_calculation()
             return (self.mass + charge_carrier_mass) / abs(charge)
@@ -3763,6 +4038,10 @@ class ProForma(object):
             if ion_shift[0] in 'xyz':
                 reverse = True
             ion_shift = std_ion_comp[ion_shift].mass(absolute=False)
+
+        z = self.charge_state
+        if z and not z.is_complete() and charge != 0 and charge != z:
+            warnings.warn("A localized charge modification was detected. Its charge contribution will be ignored")
 
         n = len(self.sequence)
         masses = _array('d')

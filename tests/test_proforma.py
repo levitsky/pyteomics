@@ -1,3 +1,4 @@
+import os
 from os import path
 import unittest
 import pickle
@@ -8,9 +9,17 @@ pyteomics.__path__ = [path.abspath(
 from pyteomics.proforma import (
     PSIModModification, ProForma, TaggedInterval, parse, MassModification, ProFormaError, TagTypeEnum,
     ModificationRule, StableIsotope, GenericModification, Composition, to_proforma, ModificationMassNotFoundError,
-    UnimodModification, PSIModModification, ModificationTarget,
+    UnimodModification, ModificationTarget,
     AdductParser, ChargeState, proteoforms, _coerce_string_to_modification,
     std_aa_comp, obo_cache, process_tag_tokens, peptidoforms)
+from pyteomics import mass
+
+
+CACHE_PATH = os.environ.get('OBO_CACHE_PATH')
+if CACHE_PATH:
+    obo_cache.cache_path = CACHE_PATH
+
+obo_cache.enabled = bool(os.environ.get("OBO_CACHE_ENABLED"))
 
 
 class ProFormaTest(unittest.TestCase):
@@ -132,15 +141,16 @@ class ProFormaTest(unittest.TestCase):
     def test_composition_with_adducts(self):
         sequences = ['PEPTIDE/1[+2Na+,-H+]', 'PEPTIDE/-1[+e-]', 'PEPTIDE/1[+2H+,+e-]', 'PEPTIDE', 'PEPTIDE/1']
         neutral_comp = Composition(sequence='PEPTIDE')
-        adducts_list = [Composition({'Na': 2, 'H': -1}),
+        adducts_list = [Composition({'Na': 2, 'H': -1, 'e-': -1}),
                         Composition({'e-': 1}),
-                        Composition({'H': 2, 'e-': 1}),
+                        Composition({'H': 2, 'e-': -1}),
                         Composition({}),
-                        Composition({'H': 1})]
+                        Composition({'H': 1, 'e-': -1})]
         for seq, adducts in zip(sequences, adducts_list):
-            i = ProForma.parse(seq)
-            self.assertEqual(i.composition(), neutral_comp)
-            self.assertEqual(i.composition(include_charge=True), neutral_comp + adducts)
+            with self.subTest(f'{seq} + {adducts}'):
+                i = ProForma.parse(seq)
+                self.assertEqual(i.composition(), neutral_comp)
+                self.assertEqual(i.composition(include_charge=True), neutral_comp + adducts)
 
     def test_adduct_formatting(self):
         ap = AdductParser()
@@ -217,7 +227,7 @@ class ProFormaTest(unittest.TestCase):
             "EMK[XLMOD:02000#XL1]EVTKSE[XLMOD:02010#XL2]SK[#XL1]PEK[#XL2]AR",
             # "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[XLMOD:02001#XL1]SESPEK",
             "EM[Oxidation]EVEES[Phospho]PEK",
-            "EM[R: Methionine sulfone]EVEES[O-phospho-L-serine]PEK",
+            # "EM[R: Methionine sulfone]EVEES[O-phospho-L-serine]PEK",
             "EMEVTK[X:DSS#XL1]SESPEK",
             "EM[U:Oxidation]EVEES[U:Phospho]PEK",
             "EM[+15.9949]EVEES[+79.9663]PEK",
@@ -263,7 +273,7 @@ class ProFormaTest(unittest.TestCase):
             "<[TMT6plex]@K,N-term:A,N-term:B>ATPEILTCNSIGCLK",
             "EM[Oxidation]EVEES[Phospho]PEK",
             "EM[L-methionine sulfoxide]EVEES[O-phospho-L-serine]PEK",
-            "EM[R: L-methionine sulfone]EVEES[O-phospho-L-serine]PEK",
+            # "EM[R: L-methionine sulfone]EVEES[O-phospho-L-serine]PEK", # don't support RESID
             "EMEVTK[X:DSS#XL1]SESPEK",
             "NEEYN[GNO:G59626AS]K",
             "NEEYN[G:G59626AS]K",
@@ -274,7 +284,7 @@ class ProFormaTest(unittest.TestCase):
             "EM[Oxidation]EVE[Cation:Mg[II]]ES[Phospho]PEK",
             "EM[MOD:00719]EVEES[MOD:00046]PEK",
             "EM[UNIMOD:35]EVEES[UNIMOD:56]PEK",
-            "EM[RESID:AA0581]EVEES[RESID:AA0037]PEK",
+            # "EM[RESID:AA0581]EVEES[RESID:AA0037]PEK", # don't support RESID
             "EMEVTK[XLMOD:02001#XL1]SESPEK[#XL1]",
             "EMK[XLMOD:02000#XL1]EVTKSE[XLMOD:02010#XL2]SK[#XL1]PEK[#XL2]AR",
             "EMEVTK[XLMOD:02001#XL1]SESPEK",
@@ -380,19 +390,72 @@ class ProFormaTest(unittest.TestCase):
             "PEPTI(MERMERMERM)[+32|Position:E]PEPTIDE",
             "PETIEM[Dioxidation#1][Oxidation#2]REM[#1][#2]REM[#2]RM[#1]PEPTIDE",
             "[Oxidation|CoMKP]?PEPT[Phospho]IDE",
-            # "(>Trypsin)AANSIPYQVSLNS+(>Keratin)AKEQFERQTA",
+            "(>Trypsin)AANSIPYQVSLNS",
             # "(>P07225 Vitamin K-dependent protein S OS=Homo sapiens OX=9606 GN=PROS1 PE=1 (SV=1) RANGE=12..42)GGK[xlink:dss[138]#XLDSS]IEVQLK//(>P07225 Vitamin K-dependent protein S OS=Homo sapiens OX=9606 GN=PROS1 PE=1 SV=1)KVESELIK[#XLDSS]PINPR/4",
             # "(>>>Trastuzumab Fab and coeluting Fc)(>>Fab)(>Heavy chain)EVQLVESGGGLVQPGGSLRLSC[M:l-cystine (cross-link)#XL1]AASGFNIKDTYIHWVRQAPGKGLEWVARIYPTNGYTRYADSVKGRFTISADTSKNTAYLQMNSLRAEDTAVYYC[#XL1]SRWGGDGFYAMDYWGQGTLVTVSSASTKGPSVFPLAPSSKSTSGGTAALGC[M:l-cystine (cross-link)#XL2]LVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYIC[#XL2]NVNHKPSNTKVDKKVEPKSC[M:l-cystine (cross-link)#XL3]DKT//(>Light chain)DIQMTQSPSSLSASVGDRVTITC[M:l-cystine (cross-link)#XL4]RASQDVNTAVAWYQQKPGKAPKLLIYSASFLYSGVPSRFSGSRSGTDFTLTISSLQPEDFATYYC[#XL4]QQHYTTPPTFGQGTKVEIKRTVAAPSVFIFPPSDEQLKSGTASVVC[M:l-cystine (cross-link)#XL5]LLNNFYPREAKVQWKVDNALQSGNSQESVTEQDSKDSTYSLSSTLTLSKADYEKHKVYAC[#XL5]EVTHQGLSSPVTKSFNRGEC[#XL3]+(>Fc)HTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVYTLPPSREEMTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK",
         ]
         for seq in positive:
-            parsed = ProForma.parse(seq)
-            assert parsed is not None
+            with self.subTest(seq=seq):
+                parsed = ProForma.parse(seq)
+                assert parsed is not None
 
     def test_nonstandard_amino_acid(self):
         seq = ProForma.parse("PEPTX[MOD:01001]IDE")
         bad_seq = ProForma.parse("PEPTXIDE")
         assert seq.mass != bad_seq.mass
         self.assertAlmostEqual(seq.mass, 884.4127280267099, 4)
+
+    def test_charged_tags(self):
+        seq = ProForma.parse("SEQUEN[Formula:Zn1:z+2]CE")
+        assert seq.tags[0].charge == 2
+        assert seq._local_charges() == (2, 1)
+        assert seq.charge_state.charge == 2
+
+        # While charge state is 2+, when serializing,
+        # do not count that charge at the end of the sequence
+        assert str(seq) == "SEQUEN[Formula:Zn1:z+2]CE"
+
+        # Adapted from the spec
+        template = "SEQUEN[Formula:Zn:z+2]CE/[Na:z+1^2]"
+        mixed = ProForma.parse(template)
+        self.assertAlmostEqual(mixed.mass, seq.mass, 6)
+        # Check the physical charge state is the sum
+        assert mixed.charge_state.charge == 4
+        # Check that it collapses back down correctly rather
+        # than double counting
+        assert str(mixed) == template
+
+        self.assertWarns(UserWarning, lambda: mixed.mz(charge=2))
+
+    def test_mass(self):
+        sequences = ["PEPTIDE", "PEPTIDE/2"]
+        for seq in sequences:
+            with self.subTest(seq=seq):
+                parsed = ProForma.parse(seq)
+                self.assertAlmostEqual(parsed.mass, mass.fast_mass(sequences[0]))
+
+    def test_mz(self):
+        self.assertAlmostEqual(ProForma.parse("PEPTIDE/2").mz(), mass.fast_mass("PEPTIDE", charge=2), 5)
+
+        seq = ProForma.parse("SEQUEN[Formula:Zn1:z+2]CE")
+        adducted = ProForma.parse("SEQUENCE/[Zn1:z+2]")
+
+        # Charged formulae contribute to m/z just like adducts do
+        self.assertAlmostEqual(seq.mz(), adducted.mz(), 4)
+        # But they also contribute to the total mass, unlike adducts
+        self.assertAlmostEqual(seq.mass, adducted.mass + adducted.charge_state.for_mz_calculation()[0], 4)
+
+        electron = Composition({"e-": 1}).mass()
+        # Verify that the direct mass calculation is correct
+        self.assertAlmostEqual(seq.mass, mass.fast_mass("SEQUENCE") + Composition("Zn").mass() - electron * 2)
+
+        proton = Composition("").mass(charge=1)
+        salted = ProForma.parse("SEQUEN[Cation:Zn[II]]CE/2")
+        # Per discussion, a charged modification will be a greater mass than
+        # its neutral salt cousin by as many protons as it has positive charges.
+        self.assertAlmostEqual(seq.mass, salted.mass + proton * 2, 4)
+
+
 
 
 class TestTagProcessing(unittest.TestCase):
