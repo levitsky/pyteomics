@@ -60,7 +60,7 @@
  - Add an `absolute` parameter (True by default) for :py:func:`pyteomics.mass.fast_mass` and :py:func:`pyteomics.mass.fast_mass2`.
  - Allow fragment charges formatted as :py:class:`float` in MGF (issue `#185 <https://github.com/levitsky/pyteomics/issues/185>`_).
  - New functions :py:func:`pyteomics.parser.coverage_mask` and :py:func:`pyteomics.parser.strip`.
- - Add support for explicit XML namespaces (`#200 <https://github.com/levitsky/pyteomics/issues/200>_`).
+ - Add support for explicit XML namespaces (`#200 <https://github.com/levitsky/pyteomics/issues/200>`_).
  - Fix `#47 <https://github.com/levitsky/pyteomics/issues/47>`_ (Postgres compatibility for :py:mod:`pyteomics.mass.unimod`) in
    `#201 <https://github.com/levitsky/pyteomics/pull/201>`_. This changes certain column types from `VARCHAR` to Unicode text.
 
