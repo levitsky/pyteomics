@@ -1,5 +1,5 @@
-5.0c1
------
+5.0
+---
 
  - Update the standard ion compositions to be more consistent with the adopted ion type notation.
    The `"z+1"` and `"c+1"` ions now represent compositions described as "c-ion plus a hydrogen" and "z-ion plus a hydrogen",
@@ -14,6 +14,9 @@
  - Support **ProForma 2.1** (`#183 <https://github.com/levitsky/pyteomics/pull/183>`_ by Joshua Klein).
    You can calculate compositions for :py:class:`ProForma` objects using :py:meth:`pyteomics.proforma.Proforma.composition`
    and get m/z with annotated or user-provided charge state using :py:meth:`pyteomics.proforma.Proforma.mz`.
+   `ChargeState` was added to include adduct information, while still being reducible to :class:`int` wherever possible.
+   `ChargeState` also includes localized charged modifications (`#203 <https://github.com/levitsky/pyteomics/pull/203>`_).
+   **ProForma** functionality is likely to evolve in the future.
 
  - You can also iterate through possible peptidoforms when a ProForma sequence is annotated with some ambiguity using
    :py:meth:`pyteomics.proforma.Proforma.proteoforms` and apply additional modification specifications to any ProForma sequence
