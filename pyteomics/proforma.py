@@ -13,7 +13,7 @@ For more details, see the :mod:`pyteomics.proforma` online.
 import itertools
 import re
 import warnings
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple
+from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple, overload, Literal
 from collections import Counter, deque, namedtuple
 from functools import partial
 from itertools import chain
@@ -2529,6 +2529,9 @@ def _local_charges(
     return local_charges, n_charged_modifications
 
 
+ProFormaParseResult = Tuple[List[Tuple[str, Optional[List[TagBase]]]], Dict[str, Any]]
+
+
 class Parser:
     """
     A parser for the ProForma 2 syntax.
@@ -2569,7 +2572,7 @@ class Parser:
     charge_buffer: Optional[NumberParser]
     adduct_buffer: Optional[AdductParser]
 
-    def __init__(self, sequence: str, case_sensitive_aa: bool=False):
+    def __init__(self, sequence: str, case_sensitive_aa: bool=False, chimeric: bool=False):
         """
         Instantiate a ProForma 2 parser for the specified sequence.
 
@@ -2580,6 +2583,9 @@ class Parser:
         case_sensitive_aa : bool
             Whether to treat amino acids as case sensitive (older behavior) while the specification
             states they should be handled insensitively.
+        chimeric : bool
+            Whether to parse top-level ``+`` as a separator between chimeric
+            peptidoform components.
         """
         self.sequence = sequence
         self.index = 0
@@ -2587,29 +2593,16 @@ class Parser:
         self.length = len(sequence)
         self.state = ParserStateEnum.before_sequence
         self._VALID_AA = VALID_AA if not case_sensitive_aa else VALID_AA_UPPER
+        self.chimeric = chimeric
+        self.components = []
 
-        self.n_term = []
-        self.c_term = []
-        self.intervals = []
-        self.positions = []
-
-        self.adduct_buffer = None
-        self.charge_buffer = None
-        self.current_aa = None
-        self.current_interval = None
-        self.current_tag = TagParser()
-        self.current_aa_targets = StringParser()
-        self.current_unlocalized_count = NumberParser()
-
-        self.unlocalized_modifications = []
-        self.labile_modifications = []
         self.fixed_modifications = []
-        self.unlocalized_modifications = []
-        self.intervals = []
         self.isotopes = []
+        self.shared_group_ids = set()
         self.name_level = None
         self.name_buffer = StringParser()
         self.names = {}
+        self._reset_component()
 
     @property
     def i(self) -> int:
@@ -2631,6 +2624,41 @@ class Parser:
             )
         )
         self.current_aa = None
+
+    def _reset_component(self):
+        self.n_term = []
+        self.c_term = []
+        self.intervals = []
+        self.positions = []
+
+        self.adduct_buffer = None
+        self.charge_buffer = None
+        self.current_aa = None
+        self.current_interval = None
+        self.current_tag = TagParser(group_ids=self.shared_group_ids)
+        self.current_aa_targets = StringParser()
+        self.current_unlocalized_count = NumberParser()
+
+        self.unlocalized_modifications = []
+        self.labile_modifications = []
+        self.state = BEFORE
+
+    def _chimeric_disabled_error(self):
+        raise ProFormaError(
+            (
+                f"Error In State {self.state}, + found at index {self.i}. "
+                "Chimeric ProForma detected but chimeric parsing is disabled. "
+                "Pass chimeric=True to parse chimeric spectra."
+            ),
+            self.i,
+            self.state,
+        )
+
+    def _handle_chimeric_separator(self):
+        if not self.chimeric:
+            self._chimeric_disabled_error()
+        self.components.append(self._finish_component())
+        self._reset_component()
 
     def handle_before(self, c: str):
         if c == '[':
@@ -2654,6 +2682,10 @@ class Parser:
                 else:
                     self.state = INTERVAL_INIT
                     self.current_interval = TaggedInterval(len(self.positions) + 1)
+        elif c == '+':
+            if self.chimeric:
+                raise ProFormaError("Empty peptidoform in chimeric ProForma string", self.i, self.state)
+            self._chimeric_disabled_error()
         else:
             raise ProFormaError(
                 f"Error In State {self.state}, unexpected {c} found at index {self.i}",
@@ -2721,11 +2753,13 @@ class Parser:
             self.charge_buffer = NumberParser()
             self.adduct_buffer = AdductParser()
         elif c == '+':
-            raise ProFormaError(
-                f"Error In State {self.state}, {c} found at index {self.i}. Chimeric representation not supported",
-                self.i,
-                self.state,
-            )
+            if self.current_interval is not None:
+                raise ProFormaError(
+                    f"Error In State {self.state}, unexpected {c} found at index {self.i}",
+                    self.i,
+                    self.state,
+                )
+            self._handle_chimeric_separator()
         else:
             raise ProFormaError(
                 f"Error In State {self.state}, unexpected {c} found at index {self.i}",
@@ -2811,11 +2845,10 @@ class Parser:
             self.state = CHARGE_START
             self.charge_buffer = NumberParser()
         elif c == "+":
-            raise ProFormaError(
-                f"Error In State {self.state}, {self.c} found at index {self.i}. Chimeric representation not supported",
-                self.i,
-                self.state,
-            )
+            self.current_interval.tags = self.current_tag()
+            self.intervals.append(self.current_interval)
+            self.current_interval = None
+            self._handle_chimeric_separator()
         else:
             raise ProFormaError(
                 f"Error In State {self.state}, unexpected {self.c} found at index {self.i}",
@@ -2894,6 +2927,7 @@ class Parser:
                 self.fixed_modifications.append(
                     ModificationRule(self.current_tag()[0], v)
                 )
+                self.shared_group_ids.update(self.current_tag.group_ids)
             except PyteomicsError as err:
                 raise ProFormaError(
                     (
@@ -2916,11 +2950,7 @@ class Parser:
             self.state = CHARGE_START
             self.charge_buffer = NumberParser()
         elif c == "+":
-            raise ProFormaError(
-                f"Error In State {self.state}, {c} found at index {self.i}. Chimeric representation not supported",
-                self.i,
-                self.state,
-            )
+            self._handle_chimeric_separator()
 
     def handle_charge_start(self, c: str):
         if c in "+-":
@@ -2938,6 +2968,7 @@ class Parser:
             )
         elif c == '[':
             self.state = ParserStateEnum.charge_state_adduct_start
+            self.depth = 1
         else:
             raise ProFormaError(
                 f"Error In State {self.state}, unexpected {c} found at index {self.i}",
@@ -2952,6 +2983,8 @@ class Parser:
             self.state = ADDUCT_START
             self.depth = 1
             self.adduct_buffer = AdductParser()
+        elif c == "+":
+            self._handle_chimeric_separator()
         else:
             raise ProFormaError(
                 f"Error In State {self.state}, unexpected {c} found at index {self.i}",
@@ -2976,11 +3009,7 @@ class Parser:
 
     def handle_adduct_end(self, c: str):
         if c == "+":
-            raise ProFormaError(
-                f"Error In State {self.state}, {c} found at index {self.i}. Chimeric representation not supported",
-                self.i,
-                self.state,
-            )
+            self._handle_chimeric_separator()
 
     def handle_name_level(self, c: str):
         if c == '>' and self.name_level < 3:
@@ -3079,21 +3108,7 @@ class Parser:
             self.index += 1
         return self.index < self.length
 
-    def finish(
-        self,
-    ) -> Tuple[List[Tuple[str, Optional[List[TagBase]]]], Dict[str, Any]]:
-        """
-        Post-process the parser's accumulated parsed token data and return the parsed
-        sequence and metadata.
-
-        Returns
-        -------
-        sequence : List[Tuple[str, Optional[List[TagBase]]]]
-            The primary amino acid sequence of the ProForma string
-        metadata : Dict[str, Any]
-            All other information outside the main sequence, including unlocalized, labile, or global modifications,
-            names, charge states, and more.
-        """
+    def _finish_component(self) -> ProFormaParseResult:
         if self.charge_buffer:
             charge_number = self.charge_buffer()
             if self.adduct_buffer:
@@ -3108,6 +3123,9 @@ class Parser:
             charge_state = None
         if self.current_aa:
             self.pack_sequence_position()
+
+        if not self.positions and self.chimeric:
+            raise ProFormaError("Empty peptidoform in chimeric ProForma string", self.i, self.state)
 
         z, k = self._local_charges()
         if k:
@@ -3135,10 +3153,39 @@ class Parser:
             "fixed_modifications": self.fixed_modifications,
             "intervals": self.intervals,
             "isotopes": self.isotopes,
-            "group_ids": sorted(self.current_tag.group_ids),
+            "group_ids": sorted(set(self.current_tag.group_ids) | self.shared_group_ids),
             "charge_state": charge_state,
             "names": self.names
         }
+
+    def _apply_shared_properties(self):
+        for _positions, props in self.components:
+            props["fixed_modifications"] = list(self.fixed_modifications)
+            props["isotopes"] = list(self.isotopes)
+            props["names"] = self.names.copy()
+            props["group_ids"] = sorted(set(props["group_ids"]) | self.shared_group_ids)
+
+    def finish(
+        self,
+    ) -> Union[ProFormaParseResult, List[ProFormaParseResult]]:
+        """
+        Post-process the parser's accumulated parsed token data and return the parsed
+        sequence and metadata.
+
+        Returns
+        -------
+        sequence : List[Tuple[str, Optional[List[TagBase]]]]
+            The primary amino acid sequence of the ProForma string
+        metadata : Dict[str, Any]
+            All other information outside the main sequence, including unlocalized, labile, or global modifications,
+            names, charge states, and more.
+        """
+        component = self._finish_component()
+        if self.chimeric:
+            self.components.append(component)
+            self._apply_shared_properties()
+            return self.components
+        return component
 
     def _local_charges(self) -> Tuple[int, int]:
         return _local_charges(
@@ -3173,7 +3220,17 @@ class Parser:
             }
 
 
-def parse(sequence: str, **kwargs) -> Tuple[List[Tuple[str, Optional[List[TagBase]]]], Dict[str, Any]]:
+@overload
+def parse(sequence: str, *, chimeric: Literal[False] = False, **kwargs) -> ProFormaParseResult:
+    ...
+
+
+@overload
+def parse(sequence: str, *, chimeric: Literal[True], **kwargs) -> List[ProFormaParseResult]:
+    ...
+
+
+def parse(sequence: str, *, chimeric: bool = False, **kwargs) -> Union[ProFormaParseResult, List[ProFormaParseResult]]:
     """
     Tokenize a ProForma sequence into a sequence of amino acid+tag positions, and a
     mapping of sequence-spanning modifiers.
@@ -3186,6 +3243,10 @@ def parse(sequence: str, **kwargs) -> Tuple[List[Tuple[str, Optional[List[TagBas
     ----------
     sequence: str
         The sequence to parse
+    chimeric : bool
+        If :const:`True`, top-level ``+`` separates chimeric peptidoform
+        components and a list of parse results is returned. If :const:`False`,
+        top-level ``+`` raises a :class:`ProFormaError` suggesting this option.
     **kwargs :
         Forwarded to :class:`Parser`
 
@@ -3199,11 +3260,14 @@ def parse(sequence: str, **kwargs) -> Tuple[List[Tuple[str, Optional[List[TagBas
     """
     # short-circuiting the parser for simple sequences with no tags or modifications to avoid overhead
     if sequence.isupper() and sequence.isalpha():
-        return (
+        result = (
             [(aa, None) for aa in sequence],
             Parser.empty_properties()
         )
-    parser = Parser(sequence, **kwargs)
+        if chimeric:
+            return [result]
+        return result
+    parser = Parser(sequence, chimeric=chimeric, **kwargs)
     return parser.parse()
 
 
@@ -3872,20 +3936,36 @@ class ProForma(object):
                 self._charge_state = new
 
     @classmethod
-    def parse(cls, string, **kwargs):
+    @overload
+    def parse(cls, string, *, chimeric: Literal[False] = False, **kwargs) -> "ProForma":
+        ...
+
+    @classmethod
+    @overload
+    def parse(cls, string, *, chimeric: Literal[True], **kwargs) -> List["ProForma"]:
+        ...
+
+    @classmethod
+    def parse(cls, string, *, chimeric: bool = False, **kwargs):
         '''Parse a ProForma string.
 
         Parameters
         ----------
         string : str
             The string to parse
+        chimeric : bool
+            If :const:`True`, top-level ``+`` separates chimeric peptidoform
+            components and a list of :class:`ProForma` instances is returned.
         **kwargs :
             Forwarded to :class:`Parser`
         Returns
         -------
-        ProForma
+        ProForma or list[ProForma]
         '''
-        return cls(*parse(string, **kwargs))
+        result = parse(string, chimeric=chimeric, **kwargs)
+        if chimeric:
+            return [cls(*component) for component in result]
+        return cls(*result)
 
     @property
     def mass(self) -> float:
