@@ -2638,11 +2638,11 @@ class Parser:
     def _chimeric_disabled_error(self):
         raise ProFormaError(
             (
-                f"Error In State {self.state}, + found at index {self.i}. "
+                f"Error In State {self.state}, + found at index {self.index}. "
                 "Chimeric ProForma detected but chimeric parsing is disabled. "
                 "Pass chimeric=True to parse chimeric spectra."
             ),
-            self.i,
+            self.index,
             self.state,
         )
 
@@ -2676,7 +2676,7 @@ class Parser:
                     self.current_interval = TaggedInterval(len(self.positions) + 1)
         elif c == '+':
             if self.chimeric:
-                raise ProFormaError("Empty peptidoform in chimeric ProForma string", self.i, self.state)
+                raise ProFormaError("Empty peptidoform in chimeric ProForma string", self.index, self.state)
             self._chimeric_disabled_error()
         else:
             raise ProFormaError(
@@ -3117,7 +3117,7 @@ class Parser:
             self.pack_sequence_position()
 
         if not self.positions and self.chimeric:
-            raise ProFormaError("Empty peptidoform in chimeric ProForma string", self.i, self.state)
+            raise ProFormaError("Empty peptidoform in chimeric ProForma string", self.index, self.state)
 
         z, k = self._local_charges()
         if k:
