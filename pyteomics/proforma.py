@@ -2477,10 +2477,10 @@ TERMINAL_SPEC_CHARS = set('N-term') | set('C-term') | set("ncT: ")
 
 def _local_charges(
     position_list,
-    intervals: List[TaggedInterval],
-    unlocalized_modifications: List[TagBase],
-    labile_modifications: List[TagBase],
-    fixed_modifications: List[TagBase]
+    intervals: Optional[List[TaggedInterval]]=None,
+    unlocalized_modifications: Optional[List[TagBase]]=None,
+    labile_modifications: Optional[List[TagBase]]=None,
+    fixed_modifications: Optional[List[TagBase]]=None,
 ) -> Tuple[int, int]:
     """
     Count the number of localized charges that the parsed ProForma
@@ -2498,29 +2498,29 @@ def _local_charges(
     """
     local_charges = 0
     n_charged_modifications = 0
-    for _, tags in position_list:
+    for _, tags in position_list or ():
         for tag in tags or (): # tags may be None
             z_of = getattr(tag, "charge", 0)
             if z_of:
                 n_charged_modifications += 1
                 local_charges += z_of
-    for iv in intervals:
+    for iv in intervals or ():
         for tag in iv.tags or ():
             z_of = getattr(tag, "charge", 0)
             if z_of:
                 n_charged_modifications += 1
                 local_charges += z_of
-    for tag in unlocalized_modifications:
+    for tag in unlocalized_modifications or ():
         z_of = getattr(tag, "charge", 0)
         if z_of:
             n_charged_modifications += 1
             local_charges += z_of
-    for tag in labile_modifications:
+    for tag in labile_modifications or ():
         z_of = getattr(tag, "charge", 0)
         if z_of:
             n_charged_modifications += 1
             local_charges += z_of
-    for fixed_mod in fixed_modifications:
+    for fixed_mod in fixed_modifications or ():
         z_of = getattr(fixed_mod.modification_tag, "charge", 0)
         if z_of:
             for _ in fixed_mod._find_all((aa for aa, _ in position_list), len(position_list)):
@@ -2605,14 +2605,6 @@ class Parser:
         self._reset_component()
 
     @property
-    def i(self) -> int:
-        return self.index
-
-    @i.setter
-    def i(self, value: int):
-        self.index = value
-
-    @property
     def n(self) -> int:
         return self.length
 
@@ -2688,8 +2680,8 @@ class Parser:
             self._chimeric_disabled_error()
         else:
             raise ProFormaError(
-                f"Error In State {self.state}, unexpected {c} found at index {self.i}",
-                self.i,
+                f"Error In State {self.state}, unexpected {c} found at index {self.index}",
+                self.index,
                 self.state,
             )
 
@@ -2733,8 +2725,8 @@ class Parser:
                 )
             else:
                 self.current_interval.end = len(self.positions)
-                if self.i + 1 < self.n and self.sequence[self.i + 1] == "[":
-                    self.i += 1
+                if self.index + 1 < self.n and self.sequence[self.index + 1] == "[":
+                    self.index += 1
                     self.depth = 1
                     self.state = INTERVAL_TAG
                 else:
@@ -2744,9 +2736,9 @@ class Parser:
             if self.current_aa:
                 self.pack_sequence_position()
             self.state = TAG_AFTER
-            if self.i >= self.n or self.sequence[self.i + 1] != "[":
-                raise ProFormaError("Missing Opening Tag", self.i, self.state)
-            self.i += 1
+            if self.index >= self.n or self.sequence[self.index + 1] != "[":
+                raise ProFormaError("Missing Opening Tag", self.index, self.state)
+            self.index += 1
             self.depth = 1
         elif c == '/':
             self.state = CHARGE_START
@@ -2755,15 +2747,15 @@ class Parser:
         elif c == '+':
             if self.current_interval is not None:
                 raise ProFormaError(
-                    f"Error In State {self.state}, unexpected {c} found at index {self.i}",
-                    self.i,
-                    self.state,
-                )
+                  f"Error In State {self.state}, {c} found at index {self.index}. Chimeric representation not supported",
+                  self.index,
+                  self.state,
+              )
             self._handle_chimeric_separator()
         else:
             raise ProFormaError(
-                f"Error In State {self.state}, unexpected {c} found at index {self.i}",
-                self.i,
+                f"Error In State {self.state}, unexpected {c} found at index {self.index}",
+                self.index,
                 self.state,
             )
 
@@ -2837,9 +2829,9 @@ class Parser:
             self.state = TAG_AFTER
             # Unroll next state to immediately fall into a tag parsing state instead of
             # including a separate post-dash state
-            if self.i >= self.n or self.sequence[self.i] != "[":
-                raise ProFormaError("Missing Closing Tag", self.i, self.state)
-            self.i += 1
+            if self.index >= self.n or self.sequence[self.index] != "[":
+                raise ProFormaError("Missing Closing Tag", self.index, self.state)
+            self.index += 1
             self.depth = 1
         elif c == "/":
             self.state = CHARGE_START
@@ -2851,8 +2843,8 @@ class Parser:
             self._handle_chimeric_separator()
         else:
             raise ProFormaError(
-                f"Error In State {self.state}, unexpected {self.c} found at index {self.i}",
-                self.i,
+                f"Error In State {self.state}, unexpected {self.c} found at index {self.index}",
+                self.index,
                 self.state,
             )
 
@@ -2870,8 +2862,8 @@ class Parser:
             self.state = TAG_BEFORE
         else:
             raise ProFormaError(
-                f"Error In State {self.state}, unexpected {self.c} found at index {self.i}",
-                self.i,
+                f"Error In State {self.state}, unexpected {self.c} found at index {self.index}",
+                self.index,
                 self.state,
             )
 
@@ -2897,8 +2889,8 @@ class Parser:
                 self.unlocalized_modifications.append(tag)
         else:
             raise ProFormaError(
-                f"Error In State {self.state}, unexpected {c} found at index {self.i}",
-                self.i,
+                f"Error In State {self.state}, unexpected {c} found at index {self.index}",
+                self.index,
                 self.state,
             )
 
@@ -2909,9 +2901,9 @@ class Parser:
             raise ProFormaError(
                 (
                     f"Error In State {self.state}, fixed modification detected without "
-                    f"target amino acids found at index {self.i}"
+                    f"target amino acids found at index {self.index}"
                 ),
-                self.i,
+                self.index,
                 self.state,
             )
 
@@ -2932,16 +2924,16 @@ class Parser:
                 raise ProFormaError(
                     (
                         f"Error In State {self.state}, fixed modification detected invalid "
-                        f"target found at index {self.i}: {err}"
+                        f"target found at index {self.index}: {err}"
                     ),
-                    self.i,
+                    self.index,
                     self.state,
                 )
             self.state = BEFORE
         else:
             raise ProFormaError(
                 f"Error In State {self.state}, unclosed fixed modification rule",
-                self.i,
+                self.index,
                 self.state,
             )
 
@@ -2963,7 +2955,7 @@ class Parser:
             self.state = ParserStateEnum.inter_chain_cross_link_start
             raise ProFormaError(
                 "Inter-chain cross-linked peptides are not yet supported",
-                self.i,
+                self.index,
                 self.state,
             )
         elif c == '[':
@@ -2971,8 +2963,8 @@ class Parser:
             self.depth = 1
         else:
             raise ProFormaError(
-                f"Error In State {self.state}, unexpected {c} found at index {self.i}",
-                self.i,
+                f"Error In State {self.state}, unexpected {c} found at index {self.index}",
+                self.index,
                 self.state,
             )
 
@@ -2987,8 +2979,8 @@ class Parser:
             self._handle_chimeric_separator()
         else:
             raise ProFormaError(
-                f"Error In State {self.state}, unexpected {c} found at index {self.i}",
-                self.i,
+                f"Error In State {self.state}, unexpected {c} found at index {self.index}",
+                self.index,
                 self.state,
             )
 
@@ -3101,8 +3093,8 @@ class Parser:
                 self.handle_name_text(c)
             else:
                 raise ProFormaError(
-                    f"Error In State {self.state}, unexpected {c} found at index {self.i}",
-                    self.i,
+                    f"Error In State {self.state}, unexpected {c} found at index {self.index}",
+                    self.index,
                     self.state,
                 )
             self.index += 1
@@ -3142,7 +3134,7 @@ class Parser:
         ):
             raise ProFormaError(
                 f"Error In State {self.state}, unclosed group reached end of string!",
-                self.i,
+                self.index,
                 self.state,
             )
         return self.positions, {
@@ -3704,6 +3696,8 @@ def to_proforma(
     if c_term:
         primary.append("-" + "".join("[{!s}]".format(t) for t in c_term))
     if charge_state:
+        if not isinstance(charge_state, ChargeState):
+            charge_state = ChargeState(charge_state)
         local_charge, _charge_mod_count = _local_charges(
             sequence,
             fixed_modifications=fixed_modifications,

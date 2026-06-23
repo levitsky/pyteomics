@@ -509,7 +509,11 @@ class ProFormaTest(unittest.TestCase):
         # its neutral salt cousin by as many protons as it has positive charges.
         self.assertAlmostEqual(seq.mass, salted.mass + proton * 2, 4)
 
-
+    def test_to_proforma_with_incomplete_signature(self):
+        seq = to_proforma([("I", []), ("P", [])], charge_state=ChargeState(2))
+        assert seq == "IP/2"
+        seq = to_proforma([("I", []), ("P", [])], charge_state=2)
+        assert seq == "IP/2"
 
 
 class TestTagProcessing(unittest.TestCase):
