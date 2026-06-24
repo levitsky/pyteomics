@@ -43,6 +43,16 @@ Data Access
 
 :py:func:`to_proforma` - Format a sequence and set of properties as ProForma text.
 
+Chimeric spectra are parsed by opting in with ``chimeric=True``. In that mode,
+top-level ``+`` separates peptidoform components and shared fixed modification
+rules and isotope labels are applied to each component:
+
+.. code-block:: python
+
+    >>> components = parse("<[Carbamidomethyl]@C>AC+CC", chimeric=True)
+    >>> len(components)
+    2
+
 
 Classes
 -------
@@ -140,7 +150,7 @@ These features are independent from each other:
 6. Spectral Support
 
     - [x] Charge state and adducts
-    - [ ] Chimeric spectra are special cases.
+    - [x] Chimeric spectra are special cases.
     - [x] Global modifications (e.g., every C is C13).
 
 

@@ -138,6 +138,60 @@ class ProFormaTest(unittest.TestCase):
             self.assertEqual(i.charge_state.charge, charge)
             self.assertEqual(i.charge_state.adducts, adducts)
 
+    def test_chimeric_parse_requires_opt_in(self):
+        with self.assertRaisesRegex(ProFormaError, 'chimeric=True'):
+            parse('PEPTIDE+ELVIS')
+
+    def test_chimeric_parse(self):
+        seq = 'EMEVEESPEK/2+ELVISLIVER/3'
+        parsed = parse(seq, chimeric=True)
+        self.assertEqual(len(parsed), 2)
+        self.assertEqual(parsed[0][1]['charge_state'].charge, 2)
+        self.assertEqual(parsed[1][1]['charge_state'].charge, 3)
+
+        forms = ProForma.parse(seq, chimeric=True)
+        self.assertEqual(len(forms), 2)
+        self.assertTrue(all(isinstance(form, ProForma) for form in forms))
+        self.assertEqual(forms[0].charge_state.charge, 2)
+        self.assertEqual(forms[1].charge_state.charge, 3)
+
+    def test_chimeric_single_component_opt_in(self):
+        forms = ProForma.parse('PEPTIDE/+2', chimeric=True)
+        self.assertEqual(len(forms), 1)
+        self.assertEqual(forms[0].charge_state.charge, 2)
+
+    def test_chimeric_empty_component(self):
+        with self.assertRaisesRegex(ProFormaError, 'Empty peptidoform'):
+            parse('+PEPTIDE', chimeric=True)
+        with self.assertRaisesRegex(ProFormaError, 'Empty peptidoform'):
+            parse('PEPTIDE+', chimeric=True)
+
+    def test_chimeric_shared_fixed_modifications(self):
+        seq = '<[Carbamidomethyl]@C>AC+CC'
+        parsed = parse(seq, chimeric=True)
+        self.assertEqual(len(parsed), 2)
+        self.assertEqual(len(parsed[0][1]['fixed_modifications']), 1)
+        self.assertEqual(len(parsed[1][1]['fixed_modifications']), 1)
+
+        forms = ProForma.parse(seq, chimeric=True)
+        aa_comp = std_aa_comp.copy()
+        aa_comp['cam'] = Composition(formula='H3C2NO')
+        self.assertEqual(forms[0].composition(), Composition(sequence='AcamC', aa_comp=aa_comp))
+        self.assertEqual(forms[1].composition(), Composition(sequence='camCcamC', aa_comp=aa_comp))
+
+    def test_chimeric_shared_names_and_isotopes(self):
+        parsed = parse('(>sample)<13C>AC+CC', chimeric=True)
+        self.assertEqual(parsed[0][1]['names'], {1: 'sample'})
+        self.assertEqual(parsed[1][1]['names'], {1: 'sample'})
+        self.assertEqual(parsed[0][1]['isotopes'], [StableIsotope('13C')])
+        self.assertEqual(parsed[1][1]['isotopes'], [StableIsotope('13C')])
+
+    def test_chimeric_adduct_separator(self):
+        forms = ProForma.parse('PEPTIDE/[Na:z+1,H:z+1]+ELVIS/2', chimeric=True)
+        self.assertEqual(len(forms), 2)
+        self.assertEqual(forms[0].charge_state.charge, 2)
+        self.assertEqual(forms[1].charge_state.charge, 2)
+
     def test_composition_with_adducts(self):
         sequences = ['PEPTIDE/1[+2Na+,-H+]', 'PEPTIDE/-1[+e-]', 'PEPTIDE/1[+2H+,+e-]', 'PEPTIDE', 'PEPTIDE/1']
         neutral_comp = Composition(sequence='PEPTIDE')
