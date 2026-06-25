@@ -12,7 +12,7 @@ authors = [
     {name = "Joshua Klein"}
 ]
 readme = "README.rst"
-requires-python = ">= 3.8"
+requires-python = ">= 3.10"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 classifiers = [
