@@ -105,29 +105,93 @@ class ProFormaTest(unittest.TestCase):
         i = ProForma.parse("PEPTIDE")
         masses = i.fragments('b', 1)
 
-        expected = [98.06004032, 227.1026334, 324.15539725, 425.20307572,
+        b_expected = [98.06004032, 227.1026334, 324.15539725, 425.20307572,
                     538.2871397, 653.31408272]
 
-        for o, e in zip(masses, expected):
+        for o, e in zip(masses, b_expected):
             self.assertAlmostEqual(o, e, 3)
 
         masses = i.fragments('y', 1)
-        expected = [148.06043424, 263.08737726, 376.17144124, 477.21911971,
+        y_expected = [148.06043424, 263.08737726, 376.17144124, 477.21911971,
                     574.27188356, 703.31447664]
 
-        for o, e in zip(masses, expected):
+        for o, e in zip(masses, y_expected):
             self.assertAlmostEqual(o, e, 3)
 
+        # Test include labile
+        i = ProForma.parse("{+204}PEPTIDE")
+        for o, e in zip(i.fragments('y', include_labile=True), masses):
+            self.assertAlmostEqual(o, e + 204, 3)
+        for o, e in zip(i.fragments("y", include_labile=False), masses):
+            self.assertAlmostEqual(o, e, 3)
+
+        # Test include unlocalized
+        i = ProForma.parse("[+204]?PEPTIDE")
+        for o, e in zip(i.fragments("y", include_unlocalized=True), masses):
+            self.assertAlmostEqual(o, e + 204, 3)
+        for o, e in zip(i.fragments("y", include_unlocalized=False), masses):
+            self.assertAlmostEqual(o, e, 3)
+
+        # Test C-terminal modification
+        i = ProForma.parse("PEPTIDE-[+204]")
+        for o, e in zip(i.fragments("y"), y_expected):
+            self.assertAlmostEqual(o, e + 204, 3)
+        for o, e in zip(i.fragments("b"), b_expected):
+            self.assertAlmostEqual(o, e, 3)
+
+        # Test N-terminal modification
+        i = ProForma.parse("[+204]-PEPTIDE")
+        for o, e in zip(i.fragments("b"), b_expected):
+            self.assertAlmostEqual(o, e + 204, 3)
+        for o, e in zip(i.fragments("y"), y_expected):
+            self.assertAlmostEqual(o, e, 3)
+
+        # Test fixed modifications
+        i = ProForma.parse("<[+204]@P>PEPTIDE")
+        for o, e in zip(i.fragments("b"), b_expected):
+            d = 204
+            if (o - e) > 205:
+                d += 204
+            self.assertAlmostEqual(o, e + d, 3)
+
+        # Test regular modifications
+        i = ProForma.parse("P[+204]EP[+204]TIDE")
+        for o, e in zip(i.fragments("b"), b_expected):
+            d = 204
+            if (o - e) > 205:
+                d += 204
+            self.assertAlmostEqual(o, e + d, 3)
+
+        i = ProForma.parse("(PEP)[+204](TIDE)[+204]")
+        for o, e in zip(i.fragments("b"), b_expected):
+            d = 204
+            if (o - e) > 205:
+                d += 204
+            self.assertAlmostEqual(o, e + d, 3)
+        self.assertEqual(d, 408)
+
     def test_slice(self):
-        i = ProForma.parse('[U:1]-MPEP-[UNIMOD:2]/2')
-        assert i.n_term is not None
-        assert i.c_term is not None
+        seq = ProForma.parse('[U:1]-MPEP-[UNIMOD:2]/2')
+        assert seq.n_term is not None
+        assert seq.c_term is not None
 
-        assert i[:1].n_term is not None
-        assert i[:1].c_term is None
+        assert seq[:1].n_term is not None
+        assert seq[:1].c_term is None
 
-        assert i[1:].n_term is None
-        assert i[1:].c_term is not None
+        assert seq[1:].n_term is None
+        assert seq[1:].c_term is not None
+
+        seq = ProForma.parse("MPE[#1]PET[+204#1]ID[#1]E")
+        sub = seq[:2]
+        assert not sub.find_tags_by_id('1')
+
+        sub = seq[:3]
+        of = sub.find_tags_by_id('1')
+        assert of
+        assert of[0][0] == 2
+        self.assertAlmostEqual(of[0][1].mass, 204.0, 3)
+
+
 
     def test_charge_adducts(self):
         sequences = ['PEPTIDE/1[+2Na+,-H+]', 'PEPTIDE/-1[+e-]', 'PEPTIDE/1[+2H+,+e-]']
@@ -180,11 +244,20 @@ class ProFormaTest(unittest.TestCase):
         self.assertEqual(forms[1].composition(), Composition(sequence='camCcamC', aa_comp=aa_comp))
 
     def test_chimeric_shared_names_and_isotopes(self):
-        parsed = parse('(>sample)<13C>AC+CC', chimeric=True)
-        self.assertEqual(parsed[0][1]['names'], {1: 'sample'})
-        self.assertEqual(parsed[1][1]['names'], {1: 'sample'})
+        parsed = parse('(>>>pair)(>sample)<13C>AC+CC', chimeric=True)
+        self.assertEqual(parsed[0][1]['names'], {1: 'sample', 3: 'pair'})
+        self.assertEqual(parsed[1][1]['names'], {3: 'pair'})
         self.assertEqual(parsed[0][1]['isotopes'], [StableIsotope('13C')])
         self.assertEqual(parsed[1][1]['isotopes'], [StableIsotope('13C')])
+        parsed = ProForma.parse("(>>>pair)(>sample)<13C>AC+CC", chimeric=True)
+        self.assertEqual(str(parsed[0]), "(>>>pair)<13C>(>sample)AC")
+        self.assertEqual(str(parsed[1]), "(>>>pair)<13C>CC")
+
+    def test_empty_name(self):
+        for i in range(1, 4):
+            p = ProForma.parse("({})PEPTIDE".format(">" * i))
+            assert p.names[i] == ''
+            assert str(p) == "({})PEPTIDE".format(">" * i)
 
     def test_chimeric_adduct_separator(self):
         forms = ProForma.parse('PEPTIDE/[Na:z+1,H:z+1]+ELVIS/2', chimeric=True)
@@ -317,8 +390,8 @@ class ProFormaTest(unittest.TestCase):
             "ELVIS[Phospho|INFO:newly discovered|INFO:Created by software Tool1]K",
             "<13C>ATPEILTVNSIGQLK",
             "EMEVEESPEK/2",
-            # "EMEVEESPEK+ELVISLIVER",
-            # "EMEVEESPEK/2+ELVISLIVER/3",
+            "EMEVEESPEK+ELVISLIVER",
+            "EMEVEESPEK/2+ELVISLIVER/3",
             # "A[X:DSS#XL1]//B[#XL1]+C[X:DSS#XL1]//D[#XL1]",
             "<[Carbamidomethyl]@C>ATPEILTCNSIGCLK",
             "<[Oxidation]@C,M>MTPEILTCNSIGCLK",
@@ -413,7 +486,7 @@ class ProFormaTest(unittest.TestCase):
             "EMEVEESPEK/2",
             "EM[U:Oxidation]EVEES[U:Phospho]PEK/3",
             "[U:iTRAQ4plex]-EM[U:Oxidation]EVNES[U:Phospho]PEK[U:iTRAQ4plex]-[U:Methyl]/3",
-            # "EMEVEESPEK/2+ELVISLIVER/3",
+            "EMEVEESPEK/2+ELVISLIVER/3",
             "AA(?AA)",
             "AA(?AA)AA",
             "[dehydro]^3?[gln->pyro-glu]-QSC",
@@ -450,7 +523,7 @@ class ProFormaTest(unittest.TestCase):
         ]
         for seq in positive:
             with self.subTest(seq=seq):
-                parsed = ProForma.parse(seq)
+                parsed = ProForma.parse(seq, chimeric='+' in seq)
                 assert parsed is not None
 
     def test_nonstandard_amino_acid(self):
@@ -481,12 +554,106 @@ class ProFormaTest(unittest.TestCase):
 
         self.assertWarns(UserWarning, lambda: mixed.mz(charge=2))
 
+        template = "<[Formula:Zn:z+2]@E>SEQUENCE"
+        seq = ProForma.parse(template)
+        assert seq.charge_state == 6
+
     def test_mass(self):
         sequences = ["PEPTIDE", "PEPTIDE/2"]
         for seq in sequences:
             with self.subTest(seq=seq):
                 parsed = ProForma.parse(seq)
                 self.assertAlmostEqual(parsed.mass, mass.fast_mass(sequences[0]))
+        parsed = ProForma.parse("<[+204]@P>PEPTIDE")
+        self.assertAlmostEqual(parsed.mass, mass.fast_mass(sequences[0]) + 408)
+
+        seq = "<[+{}]@X>XEXTIDE".format(mass.std_aa_mass['P'])
+        with self.subTest(seq):
+            parsed = ProForma.parse(seq)
+            self.assertAlmostEqual(parsed.mass, mass.fast_mass(sequences[0]))
+
+    def test_terminal_mass(self):
+        parsed = ProForma.parse("[+22]-PEPTIDE-[+26]")
+        ref = ProForma.parse("PEPTIDE")
+        self.assertAlmostEqual(parsed.mass, mass.fast_mass('PEPTIDE') + 48)
+        for a, b in zip(parsed.fragments('b'), ref.fragments('b')):
+            self.assertAlmostEqual(a, b + 22)
+        for a, b in zip(parsed.fragments("y"), ref.fragments("y")):
+            self.assertAlmostEqual(a, b + 26)
+
+    def test_charge_settable(self):
+        t = "PEPTIDE"
+
+        parsed = ProForma.parse(t)
+        self.assertAlmostEqual(parsed.mass, mass.fast_mass(t))
+        self.assertEqual(str(parsed), t)
+
+        parsed.charge_state = 1
+        self.assertAlmostEqual(parsed.mass, mass.fast_mass(t))
+        self.assertAlmostEqual(parsed.mz(), mass.fast_mass(t, charge=1))
+        self.assertEqual(str(parsed), t + '/1')
+
+        parsed.charge_state = 2
+        self.assertAlmostEqual(parsed.mass, mass.fast_mass(t))
+        self.assertAlmostEqual(parsed.mz(), mass.fast_mass(t, charge=2))
+        self.assertEqual(str(parsed), t + '/2')
+
+        parsed.charge_state = None
+        self.assertAlmostEqual(parsed.mass, mass.fast_mass(t))
+        self.assertEqual(str(parsed), t)
+
+        parsed.charge_state = ChargeState(2)
+        self.assertAlmostEqual(parsed.mass, mass.fast_mass(t))
+        self.assertAlmostEqual(parsed.mz(), mass.fast_mass(t, charge=2))
+        self.assertEqual(str(parsed), t + "/2")
+
+    def test_position_labels(self):
+        t = "PETIEM[Dioxidation#1][Oxidation#2]REM[#1][#2]REM[#2]RM[#1]PEPTIDE"
+        seq = ProForma.parse(t)
+        tags = seq.find_tags_by_id('2')
+        self.assertEqual(len(tags), 3)
+        self.assertEqual(str(seq), t)
+        t = "[Dioxidation#1]?PETIE(MREMREMRM)[#1][Oxidation#2]PEPTIDE"
+        seq = ProForma.parse(t)
+        tags = seq.find_tags_by_id('2')
+        # Matches the interval
+        self.assertEqual(len(tags), 1)
+        tags = seq.find_tags_by_id("1")
+        # Matches the unlocalized tag and the interval
+        self.assertEqual(len(tags), 2)
+
+
+    def test_glycan_composition_resolution(self):
+        seqs = [
+            ("NEEYN[Glycan:Hex5HexNAc5NeuAc1]K", 2912.0957972884694),
+            ("NEEYN[Glycan:{C6H12N4O2S1}5HexNAc4NeuAc1]K", 2919.0929805042692),
+            ("NEEYN[Glycan:{+204.068}5HexNAc4NeuAc1]K", 2919.0924972884695),
+            ("NEEYN[Glycan:HexHexHex3HexNAc5NeuAc1]K", 2912.0957972884694),
+        ]
+        for seq, mass_of in seqs:
+            parsed = ProForma.parse(seq)
+            self.assertAlmostEqual(parsed.mass, mass_of, 2)
+
+        self.assertRaises(
+            ValueError, lambda: ProForma.parse("NEEYN[Glycan:HexHexHex3HexNAc5NeuAc1Kxo]K").mass
+        )
+
+    def test_post_interval_tag(self):
+        seqs = [
+            "PEPTI(DE)[INFO:foo]",
+            "PEPTI(DE)[INFO:foo]-[INFO:bar]",
+            "PEPTI(DE)[INFO:foo]/2",
+            "PEPTI(DE)[INFO:foo]+PEPTI(DE)[INFO:foo]",
+        ]
+        for i, s in enumerate(seqs):
+            with self.subTest("seq={s}".format(s=s)):
+                [p, *rest] = ProForma.parse(s, chimeric=True)
+                if i == 1:
+                    assert p.c_term
+                elif i == 2:
+                    assert p.charge_state == 2
+                elif i == 3:
+                    assert rest
 
     def test_mz(self):
         self.assertAlmostEqual(ProForma.parse("PEPTIDE/2").mz(), mass.fast_mass("PEPTIDE", charge=2), 5)
@@ -508,6 +675,13 @@ class ProFormaTest(unittest.TestCase):
         # Per discussion, a charged modification will be a greater mass than
         # its neutral salt cousin by as many protons as it has positive charges.
         self.assertAlmostEqual(seq.mass, salted.mass + proton * 2, 4)
+
+        self.assertRaises(ProFormaError, lambda: ProForma.parse("PEPTIDE").mz())
+
+    def test_parse_unresolved(self):
+        p = ProForma.parse("PEPT[Cmm]IDE")
+        assert p
+        assert str(p) == "PEPT[Cmm]IDE"
 
     def test_to_proforma_with_incomplete_signature(self):
         seq = to_proforma([("I", []), ("P", [])], charge_state=ChargeState(2))
@@ -597,6 +771,12 @@ class ModificationTest(unittest.TestCase):
         mod = MassModification(57.08)
         modcopy = mod.copy()
         self.assertEqual(mod, modcopy)
+
+    def test_resolve_unimod_by_alias(self):
+        mod = UnimodModification("U:Acetylation").resolve()
+        self.assertEqual(mod['name'], 'Acetyl')
+        mod = GenericModification("Acetylation").resolve()
+        self.assertEqual(mod["name"], "Acetyl")
 
 
 class ModificationPicklingTest(unittest.TestCase):

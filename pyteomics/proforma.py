@@ -13,6 +13,7 @@ For more details, see the :mod:`pyteomics.proforma` online.
 import itertools
 import re
 import warnings
+
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple, overload, Literal
 from collections import Counter, deque, namedtuple
 from functools import partial
@@ -32,6 +33,10 @@ except ImportError:
     np = None
 
 
+NUMERIC_PAT = re.compile(
+    r"^(?P<sign>\+|-)?(?P<number>\d*(?:\.\d+)?(?:e(?:\+|-)?\d+(?:\.\d+)?)?)$"
+)
+
 _WATER_MASS = calculate_mass(formula="H2O")
 
 std_aa_mass = std_aa_mass.copy()
@@ -40,6 +45,61 @@ std_aa_mass['X'] = 0
 element_symbols = set(nist_mass)
 
 T = TypeVar('T')
+
+
+class Chimeric(Generic[T], Sequence[T]):
+    '''
+    A container for chimeric ProForma sequence parsing.
+
+    Supports the :class:`Sequence` protocol over the generic type and
+    pattern matching on attributes.
+
+    Attributes
+    ----------
+    peptides : :class:`list` of ``T``
+        The parsed peptides
+    chimeric : :class:`bool`
+        Whether the parsing process produced a chimeric interpretation
+        of two or more sequences
+    '''
+    peptides: List[T]
+    chimeric: bool
+
+    __slots__ = ('peptides', 'chimeric')
+
+    __match_args__ = ["peptides", "chimeric"]
+
+    def __init__(self, peptides: List[T], chimeric: Optional[bool]=None):
+        self.peptides = peptides
+        if chimeric is None:
+            chimeric = len(self.peptides) > 1
+        self.chimeric = chimeric
+
+    def __repr__(self) -> str:  # pragma: no cover
+        return "{self.__class__.__name__}({self.peptides}, chimeric={self.chimeric})".format(self=self)
+
+    @overload
+    def __getitem__(self, i: int) -> T:  # pragma: no cover
+        ...
+
+    @overload
+    def __getitem__(self, i: slice) -> List[T]:  # pragma: no cover
+        ...
+
+    def __getitem__(self, i: Union[int, slice]) -> Union[T, List[T]]:
+        return self.peptides[i]
+
+    def __iter__(self):
+        yield from self.peptides
+
+    def __len__(self):
+        return len(self.peptides)
+
+    def __bool__(self):
+        return self.peptides
+
+    def __contains__(self, value):
+        return value in self.peptides
 
 
 class ProFormaError(PyteomicsError):
@@ -186,7 +246,7 @@ class TagBase(object):
             label = '%s%s' % (label, self.group_id)
         return '%s' % label
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         template = "{self.__class__.__name__}({self.value!r}, {self.extra!r}, {self.group_id!r})"
         return template.format(self=self)
 
@@ -538,6 +598,11 @@ class UnimodResolver(ModificationResolver):
         return Unimod()
 
     def _resolve_impl(self, name=None, id=None, **kwargs):
+        '''
+        Flags:
+            strict - use strict, full name matching of any of the three name fields
+            exhaustive - if strict, try non-strict lookup
+        '''
         strict = kwargs.get("strict", self.strict)
         exhaustive = kwargs.get("exhaustive", True)
         if name is not None:
@@ -1259,43 +1324,31 @@ class GlycanModification(ModificationBase):
             hit = hit.groupdict()
             cnt = hit['count']
 
-            tok = hit.get('known_name')
+            known_name = hit.get('known_name')
             base_name = hit.get('base_name')
-            formula = hit.get('charged_formula')
+            formula_or_mass = hit.get('charged_formula')
 
             if cnt:
                 cnt = int(cnt)
             else:
                 cnt = 1
-            if tok is not None:
-                if tok not in self.valid_monosaccharides:
-                    parts = self.monomer_tokenizer.findall(tok)
-                    t = 0
-                    for p in parts:
-                        if p not in self.valid_monosaccharides:
-                            break
-                        t += len(p)
-                    if t != len(tok):
-                        raise ValueError("{tok!r} is not a valid monosaccharide name".format(tok=tok))
-                    else:
-                        for p in parts:
-                            if p not in self.valid_monosaccharides:
-                                raise UnknownMonosaccharideError(p)
-                            m, c, sym = self.valid_monosaccharides[p]
-                            mass += m * cnt
-                            chemcomp += c * cnt
-                            composite[sym] += cnt
+            if known_name is not None:
+                m, c, sym = self.valid_monosaccharides[known_name]
+                mass += m * cnt
+                chemcomp += c * cnt
+                composite[sym] += cnt
+            elif formula_or_mass is not None:
+                defn = formula_or_mass[1:-1]
+                is_mass = NUMERIC_PAT.match(defn)
+                if is_mass:
+                    mass += float(defn) * cnt
                 else:
-                    m, c, sym = self.valid_monosaccharides[tok]
-                    mass += m * cnt
-                    chemcomp += c * cnt
-                    composite[sym] += cnt
-            elif formula is not None:
-                inner = FormulaModification(formula[1:-1]).resolve()
-                mass += inner['mass'] * cnt
-                chemcomp += inner['composition'] * cnt
-                composite[formula] += cnt
-                charge += inner['charge'] * cnt
+                    inner = FormulaModification(defn).resolve()
+                    mass += inner['mass'] * cnt
+                    chemcomp += inner['composition'] * cnt
+                    composite[formula_or_mass] += cnt
+                    if inner['charge'] is not None:
+                        charge += inner['charge'] * cnt
             elif base_name is not None:
                 parts = self.monomer_tokenizer.findall(base_name)
                 t = 0
@@ -1501,7 +1554,7 @@ class ModificationToken(object):
         '''
         return self.source_cls(self.name)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         template = "{self.__class__.__name__}({self.name!r}, {self.id!r}, {self.provider!r}, {self.source_cls})"
         return template.format(self=self)
 
@@ -1709,7 +1762,7 @@ class ModificationTarget(object):
             buffer.append(self.aa)
         return ':'.join(buffer)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return str(self)
 
     def is_valid(self, aa: str, n_term: bool, c_term: bool) -> bool:
@@ -1845,7 +1898,7 @@ class ModificationRule(object):
         targets = ','.join(map(str, self.targets))
         return "<[{self.modification_tag}]@{targets}>".format(self=self, targets=targets)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return "{self.__class__.__name__}({self.modification_tag!r}, {self.targets})".format(self=self)
 
 
@@ -1879,7 +1932,7 @@ class StableIsotope(object):
     def __str__(self):
         return "<{self.isotope}>".format(self=self)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return "{self.__class__.__name__}({self.isotope})".format(self=self)
 
 
@@ -1916,7 +1969,7 @@ class TaggedInterval(object):
     def __init__(self, start, end=None, tags=None, ambiguous=False):
         self.start = start
         self.end = end
-        self.tags = tags
+        self.tags = tags or []
         self.ambiguous = ambiguous
 
     def copy(self):
@@ -1933,7 +1986,7 @@ class TaggedInterval(object):
         return self.start == other.start and self.end == other.end and self.tags == other.tags
 
     def __hash__(self):
-        return hash((self.start, self.end, tuple(self.tags or []), self.ambiguous))
+        return hash((self.start, self.end, tuple(self.tags or ()), self.ambiguous))
 
     def __ne__(self, other):
         return not self == other
@@ -1941,7 +1994,7 @@ class TaggedInterval(object):
     def __str__(self):
         return f"({'?' if self.ambiguous else ''}{self.start}-{self.end}){self.tags!r}"
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return f"{self.__class__.__name__}({self.start}, {self.end}, {self.tags}, ambiguous={self.ambiguous})"
 
     def as_slice(self):
@@ -2144,8 +2197,8 @@ class ChargeState:
         return other / int(self)
 
     def __eq__(self, other):
-        if not isinstance(other, ChargeState):
-            other = ChargeState(other)
+        if isinstance(other, Integral):
+            return int(self) == other
         return self.charge == other.charge and (self.adducts == other.adducts)
 
     def __ne__(self, other):
@@ -2188,7 +2241,7 @@ class ChargeState:
     def __str__(self):
         return self.format_local()
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         template = "{self.__class__.__name__}({self.charge}, {self.adducts})"
         return template.format(self=self)
 
@@ -2489,6 +2542,10 @@ def _local_charges(
     This specifically counts modifications with a registered charge
     state like charged :class:`FormulaModification` instances.
 
+    This triggers modification resolution, which may fail. Errors in
+    resolution are ignored so that this may be called with unknown
+    modifications.
+
     Returns
     -------
     local_charges : int
@@ -2500,32 +2557,47 @@ def _local_charges(
     n_charged_modifications = 0
     for _, tags in position_list or ():
         for tag in tags or (): # tags may be None
-            z_of = getattr(tag, "charge", 0)
-            if z_of:
-                n_charged_modifications += 1
-                local_charges += z_of
+            try:
+                z_of = getattr(tag, "charge", 0)
+                if z_of:
+                    n_charged_modifications += 1
+                    local_charges += z_of
+            except Exception: # pragma: no cover
+                pass
     for iv in intervals or ():
         for tag in iv.tags or ():
+            try:
+                z_of = getattr(tag, "charge", 0)
+                if z_of:
+                    n_charged_modifications += 1
+                    local_charges += z_of
+            except Exception:  # pragma: no cover
+                pass
+    for tag in unlocalized_modifications or ():
+        try:
             z_of = getattr(tag, "charge", 0)
             if z_of:
                 n_charged_modifications += 1
                 local_charges += z_of
-    for tag in unlocalized_modifications or ():
-        z_of = getattr(tag, "charge", 0)
-        if z_of:
-            n_charged_modifications += 1
-            local_charges += z_of
+        except Exception:  # pragma: no cover
+            pass
     for tag in labile_modifications or ():
-        z_of = getattr(tag, "charge", 0)
-        if z_of:
-            n_charged_modifications += 1
-            local_charges += z_of
-    for fixed_mod in fixed_modifications or ():
-        z_of = getattr(fixed_mod.modification_tag, "charge", 0)
-        if z_of:
-            for _ in fixed_mod._find_all((aa for aa, _ in position_list), len(position_list)):
-                local_charges += z_of
+        try:
+            z_of = getattr(tag, "charge", 0)
+            if z_of:
                 n_charged_modifications += 1
+                local_charges += z_of
+        except Exception:  # pragma: no cover
+            pass
+    for fixed_mod in fixed_modifications or ():
+        try:
+            z_of = getattr(fixed_mod.modification_tag, "charge", 0)
+            if z_of:
+                for _ in fixed_mod._find_all((aa for aa, _ in position_list), len(position_list)):
+                    local_charges += z_of
+                    n_charged_modifications += 1
+        except Exception:  # pragma: no cover
+            pass
     return local_charges, n_charged_modifications
 
 
@@ -2635,6 +2707,11 @@ class Parser:
         self.labile_modifications = []
         self.state = BEFORE
 
+        names = self.names
+        self.names = {}
+        if 3 in names:
+            self.names[3] = names[3]
+
     def _chimeric_disabled_error(self):
         raise ProFormaError(
             (
@@ -2673,7 +2750,7 @@ class Parser:
                     self.name_level = 1
                 else:
                     self.state = INTERVAL_INIT
-                    self.current_interval = TaggedInterval(len(self.positions) + 1)
+                    self._new_interval()
         elif c == '+':
             if self.chimeric:
                 raise ProFormaError("Empty peptidoform in chimeric ProForma string", self.index, self.state)
@@ -2713,7 +2790,7 @@ class Parser:
                     self.index,
                     self.state,
                 )
-            self.current_interval = TaggedInterval(len(self.positions) + 1)
+            self._new_interval()
             self.state = INTERVAL_INIT
         elif c == ')':
             self.pack_sequence_position()
@@ -2725,13 +2802,12 @@ class Parser:
                 )
             else:
                 self.current_interval.end = len(self.positions)
+                self.intervals.append(self.current_interval)
+                self.current_interval = None
                 if self.index + 1 < self.n and self.sequence[self.index + 1] == "[":
                     self.index += 1
                     self.depth = 1
                     self.state = INTERVAL_TAG
-                else:
-                    self.intervals.append(self.current_interval)
-                    self.current_interval = None
         elif c == '-':
             if self.current_aa:
                 self.pack_sequence_position()
@@ -2778,12 +2854,23 @@ class Parser:
                     self.state = POST_GLOBAL
                 elif self.state == INTERVAL_TAG:
                     self.state = POST_INTERVAL_TAG
-                    # self.current_interval.tags.append(self.current_tag())
+                    self._add_tag_to_last_interval()
                     self.depth = 0
             else:
                 self.current_tag.append(c)
         else:
             self.current_tag.append(c)
+
+    def _new_interval(self):
+        # If the current amino acid isn't initialized, we are starting a fresh interval without
+        # regular sequence interspersed
+        self.current_interval = TaggedInterval(len(self.positions) + (1 if self.current_aa else 0))
+
+    def _add_tag_to_last_interval(self):
+        i = self.intervals[-1]
+        if i.tags is None:
+            i.tags = []
+        i.tags.extend(self.current_tag())
 
     def handle_fixed(self, c: str):
         if c == '[':
@@ -2817,19 +2904,15 @@ class Parser:
 
     def handle_post_interval_tag(self, c: str):
         if c == "[":
-            self.current_tag.bound()
             self.state = INTERVAL_TAG
         elif c in self._VALID_AA:
             self.current_aa = c
-            self.current_interval.tags = self.current_tag()
-            self.intervals.append(self.current_interval)
-            self.current_interval = None
             self.state = SEQ
         elif c == "-":
             self.state = TAG_AFTER
             # Unroll next state to immediately fall into a tag parsing state instead of
             # including a separate post-dash state
-            if self.index >= self.n or self.sequence[self.index] != "[":
+            if self.index >= self.n or self.sequence[self.index + 1] != "[":
                 raise ProFormaError("Missing Closing Tag", self.index, self.state)
             self.index += 1
             self.depth = 1
@@ -2837,13 +2920,13 @@ class Parser:
             self.state = CHARGE_START
             self.charge_buffer = NumberParser()
         elif c == "+":
-            self.current_interval.tags = self.current_tag()
-            self.intervals.append(self.current_interval)
-            self.current_interval = None
             self._handle_chimeric_separator()
+        elif c == "(":
+            self._new_interval()
+            self.state = INTERVAL_INIT
         else:
             raise ProFormaError(
-                f"Error In State {self.state}, unexpected {self.c} found at index {self.index}",
+                f"Error In State {self.state}, unexpected {c} found at index {self.index}",
                 self.index,
                 self.state,
             )
@@ -2862,7 +2945,7 @@ class Parser:
             self.state = TAG_BEFORE
         else:
             raise ProFormaError(
-                f"Error In State {self.state}, unexpected {self.c} found at index {self.index}",
+                f"Error In State {self.state}, unexpected {c} found at index {self.index}",
                 self.index,
                 self.state,
             )
@@ -3147,19 +3230,18 @@ class Parser:
             "isotopes": self.isotopes,
             "group_ids": sorted(set(self.current_tag.group_ids) | self.shared_group_ids),
             "charge_state": charge_state,
-            "names": self.names
+            "names": self.names.copy()
         }
 
     def _apply_shared_properties(self):
         for _positions, props in self.components:
             props["fixed_modifications"] = list(self.fixed_modifications)
             props["isotopes"] = list(self.isotopes)
-            props["names"] = self.names.copy()
             props["group_ids"] = sorted(set(props["group_ids"]) | self.shared_group_ids)
 
     def finish(
         self,
-    ) -> Union[ProFormaParseResult, List[ProFormaParseResult]]:
+    ) -> Union[ProFormaParseResult, Chimeric[ProFormaParseResult]]:
         """
         Post-process the parser's accumulated parsed token data and return the parsed
         sequence and metadata.
@@ -3176,7 +3258,7 @@ class Parser:
         if self.chimeric:
             self.components.append(component)
             self._apply_shared_properties()
-            return self.components
+            return Chimeric(self.components, len(self.components) > 1)
         return component
 
     def _local_charges(self) -> Tuple[int, int]:
@@ -3213,16 +3295,20 @@ class Parser:
 
 
 @overload
-def parse(sequence: str, *, chimeric: Literal[False] = False, **kwargs) -> ProFormaParseResult:
+def parse(sequence: str, *, chimeric: Literal[False] = False, **kwargs) -> ProFormaParseResult:  # pragma: no cover
     ...
 
 
 @overload
-def parse(sequence: str, *, chimeric: Literal[True], **kwargs) -> List[ProFormaParseResult]:
+def parse(
+    sequence: str, *, chimeric: Literal[True], **kwargs
+) -> Chimeric[ProFormaParseResult]:  # pragma: no cover
     ...
 
 
-def parse(sequence: str, *, chimeric: bool = False, **kwargs) -> Union[ProFormaParseResult, List[ProFormaParseResult]]:
+def parse(
+    sequence: str, *, chimeric: bool = False, **kwargs
+) -> Union[ProFormaParseResult, Chimeric[ProFormaParseResult]]:
     """
     Tokenize a ProForma sequence into a sequence of amino acid+tag positions, and a
     mapping of sequence-spanning modifiers.
@@ -3263,7 +3349,7 @@ def parse(sequence: str, *, chimeric: bool = False, **kwargs) -> Union[ProFormaP
     return parser.parse()
 
 
-def _parse(sequence):
+def _parse(sequence): # pragma: no cover
     '''Tokenize a ProForma sequence into a sequence of amino acid+tag positions, and a
     mapping of sequence-spanning modifiers.
 
@@ -3726,7 +3812,7 @@ class _ProFormaProperty(Generic[T]):
     def __set__(self, obj, value: T):
         obj.properties[self.name] = value
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         template = "{self.__class__.__name__}({self.name!r})"
         return template.format(self=self)
 
@@ -3799,7 +3885,7 @@ class ProForma(object):
     def __str__(self):
         return to_proforma(self.sequence, **self.properties)
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return "{self.__class__.__name__}({self.sequence}, {self.properties})".format(self=self)
 
     def __len__(self):
@@ -3834,11 +3920,15 @@ class ProForma(object):
                     # We sliced the sequence, but only the localization markers were captured,
                     # not the actual modification definition. Update the first occurrence of the
                     # localization marker with a group id marked modification tag.
-                    if all(not isinstance(v, LocalizationMarker) for _, v in tag_hits):
-                        i = tag_hits[0]
+                    if all(isinstance(v, (LocalizationMarker, PositionLabelTag)) for _, v in tag_hits):
+                        i, _tag = tag_hits[0]
+                        if not isinstance(i, int):
+                            continue
                         val: TagBase
                         for val in self.find_tags_by_id(group_id, include_position=False):
-                            if not isinstance(val, LocalizationMarker):
+                            if not isinstance(
+                                val, (LocalizationMarker, PositionLabelTag)
+                            ):
                                 val = val.copy()
                                 for j, tag in enumerate(subseq[i][1]):
                                     if tag.group_id == group_id:
@@ -3931,17 +4021,19 @@ class ProForma(object):
 
     @classmethod
     @overload
-    def parse(cls, string, *, chimeric: Literal[False] = False, **kwargs) -> "ProForma":
+    def parse(cls, string, *, chimeric: Literal[False] = False, **kwargs) -> "ProForma":  # pragma: no cover
         ...
 
     @classmethod
     @overload
-    def parse(cls, string, *, chimeric: Literal[True], **kwargs) -> List["ProForma"]:
+    def parse(
+        cls, string, *, chimeric: Literal[True], **kwargs
+    ) -> Chimeric["ProForma"]:  # pragma: no cover
         ...
 
     @classmethod
     def parse(cls, string, *, chimeric: bool = False, **kwargs):
-        '''Parse a ProForma string.
+        """Parse a ProForma string.
 
         Parameters
         ----------
@@ -3954,11 +4046,11 @@ class ProForma(object):
             Forwarded to :class:`Parser`
         Returns
         -------
-        ProForma or list[ProForma]
-        '''
+        ProForma or Chimeric[ProForma]
+        """
         result = parse(string, chimeric=chimeric, **kwargs)
         if chimeric:
-            return [cls(*component) for component in result]
+            return Chimeric([cls(*component) for component in result], result.chimeric)
         return cls(*result)
 
     @property
@@ -4008,7 +4100,7 @@ class ProForma(object):
 
         mass += calculate_mass(formula="OH")
         for iv in self.properties['intervals']:
-            for tag in iv.tags:
+            for tag in iv.tags or ():
                 if tag.has_mass():
                     mass += tag.mass
         return mass
@@ -4130,7 +4222,7 @@ class ProForma(object):
             intervals = sorted(intervals, key=lambda x: x.start, reverse=reverse)
         intervals = deque(intervals)
 
-        if not include_labile:
+        if include_labile:
             for mod in self.properties['labile_modifications']:
                 mass += mod.mass
 
@@ -4186,7 +4278,7 @@ class ProForma(object):
 
             while intervals and intervals[0].contains(i):
                 iv = intervals.popleft()
-                for tag in iv.tags:
+                for tag in iv.tags or ():
                     if tag.has_mass():
                         mass += tag.mass
 
@@ -4229,8 +4321,9 @@ class ProForma(object):
                         else:
                             matches.append(tag)
         for iv in self.properties['intervals']:
-            if iv.tag.group_id == tag_id:
-                matches.append((iv, iv.tag) if include_position else iv.tag)
+            for tag in iv.tags or ():
+                if tag.group_id == tag_id:
+                    matches.append((iv, tag) if include_position else tag)
         for ulmod in self.properties['unlocalized_modifications']:
             if ulmod.group_id == tag_id:
                 matches.append(('unlocalized_modifications', ulmod)
@@ -4420,7 +4513,7 @@ class GeneratorModificationRuleDirective:
             tag.extra.clear()
         return tag
 
-    def __repr__(self):
+    def __repr__(self):  # pragma: no cover
         return f"{self.__class__.__name__}({self.rule}, {self.region}, {self.colocal_known}, {self.colocal_unknown})"
 
     @staticmethod
@@ -4805,7 +4898,8 @@ class ProteoformCombinator:
             if block:
                 rules.extend(block)
                 iv = iv.copy()
-                iv.tags = [t for t in iv.tags if not t.is_modification()]
+                if iv.tags:
+                    iv.tags = [t for t in iv.tags if not t.is_modification()]
                 remains.append(iv)
             else:
                 remains.append(iv)
