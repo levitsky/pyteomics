@@ -16,7 +16,7 @@ import warnings
 
 from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional, ClassVar, Sequence, Tuple, Type, Union, Generic, TypeVar, NamedTuple, overload, Literal
 from collections import Counter, deque, namedtuple
-from functools import partial
+from functools import partial, total_ordering
 from itertools import chain
 from array import array as _array
 from enum import Enum
@@ -1943,7 +1943,7 @@ class IntersectionEnum(Enum):
     start_overlap = 3
     end_overlap = 4
 
-
+@total_ordering
 class TaggedInterval(object):
     '''Define a fixed interval over the associated sequence which contains the localization
     of the associated tag or denotes a region of general sequence order ambiguity.
@@ -1979,6 +1979,37 @@ class TaggedInterval(object):
             [v.copy() for v in self.tags] if self.tags else [],
             self.ambiguous
         )
+
+    def __lt__(self, other: "TaggedInterval"):
+        if other is None:
+            return False
+        if self.start is None:
+            if other.start is None:
+                if self.end is None:
+                    if other.end is None:
+                        return False
+                    else:
+                        return True
+                elif other.end is None:
+                    return False
+                else:
+                    return self.end < other.end
+            else:
+                return True
+        else:
+            if other.start is None:
+                return False
+            elif self.start == other.start:
+                if self.end is None:
+                    if other.end is None:
+                        return False
+                    else:
+                        return True
+                elif other.end is None:
+                    return False
+                else:
+                    return self.end < other.end
+        return self.start < other.start
 
     def __eq__(self, other):
         if other is None:
@@ -3767,7 +3798,7 @@ def to_proforma(
         else:
             primary.append(str(aa) + "".join(["[{0!s}]".format(t) for t in tags]))
     if intervals:
-        for iv in sorted(intervals, key=lambda x: x.start):
+        for iv in sorted(intervals):
             if iv.ambiguous:
                 primary[iv.start] = "(?" + primary[iv.start]
             else:
@@ -4219,7 +4250,7 @@ class ProForma(object):
 
         intervals = self.intervals
         if intervals:
-            intervals = sorted(intervals, key=lambda x: x.start, reverse=reverse)
+            intervals = sorted(intervals, reverse=bool(reverse))
         intervals = deque(intervals)
 
         if include_labile:
