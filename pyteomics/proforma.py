@@ -3251,6 +3251,9 @@ class Parser:
                 self.index,
                 self.state,
             )
+        for v in self.intervals:
+            assert v.start is not None
+            assert v.end is not None
         return self.positions, {
             "n_term": self.n_term,
             "c_term": self.c_term,

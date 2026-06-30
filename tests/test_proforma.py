@@ -169,6 +169,9 @@ class ProFormaTest(unittest.TestCase):
                 d += 204
             self.assertAlmostEqual(o, e + d, 3)
         self.assertEqual(d, 408)
+        for v in i.intervals:
+            assert v.start is not None
+            assert v.end is not None
 
     def test_slice(self):
         seq = ProForma.parse('[U:1]-MPEP-[UNIMOD:2]/2')
