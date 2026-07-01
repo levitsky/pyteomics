@@ -67,7 +67,7 @@ class Chimeric(Generic[T], Sequence[T]):
 
     __slots__ = ('peptides', 'chimeric')
 
-    __match_args__ = ["peptides", "chimeric"]
+    __match_args__ = ("peptides", "chimeric")
 
     def __init__(self, peptides: List[T], chimeric: Optional[bool]=None):
         self.peptides = peptides
@@ -3374,7 +3374,7 @@ def parse(
             Parser.empty_properties()
         )
         if chimeric:
-            return [result]
+            return Chimeric([result], chimeric=False)
         return result
     parser = Parser(sequence, chimeric=chimeric, **kwargs)
     return parser.parse()
@@ -4081,6 +4081,7 @@ class ProForma(object):
         """
         result = parse(string, chimeric=chimeric, **kwargs)
         if chimeric:
+
             return Chimeric([cls(*component) for component in result], result.chimeric)
         return cls(*result)
 

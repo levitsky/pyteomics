@@ -1,3 +1,4 @@
+import sys
 import os
 from os import path
 import unittest
@@ -7,7 +8,7 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(
     path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 from pyteomics.proforma import (
-    PSIModModification, ProForma, TaggedInterval, parse, MassModification, ProFormaError, TagTypeEnum,
+    Chimeric, PSIModModification, ProForma, TaggedInterval, parse, MassModification, ProFormaError, TagTypeEnum,
     ModificationRule, StableIsotope, GenericModification, Composition, to_proforma, ModificationMassNotFoundError,
     UnimodModification, ModificationTarget,
     AdductParser, ChargeState, proteoforms, _coerce_string_to_modification,
@@ -221,6 +222,41 @@ class ProFormaTest(unittest.TestCase):
         self.assertTrue(all(isinstance(form, ProForma) for form in forms))
         self.assertEqual(forms[0].charge_state.charge, 2)
         self.assertEqual(forms[1].charge_state.charge, 3)
+
+        seq = ProForma.parse("PEPTIDE", chimeric=True)
+        assert not seq.chimeric
+        assert len(seq) == 1
+        if sys.version_info.major >= 3 and sys.version_info.minor >= 10:
+            match ProForma.parse("PEPTIDE+EDITPEP", chimeric=True):
+                case Chimeric(peptides, chimeric=True):
+                    assert len(peptides) > 1
+                case Chimeric((_peptide, ), chimeric=False):
+                    raise ValueError("Failed to match")
+                case ProForma() as _peptide:
+                    raise ValueError("Failed to match")
+                case _:
+                    raise ValueError("Failed to match")
+
+            match ProForma.parse("PEPTIDE", chimeric=True):
+                case Chimeric(peptides, chimeric=True):
+                    raise ValueError("Failed to match")
+                case Chimeric((_peptide,), chimeric=False):
+                    self.assertEqual(_peptide, ProForma.parse("PEPTIDE"))
+                case ProForma() as _peptide:
+                    raise ValueError("Failed to match")
+                case _:
+                    raise ValueError("Failed to match")
+
+            match ProForma.parse("PEPTIDE", chimeric=False):
+                case Chimeric(peptides, chimeric=True):
+                    raise ValueError("Failed to match")
+                case Chimeric((_peptide,), chimeric=False):
+                    raise ValueError("Failed to match")
+                case ProForma() as _peptide:
+                    self.assertEqual(_peptide, ProForma.parse("PEPTIDE"))
+                case _:
+                    raise ValueError("Failed to match")
+
 
     def test_chimeric_single_component_opt_in(self):
         forms = ProForma.parse('PEPTIDE/+2', chimeric=True)
