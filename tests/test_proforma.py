@@ -129,6 +129,16 @@ class ProFormaTest(unittest.TestCase):
         assert i[1:].n_term is None
         assert i[1:].c_term is not None
 
+    def test_slice_grouped_modification(self):
+        # Regression test: slicing a sequence with a grouped modification tag
+        # (e.g. "#g1") used to raise a TypeError because the tag position tuple
+        # returned by find_tags_by_id was used directly as a sequence index.
+        seq = "EMEVT[#g1]S[#g1]ES[#g1]PEK"
+        i = ProForma.parse(seq)
+        sub = i[2:9]
+        self.assertEqual(str(sub), "EVT[#g1]S[#g1]ES[#g1]P")
+        self.assertEqual(sub.group_ids, ['#g1'])
+
     def test_charge_adducts(self):
         sequences = ['PEPTIDE/1[+2Na+,-H+]', 'PEPTIDE/-1[+e-]', 'PEPTIDE/1[+2H+,+e-]']
         charges = [1, -1, 1]

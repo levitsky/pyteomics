@@ -3835,7 +3835,7 @@ class ProForma(object):
                     # not the actual modification definition. Update the first occurrence of the
                     # localization marker with a group id marked modification tag.
                     if all(not isinstance(v, LocalizationMarker) for _, v in tag_hits):
-                        i = tag_hits[0]
+                        i = tag_hits[0][0]
                         val: TagBase
                         for val in self.find_tags_by_id(group_id, include_position=False):
                             if not isinstance(val, LocalizationMarker):
