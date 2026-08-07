@@ -37,7 +37,8 @@ Unimod = ["lxml", "sqlalchemy >= 1.4"]
 numpress = ["pynumpress"]
 mzMLb = ["h5py", "hdf5plugin"]
 proforma = ["psims > 0.1.42"]
-all = ["lxml", "numpy", "psims>0.1.42", "matplotlib", "pandas>=0.17", "sqlalchemy>=1.4", "pynumpress", "h5py", "hdf5plugin", "spectrum_utils>=0.4"]
+zstd = ["pyzstd"]
+all = ["lxml", "numpy", "psims>0.1.42", "matplotlib", "pandas>=0.17", "sqlalchemy>=1.4", "pynumpress", "h5py", "hdf5plugin", "spectrum_utils>=0.4", "pyzstd"]
 
 [project.urls]
 Documentation = "http://pyteomics.readthedocs.io"

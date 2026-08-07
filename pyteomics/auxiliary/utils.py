@@ -1,5 +1,6 @@
 import base64
 import zlib
+import struct
 from functools import wraps
 from collections import namedtuple
 from urllib.parse import urlparse
@@ -14,6 +15,17 @@ try:
     import pynumpress
 except ImportError:
     pynumpress = None
+
+
+zstd = None
+try:
+    import pyzstd as zstd
+except ImportError:
+    try:
+        from compression import zstd
+    except ImportError:
+        pass
+
 
 from .structures import PyteomicsError
 
@@ -101,6 +113,106 @@ def _zlibNumpress(decoder):
     return decode
 
 
+def _zstdNumpress(decoder):
+    def decode(data):
+        return decoder(np.frombuffer(zstd.decompress(data), dtype=np.uint8))
+
+    return decode
+
+
+
+
+def byte_shuffle_decode(byte_buffer, dtype):
+    """
+    Decode a byte-shuffled array into a specified data type.
+
+    A byte-shuffled array of a multi-byte type stores the 1st byte of each value, then
+    the second byte of each value, and so on in a sequence until all bytes are stored.
+    The decoding process involves reconstructing the original value by putting the bytes
+    from the ``i``th value back together from their disparate locations in the array.
+
+    For sequential values, byteshuffling can make the values easier to compress because
+    for small deltas most of the bytes in a value do not change.
+
+    Parameters
+    ----------
+    byte_buffer : np.ndarray
+        A numpy array of bytes whose size is evenly divisible by ``dtype.itemsize``
+    dtype : np.dtype
+        The real physical data type encoded in the array
+
+    Returns
+    -------
+    np.ndarray :
+        The array after shuffling
+    """
+    return byte_buffer.reshape((dtype().itemsize, -1)).T.flatten().view(dtype)
+
+
+def dict_decode_with_shuffle(buffer, dtype) -> bytes:
+    """
+    Decode a dictionary encoded array with byte shuffling into a specified data type.
+
+    A dictionary-encoded array efficiently stored repetitive values by storing unique values
+    once in a dictionary, and then storing the positions of their repetitions as unique indices
+    into that dictionary. Depending upon the number of unique values, these indices can be much
+    smaller than the physical values stored in the dictionary. A byte-shuffling transform is applied
+    to both the dictionary values and the indices to make them easier to compress as well.
+
+    The dictionary is prefixed with an uint64 offset from the start of the byte buffer to the dictionary
+    keys and a uint64 count of the number of values in the original array, so the overall size of the encoded
+    array is ``8 + 8 + <size of unique values in bytes> + <size of keys in bytes>``.
+
+    Parameters
+    ----------
+    byte_buffer : np.ndarray
+        A numpy array of bytes which encode the dictionary and key array
+    dtype : np.dtype
+        The real physical data type encoded in the array
+
+    Returns
+    -------
+    np.ndarray :
+        The array after decoding
+    """
+    bytes_views = {
+        8: np.uint64,
+        4: np.uint32,
+        2: np.uint16,
+        1: np.uint8,
+    }
+
+
+    index_widths = [
+        (2**8, np.uint8),
+        (2**16, np.uint16),
+        (2**32, np.uint32),
+        (2**64, np.uint64),
+    ]
+
+    index_tp = None
+    byte_view_tp = bytes_views[dtype.itemsize]
+
+    (offset_to_data,) = struct.unpack("<Q", buffer[:8])
+    (n_values,) = struct.unpack("<Q", buffer[8:16])
+    for size, idx_type in index_widths:
+        if size > n_values:
+            index_tp = idx_type
+            break
+    else:
+        raise ValueError(f"Cannot find index dtype for {n_values} indices")
+    values = buffer[16:offset_to_data].view(byte_view_tp)
+    indices = buffer[offset_to_data:].view(index_tp)
+
+    indices = byte_shuffle_decode(indices.view(np.uint8), index_tp)
+    values = byte_shuffle_decode(values.view(np.uint8), byte_view_tp)
+    return values[indices].view(dtype)
+
+
+DICTIONARY_ENCODED_ZSTD = "dictionary-encoded zstd compression"
+BYTE_SHUFFLE_ZSTD = "byte-shuffled zstd compression"
+
+
 if pynumpress:
     _default_compression_map.update(
         {
@@ -111,6 +223,46 @@ if pynumpress:
             'MS-Numpress positive integer compression followed by zlib compression':   _zlibNumpress(pynumpress.decode_pic),
             'MS-Numpress linear prediction compression followed by zlib compression':  _zlibNumpress(pynumpress.decode_linear),
         })
+
+if zstd:
+    _default_compression_map.update(
+        {
+            "zstd compression": zstd.decompress,
+            DICTIONARY_ENCODED_ZSTD: zstd.decompress,
+            BYTE_SHUFFLE_ZSTD: zstd.decompress,
+        }
+    )
+
+    if pynumpress:
+        _default_compression_map.update(
+            {
+                "MS-Numpress short logged float compression followed by zstd compression": _zstdNumpress(
+                    pynumpress.decode_slof
+                ),
+                "MS-Numpress positive integer compression followed by zstd compression": _zstdNumpress(
+                    pynumpress.decode_pic
+                ),
+                "MS-Numpress linear prediction compression followed by zstd compression": _zlibNumpress(
+                    pynumpress.decode_linear
+                ),
+            }
+        )
+else:
+    def _zstd_missing(name: str):
+        def _zstd_codec(*args, **kwargs):
+            raise ModuleNotFoundError("pyzstd or the compression.zstd standard library module were absent, cannot decode {!r}".format(name))
+        return _zstd_codec
+
+    for c in [
+        "zstd compression",
+        DICTIONARY_ENCODED_ZSTD,
+        BYTE_SHUFFLE_ZSTD,
+        "MS-Numpress short logged float compression followed by zstd compression",
+        "MS-Numpress positive integer compression followed by zstd compression",
+        "MS-Numpress linear prediction compression followed by zstd compression",
+    ]:
+
+        _default_compression_map[c] = _zstd_missing(c)
 
 
 class ArrayConversionMixin(object):
@@ -250,7 +402,15 @@ if np is not None:
             decompressed_source = decompressor(source)
             return decompressed_source
 
-        def _transform_buffer(self, binary, dtype):
+        def _transform_buffer(self, binary, dtype, compression_type=None):
+            if compression_type == BYTE_SHUFFLE_ZSTD:
+                if not isinstance(binary, np.ndarray):
+                    binary = np.frombuffer(binary, dtype=np.uint8)
+                return byte_shuffle_decode(binary, dtype=dtype)
+            elif compression_type == DICTIONARY_ENCODED_ZSTD:
+                if not isinstance(binary, np.ndarray):
+                    binary = np.frombuffer(binary, dtype=np.uint8)
+                return dict_decode_with_shuffle(binary, dtype=dtype)
             if isinstance(binary, np.ndarray):
                 return binary.astype(dtype, copy=False)
             return np.frombuffer(binary, dtype=dtype)
@@ -279,7 +439,7 @@ if np is not None:
             binary = self._decompress(binary, compression_type)
             if isinstance(binary, bytes):
                 binary = bytearray(binary)
-            array = self._transform_buffer(binary, dtype)
+            array = self._transform_buffer(binary, dtype, compression_type)
             return array
 
     class BinaryArrayConversionMixin(ArrayConversionMixin, BinaryDataArrayTransformer):
