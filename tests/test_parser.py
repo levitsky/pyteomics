@@ -59,6 +59,33 @@ class ParserTest(unittest.TestCase):
                 self.assertEqual(1, comp['cterm' + seq[-1]])
             self.assertEqual(sum(comp_default.values()), sum(comp.values()))
 
+    def test_amino_acid_composition_parsed_sequence_term_aa(self):
+        # terminal residues are relabeled and dropped from the plain counts; terminal groups are kept
+        parsed = ['H-', 'P', 'E', 'P', 'T', 'I', 'D', 'E', '-OH']
+        self.assertEqual(
+            parser.amino_acid_composition(parsed, term_aa=True),
+            {'H-': 1, 'ntermP': 1, 'E': 1, 'P': 1, 'T': 1, 'I': 1, 'D': 1, 'ctermE': 1, '-OH': 1})
+
+    def test_amino_acid_composition_parsed_sequence(self):
+        # a parsed sequence must give the same composition as the string it came from
+        for seq in self.simple_sequences:
+            for term_aa in (False, True):
+                for termini in (False, True):
+                    parsed = parser.parse(seq, show_unmodified_termini=termini, labels=uppercase)
+                    self.assertEqual(
+                        parser.amino_acid_composition(seq, termini, term_aa, labels=uppercase),
+                        parser.amino_acid_composition(parsed, termini, term_aa, labels=uppercase))
+
+    def test_amino_acid_composition_does_not_modify_argument(self):
+        # the parsed sequence passed in must not be modified, and repeated calls must agree
+        for seq in self.simple_sequences:
+            for term_aa in (False, True):
+                parsed = parser.parse(seq, labels=uppercase)
+                original = parsed[:]
+                first = parser.amino_acid_composition(parsed, term_aa=term_aa, labels=uppercase)
+                self.assertEqual(original, parsed)
+                self.assertEqual(first, parser.amino_acid_composition(parsed, term_aa=term_aa, labels=uppercase))
+
     def test_cleave(self):
         self.assertEqual(parser.xcleave('PEPTIDEKS', parser.expasy_rules['trypsin']), [(0, 'PEPTIDEK'), (8, 'S')])
         self.assertEqual(parser.xcleave('PEPTIDEKS', 'trypsin'), [(0, 'PEPTIDEK'), (8, 'S')])
