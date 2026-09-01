@@ -660,7 +660,8 @@ def amino_acid_composition(sequence, show_unmodified_termini=False, term_aa=Fals
                 allow_unknown_modifications=allow_unknown_modifications,
                 labels=labels)
         else:
-            parsed_sequence = sequence
+            # copy: the terminal residues are popped from `parsed_sequence` below
+            parsed_sequence = list(sequence)
     else:
         raise PyteomicsError('Unsupported type of a sequence.'
                 'Must be str or list, not %s' % type(sequence))
