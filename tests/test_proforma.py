@@ -2,6 +2,7 @@ import sys
 import os
 from os import path
 import unittest
+import warnings
 import pickle
 import math
 from itertools import product
@@ -22,6 +23,10 @@ if CACHE_PATH:
     obo_cache.cache_path = CACHE_PATH
 
 obo_cache.enabled = bool(os.environ.get("OBO_CACHE_ENABLED"))
+
+
+INSULIN = ("FVNQHLC[MOD:00034#XL1]GSHLVEALYLVC[MOD:00034#XL2]GERGFFYTPKA"
+           "//GIVEQC[MOD:00034#XL3]C[#XL1]TSIC[#XL3]SLYQLENYC[#XL2]N")
 
 
 class ProFormaTest(unittest.TestCase):
@@ -444,7 +449,7 @@ class ProFormaTest(unittest.TestCase):
             "[+1]-A[+1]-[+1]",
             # "AA+AA",
             "EMK[XLMOD:02000#XL1]EVTKSE[XLMOD:02010#XL2]SK[#XL1]PEK[#XL2]AR",
-            # "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[XLMOD:02001#XL1]SESPEK",
+            "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[XLMOD:02001#XL1]SESPEK",
             "EM[Oxidation]EVEES[Phospho]PEK",
             # "EM[R: Methionine sulfone]EVEES[O-phospho-L-serine]PEK",
             "EMEVTK[X:DSS#XL1]SESPEK",
@@ -471,8 +476,8 @@ class ProFormaTest(unittest.TestCase):
             "SEQUEN[Glycan:HexNAc]CE",
             "EMEVTK[XLMOD:02001#XL1]SESPEK[#XL1]",
             "EMEVTK[XLMOD:02001#XL1]SESPEK",
-            # "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[XLMOD:02001#XL1]SESPEK",
-            # "ETFGD[MOD:00093#BRANCH]//R[#BRANCH]ATER",
+            "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[XLMOD:02001#XL1]SESPEK",
+            "ETFGD[MOD:00093#BRANCH]//R[#BRANCH]ATER",
             "(?DQ)NGTWEM[Oxidation]ESNENFEGYM[Oxidation]K",
             "ELVIS[Phospho|+79.966331]K",
             "ELVIS[Phospho|Obs:+79.978]K",
@@ -484,7 +489,7 @@ class ProFormaTest(unittest.TestCase):
             "EMEVEESPEK/2",
             "EMEVEESPEK+ELVISLIVER",
             "EMEVEESPEK/2+ELVISLIVER/3",
-            # "A[X:DSS#XL1]//B[#XL1]+C[X:DSS#XL1]//D[#XL1]",
+            "A[X:DSS#XL1]//B[#XL1]+C[X:DSS#XL1]//D[#XL1]",
             "<[Carbamidomethyl]@C>ATPEILTCNSIGCLK",
             "<[Oxidation]@C,M>MTPEILTCNSIGCLK",
             "<[TMT6plex]@K,N-term>ATPEILTCNSIGCLK",
@@ -508,20 +513,21 @@ class ProFormaTest(unittest.TestCase):
             "EMK[XLMOD:02000#XL1]EVTKSE[XLMOD:02010#XL2]SK[#XL1]PEK[#XL2]AR",
             "EMEVTK[XLMOD:02001#XL1]SESPEK",
             "EMEVTK[XLMOD:02001]SESPEK",
-            # "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[XLMOD:02001#XL1]SESPEK",
-            # "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[#XL1]SESPEK",
+            "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[XLMOD:02001#XL1]SESPEK",
+            "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[#XL1]SESPEK",
             "EVTSEKC[MOD:00034#XL1]LEMSC[#XL1]EFD",
             "EVTSEKC[L-cystine (cross-link)#XL1]LEMSC[#XL1]EFD",
             "FVNQHLC[MOD:00034#XL1]GSHLVEALYLVC[MOD:00034#XL2]GERGFFYTPK",
-            # "A//GIVEQC[MOD:00034#XL3]C[#XL1]TSIC[#XL3]SLYQLENYC[#XL2]N",
+            "FVNQHLC[MOD:00034#XL1]GSHLVEALYLVC[MOD:00034#XL2]GERGFFYTPKA"
+            "//GIVEQC[MOD:00034#XL3]C[#XL1]TSIC[#XL3]SLYQLENYC[#XL2]N",
             "EVTSEKC[XLMOD:02009#XL1]LEMSC[#XL1]EFD",
             "EVTSEKC[X:Disulfide#XL1]LEMSC[#XL1]EFD",
             "EVTSEKC[half cystine]LEMSC[half cystine]EFD",
             "EVTSEKC[MOD:00798]LEMSC[MOD:00798]EFDEVTSEKC[MOD:00798]LEMSC[MOD:00798]EFD",
             "EVTSEKC[UNIMOD:374#XL1]LEMSC[#XL1]EFD",
             "EVTSEKC[Dehydro#XL1]LEMSC[#XL1]EFD",
-            # "ETFGD[MOD:00093#BRANCH]//R[#BRANCH]ATER",
-            # "AVTKYTSSK[MOD:00134#BRANCH]//AGKQLEDGRTLSDYNIQKESTLHLVLRLRG-[#BRANCH]",
+            "ETFGD[MOD:00093#BRANCH]//R[#BRANCH]ATER",
+            "AVTKYTSSK[MOD:00134#BRANCH]//AGKQLEDGRTLSDYNIQKESTLHLVLRLRG-[#BRANCH]",
             "NEEYN[GNO:G59626AS]K",
             "YPVLN[GNO:G62765YT]VTMPN[GNO:G02815KT]NSNGKFDK",
             "EM[+15.9949]EVEES[+79.9663]PEK",
@@ -610,8 +616,8 @@ class ProFormaTest(unittest.TestCase):
             "PETIEM[Dioxidation#1][Oxidation#2]REM[#1][#2]REM[#2]RM[#1]PEPTIDE",
             "[Oxidation|CoMKP]?PEPT[Phospho]IDE",
             "(>Trypsin)AANSIPYQVSLNS",
-            # "(>P07225 Vitamin K-dependent protein S OS=Homo sapiens OX=9606 GN=PROS1 PE=1 (SV=1) RANGE=12..42)GGK[xlink:dss[138]#XLDSS]IEVQLK//(>P07225 Vitamin K-dependent protein S OS=Homo sapiens OX=9606 GN=PROS1 PE=1 SV=1)KVESELIK[#XLDSS]PINPR/4",
-            # "(>>>Trastuzumab Fab and coeluting Fc)(>>Fab)(>Heavy chain)EVQLVESGGGLVQPGGSLRLSC[M:l-cystine (cross-link)#XL1]AASGFNIKDTYIHWVRQAPGKGLEWVARIYPTNGYTRYADSVKGRFTISADTSKNTAYLQMNSLRAEDTAVYYC[#XL1]SRWGGDGFYAMDYWGQGTLVTVSSASTKGPSVFPLAPSSKSTSGGTAALGC[M:l-cystine (cross-link)#XL2]LVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYIC[#XL2]NVNHKPSNTKVDKKVEPKSC[M:l-cystine (cross-link)#XL3]DKT//(>Light chain)DIQMTQSPSSLSASVGDRVTITC[M:l-cystine (cross-link)#XL4]RASQDVNTAVAWYQQKPGKAPKLLIYSASFLYSGVPSRFSGSRSGTDFTLTISSLQPEDFATYYC[#XL4]QQHYTTPPTFGQGTKVEIKRTVAAPSVFIFPPSDEQLKSGTASVVC[M:l-cystine (cross-link)#XL5]LLNNFYPREAKVQWKVDNALQSGNSQESVTEQDSKDSTYSLSSTLTLSKADYEKHKVYAC[#XL5]EVTHQGLSSPVTKSFNRGEC[#XL3]+(>Fc)HTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVYTLPPSREEMTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK",
+            "(>P07225 Vitamin K-dependent protein S OS=Homo sapiens OX=9606 GN=PROS1 PE=1 (SV=1) RANGE=12..42)GGK[xlink:dss[138]#XLDSS]IEVQLK//(>P07225 Vitamin K-dependent protein S OS=Homo sapiens OX=9606 GN=PROS1 PE=1 SV=1)KVESELIK[#XLDSS]PINPR/4",
+            "(>>>Trastuzumab Fab and coeluting Fc)(>>Fab)(>Heavy chain)EVQLVESGGGLVQPGGSLRLSC[M:l-cystine (cross-link)#XL1]AASGFNIKDTYIHWVRQAPGKGLEWVARIYPTNGYTRYADSVKGRFTISADTSKNTAYLQMNSLRAEDTAVYYC[#XL1]SRWGGDGFYAMDYWGQGTLVTVSSASTKGPSVFPLAPSSKSTSGGTAALGC[M:l-cystine (cross-link)#XL2]LVKDYFPEPVTVSWNSGALTSGVHTFPAVLQSSGLYSLSSVVTVPSSSLGTQTYIC[#XL2]NVNHKPSNTKVDKKVEPKSC[M:l-cystine (cross-link)#XL3]DKT//(>Light chain)DIQMTQSPSSLSASVGDRVTITC[M:l-cystine (cross-link)#XL4]RASQDVNTAVAWYQQKPGKAPKLLIYSASFLYSGVPSRFSGSRSGTDFTLTISSLQPEDFATYYC[#XL4]QQHYTTPPTFGQGTKVEIKRTVAAPSVFIFPPSDEQLKSGTASVVC[M:l-cystine (cross-link)#XL5]LLNNFYPREAKVQWKVDNALQSGNSQESVTEQDSKDSTYSLSSTLTLSKADYEKHKVYAC[#XL5]EVTHQGLSSPVTKSFNRGEC[#XL3]+(>Fc)HTCPPCPAPELLGGPSVFLFPPKPKDTLMISRTPEVTCVVVDVSHEDPEVKFNWYVDGVEVHNAKTKPREEQYNSTYRVVSVLTVLHQDWLNGKEYKCKVSNKALPAPIEKTISKAKGQPREPQVYTLPPSREEMTKNQVSLTCLVKGFYPSDIAVEWESNGQPENNYKTTPPVLDSDGSFFLYSKLTVDKSRWQQGNVFSCSVMHEALHNHYTQKSLSLSPGK",
         ]
         for seq in positive:
             with self.subTest(seq=seq):
@@ -842,6 +848,207 @@ class PSIModModificationResolverTest(unittest.TestCase):
         self.assertRaises(ModificationMassNotFoundError, lambda: state.resolve())
 
 
+class InterChainCrossLinkTest(unittest.TestCase):
+    """Section 9.2.2: chains joined by ``//`` are one covalently bonded molecule."""
+
+    SPEC_CASES = [
+        "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[#XL1]SESPEK",
+        "EVTSEKC[Xlink:Disulfide#XL1]LEK//MSC[#XL1]EFDR",
+        "ETFGD[MOD:00093#BRANCH]//R[#BRANCH]ATER",
+        INSULIN,
+    ]
+
+    def test_parses_and_round_trips(self):
+        for seq in self.SPEC_CASES:
+            with self.subTest(seq=seq):
+                ion = ProForma.parse(seq)
+                # The return type does not change: a peptidoform that spans
+                # chains is still a ProForma, with the rest in `chains`.
+                self.assertIsInstance(ion, ProForma)
+                self.assertEqual(len(ion.chains), 2)
+                self.assertTrue(ion.is_multichain)
+                self.assertEqual(str(ion), seq)
+
+    def test_needs_no_opting_in(self):
+        # `//` is only reachable once a peptidoform is complete, so it is never
+        # ambiguous and the caller does not have to know in advance.
+        self.assertEqual(len(ProForma.parse("PEPK//TIDEK").chains), 2)
+
+    def test_a_single_chain_is_unchanged(self):
+        # The whole point of folding the ion tier into ProForma: nothing about
+        # an ordinary peptidoform differs.
+        pf = ProForma.parse("EM[Oxidation]EVEES[Phospho]PEK")
+        self.assertFalse(pf.is_multichain)
+        self.assertEqual(pf.chains, [pf])
+
+    def test_operations_with_no_multichain_meaning_refuse(self):
+        # Only these two. Fragmenting a covalently joined pair yields
+        # cross-linked fragment pairs, and enumerating localisations across
+        # chains is a product over chains; neither is representable here.
+        ion = ProForma.parse("PEPK[XLMOD:02001#XL1]//TIDEK[#XL1]")
+        for call in (lambda: ion.fragments("b", 1),
+                     lambda: list(ion.proteoforms())):
+            with self.subTest(call=call):
+                with self.assertRaises(ValueError) as caught:
+                    call()
+                self.assertIn(".chains", str(caught.exception))
+
+    def test_composition_and_mz_span_the_chains(self):
+        # Whatever `mass` can answer for the whole molecule, `composition` and
+        # `mz` can answer too -- they are the same arithmetic.
+        ion = ProForma.parse("SEK[XLMOD:02001#XL1]UENCE//EMEVTK[#XL1]SESPEK")
+        self.assertAlmostEqual(ion.composition().mass(), ion.mass, 6)
+        self.assertAlmostEqual(ion.mz(charge=2), (ion.mass + 2 * 1.00727646677) / 2, 4)
+
+    def test_composition_counts_a_linker_once(self):
+        once = ProForma.parse("SEK[XLMOD:02001#XL1]UENCE//EMEVTK[#XL1]SESPEK")
+        both = ProForma.parse(
+            "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[XLMOD:02001#XL1]SESPEK")
+        self.assertAlmostEqual(once.composition().mass(), both.composition().mass(), 6)
+
+    def test_copy_keeps_every_chain(self):
+        ion = ProForma.parse("SEK[XLMOD:02001#XL1]UENCE//EMEVTK[#XL1]SESPEK")
+        duplicate = ion.copy()
+        self.assertEqual(len(duplicate.chains), 2)
+        self.assertEqual(str(duplicate), str(ion))
+        self.assertEqual(duplicate, ion)
+
+    def test_a_cross_link_group_is_found_across_chains(self):
+        # The whole point of a group is that its ends are apart, and here they
+        # are on different chains. Without positions the answer is unambiguous,
+        # so it spans; with positions an index means nothing until you know
+        # which chain it indexes, so it refuses.
+        ion = ProForma.parse("SEK[XLMOD:02001#XL1]UENCE//EMEVTK[#XL1]SESPEK")
+        self.assertEqual(len(ion.find_tags_by_id("#XL1", include_position=False)), 2)
+        self.assertEqual(len(ion.tags), 2)
+        with self.assertRaises(ValueError):
+            ion.find_tags_by_id("#XL1")
+        # Unchanged for one chain.
+        single = ProForma.parse("EMEVTK[XLMOD:02001#XL1]SESPEK[#XL1]")
+        self.assertEqual(len(single.find_tags_by_id("#XL1")), 2)
+
+    def test_a_two_chain_ion_is_not_its_first_chain(self):
+        # Equality has to see the other chains, or two different molecules
+        # compare equal.
+        ion = ProForma.parse("SEK[XLMOD:02001#XL1]UENCE//EMEVTK[#XL1]SESPEK")
+        self.assertNotEqual(ion, ProForma.parse("SEK[XLMOD:02001#XL1]UENCE"))
+
+    def test_a_slash_inside_a_tag_or_name_is_not_a_separator(self):
+        for seq in ("PEP[INFO:http://example.com/a]TIDE",
+                    "(>chain//name)PEPTIDE",
+                    "(>>ion//name)PEPTIDE"):
+            with self.subTest(seq=seq):
+                parsed = ProForma.parse(seq)
+                self.assertFalse(parsed.is_multichain)
+                self.assertEqual(str(parsed), seq)
+
+    def test_mass_counts_the_linker_once(self):
+        ion = ProForma.parse("SEK[XLMOD:02001#XL1]UENCE//EMEVTK[#XL1]SESPEK")
+        self.assertAlmostEqual(ion.mass, sum(chain.mass for chain in ion.chains), 6)
+        # The linker is written once; the other site is a bare [#XL1], which
+        # carries no mass. DSS is 138.06808.
+        unlinked = ProForma.parse("SEKUENCE").mass + ProForma.parse("EMEVTKSESPEK").mass
+        self.assertAlmostEqual(ion.mass - unlinked, 138.06808, 5)
+
+    def test_declaring_the_linker_on_each_chain_is_the_same_molecule(self):
+        # Section 9.2.2 gives both spellings. Repeating the declaration lets a
+        # chain be read on its own without hunting for what #XL1 refers to, so
+        # it is a readability affordance rather than an error, and the two must
+        # come to the same mass.
+        both = ProForma.parse(
+            "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[XLMOD:02001#XL1]SESPEK")
+        once = ProForma.parse(
+            "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[#XL1]SESPEK")
+        self.assertAlmostEqual(both.mass, once.mass, 6)
+
+    def test_a_cross_linker_is_never_counted_twice(self):
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            mass = ProForma.parse(
+                "SEK[XLMOD:02001#XL1]UENCE//EMEVTK[XLMOD:02001#XL1]SESPEK").mass
+        unlinked = ProForma.parse("SEKUENCE").mass + ProForma.parse("EMEVTKSESPEK").mass
+        self.assertAlmostEqual(mass - unlinked, 138.06808, 5)
+        # A legitimate spelling should not be complained about.
+        self.assertFalse([w for w in caught if "ross-link" in str(w.message)])
+
+    def test_charge_belongs_to_the_ion(self):
+        ion = ProForma.parse("SEK[XLMOD:02001#XL1]UENCE//EMEVTK[#XL1]SESPEK/2")
+        self.assertEqual(ion.charge_state.charge, 2)
+
+    def test_names_at_every_level(self):
+        # The three naming levels land on the three tiers they describe: the
+        # set and ion names hoist onto the ion, the peptidoform names stay with
+        # the chain each one introduces.
+        seq = "(>>>Trastuzumab)(>>Fab)(>Heavy)PEPK[XLMOD:02001#XL1]//(>Light)TIDEK[#XL1]"
+        ion = ProForma.parse(seq)
+        # Names are recorded by level, as they always have been; the ion and
+        # set names sit on the first chain, which is where the string writes them.
+        self.assertEqual(ion.names.get(3), "Trastuzumab")
+        self.assertEqual(ion.names.get(2), "Fab")
+        self.assertEqual([chain.names.get(1) for chain in ion.chains], ["Heavy", "Light"])
+        # Hoisted, not copied: a chain must not carry the ion or set name, or
+        # it would serialise it once per chain.
+        for chain in ion.chains[1:]:
+            self.assertNotIn(2, chain.names)
+            self.assertNotIn(3, chain.names)
+        # Highest level first, as the specification requires.
+        self.assertEqual(str(ion), seq)
+
+    def test_chimeric_set_of_cross_linked_ions(self):
+        result = ProForma.parse("A[X:DSS#XL1]//B[#XL1]+C[X:DSS#XL1]//D[#XL1]",
+                                chimeric=True)
+        # Still Chimeric[ProForma], as before -- the chains live inside each one.
+        self.assertIsInstance(result, Chimeric)
+        self.assertEqual(len(result), 2)
+        for ion in result:
+            self.assertIsInstance(ion, ProForma)
+            self.assertEqual(len(ion.chains), 2)
+
+    def test_a_self_link_declared_twice_warns_but_still_counts_once(self):
+        # Within one peptide a second declaration is redundant rather than
+        # useful, so section 9.2.1 asks for a bare [#XL1]. Either way the
+        # linker is one molecule and counts once.
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            twice = ProForma.parse("EMEVTK[XLMOD:02001#XL1]SESPEK[XLMOD:02001#XL1]").mass
+        once = ProForma.parse("EMEVTK[XLMOD:02001#XL1]SESPEK[#XL1]").mass
+        self.assertAlmostEqual(twice, once, 6)
+        self.assertTrue(any("more than once" in str(w.message) for w in caught))
+
+    def test_chimeric_without_the_flag_says_what_to_do(self):
+        # `+` is the one separator that still needs opting into. It is worth
+        # pinning that the refusal is a clear one, since a caller who has not
+        # met `chimeric=` has no other way to discover it. Checked from both
+        # parser states that can meet a top-level `+`.
+        for seq in ("EMEVEESPEK+ELVISLIVER",          # from the sequence
+                    "EMEVEESPEK/2+ELVISLIVER/3",      # from a charge state
+                    "PEP[+16]TIDE+AA"):
+            with self.subTest(seq=seq):
+                with self.assertRaises(ProFormaError) as caught:
+                    ProForma.parse(seq)
+                message = str(caught.exception)
+                self.assertIn("chimeric=True", message)
+                # and it still parses when asked
+                self.assertEqual(len(ProForma.parse(seq, chimeric=True)), 2)
+
+    def test_a_plus_inside_a_tag_is_not_a_separator(self):
+        # The counterpart to the `//` containment check: a `+` in a mass
+        # modification or an adduct must not look like a chimeric separator.
+        # These normalise on write -- [+16.000] becomes [+16] -- so the claim
+        # is that they parse as one peptidoform, not that they round-trip.
+        for seq in ("PEP[+16.000]TIDE", "EMEVEESPEK/2[+2Na+,+H+]"):
+            with self.subTest(seq=seq):
+                parsed = ProForma.parse(seq)
+                self.assertIsInstance(parsed, ProForma)
+                self.assertFalse(parsed.is_multichain)
+
+    def test_xlmod_counts_as_a_modification(self):
+        # TagTypeEnum.xlmod was missing from TagBase.is_modification, so a
+        # cross-linker was invisible to find_modification.
+        tag = ProForma.parse("EMEVTK[XLMOD:02001#XL1]SESPEK[#XL1]")[5][1][0]
+        self.assertTrue(tag.is_modification())
+
+
 class ResidModificationResolverTest(unittest.TestCase):
     def test_resolve_by_accession(self):
         mod = ResidModification("RESID:AA0038").resolve()
@@ -905,6 +1112,7 @@ class ResidModificationResolverTest(unittest.TestCase):
 
 
 class ModificationTest(unittest.TestCase):
+
     def test_mass_modification_hashable(self):
         mod = MassModification(57.08)
 
