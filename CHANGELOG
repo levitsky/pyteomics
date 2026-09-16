@@ -1,5 +1,5 @@
-dev
----
+5.0.2a1
+-------
 
   - Support RESID in ProForma, adding :py:class:`~.ResidResolver` and
     :py:class:`~.ResidModification` (`#214 <https://github.com/levitsky/pyteomics/pull/214>`_
@@ -9,6 +9,8 @@ dev
 
     .. note ::
       ProForma parsing now requires psims 1.4.0 or newer.
+
+  - Fix a bug in :py:func:`proforma.proteoforms` where the `strip` argument was not applied to fixed modifications.
 
 5.0.1
 -----

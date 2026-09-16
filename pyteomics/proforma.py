@@ -5028,9 +5028,9 @@ class ProteoformCombinator:
     def _apply_fixed_modifications(self):
         for c in self.template.fixed_modifications:
             if isinstance(c, ModificationRule):
-                rule = GeneratorModificationRuleDirective(c)
+                rule = GeneratorModificationRuleDirective(c, strip=self.strip)
             else:
-                rule = GeneratorModificationRuleDirective.from_unlocalized_rule(c)
+                rule = GeneratorModificationRuleDirective.from_unlocalized_rule(c, strip=self.strip)
             positions = rule.find_positions(self.template)
             for i in positions:
                 (aa, tags) = self.template[i]
@@ -5047,7 +5047,7 @@ class ProteoformCombinator:
         rules = []
         remains = []
         for iv in self.template.intervals:
-            block = GeneratorModificationRuleDirective.from_region_rule(iv)
+            block = GeneratorModificationRuleDirective.from_region_rule(iv, strip=self.strip)
             if block:
                 rules.extend(block)
                 iv = iv.copy()

@@ -1102,6 +1102,60 @@ class ProteoformsFunctionTest(unittest.TestCase):
         self.assertEqual(len(forms), 1)
         self.assertTrue(isinstance(forms[0].sequence[3][1][0], GenericModification))
 
+    def test_strip_removes_modifiers(self):
+        # "Stripping" means removing the position limiters and INFO extras from
+        # every modification tag the combinator generates, leaving bare
+        # modification definitions behind. Masses must not change: stripping
+        # only affects how tags are rendered, not what they mean.
+        seq = "EMECTSESPEK"
+        variable_mods = {"Phospho": ["S", "T"]}
+        fixed_mods = ["Carbamidomethyl|Position:C|INFO:from method"]
+        pf = ProForma.parse(seq)
+
+        annotated = list(proteoforms(
+            pf, variable_modifications=variable_mods,
+            fixed_modifications=fixed_mods))
+        stripped = list(proteoforms(
+            pf, variable_modifications=variable_mods,
+            fixed_modifications=fixed_mods, strip=True))
+
+        # The extra information is present when strip is not requested...
+        self.assertEqual(
+            [str(form) for form in annotated],
+            [
+                'EMEC[Carbamidomethyl|Position:C|INFO:from method]TSESPEK',
+                'EMEC[Carbamidomethyl|Position:C|INFO:from method]T[Phospho|Position:S|Position:T]SESPEK',
+                'EMEC[Carbamidomethyl|Position:C|INFO:from method]TS[Phospho|Position:S|Position:T]ESPEK',
+                'EMEC[Carbamidomethyl|Position:C|INFO:from method]TSES[Phospho|Position:S|Position:T]PEK',
+            ])
+
+        # ...and gone from every generated tag when it is. Fixed and variable
+        # modifications must both be stripped.
+        self.assertEqual(
+            [str(form) for form in stripped],
+            [
+                'EMEC[Carbamidomethyl]TSESPEK',
+                'EMEC[Carbamidomethyl]T[Phospho]SESPEK',
+                'EMEC[Carbamidomethyl]TS[Phospho]ESPEK',
+                'EMEC[Carbamidomethyl]TSES[Phospho]PEK',
+            ])
+
+        # The rendered sequences differ, but each form keeps its mass,
+        # composition, and modification identity.
+        for a, s in zip(annotated, stripped):
+            self.assertAlmostEqual(a.mass, s.mass, 6)
+            self.assertEqual(a.composition(), s.composition())
+            self.assertEqual(
+                [(aa, [tag.key for tag in tags or []]) for aa, tags in a],
+                [(aa, [tag.key for tag in tags or []]) for aa, tags in s])
+
+        # Unmodified stretches carry nothing to strip.
+        self.assertTrue(all(
+            tag.extra == []
+            for form in stripped
+            for _, tags in form
+            for tag in tags or []))
+
     def test_expand_mods_from_list(self):
         seq = "EMEVTSESPEK"
         variable_mods = ["Phospho|Position:S", "Phospho|Position:T"]
