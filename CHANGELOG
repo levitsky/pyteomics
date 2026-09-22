@@ -11,6 +11,7 @@
       ProForma parsing now requires psims 1.4.0 or newer.
 
   - Fix a bug in :py:func:`proforma.proteoforms` where the `strip` argument was not applied to fixed modifications.
+  - Fix `#219 <https://github.com/levitsky/pyteomics/issues/219>`_.
 
 5.0.1
 -----
