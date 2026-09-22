@@ -1096,7 +1096,7 @@ class Unimod():
         more features.
     """
 
-    def __init__(self, source: str | Path | Reader[bytes] = UNIMOD_DEFAULT_URL):
+    def __init__(self, source: "str | Path | Reader[bytes]" = UNIMOD_DEFAULT_URL):
         """Create a database and fill it from XML file retrieved from `source`.
 
         Parameters
