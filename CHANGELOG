@@ -1,4 +1,4 @@
-5.0.2a1
+5.0.2a2
 -------
 
   - Support RESID in ProForma, adding :py:class:`~.ResidResolver` and
