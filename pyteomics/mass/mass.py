@@ -93,6 +93,10 @@ import re
 import operator
 import warnings
 from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from io import Reader
 
 nist_mass = _nist_mass
 """
@@ -1092,7 +1096,7 @@ class Unimod():
         more features.
     """
 
-    def __init__(self, source=UNIMOD_DEFAULT_URL):
+    def __init__(self, source: "str | Path | Reader[bytes]" = UNIMOD_DEFAULT_URL):
         """Create a database and fill it from XML file retrieved from `source`.
 
         Parameters
@@ -1115,7 +1119,7 @@ class Unimod():
                     new_d[key] = float(delta.attrib.pop(key))
                 for elem in self._xpath('element', delta):
                     e_d = elem.attrib
-                    amount = int(e_d.pop('number'))
+                    amount = int(e_d.pop('number', 1))
                     label = e_d.pop('symbol')
                     isotope, symbol = re.match(r'^(\d*)(\D+)$', label).groups()
                     if not isotope:
@@ -1124,15 +1128,16 @@ class Unimod():
                         isotope = int(isotope)
                     comp += Composition(formula=_make_isotope_string(symbol, isotope), mass_data=self._massdata) * amount
             new_d['composition'] = comp
-            new_d['record_id'] = int(d.pop('record_id'))
-            new_d['approved'] = d.pop('approved') == '1'
+            if 'record_id' in d:
+                new_d['record_id'] = int(d.pop('record_id'))
+            new_d['approved'] = d.pop('approved', None) == '1'
             new_d.update(d)
             spec = []
             for sp in self._xpath('specificity', mod):
                 sp_d = sp.attrib
                 sp_new_d = {}
-                sp_new_d['hidden'] = (sp_d.pop('hidden') == '1')
-                sp_new_d['spec_group'] = int(sp_d.pop('spec_group'))
+                sp_new_d['hidden'] = (sp_d.pop('hidden', '0') == '1')
+                sp_new_d['spec_group'] = int(sp_d.pop('spec_group', 1))
                 sp_new_d.update(sp_d)
                 notes = []
                 for note in self._xpath('*', sp):
@@ -1172,7 +1177,8 @@ class Unimod():
         for i, mod in enumerate(self._xpath('/unimod/modifications/mod')):
             mod_dict = process_mod(mod)
             self._mods.append(mod_dict)
-            self._id[mod_dict['record_id']] = i
+            if 'record_id' in mod_dict:
+                self._id[mod_dict['record_id']] = i
 
     def _xpath(self, path, element=None):
         from ..xml import xpath
