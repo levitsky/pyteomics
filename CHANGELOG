@@ -1,6 +1,13 @@
 5.0.2a2
 -------
 
+  - Support inter-chain cross-linked peptides, the ``//`` notation of ProForma
+    section 9.2.2. Such a string now parses instead of raising, into a
+    :py:class:`~.ProForma` holding several :py:attr:`~.ProForma.chains`. What
+    :py:func:`~.parse` returns is unchanged. This completes the ProForma 2.1
+    compliance checklist for cross-linking.
+  - Fix :py:meth:`~.TagBase.is_modification` omitting ``TagTypeEnum.xlmod``, so
+    a cross-linker was invisible to :py:meth:`~.ProForma.find_modification`.
   - Support RESID in ProForma, adding :py:class:`~.ResidResolver` and
     :py:class:`~.ResidModification` (`#214 <https://github.com/levitsky/pyteomics/pull/214>`_
     by Anthony Cesnik). Both the ``RESID`` and ``R`` prefixes resolve, completing the
