@@ -1119,7 +1119,7 @@ class Unimod():
                     new_d[key] = float(delta.attrib.pop(key))
                 for elem in self._xpath('element', delta):
                     e_d = elem.attrib
-                    amount = int(e_d.pop('number'))
+                    amount = int(e_d.pop('number', 1))
                     label = e_d.pop('symbol')
                     isotope, symbol = re.match(r'^(\d*)(\D+)$', label).groups()
                     if not isotope:
@@ -1136,8 +1136,8 @@ class Unimod():
             for sp in self._xpath('specificity', mod):
                 sp_d = sp.attrib
                 sp_new_d = {}
-                sp_new_d['hidden'] = (sp_d.pop('hidden') == '1')
-                sp_new_d['spec_group'] = int(sp_d.pop('spec_group'))
+                sp_new_d['hidden'] = (sp_d.pop('hidden', '0') == '1')
+                sp_new_d['spec_group'] = int(sp_d.pop('spec_group', 1))
                 sp_new_d.update(sp_d)
                 notes = []
                 for note in self._xpath('*', sp):
