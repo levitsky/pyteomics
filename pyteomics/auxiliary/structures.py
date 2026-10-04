@@ -211,6 +211,9 @@ class BasicComposition(defaultdict, Counter):
         if not isinstance(other, int):
             raise PyteomicsError('Cannot multiply Composition by non-integer',
                                  other)
+        if other == 0:
+            self.clear()
+            return self
         for elem in self:
             self[elem] *= other
         return self

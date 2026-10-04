@@ -167,6 +167,38 @@ class MassTest(unittest.TestCase):
             mass.Composition(sequence='XYZ', aa_comp=self.aa_comp) * 2,
             {atom: 2 for atom in 'ABCDE'})
 
+    def test_Composition_imul_zero(self):
+        for cls in (auxiliary.BasicComposition, mass.Composition):
+            for counts in ({}, {'H': 2}, {'H': 2, 'O': 1}):
+                for multiplier in (0, False):
+                    with self.subTest(cls=cls, counts=counts, multiplier=multiplier):
+                        comp = cls(counts)
+                        alias = comp
+                        expected = comp * multiplier
+                        comp *= multiplier
+                        self.assertIs(comp, alias)
+                        self.assertEqual(dict(comp), dict(expected))
+                        self.assertEqual(len(comp), 0)
+
+    def test_Composition_imul_nonzero(self):
+        for cls in (auxiliary.BasicComposition, mass.Composition):
+            for multiplier in (1, 2, -1):
+                with self.subTest(cls=cls, multiplier=multiplier):
+                    comp = cls({'H': 2, 'O': 1})
+                    alias = comp
+                    expected = comp * multiplier
+                    comp *= multiplier
+                    self.assertIs(comp, alias)
+                    self.assertEqual(dict(comp), dict(expected))
+
+    def test_Composition_imul_noninteger(self):
+        for cls in (auxiliary.BasicComposition, mass.Composition):
+            with self.subTest(cls=cls):
+                comp = cls({'H': 2, 'O': 1})
+                with self.assertRaises(auxiliary.PyteomicsError):
+                    comp *= 0.5
+                self.assertEqual(dict(comp), {'H': 2, 'O': 1})
+
     def test_Composition_positional(self):
         # Test creation from positional args
         ac = self.aa_comp.copy()
