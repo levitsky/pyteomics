@@ -1,4 +1,4 @@
-5.0.2a2
+5.0.2a3
 -------
 
   - Support RESID in ProForma, adding :py:class:`~.ResidResolver` and
@@ -12,6 +12,7 @@
 
   - Fix a bug in :py:func:`proforma.proteoforms` where the `strip` argument was not applied to fixed modifications.
   - Fix `#219 <https://github.com/levitsky/pyteomics/issues/219>`_.
+  - Fix :py:class:`Composition` in-place multiplication by zero (`#221 <https://github.com/levitsky/pyteomics/pull/221>`_ by Basil Chen).
 
 5.0.1
 -----
