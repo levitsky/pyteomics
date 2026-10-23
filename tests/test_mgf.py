@@ -289,6 +289,21 @@ class UtilityTest(unittest.TestCase):
             with self.subTest(s=s):
                 self.assertEqual(mgf.MGFBase.parse_peak_charge(s), -1)
 
+    def test_rtinseconds_range(self):
+        text = ('BEGIN IONS\nTITLE=a\nPEPMASS=1244.7\nSCANS=29-34\nRTINSECONDS=95-97\n100 1\nEND IONS\n'
+                'BEGIN IONS\nTITLE=b\nPEPMASS=1084.9\nRTINSECONDS=25\n100 1\nEND IONS\n')
+        with tempfile.NamedTemporaryFile('w', suffix='.mgf', delete=False) as f:
+            f.write(text)
+        try:
+            for cls in (mgf.MGF, mgf.IndexedMGF):
+                with self.subTest(cls=cls.__name__), cls(f.name) as reader:
+                    first, second = list(reader)
+                    self.assertEqual(first['params']['rtinseconds'], '95-97')
+                    self.assertEqual(second['params']['rtinseconds'], 25.0)
+                    self.assertEqual(second['params']['rtinseconds'].unit_info, 'second')
+        finally:
+            os.unlink(f.name)
+
 
 if __name__ == "__main__":
     unittest.main()

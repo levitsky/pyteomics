@@ -228,7 +228,11 @@ class MGFBase(aux.MaskedArrayConversionMixin):
                 if isinstance(params.get('charge'), (str, bytes)):
                     params['charge'] = self.parse_precursor_charge(params['charge'], True)
                 if 'rtinseconds' in params:
-                    params['rtinseconds'] = aux.unitfloat(params['rtinseconds'], 'second')
+                    try:
+                        params['rtinseconds'] = aux.unitfloat(params['rtinseconds'], 'second')
+                    except ValueError:
+                        # Mascot allows a range or a list of ranges, e.g. 95-97; keep it as given
+                        pass
                 out = {'params': params, 'm/z array': masses, 'intensity array': intensities}
                 if self._read_charges:
                     out['charge array'] = charges
