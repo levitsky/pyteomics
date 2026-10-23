@@ -1,5 +1,7 @@
 import os
 import shutil
+import subprocess
+import sys
 import tempfile
 import pyteomics
 from io import BytesIO
@@ -237,6 +239,33 @@ class MzmlTest(unittest.TestCase):
         encoded = base64.b64encode(zlib.compress(pynumpress.encode_pic(data).tobytes())).decode('ascii')
         record = aux.BinaryDataArrayTransformer()._make_record(encoded, 'MS-Numpress positive integer compression followed by zlib compression', data.dtype)
         self.assertTrue(np.allclose(data, record.decode(), atol=0.6))
+
+    def test_numpress_without_pynumpress(self):
+        # Without pynumpress, numpress arrays must fail loudly instead of being read as raw floats.
+        # This 72-byte payload (a multiple of 8) used to decode silently into garbage.
+        code = """if True:
+            import sys
+            sys.modules['pynumpress'] = None
+            sys.path.insert(0, {root!r})
+            import numpy as np
+            from pyteomics import auxiliary as aux
+            encoded = 'QWqxfWAAAABnivVTxv//fyDBrmqUaLEYc/MhqZkLU8a9MryaZaLxPxIsFLYkioK6pZe6p/QbukCP5ylHLKIjtUEncGsqjMIt'
+            for name in ['MS-Numpress linear prediction compression',
+                         'MS-Numpress positive integer compression',
+                         'MS-Numpress short logged float compression',
+                         'MS-Numpress linear prediction compression followed by zlib compression',
+                         'MS-Numpress positive integer compression followed by zlib compression',
+                         'MS-Numpress short logged float compression followed by zlib compression']:
+                record = aux.BinaryDataArrayTransformer()._make_record(encoded, name, np.float64)
+                try:
+                    record.decode()
+                except aux.PyteomicsError as e:
+                    assert 'pynumpress' in str(e)
+                else:
+                    sys.exit('decoded without pynumpress: ' + name)
+            """.format(root=os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir)))
+        result = subprocess.run([sys.executable, '-c', code], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_userparam_units(self):
         xml_str = '<userParam name="some quantity" value="42" unitName="cats"/>'
