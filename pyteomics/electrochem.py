@@ -313,11 +313,17 @@ def pI(sequence, pI_range=(0.0, 14.0), precision_pI=0.01, **kwargs):
     left_x, right_x = pI_range
     left_y = _charge_for_dict(peptide_dict, [left_x], pK)[0]
     right_y = _charge_for_dict(peptide_dict, [right_x], pK)[0]
+    if left_y == 0:
+        return left_x
+    if right_y == 0:
+        return right_x
     while (right_x - left_x) > precision_pI:
         if left_y * right_y > 0:
             return left_x if abs(left_y) < abs(right_y) else right_x
         middle_x = (left_x + right_x) / 2.0
         middle_y = _charge_for_dict(peptide_dict, [middle_x], pK)[0]
+        if middle_y == 0:
+            return middle_x
         if middle_y * left_y < 0:
             right_x = middle_x
             right_y = middle_y
