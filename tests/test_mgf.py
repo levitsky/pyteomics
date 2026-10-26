@@ -258,6 +258,19 @@ class MGFTest(unittest.TestCase):
         self.assertEqual(tuple(container[tag_key]), mgf.IndexedMGF._index_class.schema_version)
         self.assertEqual(container['index'], [['Spectrum 1', [217, 343]], ['Spectrum 2', [343, 504]]])
 
+    def test_mz_only_peak_lines(self):
+            # a peak line without intensity must not shift later intensities onto the wrong m/z
+            text = 'BEGIN IONS\nTITLE=a\nPEPMASS=500\n100 1\n150\n200 3 2+\nEND IONS\n'
+            with tempfile.NamedTemporaryFile('w', suffix='.mgf') as f:
+                f.write(text)
+                for cls in (mgf.MGF, mgf.IndexedMGF):
+                    f.seek(0)
+                    with self.subTest(cls=cls.__name__), cls(f.name) as reader:
+                        spectrum = next(reader)
+                        np.testing.assert_array_equal(spectrum['m/z array'], [100., 150., 200.])
+                        np.testing.assert_array_equal(spectrum['intensity array'], [1., np.nan, 3.])
+                        self.assertEqual(spectrum['charge array'].tolist(), [None, None, 2])
+
 
 class UtilityTest(unittest.TestCase):
     def test_charge_repr_single(self):
@@ -289,18 +302,16 @@ class UtilityTest(unittest.TestCase):
             with self.subTest(s=s):
                 self.assertEqual(mgf.MGFBase.parse_peak_charge(s), -1)
 
-    def test_mz_only_peak_lines(self):
-        # a peak line without intensity must not shift later intensities onto the wrong m/z
-        text = 'BEGIN IONS\nTITLE=a\nPEPMASS=500\n100 1\n150\n200 3 2+\nEND IONS\n'
-        with tempfile.NamedTemporaryFile('w', suffix='.mgf') as f:
-            f.write(text)
-            for cls in (mgf.MGF, mgf.IndexedMGF):
-                f.seek(0)
-                with self.subTest(cls=cls.__name__), cls(f.name) as reader:
-                    spectrum = next(reader)
-                    np.testing.assert_array_equal(spectrum['m/z array'], [100., 150., 200.])
-                    np.testing.assert_array_equal(spectrum['intensity array'], [1., np.nan, 3.])
-                    self.assertEqual(spectrum['charge array'].tolist(), [None, None, 2])
+    def test_rtinseconds_range(self):
+        for s in ['95-97', '95.0-97.0', '95.0-97']:
+            with self.subTest(s=s):
+                self.assertEqual(mgf.MGFBase.parse_rtinseconds(s), (95.0, 97.0))
+        for s in ['95', '95.0']:
+            with self.subTest(s=s):
+                self.assertEqual(mgf.MGFBase.parse_rtinseconds(s), 95.0)
+        for s in ['95-97-99', '95.0-97.0-99.0', 'unparseable']:
+            with self.subTest(s=s):
+                self.assertEqual(mgf.MGFBase.parse_rtinseconds(s), s)
 
 
 if __name__ == "__main__":

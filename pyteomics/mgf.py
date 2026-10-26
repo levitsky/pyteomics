@@ -173,6 +173,19 @@ class MGFBase(aux.MaskedArrayConversionMixin):
         return aux._parse_charge(charge_text, list_only=False)
 
     @staticmethod
+    def parse_rtinseconds(rt_text):
+        try:
+            if rt_text.count('-') == 1:
+                # Handle range of retention times
+                start, end = rt_text.split('-')
+                return (aux.unitfloat(start, 'second'), aux.unitfloat(end, 'second'))
+            else:
+                return aux.unitfloat(rt_text, 'second')
+        except ValueError:
+            warnings.warn('Could not parse RTINSECONDS: {}'.format(rt_text))
+            return rt_text
+
+    @staticmethod
     def parse_peak_ion(ion_text):
         return aux._parse_ion(ion_text)
 
@@ -228,7 +241,8 @@ class MGFBase(aux.MaskedArrayConversionMixin):
                 if isinstance(params.get('charge'), (str, bytes)):
                     params['charge'] = self.parse_precursor_charge(params['charge'], True)
                 if 'rtinseconds' in params:
-                    params['rtinseconds'] = aux.unitfloat(params['rtinseconds'], 'second')
+                    params['rtinseconds'] = self.parse_rtinseconds(params['rtinseconds'])
+
                 out = {'params': params, 'm/z array': masses, 'intensity array': intensities}
                 if self._read_charges:
                     out['charge array'] = charges
