@@ -72,6 +72,25 @@ class ElectrochemTest(unittest.TestCase):
             self.assertTrue(
                 abs(pI('PEPTIDE', precision_pI=precision) - pI_best) < precision)
 
+    def test_pI_exact_root(self):
+        # Only the two terminal groups ionize, so the root is their mean pKa.
+        expected = (2.34 + 9.69) / 2.0
+        for sequence in ('AAA', ['H-', 'A', 'A', 'A', '-OH'],
+                         {'H-': 1, 'A': 3, '-OH': 1}):
+            for bounds in ((2.34, 9.69), (expected, 14.0), (0.0, expected)):
+                with self.subTest(sequence=sequence, bounds=bounds):
+                    self.assertEqual(pI(sequence, pI_range=bounds), expected)
+
+    def test_pI_exact_root_custom_pK(self):
+        self.assertEqual(
+            pI('AAA', pK={'H-': [(9.0, 1)], '-OH': [(5.0, -1)]}),
+            7.0)
+        self.assertEqual(
+            pI('AAA', pK={'H-': [(9.0, 1)], '-OH': [(5.0, -1)]},
+               pI_range=(5.0, 7.0),
+               pK_nterm={'H-': {'A': [(7.0, 1)]}}),
+            6.0)
+
     def test_charge_input(self):
         for i in range(0, 14):
             self.assertAlmostEqual(

@@ -111,6 +111,27 @@ class ParserTest(unittest.TestCase):
                     seq, parser.expasy_rules['trypsin'], int(random.uniform(1, 10)), ml):
                 self.assertTrue(len(elem) >= ml)
 
+    def test_cleave_semi_max_length(self):
+        self.assertEqual(
+            parser.xcleave('PEPTIDEK', 'trypsin', semi=True,
+                          min_length=3, max_length=5),
+            [(0, 'PEP'), (0, 'PEPT'), (0, 'PEPTI'),
+             (3, 'TIDEK'), (4, 'IDEK'), (5, 'DEK')])
+
+    def test_cleave_semi_length_filter(self):
+        sequence = 'PEPTIDEKPEPTIDERAK'
+        for missed in (0, 1, 2):
+            unfiltered = parser.xcleave(
+                sequence, 'trypsin', semi=True, missed_cleavages=missed)
+            for minimum, maximum in ((1, 1), (3, 5), (5, 5), (6, 10)):
+                with self.subTest(missed=missed, minimum=minimum, maximum=maximum):
+                    self.assertEqual(
+                        parser.xcleave(sequence, 'trypsin', semi=True,
+                                       missed_cleavages=missed,
+                                       min_length=minimum, max_length=maximum),
+                        [(index, peptide) for index, peptide in unfiltered
+                         if minimum <= len(peptide) <= maximum])
+
     def test_num_sites(self):
         self.assertEqual(parser.num_sites('RKCDE', 'K'), 1)
         self.assertEqual(parser.num_sites('RKCDE', 'E'), 0)

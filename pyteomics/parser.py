@@ -808,11 +808,11 @@ def icleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None
                 start = len(sequence) - lenseq
             if seq and min_length <= lenseq <= max_length:
                 yield (start, seq)
-                if semi:
-                    for k in range(min_length, min(lenseq, max_length)):
-                        yield (start, seq[:k])
-                    for k in range(max(1, lenseq - max_length), lenseq - min_length + 1):
-                        yield (start + k, seq[k:])
+            if semi:
+                for k in range(min_length, min(lenseq, max_length + 1)):
+                    yield (start, seq[:k])
+                for k in range(max(1, lenseq - max_length), lenseq - min_length + 1):
+                    yield (start + k, seq[k:])
 
 
 def xcleave(*args, **kwargs):

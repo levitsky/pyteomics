@@ -252,17 +252,22 @@ class MGFBase(aux.MaskedArrayConversionMixin):
                 else:  # this must be a peak list
                     l = sline.split()
                     try:
-                        masses.append(float(l[0]))
-                        intensities.append(float(l[1]))
+                        # lines without intensity or charge still get an entry, keeping all arrays aligned with m/z
+                        mass = float(l[0])
+                        intensity = float(l[1]) if len(l) > 1 else float('nan')
                         if self._read_charges:
-                            charges.append(self.parse_peak_charge(l[2]) if len(l) > 2 else 0)
+                            charge = self.parse_peak_charge(l[2]) if len(l) > 2 else 0
                         if self._read_ions:
-                            ions.append(self.parse_peak_ion(l[2]) if len(l) > 2 else "")
+                            ion = self.parse_peak_ion(l[2]) if len(l) > 2 else ""
                     except ValueError:
                         raise aux.PyteomicsError(
                              'Error when parsing %s. Line:\n%s' % (getattr(self._source, 'name', 'MGF file'), line))
-                    except IndexError:
-                        pass
+                    masses.append(mass)
+                    intensities.append(intensity)
+                    if self._read_charges:
+                        charges.append(charge)
+                    if self._read_ions:
+                        ions.append(ion)
 
     def get_spectrum(self, title):
         raise NotImplementedError()
