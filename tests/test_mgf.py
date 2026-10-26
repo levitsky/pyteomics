@@ -289,6 +289,19 @@ class UtilityTest(unittest.TestCase):
             with self.subTest(s=s):
                 self.assertEqual(mgf.MGFBase.parse_peak_charge(s), -1)
 
+    def test_mz_only_peak_lines(self):
+        # a peak line without intensity must not shift later intensities onto the wrong m/z
+        text = 'BEGIN IONS\nTITLE=a\nPEPMASS=500\n100 1\n150\n200 3 2+\nEND IONS\n'
+        with tempfile.NamedTemporaryFile('w', suffix='.mgf') as f:
+            f.write(text)
+            for cls in (mgf.MGF, mgf.IndexedMGF):
+                f.seek(0)
+                with self.subTest(cls=cls.__name__), cls(f.name) as reader:
+                    spectrum = next(reader)
+                    np.testing.assert_array_equal(spectrum['m/z array'], [100., 150., 200.])
+                    np.testing.assert_array_equal(spectrum['intensity array'], [1., np.nan, 3.])
+                    self.assertEqual(spectrum['charge array'].tolist(), [None, None, 2])
+
 
 if __name__ == "__main__":
     unittest.main()
