@@ -223,11 +223,11 @@ def _prepare_charge_dict(sequence, **kwargs):
                 parsed_sequence = [parser.std_nterm] + list(sequence) + [parser.std_cterm]
             else:
                 parsed_sequence = parser.parse(sequence, show_unmodified_termini=True)
-        elif isinstance(sequence, list):
+        else:
+            parsed_sequence = sequence
             if sequence[0][-1] != '-' or sequence[-1][0] != '-':
                 raise PyteomicsError('Parsed sequences must contain terminal '
                                      'groups at 0-th and last positions.')
-            parsed_sequence = sequence
 
         n_aa = parsed_sequence[1]
         c_aa = parsed_sequence[-2]
