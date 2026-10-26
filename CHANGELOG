@@ -1,4 +1,4 @@
-5.0.2a4
+5.0.2a5
 -------
 
   - Support RESID in ProForma, adding :py:class:`~.ResidResolver` and
@@ -15,6 +15,7 @@
   - Fix :py:class:`Composition` in-place multiplication by zero (`#221 <https://github.com/levitsky/pyteomics/pull/221>`_ by Basil Chen).
   - Fix length flitering for semi-specific peptides in :py:func:`parser.cleave`
     (`#223 <https://github.com/levitsky/pyteomics/pull/223>`_ by Anthony Mercer).
+  - Fix pI calculation (`#224 <https://github.com/levitsky/pyteomics/pull/224>`_ by by Anthony Mercer).
 
 5.0.1
 -----
