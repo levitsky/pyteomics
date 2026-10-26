@@ -101,6 +101,12 @@ def _zlibNumpress(decoder):
     return decode
 
 
+def _numpressMissing(name):
+    def decode(data):
+        raise PyteomicsError('Decoding {!r} requires `pynumpress`.'.format(name))
+    return decode
+
+
 if pynumpress:
     _default_compression_map.update(
         {
@@ -111,6 +117,16 @@ if pynumpress:
             'MS-Numpress positive integer compression followed by zlib compression':   _zlibNumpress(pynumpress.decode_pic),
             'MS-Numpress linear prediction compression followed by zlib compression':  _zlibNumpress(pynumpress.decode_linear),
         })
+else:
+    # Still recognize the terms, so that the array is not decoded as if it were uncompressed
+    _default_compression_map.update({name: _numpressMissing(name) for name in (
+        'MS-Numpress short logged float compression',
+        'MS-Numpress positive integer compression',
+        'MS-Numpress linear prediction compression',
+        'MS-Numpress short logged float compression followed by zlib compression',
+        'MS-Numpress positive integer compression followed by zlib compression',
+        'MS-Numpress linear prediction compression followed by zlib compression',
+    )})
 
 
 class ArrayConversionMixin(object):
