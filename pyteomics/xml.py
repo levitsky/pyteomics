@@ -120,7 +120,7 @@ def xsd_parser(schema_url):
 class XMLValueConverter(object):
     # Adapted from http://stackoverflow.com/questions/2764269/parsing-an-xsduration-datatype-into-a-python-datetime-timedelta-object
     _duration_parser = re.compile(
-        (r'(?P<sign>-?)P(?:(?P<years>\d+\.?\d*)Y)?(?:(?P<months>\d+\.?\d*)M)?(?:(?P<days>\d+\.?\d*)D)?(?:T(?:(?P<hours>\d+\.?\d*)H)?(?:(?P<minutes>\d+\.?\d*)M)?(?:(?P<seconds>\d+\.?\d*)S)?)?'))
+        (r'(?P<sign>-?)P(?:(?P<years>\d+(?:\.\d*)?)Y)?(?:(?P<months>\d+(?:\.\d*)?)M)?(?:(?P<days>\d+(?:\.\d*)?)D)?(?:T(?:(?P<hours>\d+(?:\.\d*)?)H)?(?:(?P<minutes>\d+(?:\.\d*)?)M)?(?:(?P<seconds>\d+(?:\.\d*)?)S)?)?'))
 
     @classmethod
     def duration_str_to_float(cls, s):
