@@ -1,4 +1,4 @@
-5.0.2a7
+5.0.2a8
 -------
 
   - Support RESID in ProForma, adding :py:class:`~.ResidResolver` and
@@ -19,6 +19,7 @@
   - Ensure correct alignment of m/z, intensity and charge arrays in MGF parsing
     (`#227 <https://github.com/levitsky/pyteomics/pull/227>`_ by Aaron Kanzer).
   - Do not fail on MGF RTINSECONDS ranges (`#226 <https://github.com/levitsky/pyteomics/pull/226>`_ by Aaron Kanzer.)
+  - Fail clearly on MS-Numpress arrays when pynumpress is missing (`#225 <https://github.com/levitsky/pyteomics/pull/225>`_ by Aaron Kanzer.)
 
 
 5.0.1
