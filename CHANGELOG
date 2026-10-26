@@ -1,4 +1,4 @@
-5.0.2a5
+5.0.2a6
 -------
 
   - Support RESID in ProForma, adding :py:class:`~.ResidResolver` and
@@ -16,6 +16,8 @@
   - Fix length flitering for semi-specific peptides in :py:func:`parser.cleave`
     (`#223 <https://github.com/levitsky/pyteomics/pull/223>`_ by Anthony Mercer).
   - Fix pI calculation (`#224 <https://github.com/levitsky/pyteomics/pull/224>`_ by by Anthony Mercer).
+  - Ensure correct alignment of m/z, intensity and charge arrays in MGF parsing
+    (`#227 <https://github.com/levitsky/pyteomics/pull/227>`_ by Aaron Kanzer).
 
 5.0.1
 -----
