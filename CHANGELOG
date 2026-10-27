@@ -1,5 +1,5 @@
-5.0.2a8
--------
+5.0.2
+-----
 
   - Support RESID in ProForma, adding :py:class:`~.ResidResolver` and
     :py:class:`~.ResidModification` (`#214 <https://github.com/levitsky/pyteomics/pull/214>`_
@@ -11,11 +11,11 @@
       ProForma parsing now requires psims 1.4.0 or newer.
 
   - Fix a bug in :py:func:`proforma.proteoforms` where the `strip` argument was not applied to fixed modifications.
-  - Fix `#219 <https://github.com/levitsky/pyteomics/issues/219>`_.
+  - Fix `#219 <https://github.com/levitsky/pyteomics/issues/219>`_ (do not assume optional attributes are present in custom Unimod XML files).
   - Fix :py:class:`Composition` in-place multiplication by zero (`#221 <https://github.com/levitsky/pyteomics/pull/221>`_ by Basil Chen).
   - Fix length flitering for semi-specific peptides in :py:func:`parser.cleave`
     (`#223 <https://github.com/levitsky/pyteomics/pull/223>`_ by Anthony Mercer).
-  - Fix pI calculation (`#224 <https://github.com/levitsky/pyteomics/pull/224>`_ by by Anthony Mercer).
+  - Fix in pI calculation (`#224 <https://github.com/levitsky/pyteomics/pull/224>`_ by by Anthony Mercer).
   - Ensure correct alignment of m/z, intensity and charge arrays in MGF parsing
     (`#227 <https://github.com/levitsky/pyteomics/pull/227>`_ by Aaron Kanzer).
   - Do not fail on MGF RTINSECONDS ranges (`#226 <https://github.com/levitsky/pyteomics/pull/226>`_ by Aaron Kanzer.)
