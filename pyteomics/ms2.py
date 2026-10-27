@@ -126,6 +126,7 @@ class MS2Base(aux.MaskedArrayConversionMixin, MS1Base):
         if self._read_resolutions:
             if len(sline) > 2:
                 sline = line.strip().split()
+            if len(sline) > 3:
                 try:
                     info['resolution array'].append(int(sline[3]))
                 except ValueError:
