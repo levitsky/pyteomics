@@ -15,7 +15,7 @@
   - Fix :py:class:`Composition` in-place multiplication by zero (`#221 <https://github.com/levitsky/pyteomics/pull/221>`_ by Basil Chen).
   - Fix length flitering for semi-specific peptides in :py:func:`parser.cleave`
     (`#223 <https://github.com/levitsky/pyteomics/pull/223>`_ by Anthony Mercer).
-  - Fix in pI calculation (`#224 <https://github.com/levitsky/pyteomics/pull/224>`_ by by Anthony Mercer).
+  - Fix in pI calculation (`#224 <https://github.com/levitsky/pyteomics/pull/224>`_ by Anthony Mercer).
   - Ensure correct alignment of m/z, intensity and charge arrays in MGF parsing
     (`#227 <https://github.com/levitsky/pyteomics/pull/227>`_ by Aaron Kanzer).
   - Do not fail on MGF RTINSECONDS ranges (`#226 <https://github.com/levitsky/pyteomics/pull/226>`_ by Aaron Kanzer.)
