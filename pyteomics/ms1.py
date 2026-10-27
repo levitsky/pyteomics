@@ -155,13 +155,14 @@ class MS1Base(aux.ArrayConversionMixin):
 
     def _handle_peak(self, line, sline, info):
         try:
-            info['m/z array'].append(float(sline[0]))            # this may cause
-            info['intensity array'].append(float(sline[1]))      # exceptions...
+            # lines without intensity still get an entry, keeping the arrays aligned with m/z
+            mz = float(sline[0])
+            intensity = float(sline[1]) if len(sline) > 1 else float('nan')
         except ValueError:
             raise aux.PyteomicsError(
                 'Error when parsing %s. Line: %s' % (self._source_name, line))
-        except IndexError:
-            pass
+        info['m/z array'].append(mz)
+        info['intensity array'].append(intensity)
 
     def _read_spectrum_lines(self, lines):
         params = {}
