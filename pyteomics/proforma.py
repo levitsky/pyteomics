@@ -103,6 +103,101 @@ class Chimeric(Generic[T], Sequence[T]):
         return value in self.peptides
 
 
+def _cross_link_declarations(chain) -> Dict[str, List[float]]:
+    """Masses declared for each cross-link group within one chain."""
+    declarations: Dict[str, List[float]] = {}
+    for _position, tags in getattr(chain, 'sequence', ()) or ():
+        for tag in tags or ():
+            group = getattr(tag, 'group_id', None)
+            if not (group and str(group).startswith('#XL')):
+                continue
+            if not (tag.is_modification() and tag.has_mass()):
+                continue
+            try:
+                mass = tag.mass
+            except Exception:
+                continue
+            declarations.setdefault(str(group), []).append(mass)
+    return declarations
+
+
+def _cross_link_overcount_within(chain) -> Tuple[float, List[str]]:
+    """Linker mass a single chain counts more than once.
+
+    Section 9.2.1 requires a self-link be written once, the other site carrying
+    a bare ``[#XL1]``. Repeating it inside one chain is redundant rather than
+    useful, so it is both discounted and reported.
+    """
+    excess = 0.0
+    duplicated = []
+    for group, masses in _cross_link_declarations(chain).items():
+        if len(masses) > 1:
+            duplicated.append(group)
+            excess += sum(masses[1:])
+    return excess, sorted(duplicated)
+
+
+def _cross_link_declared_compositions(chain) -> Dict[str, List[Any]]:
+    """Compositions declared for each cross-link group within one chain."""
+    declarations: Dict[str, List[Any]] = {}
+    for _position, tags in getattr(chain, 'sequence', ()) or ():
+        for tag in tags or ():
+            group = getattr(tag, 'group_id', None)
+            if not (group and str(group).startswith('#XL')):
+                continue
+            if not (tag.is_modification() and tag.has_composition()):
+                continue
+            try:
+                composition = tag.composition
+            except Exception:
+                continue
+            if composition is not None:
+                declarations.setdefault(str(group), []).append(composition)
+    return declarations
+
+
+def _cross_link_composition_overcount(chains):
+    """The composition counterpart of :func:`_cross_link_overcount`.
+
+    A linker declared on several chains is one molecule, so its atoms are
+    counted once, exactly as its mass is.
+    """
+    seen = set()
+    excess = Composition()
+    for chain in chains:
+        within = _cross_link_declared_compositions(chain)
+        for group, compositions in within.items():
+            start = 0 if group in seen else 1
+            seen.add(group)
+            for composition in compositions[start:]:
+                excess += composition
+    return excess
+
+
+def _cross_link_overcount(chains) -> Tuple[float, List[str]]:
+    """Cross-linker mass counted more than once, and the groups responsible.
+
+    Repeating a declaration across chains is useful rather than redundant: it
+    lets each chain be read on its own, without hunting through the others for
+    what ``#XL1`` refers to, and section 9.2.2 writes its examples both ways.
+    The two spellings denote one molecule and must agree, so every chain after
+    the first to declare a group is discounted.
+    """
+    seen: Dict[str, float] = {}
+    excess = 0.0
+    duplicated = []
+    for chain in chains:
+        # Each chain has already discounted its own repeats, so only the first
+        # declaration per chain is in play here.
+        for group, masses in _cross_link_declarations(chain).items():
+            if group in seen:
+                duplicated.append(group)
+                excess += masses[0]
+            else:
+                seen[group] = masses[0]
+    return excess, sorted(set(duplicated))
+
+
 class ProFormaError(PyteomicsError):
     def __init__(self, message, index=None, parser_state=None, **kwargs):
         super(ProFormaError, self).__init__(PyteomicsError, message, index, parser_state)
@@ -276,6 +371,9 @@ class TagBase(object):
             TagTypeEnum.massmod,
             TagTypeEnum.psimod,
             TagTypeEnum.custom,
+            # XL-MOD was omitted when cross-linking support was added, so
+            # `find_modification` could not see a cross-linker.
+            TagTypeEnum.xlmod,
             TagTypeEnum.resid,
         )
 
@@ -2622,6 +2720,8 @@ PEPTIDOFORM_NAME_CLOSE = ParserStateEnum.peptidoform_name_close
 
 DONE = ParserStateEnum.done
 
+INTER_CHAIN_CROSS_LINK_START = ParserStateEnum.inter_chain_cross_link_start
+
 VALID_AA_UPPER = set("QWERTYIPASDFGHKLCVNMXUOJZB")
 VALID_AA = {s.lower() for s in VALID_AA_UPPER} | VALID_AA_UPPER
 TERMINAL_SPEC_CHARS = set('N-term') | set('C-term') | set("ncT: ")
@@ -2700,7 +2800,57 @@ def _local_charges(
     return local_charges, n_charged_modifications
 
 
-ProFormaParseResult = Tuple[List[Tuple[str, Optional[List[TagBase]]]], Dict[str, Any]]
+#: One parsed chain: the ``(positions, properties)`` pair that :class:`ProForma`
+#: is constructed from. ``positions`` is the primary sequence as
+#: ``(amino acid, tags)`` pairs; ``properties`` is everything that is not
+#: positional -- terminal, labile and unlocalized modifications, intervals,
+#: isotopes, group ids, charge state and names. A peptidoform written with
+#: ``//`` has one of these per chain; see :class:`ProFormaParseResult`, which is
+#: what :func:`parse` returns and which holds them.
+ProFormaChain = Tuple[List[Tuple[str, Optional[List[TagBase]]]], Dict[str, Any]]
+
+
+class ProFormaParseResult(Sequence):
+    """What :func:`parse` returns: the chains of one peptidoform ion.
+
+    This is parser plumbing, not the representation of a cross-linked peptide.
+    That is :class:`ProForma`, which gained a :attr:`~ProForma.chains`
+    collection; there is no separate type for a molecule spanning chains.
+
+    Almost every ProForma string describes a single chain, and for that case
+    this behaves exactly as the ``(positions, properties)`` pair it used to be
+    -- it unpacks, indexes and compares the same way, so
+    ``positions, properties = parse(s)`` is unchanged.
+
+    A string joining chains with ``//`` describes one molecule held together by
+    cross-links spanning them. Those further chains are in :attr:`chains`; the
+    tuple behaviour continues to describe the first.
+    """
+
+    __slots__ = ("chains",)
+
+    def __init__(self, chains: List[ProFormaChain]):
+        self.chains = list(chains)
+
+    def __len__(self):
+        return 2
+
+    def __getitem__(self, i):
+        return self.chains[0][i]
+
+    def __iter__(self):
+        return iter(self.chains[0])
+
+    def __eq__(self, other):
+        if isinstance(other, ProFormaParseResult):
+            return self.chains == other.chains
+        return tuple(self.chains[0]) == tuple(other)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __repr__(self):  # pragma: no cover
+        return "{self.__class__.__name__}({self.chains})".format(self=self)
 
 
 class Parser:
@@ -2765,7 +2915,12 @@ class Parser:
         self.state = ParserStateEnum.before_sequence
         self._VALID_AA = VALID_AA if not case_sensitive_aa else VALID_AA_UPPER
         self.chimeric = chimeric
+        # `components` holds peptidoform ions, each a list of chains. Most
+        # strings yield one ion of one chain; `//` is what adds chains, and it
+        # is unambiguous wherever it can be reached, so it needs no opting in.
+        self.saw_chain_separator = False
         self.components = []
+        self.chains = []
 
         self.fixed_modifications = []
         self.isotopes = []
@@ -2810,6 +2965,10 @@ class Parser:
         self.names = {}
         if 3 in names:
             self.names[3] = names[3]
+        # The ion-level name belongs to the whole ion, so it survives a `//`
+        # boundary. `_handle_chimeric_separator` clears it when the ion ends.
+        if 2 in names and self._in_ion:
+            self.names[2] = names[2]
 
     def _chimeric_disabled_error(self):
         raise ProFormaError(
@@ -2822,10 +2981,28 @@ class Parser:
             self.state,
         )
 
+    @property
+    def _in_ion(self) -> bool:
+        """Whether a ``//`` has already been seen in the ion being parsed."""
+        return bool(self.chains)
+
+    def _close_ion(self):
+        """End the peptidoform ion under construction."""
+        self.chains.append(self._finish_chain())
+        self.components.append(self.chains)
+        self.chains = []
+
+    def _handle_chain_separator(self):
+        self.saw_chain_separator = True
+        self.chains.append(self._finish_chain())
+        self._reset_component()
+
     def _handle_chimeric_separator(self):
         if not self.chimeric:
             self._chimeric_disabled_error()
-        self.components.append(self._finish_component())
+        self._close_ion()
+        # The ion-level name does not carry across a chimeric boundary.
+        self.names.pop(2, None)
         self._reset_component()
 
     def handle_before(self, c: str):
@@ -3155,12 +3332,11 @@ class Parser:
             self.charge_buffer.append(c)
             self.state = CHARGE_NUMBER
         elif c == "/":
+            # A second `/` means the charge that appeared to be starting is
+            # really a chain separator; the charge, if any, follows the last
+            # chain and belongs to the ion.
             self.state = ParserStateEnum.inter_chain_cross_link_start
-            raise ProFormaError(
-                "Inter-chain cross-linked peptides are not yet supported",
-                self.index,
-                self.state,
-            )
+            self._handle_chain_separator()
         elif c == '[':
             self.state = ParserStateEnum.charge_state_adduct_start
             self.depth = 1
@@ -3309,7 +3485,7 @@ class Parser:
             self.index += 1
         return self.index < self.length
 
-    def _finish_component(self) -> ProFormaParseResult:
+    def _finish_chain(self) -> ProFormaChain:
         if not self.positions and self.current_aa is None:
             if self.chimeric:
                 raise ProFormaError("Empty peptidoform in chimeric ProForma string", self.index, self.state)
@@ -3319,7 +3495,7 @@ class Parser:
                 self.state,
             )
 
-        complete_states = (SEQ, POST_INTERVAL_TAG, POST_TAG_AFTER, CHARGE_NUMBER, ADDUCT_END)
+        complete_states = (SEQ, POST_INTERVAL_TAG, POST_TAG_AFTER, CHARGE_NUMBER, ADDUCT_END, INTER_CHAIN_CROSS_LINK_START)
         if self.state not in complete_states:
             raise ProFormaError(
                 f"Error In State {self.state}, incomplete ProForma string reached end of input",
@@ -3374,7 +3550,7 @@ class Parser:
         }
 
     def _apply_shared_properties(self):
-        for _positions, props in self.components:
+        for _positions, props in (chain for ion in self.components for chain in ion):
             props["fixed_modifications"] = list(self.fixed_modifications)
             props["isotopes"] = list(self.isotopes)
             props["group_ids"] = sorted(set(props["group_ids"]) | self.shared_group_ids)
@@ -3394,12 +3570,32 @@ class Parser:
             All other information outside the main sequence, including unlocalized, labile, or global modifications,
             names, charge states, and more.
         """
-        component = self._finish_component()
+        self._close_ion()
+        self._apply_shared_properties()
+        for ion in self.components:
+            if len(ion) > 1:
+                self._dedupe_ion_names(ion)
+        packed = [ProFormaParseResult(ion) for ion in self.components]
         if self.chimeric:
-            self.components.append(component)
-            self._apply_shared_properties()
-            return Chimeric(self.components, len(self.components) > 1)
-        return component
+            return Chimeric(packed, len(packed) > 1)
+        return packed[0]
+
+    @staticmethod
+    def _dedupe_ion_names(ion: List[ProFormaChain]) -> None:
+        """Keep the ion and set names on the first chain only.
+
+        The ``(>>name)`` and ``(>>>name)`` describe tiers above a chain -- the
+        data schema in the specification's Appendix II puts them on the
+        peptidoform ion and the set -- but the parser records them on every
+        chain they span. Left there, each chain would serialise them, emitting
+        one copy per chain. Keeping them on the first is enough, since that is
+        where the string writes them.
+        """
+        for _positions, props in ion[1:]:
+            names = props.get("names")
+            if names:
+                names.pop(2, None)
+                names.pop(3, None)
 
     def _local_charges(self) -> Tuple[int, int]:
         return _local_charges(
@@ -3468,6 +3664,14 @@ def parse(
     **kwargs :
         Forwarded to :class:`Parser`
 
+    Notes
+    -----
+A string that joins chains with ``//`` puts the further chains in
+    :attr:`ProFormaParseResult.chains`; the return type does not change. No
+    option selects this: ``//`` is only reachable once a peptidoform is
+    complete, so it is never ambiguous with a slash inside a tag, a name or a
+    charge state.
+
     Returns
     -------
     parsed_sequence: list[tuple[str, list[TagBase]]]
@@ -3478,10 +3682,10 @@ def parse(
     """
     # short-circuiting the parser for simple sequences with no tags or modifications to avoid overhead
     if sequence.isupper() and sequence.isalpha():
-        result = (
+        result = ProFormaParseResult([(
             [(aa, None) for aa in sequence],
             Parser.empty_properties()
-        )
+        )])
         if chimeric:
             return Chimeric([result], chimeric=False)
         return result
@@ -3994,12 +4198,19 @@ class ProForma(object):
 
     sequence: List[Tuple[str, Optional[List[TagBase]]]]
     properties: Dict[str, Any]
+    additional_chains: List["ProForma"]
 
-    def __init__(self, sequence, properties):
+    def __init__(self, sequence, properties, additional_chains=None):
         """
         Initialize a :class:`ProForma` instance from a parse tree.
 
         To construct an instance from a string directly, see :meth:`ProForma.parse`.
+
+        Parameters
+        ----------
+        additional_chains : list[ProForma], optional
+            Further chains covalently joined to this one, as written with ``//``.
+            See :attr:`chains`.
 
         See Also
         --------
@@ -4007,6 +4218,42 @@ class ProForma(object):
         """
         self.sequence = sequence
         self.properties = properties
+        self.additional_chains = list(additional_chains or ())
+
+    @property
+    def chains(self) -> List["ProForma"]:
+        """Every chain of this peptidoform ion, in the order written.
+
+        A peptidoform written with ``//`` is several chains held together by
+        cross-links spanning them, and is one molecule: it has one mass and one
+        charge. Almost every string is a single chain, in which case this is
+        just ``[self]`` and nothing else about the object differs.
+
+        The attributes describing a sequence -- :attr:`sequence`, indexing,
+        :meth:`find_tags_by_id` -- describe the *first* chain. Quantities that
+        are properties of the whole molecule -- :attr:`mass`,
+        :attr:`charge_state`, ``str()`` -- span all of them. Operations with no
+        meaningful multi-chain answer, such as :meth:`fragments`, raise.
+        """
+        if not self.additional_chains:
+            return [self]
+        # The first chain on its own, not the whole ion: `self` aggregates every
+        # chain, so returning it here would count the others twice.
+        first = self.__class__(self.sequence, self.properties)
+        return [first, *self.additional_chains]
+
+    @property
+    def is_multichain(self) -> bool:
+        """Whether this peptidoform ion has more than one chain."""
+        return bool(self.additional_chains)
+
+    def _single_chain(self, what: str):
+        """Refuse an operation that has no meaning across several chains."""
+        if self.additional_chains:
+            raise ValueError(
+                "%s is defined for a single chain, but this peptidoform ion has %d. "
+                "Iterate `.chains` and act on each one." % (what, len(self.chains))
+            )
 
     isotopes = _ProFormaProperty[List[StableIsotope]]('isotopes')
     _charge_state = _ProFormaProperty('charge_state')
@@ -4023,7 +4270,10 @@ class ProForma(object):
     group_ids = _ProFormaProperty('group_ids')
 
     def __str__(self):
-        return to_proforma(self.sequence, **self.properties)
+        text = to_proforma(self.sequence, **self.properties)
+        if self.additional_chains:
+            text = "//".join([text] + [str(chain) for chain in self.additional_chains])
+        return text
 
     def __repr__(self):  # pragma: no cover
         return "{self.__class__.__name__}({self.sequence}, {self.properties})".format(self=self)
@@ -4086,7 +4336,9 @@ class ProForma(object):
         elif other is None:
             return False
         else:
-            return self.sequence == other.sequence and self.properties == other.properties
+            return (self.sequence == other.sequence
+                    and self.properties == other.properties
+                    and self.additional_chains == getattr(other, 'additional_chains', []))
 
     def __ne__(self, other):
         return not self == other
@@ -4101,8 +4353,17 @@ class ProForma(object):
         instance, which includes the total charge state and adduct list.
 
         This implies that you have a peptidoform *ion*, not a neutral peptide.
+
+        Where the peptidoform spans several chains the charge belongs to the ion
+        as a whole and the string writes it after the last chain, so whichever
+        chain declares one answers for all of them.
         """
         z = self._charge_state
+        if z is None:
+            for chain in self.additional_chains:
+                z = chain._charge_state
+                if z is not None:
+                    break
         return z
 
     def _local_charges(self) -> Tuple[int, int]:
@@ -4189,10 +4450,14 @@ class ProForma(object):
         ProForma or Chimeric[ProForma]
         """
         result = parse(string, chimeric=chimeric, **kwargs)
-        if chimeric:
 
-            return Chimeric([cls(*component) for component in result], result.chimeric)
-        return cls(*result)
+        def build(ion: ProFormaParseResult) -> "ProForma":
+            first, *rest = ion.chains
+            return cls(*first, additional_chains=[cls(*chain) for chain in rest])
+
+        if chimeric:
+            return Chimeric([build(ion) for ion in result], result.chimeric)
+        return build(result)
 
     @property
     def mass(self) -> float:
@@ -4244,6 +4509,27 @@ class ProForma(object):
             for tag in iv.tags or ():
                 if tag.has_mass():
                     mass += tag.mass
+        # A cross-link is one molecule however many sites it bridges. Section
+        # 9.2.1 requires a self-link be written once, the other site carrying a
+        # bare [#XL1]; where a string repeats the declaration instead, the
+        # linker would otherwise be counted once per declaration.
+        if any(str(group).startswith("#XL") for group in self.properties.get("group_ids") or ()):
+            excess, duplicated = _cross_link_overcount_within(self)
+            if duplicated:
+                warnings.warn(
+                    "Cross-link group(s) %s are declared more than once within a single "
+                    "peptide. The specification asks that a self-link be written once, "
+                    "with the other site a bare reference such as [#XL1]. Each linker has "
+                    "been counted once regardless." % ", ".join(duplicated)
+                )
+            mass -= excess
+        if self.additional_chains:
+            # Chains joined by // are one molecule. Each chain has already
+            # discounted its own repeats, so only cross-links spanning chains
+            # remain to be counted once.
+            mass += sum(chain.mass for chain in self.additional_chains)
+            across, _ = _cross_link_overcount(self.chains)
+            mass -= across
         return mass
 
     def mz(self, charge: Union[int, ChargeState, None] = None, **kwargs) -> float:
@@ -4341,6 +4627,9 @@ class ProForma(object):
                574.27188356, 703.31447664])
 
         """
+        # Fragmenting a covalently joined pair yields cross-linked fragment
+        # pairs, which this model has no way to express.
+        self._single_chain("fragments()")
         if isinstance(ion_shift, str):
             if ion_shift[0] in 'xyz':
                 reverse = True
@@ -4450,6 +4739,15 @@ class ProForma(object):
         -------
         list[tuple[Any, TagBase]] or list[TagBase]
         '''
+        if self.additional_chains:
+            # Without positions the answer is unambiguous, and it is the one a
+            # cross-link group needs: the two ends of `#XL1` sit on different
+            # chains. With positions it is not -- an index means nothing until
+            # you know which chain it indexes.
+            if include_position:
+                self._single_chain("find_tags_by_id(include_position=True)")
+            return [tag for part in self.chains
+                    for tag in part.find_tags_by_id(tag_id, include_position=False)]
         if not tag_id.startswith("#"):
             tag_id = "#" + tag_id
         matches = []
@@ -4477,6 +4775,9 @@ class ProForma(object):
 
     @property
     def tags(self):
+        """Every tag on the molecule, across all of its chains."""
+        if self.additional_chains:
+            return [tag for part in self.chains for tag in part.tags]
         return [tag for tags_at in [pos[1] for pos in self if pos[1]] for tag in tags_at]
 
     def proteoforms(self, include_unmodified: bool = False, include_labile: bool = False, strip: bool = False, deepcopy: bool = False) -> Iterator["ProForma"]:
@@ -4504,6 +4805,9 @@ class ProForma(object):
         ------
         :class:`ProForma`
         """
+        # Enumerating localisations across chains is a product over chains,
+        # and the result would not be representable as a flat sequence.
+        self._single_chain("proteoforms()")
         return iter(ProteoformCombinator(self, include_unmodified=include_unmodified, include_labile=include_labile, strip=strip, deepcopy=deepcopy))
 
     peptidoforms = proteoforms
@@ -4525,7 +4829,8 @@ class ProForma(object):
         ]:
             properties[k] = [v.copy() for v in properties[k]]
         properties['names'] = properties['names'].copy()
-        return self.__class__(sequence, properties)
+        return self.__class__(sequence, properties,
+                              [chain.copy() for chain in self.additional_chains])
 
     def composition(self, include_charge: Union[bool, ChargeState]=False, aa_comp=None, ignore_missing=False) -> Composition:
         '''
@@ -4555,6 +4860,20 @@ class ProForma(object):
         Composition
             :py:class:`Composition` object representing the composition of the ProForma sequence.
         '''
+        if self.additional_chains:
+            # One molecule, so one composition: the chains sum, and a linker
+            # declared on more than one of them is counted once, exactly as it
+            # is for `mass`.
+            total = Composition()
+            for part in self.chains:
+                total += part.composition(include_charge=False, aa_comp=aa_comp,
+                                          ignore_missing=ignore_missing)
+            total -= _cross_link_composition_overcount(self.chains)
+            if include_charge:
+                charge = self.charge_state if include_charge is True else include_charge
+                if charge is not None:
+                    total += charge.composition()
+            return total
         if ignore_missing:
             def get_comp(tag):
                 try:
