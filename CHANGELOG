@@ -1,3 +1,10 @@
+5.0.3a1
+-------
+
+ - Fix :py:mod:`ms1` and :py:mod:`ms2` to ensure array alignment (`#228 <https://github.com/levitsky/pyteomics/pull/228>`_ by KBS).
+ - Speed up :py:func:`parser.coverage_mask` (`#229 <https://github.com/levitsky/pyteomics/pull/229>`_ by Bharat Kaurav).
+
+
 5.0.2
 -----
 
@@ -8,7 +15,7 @@
     and accessions such as ``[AA0038]`` through the generic resolver chain.
 
     .. note ::
-      ProForma parsing now requires psims 1.4.0 or newer.
+      ProForma parsing now requires :py:mod:`psims` 1.4.0 or newer.
 
   - Fix a bug in :py:func:`proforma.proteoforms` where the `strip` argument was not applied to fixed modifications.
   - Fix `#219 <https://github.com/levitsky/pyteomics/issues/219>`_ (do not assume optional attributes are present in custom Unimod XML files).
