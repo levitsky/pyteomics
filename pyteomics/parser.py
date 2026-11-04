@@ -1194,12 +1194,20 @@ def coverage_mask(protein: str, peptides: Iterable, fast: bool=True) -> 'np.ndar
         protein = re.sub(r'[^A-Z]', '', protein)
         peptides = [strip(p) for p in peptides]
 
-    mask = np.zeros(len(protein), dtype=int)
+    # +1 where an occurrence starts and -1 where it ends; the running sum
+    # is the number of occurrences covering each residue
+    delta = np.zeros(len(protein) + 1, dtype=int)
     for peptide in peptides:
-        indices = [m.start() for m in re.finditer(f'(?={peptide})', protein)]
-        for i in indices:
-            mask[i:i + len(peptide)] += 1
-    return mask
+        n = len(peptide)
+        if not n:
+            continue
+        # overlapping occurrences, as with a lookahead regex
+        i = protein.find(peptide)
+        while i != -1:
+            delta[i] += 1
+            delta[i + n] -= 1
+            i = protein.find(peptide, i + 1)
+    return np.cumsum(delta[:-1], dtype=int)
 
 
 def coverage(protein, peptides, fast: bool=True) -> float:

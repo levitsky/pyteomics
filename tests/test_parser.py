@@ -221,6 +221,15 @@ class ParserTest(unittest.TestCase):
         expected_mask = np.array([1, 2, 2, 1, 0, 0, 0, 0], dtype=np.int8)
         np.testing.assert_array_equal(mask, expected_mask)
 
+    def test_coverage_mask_overlapping_and_repeated(self):
+        np.testing.assert_array_equal(parser.coverage_mask('AAAA', ['AA']), [1, 2, 2, 1])
+        np.testing.assert_array_equal(
+            parser.coverage_mask('PEPTIDEPEP', ['PEP', 'PEP']), [2, 2, 2, 0, 0, 0, 0, 2, 2, 2])
+
+    def test_coverage_mask_no_match(self):
+        np.testing.assert_array_equal(parser.coverage_mask('PEPTIDES', ['', 'XYZ']), np.zeros(8))
+        self.assertEqual(parser.coverage_mask('', ['PEP']).shape, (0,))
+
     def test_coverage(self):
         protein = 'PEPTIDES'
         peptides = ['PEP', 'EPT']
