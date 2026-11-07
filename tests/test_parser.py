@@ -4,6 +4,7 @@ pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir
 import unittest
 import numpy as np
 from pyteomics import parser, proforma
+from pyteomics.auxiliary import PyteomicsError
 from string import ascii_uppercase as uppercase
 import random
 
@@ -37,6 +38,18 @@ class ParserTest(unittest.TestCase):
         self.assertEqual(
             [('H-', 'z', 'P'), ('E',), ('P',), ('z', 'T'), ('I',), ('D',), ('z', 'E', '-OH')],
             parser.parse('zPEPzTIDzE', True, True, labels=parser.std_labels + ['z']))
+
+    def test_parse_label_check(self):
+        labels = parser.std_labels + ['pS']
+        for split in (False, True):
+            with self.assertRaises(PyteomicsError):
+                parser.parse('PEPTIDEB', split=split, labels=labels)
+            with self.assertRaises(PyteomicsError):
+                parser.parse('PEPTIDEoxM', split=split, labels=labels)
+            with self.assertRaises(PyteomicsError):
+                parser.parse('PEPTIDEpB', split=split, labels=labels, allow_unknown_modifications=True)
+            self.assertEqual(8, len(parser.parse('PEPTIDEoxM', split=split, labels=labels, allow_unknown_modifications=True)))
+            self.assertEqual(8, len(parser.parse('PEPpSTIDE', split=split, labels=labels)))
 
     def test_tostring(self):
         for seq in self.simple_sequences:
