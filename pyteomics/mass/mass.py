@@ -127,7 +127,7 @@ def _parse_isotope_string(label):
     >>> _parse_isotope_string('C[12]')
     ('C', 12)
     """
-    element_name, num = re.match(_isotope_string, label).groups()
+    element_name, num = _isotope_string.match(label).groups()
     isotope_num = int(num) if num else 0
     return element_name, isotope_num
 
@@ -149,9 +149,9 @@ and the sum of elemental compositions of its constituting amino acid residues.
 """
 
 
-_isotope_string = r'^((?:[A-Z][a-z+]*)|e-|e\*)(?:\[(\d+)\])?$'
-_atom = r'([A-Z][a-z+]*)(?:\[(\d+)\])?([+-]?\d+)?'
-_formula = r'^({})*$'.format(_atom)
+_isotope_string = re.compile(r'^((?:[A-Z][a-z+]*)|e-|e\*)(?:\[(\d+)\])?$')
+_atom = re.compile(r'([A-Z][a-z+]*)(?:\[(\d+)\])?([+-]?\d+)?')
+_formula = re.compile(r'^({})*$'.format(_atom.pattern))
 
 
 def _raise_term_label_exception(what='comp'):
@@ -194,7 +194,7 @@ class Composition(BasicComposition):
                 if slabel in aa_comp:
                     # a modification label used as terminal group. This is prone to errors and not allowed
                     _raise_term_label_exception()
-                elif re.match(_formula, slabel):
+                elif _formula.match(slabel):
                     comp += Composition(formula=slabel)
                 else:
                     failflag = True
@@ -241,9 +241,9 @@ class Composition(BasicComposition):
         self._from_parsed_sequence(parsed_sequence, aa_comp)
 
     def _from_formula(self, formula):
-        if not re.match(_formula, formula):
+        if not _formula.match(formula):
             raise PyteomicsError('Invalid formula: ' + formula)
-        for elem, isotope, number in re.findall(_atom, formula):
+        for elem, isotope, number in _atom.findall(formula):
             self[_make_isotope_string(elem, int(isotope) if isotope else 0)] += int(number) if number else 1
 
     def _from_composition(self, comp):
