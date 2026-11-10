@@ -407,6 +407,33 @@ class ProFormaTest(unittest.TestCase):
             with self.assertRaises(ProFormaError):
                 ProForma.parse(seq).composition()
 
+    def test_terminal_modification_composition(self):
+        # Terminal modifications are deltas on the terminal H and OH, single or stacked,
+        # so the composition must agree with the mass.
+        cases = [
+            ("[UNIMOD:1]-PEPTIDE", Composition(sequence='PEPTIDE') + Composition(formula='C2H2O')),
+            ("PEPTIDE-[UNIMOD:2]", Composition(sequence='PEPTIDE') + Composition({'H': 1, 'N': 1, 'O': -1})),
+            ("[Formula:H-2C1O1]-QAATMESLTPLLINLAK", Composition(sequence='QAATMESLTPLLINLAK') + Composition(formula='H-2CO')),
+            ("[UNIMOD:5][UNIMOD:385]-QAATMESLTPLLINLAK", Composition(sequence='QAATMESLTPLLINLAK') + Composition(formula='H-2CO')),
+            ("[UNIMOD:1]-PEPTM[UNIMOD:35]IDE-[UNIMOD:2]",
+             Composition(sequence='PEPTMIDE') + Composition(formula='C2H2O') + Composition(formula='O')
+             + Composition({'H': 1, 'N': 1, 'O': -1})),
+        ]
+        for seq, comp in cases:
+            with self.subTest(seq=seq):
+                i = ProForma.parse(seq)
+                self.assertEqual(i.composition(), comp)
+                self.assertEqual(i.composition(ignore_missing=True), comp)
+                self.assertAlmostEqual(i.composition().mass(), i.mass, places=6)
+
+    def test_missing_terminal_composition(self):
+        # A terminal mass shift has no composition: an error by default, skipped with ignore_missing,
+        # in both cases leaving the terminal H and OH in place.
+        i = ProForma.parse("[+42.011]-PEPTIDE")
+        with self.assertRaises(ProFormaError):
+            i.composition()
+        self.assertEqual(i.composition(ignore_missing=True), Composition(sequence='PEPTIDE'))
+
     def test_localization_composition(self):
         seq0 = "EMEVT[Phospho]SESPEK"
         test_seq = [
