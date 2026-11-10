@@ -87,7 +87,7 @@ def linear_regression_perpendicular(x, y=None):
         data = x
     mu = data.mean(axis=0)
     eigenvectors, eigenvalues, V = np.linalg.svd((data - mu).T, full_matrices=False)
-    a = eigenvectors[0][1] / eigenvectors[0][0]
+    a = eigenvectors[1][0] / eigenvectors[0][0]
     xm, ym = data.mean(axis=0)
     b = ym - a * xm
 

@@ -9,6 +9,7 @@ import unittest
 import pickle
 import shutil
 import json
+from pathlib import Path
 from collections import OrderedDict
 import warnings
 from pyteomics import mgf, auxiliary as aux
@@ -56,6 +57,10 @@ class MGFTest(unittest.TestCase):
         for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
             with func(source=self.path) as r:
                 self.assertEqual(data.mgf_spectra_long, list(r))
+
+    def test_read_pathlib_path(self):
+        with mgf.read(Path(self.path), use_index=False) as reader:
+            self.assertEqual(data.mgf_spectra_long, list(reader))
 
     def test_read_decoding(self):
         for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:
@@ -259,17 +264,17 @@ class MGFTest(unittest.TestCase):
         self.assertEqual(container['index'], [['Spectrum 1', [217, 343]], ['Spectrum 2', [343, 504]]])
 
     def test_mz_only_peak_lines(self):
-            # a peak line without intensity must not shift later intensities onto the wrong m/z
-            text = 'BEGIN IONS\nTITLE=a\nPEPMASS=500\n100 1\n150\n200 3 2+\nEND IONS\n'
-            with tempfile.NamedTemporaryFile('w', suffix='.mgf') as f:
-                f.write(text)
-                for cls in (mgf.MGF, mgf.IndexedMGF):
-                    f.seek(0)
-                    with self.subTest(cls=cls.__name__), cls(f.name) as reader:
-                        spectrum = next(reader)
-                        np.testing.assert_array_equal(spectrum['m/z array'], [100., 150., 200.])
-                        np.testing.assert_array_equal(spectrum['intensity array'], [1., np.nan, 3.])
-                        self.assertEqual(spectrum['charge array'].tolist(), [None, None, 2])
+        # a peak line without intensity must not shift later intensities onto the wrong m/z
+        text = 'BEGIN IONS\nTITLE=a\nPEPMASS=500\n100 1\n150\n200 3 2+\nEND IONS\n'
+        with tempfile.TemporaryDirectory() as tempdir:
+            path = Path(tempdir) / 'spectrum.mgf'
+            path.write_text(text)
+            for cls in (mgf.MGF, mgf.IndexedMGF):
+                with self.subTest(cls=cls.__name__), cls(path) as reader:
+                    spectrum = next(reader)
+                    np.testing.assert_array_equal(spectrum['m/z array'], [100., 150., 200.])
+                    np.testing.assert_array_equal(spectrum['intensity array'], [1., np.nan, 3.])
+                    self.assertEqual(spectrum['charge array'].tolist(), [None, None, 2])
 
 
 class UtilityTest(unittest.TestCase):
