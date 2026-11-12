@@ -173,6 +173,11 @@ class FASTABase(object):
 class FASTA(FASTABase, aux.FileReader):
     """Text-mode, sequential FASTA parser.
     Suitable for iteration over the file to obtain all entries in order.
+
+    A block of ``;`` lines that is directly followed by a ``>`` header line,
+    with no sequence lines in between (e.g. a comment block at the top of the file),
+    is skipped regardless of `ignore_comments`. A ``;`` line followed by
+    sequence lines is read as the title of an entry.
     """
     def __init__(self, source, ignore_comments=False, parser=None, encoding=None):
         """Create a new FASTA parser object. Supports iteration,
@@ -204,6 +209,8 @@ class FASTA(FASTABase, aux.FileReader):
 
     def _read(self):
         accumulated_strings = []
+        # Whether the current description was started by a ';' line.
+        semicolon_start = False
 
         # Iterate through '>' after the file is over to retrieve the last entry.
         for string in itertools.chain(self._source, '>'):
@@ -217,7 +224,13 @@ class FASTA(FASTABase, aux.FileReader):
             if is_comment:
                 # If it is a continuing comment
                 if len(accumulated_strings) == 1:
-                    if not self._ignore_comments:
+                    if semicolon_start and stripped_string[0] == '>':
+                        # ';' lines directly followed by a '>' header are comments
+                        # (e.g. at the top of the file), not a title: drop them and
+                        # start the entry at the '>' header.
+                        accumulated_strings[0] = stripped_string[1:]
+                        semicolon_start = False
+                    elif not self._ignore_comments:
                         accumulated_strings[0] += (' ' + stripped_string[1:])
                     else:
                         continue
@@ -233,10 +246,12 @@ class FASTA(FASTABase, aux.FileReader):
                         description = self.parser(description)
                     yield Protein(description, sequence)
                     accumulated_strings = [stripped_string[1:]]
+                    semicolon_start = stripped_string[0] == ';'
                 else:
                     # accumulated_strings is empty; we're probably reading
                     # the very first line of the file
                     accumulated_strings.append(stripped_string[1:])
+                    semicolon_start = stripped_string[0] == ';'
             else:
                 accumulated_strings.append(stripped_string)
 
