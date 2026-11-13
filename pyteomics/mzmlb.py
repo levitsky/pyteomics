@@ -460,11 +460,11 @@ class MzMLb(TimeOrderedIndexedReaderMixin, TaskMappingMixin):
 
     def get_by_id(self, id):
         """Parse the file and return the element with `id` attribute equal
-        to `elem_id`. Returns :py:const:`None` if no such element is found.
+        to `id`. Returns :py:const:`None` if no such element is found.
 
         Parameters
         ----------
-        elem_id : str
+        id : str
             The value of the `id` attribute to match.
 
         Returns
