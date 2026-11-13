@@ -59,8 +59,12 @@ class MGFTest(unittest.TestCase):
                 self.assertEqual(data.mgf_spectra_long, list(r))
 
     def test_read_pathlib_path(self):
-        with mgf.read(Path(self.path), use_index=False) as reader:
-            self.assertEqual(data.mgf_spectra_long, list(reader))
+        # A Path is a filename too, so automatic reader selection should not
+        # inspect it as though it were an already-open stream.
+        with warnings.catch_warnings():
+            warnings.simplefilter('error')
+            with mgf.read(Path(self.path)) as reader:
+                self.assertEqual(data.mgf_spectra_long, list(reader))
 
     def test_read_decoding(self):
         for func in [mgf.read, mgf.MGF, mgf.IndexedMGF]:

@@ -913,7 +913,7 @@ def _check_use_index(source, use_index, default):
             use_index = bool(use_index)
 
         # if a file name is given, do not override anything; short-circuit
-        if isinstance(source, (str, bytes)):
+        if isinstance(source, (str, bytes, os.PathLike)):
             return use_index if use_index is not None else default
 
         # collect information on source
