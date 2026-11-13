@@ -1258,6 +1258,7 @@ class FormulaModification(ModificationBase):
             The matched isotope notation string parsed by the regular expression.
 
         Returns
+        -------
         reformatted : str
             The re-written isotope notation
         '''
