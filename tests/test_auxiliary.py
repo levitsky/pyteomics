@@ -1,5 +1,6 @@
 import warnings
 import unittest
+import io
 import string
 from itertools import count
 import operator as op
@@ -886,6 +887,28 @@ class OffsetIndexTest(unittest.TestCase):
         self.assertEqual(self.index.between('3', '1'), ['1', '2', '3'])
         self.assertEqual(self.index.between(None, '3'), ['0', '1', '2', '3'])
         self.assertEqual(self.index.between('8', None), ['8', '9'])
+
+
+class MaskedArrayConversionTest(unittest.TestCase):
+    def test_ensure_masked_array_from_list(self):
+        converter = aux.MaskedArrayConversionMixin()
+        array = converter._ensure_masked_array('charge array', [0, 2])
+        self.assertEqual(array.tolist(), [None, 2])
+
+
+class KeepStateTest(unittest.TestCase):
+    def test_restores_position_after_error(self):
+        stream = io.BytesIO(b'abcdef')
+        stream.seek(3)
+
+        @aux._keepstate
+        def fail_after_reading(handle):
+            handle.read(1)
+            raise RuntimeError('parse failed')
+
+        with self.assertRaises(RuntimeError):
+            fail_after_reading(stream)
+        self.assertEqual(stream.tell(), 3)
 
 
 class UseIndexTest(unittest.TestCase):
