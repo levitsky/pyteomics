@@ -69,14 +69,15 @@ def _keepstate(func):
         for arg, pos in zip(args, positions):
             if pos is not None:
                 arg.seek(0)
-        res = func(*args, **kwargs)
-        for arg, pos in zip(args, positions):
-            if pos is not None:
-                try:
-                    arg.seek(pos)
-                except ValueError:
-                    pass
-        return res
+        try:
+            return func(*args, **kwargs)
+        finally:
+            for arg, pos in zip(args, positions):
+                if pos is not None:
+                    try:
+                        arg.seek(pos)
+                    except ValueError:
+                        pass
     return wrapped
 
 
@@ -106,7 +107,7 @@ class _file_obj(object):
             self.file = {'r': sys.stdin, 'a': sys.stdout, 'w': sys.stdout
                          }[mode[0]]
             self._file_spec = None
-        elif isinstance(f, (str, bytes)):
+        elif isinstance(f, (str, bytes, os.PathLike)):
             self.file = open(f, mode, encoding=encoding)
             self._file_spec = f
         else:
@@ -912,7 +913,7 @@ def _check_use_index(source, use_index, default):
             use_index = bool(use_index)
 
         # if a file name is given, do not override anything; short-circuit
-        if isinstance(source, (str, bytes)):
+        if isinstance(source, (str, bytes, os.PathLike)):
             return use_index if use_index is not None else default
 
         # collect information on source
