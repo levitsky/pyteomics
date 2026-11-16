@@ -1,7 +1,8 @@
-5.0.3a2
+5.0.3a3
 -------
 
  - Fix :py:mod:`ms1` and :py:mod:`ms2` to ensure array alignment (`#228 <https://github.com/levitsky/pyteomics/pull/228>`_ by KBS).
+ - Add support for Path-like arguments for all parsers and other small fixes (`234 <https://github.com/levitsky/pyteomics/pull/234>`_ by Chris Arthur).
  - Speed up :py:func:`parser.coverage_mask` (`#229 <https://github.com/levitsky/pyteomics/pull/229>`_ by Bharat Kaurav).
  - Docstring fixes (`#237 <https://github.com/levitsky/pyteomics/pull/237>`_ by Dylan Pulver).
  - Rename the parameter in :py:meth:`MzMLb.get_by_id` to `elem_id`.
