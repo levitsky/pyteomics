@@ -125,8 +125,8 @@ std_cterm = '-OH'
 std_labels = std_amino_acids + [std_nterm, std_cterm]
 """modX labels for the standard amino acids and unmodified termini."""
 
-_nterm_group = r'[^-]+-$'
-_cterm_group = r'-[^-]+$'
+_nterm_group = re.compile(r'[^-]+-$')
+_cterm_group = re.compile(r'-[^-]+$')
 
 
 def is_term_group(label):
@@ -153,7 +153,7 @@ def is_term_group(label):
     >>> is_term_group('-')
     False
     """
-    return (re.match(_nterm_group, label) or re.match(_cterm_group, label)) is not None
+    return (_nterm_group.match(label) or _cterm_group.match(label)) is not None
 
 
 is_term_mod = is_term_group
@@ -170,7 +170,7 @@ def match_modX(label):
     -------
     out : re.match or None
     """
-    return re.match(_modX_single, label)
+    return _modX_single.match(label)
 
 
 def is_modX(label):
@@ -322,7 +322,7 @@ def parse(sequence, show_unmodified_termini=False, split=False, allow_unknown_mo
     sequence = str(sequence)
 
     try:
-        n, body, c = re.match(_modX_sequence, sequence).groups()
+        n, body, c = _modX_sequence.match(sequence).groups()
     except AttributeError:
         raise PyteomicsError('Not a valid modX sequence: ' + sequence)
 
@@ -341,10 +341,9 @@ def parse(sequence, show_unmodified_termini=False, split=False, allow_unknown_mo
 
     # Actual parsing
     if split:
-        parsed_sequence = [g if g[0] else (g[1],) for g in re.findall(
-            _modX_split, body)]
+        parsed_sequence = [g if g[0] else (g[1],) for g in _modX_split.findall(body)]
     else:
-        parsed_sequence = re.findall(_modX_group, body)
+        parsed_sequence = _modX_group.findall(body)
     nterm, cterm = (n or std_nterm), (c or std_cterm)
 
     # Check against `labels` if given
@@ -356,8 +355,10 @@ def parse(sequence, show_unmodified_termini=False, split=False, allow_unknown_mo
         for group in parsed_sequence:
             if split:
                 mod, X = group if len(group) == 2 else ('', group[0])
+            elif len(group) == 1:  # bare residue, no modifier
+                mod, X = '', group
             else:
-                mod, X = re.match(_modX_split, group).groups()
+                mod, X = _modX_split.match(group).groups()
             if ((not mod) and X not in labels) or not ((mod + X in labels) or (
                 X in labels and (
                     mod in labels or allow_unknown_modifications))):
