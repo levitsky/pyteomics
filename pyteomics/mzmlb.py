@@ -458,20 +458,20 @@ class MzMLb(TimeOrderedIndexedReaderMixin, TaskMappingMixin):
                 sub[ids[i].decode('utf8')] = o
         return index
 
-    def get_by_id(self, id):
+    def get_by_id(self, elem_id):
         """Parse the file and return the element with `id` attribute equal
-        to `id`. Returns :py:const:`None` if no such element is found.
+        to `elem_id`. Returns :py:const:`None` if no such element is found.
 
         Parameters
         ----------
-        id : str
+        elem_id : str
             The value of the `id` attribute to match.
 
         Returns
         -------
         out : :py:class:`dict` or :py:const:`None`
         """
-        return self._mzml_parser.get_by_id(id)
+        return self._mzml_parser.get_by_id(elem_id)
 
     def get_by_ids(self, ids):
         return self._mzml_parser.get_by_ids(ids)
