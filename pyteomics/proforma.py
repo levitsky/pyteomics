@@ -4565,9 +4565,7 @@ class ProForma(object):
                     return Composition({})
         else:
             def get_comp(tag):
-                if not tag.has_composition():
-                    if isinstance(tag, MassModification):
-                        raise CompositionNotFoundError(f"No composition found for tag {tag}")
+                if not tag.has_composition() and not isinstance(tag, MassModification):
                     return Composition({})
                 try:
                     comp = tag.composition
