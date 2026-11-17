@@ -21,10 +21,14 @@ import pynumpress
 import base64
 import zlib
 from copy import copy
-
 from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
-obo_cache.cache_path = '.'
-obo_cache.enabled = True
+
+
+CACHE_PATH = os.environ.get('OBO_CACHE_PATH')
+if CACHE_PATH:
+    obo_cache.cache_path = CACHE_PATH
+
+obo_cache.enabled = bool(os.environ.get("OBO_CACHE_ENABLED", True))
 
 
 class MzmlTest(unittest.TestCase):

@@ -6,10 +6,15 @@ from pyteomics.mzid import MzIdentML, read, chain
 from pyteomics import auxiliary as aux
 from data import mzid_spectra
 from itertools import product
-import operator as op
+import os
 from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
-obo_cache.cache_path = '.'
-obo_cache.enabled = True
+
+
+CACHE_PATH = os.environ.get('OBO_CACHE_PATH')
+if CACHE_PATH:
+    obo_cache.cache_path = CACHE_PATH
+
+obo_cache.enabled = bool(os.environ.get("OBO_CACHE_ENABLED", True))
 
 
 class MzidTest(unittest.TestCase):

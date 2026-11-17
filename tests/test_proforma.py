@@ -21,7 +21,7 @@ CACHE_PATH = os.environ.get('OBO_CACHE_PATH')
 if CACHE_PATH:
     obo_cache.cache_path = CACHE_PATH
 
-obo_cache.enabled = bool(os.environ.get("OBO_CACHE_ENABLED"))
+obo_cache.enabled = bool(os.environ.get("OBO_CACHE_ENABLED", True))
 
 
 class ProFormaTest(unittest.TestCase):
