@@ -4557,12 +4557,18 @@ class ProForma(object):
         '''
         if ignore_missing:
             def get_comp(tag):
+                if not tag.has_composition():
+                    return Composition({})
                 try:
                     return tag.composition or Composition({})
                 except AttributeError:
                     return Composition({})
         else:
             def get_comp(tag):
+                if not tag.has_composition():
+                    if isinstance(tag, MassModification):
+                        raise CompositionNotFoundError(f"No composition found for tag {tag}")
+                    return Composition({})
                 try:
                     comp = tag.composition
                 except AttributeError as e:
@@ -4570,13 +4576,6 @@ class ProForma(object):
                 if comp is None:
                     raise CompositionNotFoundError(f'No composition found for tag {tag}')
                 return comp
-
-        def get_tag_comp(tag):
-            if not tag.has_composition():
-                if isinstance(tag, MassModification) and not ignore_missing:
-                    raise CompositionNotFoundError(f"No composition found for tag {tag}")
-                return Composition({})
-            return get_comp(tag)
 
         comp = Composition()
         if aa_comp is None:
@@ -4586,7 +4585,7 @@ class ProForma(object):
                 if aa != 'X':
                     comp += aa_comp[aa]
                 for tag in tags or []:
-                    comp += get_tag_comp(tag)
+                    comp += get_comp(tag)
                 for rule in self.fixed_modifications:
                     if rule.is_valid(aa, i == 0, i == len(self.sequence) - 1):
                         comp += get_comp(rule.modification_tag)
@@ -4598,10 +4597,10 @@ class ProForma(object):
         # Terminal modifications are lists of tags, and their compositions are deltas:
         # the terminal hydrogen and hydroxyl are present whether or not the terminus is modified.
         for tag in self.n_term or []:
-            comp += get_tag_comp(tag)
+            comp += get_comp(tag)
         comp['H'] += 1  # Add hydrogen for N-terminus
         for tag in self.c_term or []:
-            comp += get_tag_comp(tag)
+            comp += get_comp(tag)
         comp += Composition({'O': 1, 'H': 1})  # Add -OH for C-terminus
         if include_charge and self.charge_state:
             comp += self.charge_state.composition()
