@@ -371,6 +371,18 @@ class ProFormaTest(unittest.TestCase):
                 self.assertEqual(i.composition(), neutral_comp)
                 self.assertEqual(i.composition(include_charge=True), neutral_comp + adducts)
 
+    def test_composition_with_explicit_charge_state(self):
+        sodium_ion = ProForma.parse('PEPTIDE/[Na:z+1]').charge_state
+        neutral = Composition(sequence='PEPTIDE')
+        expected = neutral + Composition({'Na': 1, 'e-': -1})
+        for text in ['PEPTIDE', 'PEPTIDE/2']:
+            with self.subTest(text=text):
+                peptide = ProForma.parse(text)
+                self.assertEqual(peptide.composition(include_charge=sodium_ion), expected)
+                self.assertEqual(peptide.composition(include_charge=ChargeState(0)), neutral)
+                self.assertEqual(peptide.composition(), neutral)
+                self.assertAlmostEqual(peptide.mz(charge=sodium_ion), expected.mass())
+
     def test_adduct_formatting(self):
         ap = AdductParser()
         ap.buffer.extend('+2Na+')
