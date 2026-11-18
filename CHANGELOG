@@ -7,7 +7,7 @@
  - Speed up sequence parsing (`#230 <https://github.com/levitsky/pyteomics/pull/230>`_ by Bharat Kaurav).
  - Docstring fixes (`#237 <https://github.com/levitsky/pyteomics/pull/237>`_ by Dylan Pulver).
  - Rename the parameter in :py:meth:`MzMLb.get_by_id` to `elem_id`.
- - Apply ProForma fixed terminal modifications only at the specified terminus (`#PRNUM <https://github.com/levitsky/pyteomics/pull/PRNUM>`_).
+ - Apply ProForma fixed terminal modifications only at the specified terminus (`#239 <https://github.com/levitsky/pyteomics/pull/239>`_).
 
 
 5.0.2
