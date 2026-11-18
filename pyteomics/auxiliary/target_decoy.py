@@ -62,8 +62,11 @@ def _calculate_qvalues(scores, isdecoy, peps=False, **kwargs):
             elif correction == 2:
                 p = 1. / (1. + ratio)
                 targ = ind - cumsum
+                log_facts = None
+                if isdecoy.dtype.kind == 'b':
+                    log_facts = log_factorial(np.arange(scores.size + 1))
                 for i in range(tfalse.size):
-                    tfalse[i] = _expectation(cumsum[i], targ[i], p)
+                    tfalse[i] = _expectation(cumsum[i], targ[i], p, log_facts=log_facts)
         elif 0 < correction < 1:
             p = 1. / (1. + ratio)
             targ = ind - cumsum
@@ -744,12 +747,12 @@ try:
         out[m] = x * np.log(x) - x + 0.5 * np.log(2 * np.pi * x)
         return out
 
-    def _expectation(d, T, p=0.5):
+    def _expectation(d, T, p=0.5, log_facts=None):
         if T is None:
             return d + 1
         T = np.array(T, dtype=int)
         m = np.arange(T.max() + 1, dtype=int)
-        pi = np.exp(_log_pi(d, m, p))
+        pi = np.exp(_log_pi(d, m, p, log_facts=log_facts))
         return ((m * pi).cumsum() / pi.cumsum())[T]
 
     def _confidence_value(conf, d, T, p=0.5):
@@ -776,12 +779,20 @@ except ImportError:
         raise NotImplementedError('NumPy required')
 
 
-def _log_pi_r(d, k, p=0.5):
-    return k * math.log(p) + log_factorial(k + d) - log_factorial(k) - log_factorial(d)
+def _log_pi_r(d, k, p=0.5, log_facts=None):
+    if log_facts is None:
+        combined, failures, successes = log_factorial(k + d), log_factorial(k), log_factorial(d)
+    else:
+        # The q-value correction passes consecutive k starting at zero.
+        start = int(d)
+        combined = log_facts[start:start + k.size]
+        failures = log_facts[:k.size]
+        successes = log_facts[start]
+    return k * math.log(p) + combined - failures - successes
 
 
-def _log_pi(d, k, p=0.5):
-    return _log_pi_r(d, k, p) + (d + 1) * math.log(1 - p)
+def _log_pi(d, k, p=0.5, log_facts=None):
+    return _log_pi_r(d, k, p, log_facts=log_facts) + (d + 1) * math.log(1 - p)
 
 
 def _count_psms(psms, is_decoy, pep, decoy_prefix, decoy_suffix, is_decoy_prefix, is_decoy_suffix):
