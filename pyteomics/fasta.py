@@ -153,7 +153,6 @@ class FASTABase(object):
     """
     parser = None
     _ignore_comments = False
-    _comments = set('>;')
 
     def __init__(self, source, **kwargs):
         self._ignore_comments = kwargs.pop('ignore_comments', False)
@@ -162,24 +161,36 @@ class FASTABase(object):
             self.parser = parser
         super(FASTABase, self).__init__(source, **kwargs)
 
-    def _is_comment(self, line):
-        return line[0] in self._comments
+    @staticmethod
+    def _is_comment(line):
+        """Check if the stripped line is a comment of any kind."""
+        return line[0] == '>' or line[0] == ';'
 
-    def _read_protein_lines(self, lines):
-        """Assemble an entry from the given lines. The first line must be the
-        entry title (``>`` or ``;`` prefixed). Comment lines before the first
-        sequence line are concatenated to the description (subject to
-        `ignore_comments`); comment lines after sequence lines are dropped."""
+    @staticmethod
+    def _is_primary_comment(line):
+        return line[0] == '>'
+
+    @staticmethod
+    def _is_secondary_comment(line):
+        return line[0] == ';'
+
+    def _read_protein_lines(self, lines, stripped=False):
+        """Assemble an entry from the given lines. The first non-empty line must be the
+        entry title (``>`` or ``;`` prefixed). Empty lines are skipped. Comment
+        lines before the first sequence line are concatenated to the
+        description (subject to `ignore_comments`); comment lines after
+        sequence lines are dropped.
+
+        Set `stripped` to indicate that the lines are already stripped of
+        surrounding whitespace and none of them is empty, to avoid a second
+        pass over pre-cleaned lines."""
+        if not stripped:
+            lines = filter(None, map(str.strip, lines))
         description = []
         sequence = []
 
-        for string in lines:
-            stripped_string = string.strip()
-            if not stripped_string:
-                continue
-
-            is_comment = self._is_comment(stripped_string)
-            if is_comment:
+        for stripped_string in lines:
+            if stripped_string[0] == '>' or stripped_string[0] == ';':
                 if sequence:
                     continue
                 if not description or not self._ignore_comments:
@@ -239,49 +250,45 @@ class FASTA(FASTABase, aux.FileReader):
             source, mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={},
             encoding=encoding, ignore_comments=ignore_comments, parser=parser)
 
+    def _clean_strings(self):
+        return filter(None, map(str.strip, self._source))
+
     def _read(self):
         # Lines of the pending entry, including its first title line ('>' or ';').
         pending = []
         saw_sequence = False
 
         def finish():
-            if pending and (pending[0][0] == '>' or saw_sequence):
-                return self._read_protein_lines(pending)
+            if pending and (self._is_primary_comment(pending[0]) or saw_sequence):
+                return self._read_protein_lines(pending, stripped=True)
             return None
 
-        for string in self._source:
-            stripped_string = string.strip()
+        for string in self._clean_strings():
+            # Fast path: dispatch on the first character. Sequence lines are
+            # the most common, so they take the shortest route, and comment
+            # classification methods are only called for comment lines.
 
-            # Skip empty lines.
-            if not stripped_string:
-                continue
-
-            if stripped_string[0] == '>':
-                # A '>' header always starts a new entry. If the pending lines
-                # are a block of ';' lines with no sequence in between (e.g.
-                # comments at the top of the file), they are dropped instead.
-                entry = finish()
-                pending = [stripped_string]
-                saw_sequence = False
-                if entry is not None:
-                    yield entry
-            elif stripped_string[0] == ';':
-                if saw_sequence and pending[0][0] == ';':
-                    # In Pearson-style files a ';' line after sequence lines is
-                    # the title of the next entry: finish the pending one.
+            if self._is_comment(string):
+                # A '>' line always starts a new entry; so does a ';' line
+                # after sequence lines of a ';' entry (Pearson-style title of
+                # the next entry). A ';' line before any sequence lines
+                # continues the pending description; a ';' line after sequence
+                # lines of a '>' entry does not belong to any entry and is
+                # dropped. A block of ';' lines with no sequence in between
+                # (e.g. comments at the top of the file) is dropped as well.
+                if self._is_primary_comment(string) or (saw_sequence and
+                                        self._is_secondary_comment(pending[0])):
                     entry = finish()
-                    pending = [stripped_string]
+                    pending = [string]
                     saw_sequence = False
-                    yield entry
+                    if entry is not None:
+                        yield entry
                 elif saw_sequence:
-                    # A ';' comment after sequence lines of a '>' entry does not
-                    # belong to this entry; drop it.
                     continue
                 else:
-                    # Continuation of the description started by a ';' or '>' line.
-                    pending.append(stripped_string)
+                    pending.append(string)
             elif pending:
-                pending.append(stripped_string)
+                pending.append(string)
                 saw_sequence = True
             # else: sequence line before any header line; not a valid entry.
 
@@ -349,8 +356,9 @@ class IndexedFASTA(FASTABase, aux.TaskMappingMixin, aux.IndexedTextReader):
 
     def _item_from_offsets(self, offsets):
         start, end = offsets
-        lines = self._read_lines_from_offsets(start, end)
-        return self._read_protein_lines(lines)
+        # The entry consumer pre-cleans the lines itself (single C-level
+        # chain per entry), so no separate pass is needed here.
+        return self._read_protein_lines(self._read_lines_from_offsets(start, end))
 
     def _read(self, **kwargs):
         for key, offsets in self._offset_index.items():
