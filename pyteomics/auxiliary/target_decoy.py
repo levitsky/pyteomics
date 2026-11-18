@@ -87,7 +87,7 @@ def _calculate_qvalues(scores, isdecoy, peps=False, **kwargs):
     return q
 
 
-def _qvalues_df(psms, keyf, isdecoy, **kwargs):
+def _qvalues_df(psms, keyf, isdecoy, _return_order=False, **kwargs):
     full = kwargs.get('full_output', False)
     remove_decoy = kwargs.get('remove_decoy', False)
     peps = kwargs.get('pep')
@@ -112,7 +112,11 @@ def _qvalues_df(psms, keyf, isdecoy, **kwargs):
         isdecoy = decoy_or_pep_label
     reverse = kwargs.get('reverse', False)
 
-    if not full:  # create fields early
+    if _return_order:
+        # Use positional indices so repeated DataFrame index labels do not
+        # affect the association with rows in the input stream.
+        psms.index = pd.RangeIndex(len(psms))
+    elif not full:  # create fields early
         if peps is None:
             fields = [(keyf, np.float64), (isdecoy, np.bool_),
                       (q_label, np.float64)]
@@ -124,6 +128,8 @@ def _qvalues_df(psms, keyf, isdecoy, **kwargs):
                      not reverse, True], inplace=True)
 
     if not psms.shape[0]:
+        if _return_order:
+            return np.empty(0), psms.index.to_numpy()
         if full:
             psms[q_label] = []
             return psms
@@ -135,6 +141,8 @@ def _qvalues_df(psms, keyf, isdecoy, **kwargs):
     if remove_decoy:
         q = q[~psms[isdecoy].values]
         psms = psms[~psms[isdecoy]].copy()
+    if _return_order:
+        return q, psms.index.to_numpy()
     if not full:
         psms_ = np.empty_like(q, dtype=dtype)
         if peps is None:
@@ -181,7 +189,7 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
     """Create a function that reads PSMs from a file and calculates q-values
     for each value of `key`."""
 
-    def qvalues(*args, **kwargs):
+    def qvalues(*args, _return_order=False, **kwargs):
         """Read `args` and return a NumPy array with scores and q-values.
         q-values are calculated either using TDA or based on provided values of PEP.
 
@@ -381,7 +389,7 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
         # time to check arg type
         if pd is not None and all(isinstance(arg, pd.DataFrame) for arg in args):
             psms = pd.concat(args)
-            return _qvalues_df(psms, keyf, isdecoy, **kwargs)
+            return _qvalues_df(psms, keyf, isdecoy, _return_order=_return_order, **kwargs)
 
         if not all(isinstance(arg, np.ndarray) for arg in args):
             if isinstance(keyf, (str, bytes)):
@@ -419,6 +427,8 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
                 scores[decoy_or_pep_label] = psms[isdecoy]
 
         if not scores.size:
+            if _return_order:
+                return scores[q_label], np.empty(0, dtype=np.intp)
             if full and psms is not None:
                 return psms
             return scores
@@ -435,9 +445,14 @@ def _make_qvalues(read, is_decoy_prefix, is_decoy_suffix, key):
         scores[q_label] = _calculate_qvalues(scores[score_label], scores[
                                              decoy_or_pep_label], peps is not None, **kwargs)
         if remove_decoy:
+            keep = ~scores[decoy_or_pep_label]
             if psms is not None:
-                psms = psms[~scores[decoy_or_pep_label]]
-            scores = scores[~scores[decoy_or_pep_label]]
+                psms = psms[keep]
+            if _return_order:
+                lexsort = lexsort[keep]
+            scores = scores[keep]
+        if _return_order:
+            return scores[q_label], lexsort
 
         if full and psms is not None:
             if isinstance(psms, np.ndarray):
@@ -502,17 +517,39 @@ def _make_filter(read, is_decoy_prefix, is_decoy_suffix, key, qvalues):
 
         args = [list(arg) if not isinstance(
             arg, (Container, Sized)) else arg for arg in args]
+        full = kwargs.pop('full_output', False)
         peps = kwargs.get('pep')
         if peps is None:
             remove_decoy = kwargs.pop('remove_decoy', True)
-            scores = qvalues(*args, remove_decoy=remove_decoy, **kwargs)
+            scores = qvalues(*args, full_output=full, _return_order=not full,
+                             remove_decoy=remove_decoy, **kwargs)
         else:
-            scores = qvalues(*args, **kwargs)
+            scores = qvalues(*args, full_output=full, _return_order=not full, **kwargs)
         keyf = kwargs.pop('key', key)
+        kwargs.pop('reverse', None)
+        kwargs.pop('formula', None)
+
+        if not full:
+            q, order = scores
+            limit = q.searchsorted(fdr, side='right')
+            positions = iter(np.sort(order[:limit]))
+
+            def out():
+                selected = next(positions, None)
+                if selected is None:
+                    return
+                with read(*args, **kwargs) as f:
+                    for position, psm in enumerate(f):
+                        if position == selected:
+                            yield psm
+                            selected = next(positions, None)
+                            if selected is None:
+                                break
+
+            return out()
+
         if keyf is None:
             keyf = peps
-        reverse = kwargs.pop('reverse', False)
-        better = [op.lt, op.gt][bool(reverse)]
         if 'is_decoy' not in kwargs:
             if 'decoy_suffix' in kwargs:
                 isdecoy = lambda x: is_decoy_suffix(x, kwargs['decoy_suffix'])
@@ -522,9 +559,6 @@ def _make_filter(read, is_decoy_prefix, is_decoy_suffix, key, qvalues):
                 isdecoy = is_decoy_prefix
         else:
             isdecoy = kwargs['is_decoy']
-        kwargs.pop('formula', None)
-        decoy_or_pep_label = _decoy_or_pep_label(**kwargs)
-        score_label = kwargs.setdefault('score_label', 'score')
         q_label = kwargs.get('q_label', 'q')
 
         try:
@@ -533,29 +567,12 @@ def _make_filter(read, is_decoy_prefix, is_decoy_suffix, key, qvalues):
                 i = i[0]
         except AttributeError:
             i = bisect_right(scores['q'], fdr)
-        if kwargs.pop('full_output', False):
-            if pd is not None and isinstance(scores, pd.DataFrame):
-                return scores.iloc[:i]
-            elif callable(keyf) or callable(isdecoy):
-                return scores['psm'][:i]
-            else:
-                return scores[:i]
-        elif not scores.size:
-            return (_ for _ in ())
-        if peps is None:
-            label = score_label
+        if pd is not None and isinstance(scores, pd.DataFrame):
+            return scores.iloc[:i]
+        elif callable(keyf) or callable(isdecoy):
+            return scores['psm'][:i]
         else:
-            label = decoy_or_pep_label
-        cutoff = scores[label][i] if i < scores.size else (
-            scores[label][-1] + (1, -1)[bool(reverse)])
-
-        def out():
-            with read(*args, **kwargs) as f:
-                for p, s in zip(f, scores):
-                    if peps is not None or not remove_decoy or not s[decoy_or_pep_label]:
-                        if better(s[label], cutoff):
-                            yield p
-        return out()
+            return scores[:i]
 
     def _filter(*args, **kwargs):
         """Read `args` and yield only the PSMs that form a set with
