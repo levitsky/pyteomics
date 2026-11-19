@@ -153,6 +153,7 @@ class FASTABase(object):
     """
     parser = None
     _ignore_comments = False
+    _comments = set('>;')
 
     def __init__(self, source, **kwargs):
         self._ignore_comments = kwargs.pop('ignore_comments', False)
@@ -160,11 +161,6 @@ class FASTABase(object):
         if parser is not None:
             self.parser = parser
         super(FASTABase, self).__init__(source, **kwargs)
-
-    @staticmethod
-    def _is_comment(line):
-        """Check if the stripped line is a comment of any kind."""
-        return line[0] == '>' or line[0] == ';'
 
     @staticmethod
     def _is_primary_comment(line):
@@ -188,9 +184,10 @@ class FASTABase(object):
             lines = filter(None, map(str.strip, lines))
         description = []
         sequence = []
+        comments = self._comments
 
         for stripped_string in lines:
-            if stripped_string[0] == '>' or stripped_string[0] == ';':
+            if stripped_string[0] in comments:
                 if sequence:
                     continue
                 if not description or not self._ignore_comments:
@@ -257,6 +254,7 @@ class FASTA(FASTABase, aux.FileReader):
         # Lines of the pending entry, including its first title line ('>' or ';').
         pending = []
         saw_sequence = False
+        comments = self._comments
 
         def finish():
             if pending and (self._is_primary_comment(pending[0]) or saw_sequence):
@@ -268,7 +266,7 @@ class FASTA(FASTABase, aux.FileReader):
             # the most common, so they take the shortest route, and comment
             # classification methods are only called for comment lines.
 
-            if self._is_comment(string):
+            if string[0] in comments:
                 # A '>' line always starts a new entry; so does a ';' line
                 # after sequence lines of a ';' entry (Pearson-style title of
                 # the next entry). A ';' line before any sequence lines
