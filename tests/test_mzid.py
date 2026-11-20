@@ -3,7 +3,7 @@ import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
 import unittest
 from pyteomics.mzid import MzIdentML, read, chain
-from pyteomics import auxiliary as aux
+from pyteomics import auxiliary as aux, mzid
 from data import mzid_spectra
 from itertools import product
 import os
@@ -28,6 +28,21 @@ class MzidTest(unittest.TestCase):
                     with func(self.path, recursive=rec, retrieve_refs=refs, read_schema=rs, iterative=it, use_index=ui) as reader:
                         psms = list(reader)
                         self.assertEqual(psms, mzid_spectra[(rec, refs)])
+
+    def test_streaming_filter_preserves_psm_identity(self):
+        score_name = 'ProteinScape:SequestMetaScore'
+
+        def score(psm):
+            return psm['SpectrumIdentificationItem'][0][score_name]
+
+        with MzIdentML(self.path) as reader:
+            psms = [p for p in reader if score_name in p['SpectrumIdentificationItem'][0]]
+        key = 'spectrumID'
+        expected = ['databasekey=1', 'databasekey=2', 'databasekey=11', 'databasekey=12']
+        options = dict(key=score, is_decoy=mzid.is_decoy, reverse=True, fdr=0.01)
+        self.assertCountEqual([psm[key] for psm in aux.filter(psms, **options)], expected)
+        with aux.filter(psms, full_output=False, **options) as filtered:
+            self.assertEqual([psm[key] for psm in filtered], expected)
 
     def test_unit_info(self):
         with MzIdentML(self.path) as handle:
