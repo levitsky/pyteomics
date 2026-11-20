@@ -55,6 +55,14 @@ class QvalueTest(unittest.TestCase):
         self.assertTrue(np.allclose(q['is decoy'], 0))
         self.assertTrue(np.allclose(q['score'], np.arange(26)))
 
+    def test_qvalues_finite_sample_correction(self):
+        psms = np.array([(1, False), (2, False), (3, True), (4, False)],
+                        dtype=[('xcorr', 'f8'), ('decoy', '?')])
+        q = aux.qvalues(psms, key='xcorr', is_decoy='decoy',
+                        correction=2, remove_decoy=True)
+        # Truncated negative binomial means at the reported thresholds.
+        np.testing.assert_allclose(q['q'], [2 / 7, 2 / 7, 16 / 39], rtol=1e-14, atol=0)
+
     def test_qvalues_pep(self):
         q = aux.qvalues(self.psms, pep=self.pep)
         self._run_check_pep(q)
