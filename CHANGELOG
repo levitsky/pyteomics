@@ -6,7 +6,7 @@
  - Speed up :py:func:`parser.coverage_mask` (`#229 <https://github.com/levitsky/pyteomics/pull/229>`_ by Bharat Kaurav).
  - Tweak FASTA parsers' behavior to skip `;`-blocks at the start of the file (`#236 <https://github.com/levitsky/pyteomics/pull/236>`_
    by Adam Wright and Lev Levitsky). Motivating use case: `FAIR bioHeaders <https://github.com/FAIR-bioHeaders>`_.
-    Some other behavior changed on corner cases and invalid input:
+   Some other behavior changed on corner cases and invalid input: `;` comments followed by `>` comments are ignored, the opposite is still supported;
    comment lines between sequence lines are ignored; empty-sequence entries are returned if the file ends on a comment, etc.
    Subclasses that wish to change comment parsing need to change :attr:`_comments`, :meth:`_is_primary_comment` and :meth:`_is_secondary_comment`,
    however, those are not part of the public API.
