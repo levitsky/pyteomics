@@ -1037,7 +1037,7 @@ class TagSpecificXMLByteIndex(object):
 
     Parameters
     ----------
-    index_tags: iterable of bytes
+    indexed_tags: iterable of bytes
         The tag names to include in the index
 
     """

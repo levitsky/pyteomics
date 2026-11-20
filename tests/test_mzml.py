@@ -3,8 +3,10 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import warnings
 import pyteomics
 from io import BytesIO
+from pathlib import Path
 from lxml import etree
 pyteomics.__path__ = [os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, 'pyteomics'))]
 from itertools import product
@@ -19,10 +21,14 @@ import pynumpress
 import base64
 import zlib
 from copy import copy
-
 from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
-obo_cache.cache_path = '.'
-obo_cache.enabled = True
+
+
+CACHE_PATH = os.environ.get('OBO_CACHE_PATH')
+if CACHE_PATH:
+    obo_cache.cache_path = CACHE_PATH
+
+obo_cache.enabled = bool(os.environ.get("OBO_CACHE_ENABLED", True))
 
 
 class MzmlTest(unittest.TestCase):
@@ -61,6 +67,32 @@ class MzmlTest(unittest.TestCase):
         with MzML(self.path, queue_size=1000) as f:
             self.assertEqual(f._queue_size, 1000)
             self.assertEqual(sorted(mzml_spectra, key=key), sorted(list(f.map()), key=key))
+
+    def test_read_pathlib_path(self):
+        # A Path is a filename too, so automatic reader selection should not
+        # inspect it as though it were an already-open stream.
+        for ui in [None, True, False]:
+            with self.subTest(use_index=ui):
+                with warnings.catch_warnings():
+                    warnings.simplefilter('error')
+                    with read(Path(self.path), use_index=ui) as reader:
+                        self.assertEqual(mzml_spectra, list(reader))
+
+    def test_read_custom_pathlike(self):
+        # Any os.PathLike object must be treated as a file name, not a stream.
+        class CustomPath(object):
+            def __init__(self, path):
+                self.path = path
+
+            def __fspath__(self):
+                return self.path
+
+        for ui in [None, True, False]:
+            with self.subTest(use_index=ui):
+                with warnings.catch_warnings():
+                    warnings.simplefilter('error')
+                    with read(CustomPath(self.path), use_index=ui) as reader:
+                        self.assertEqual(mzml_spectra, list(reader))
 
     def test_decoding(self):
         with MzML(self.path, decode_binary=True) as reader:

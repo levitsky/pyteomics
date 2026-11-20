@@ -206,7 +206,7 @@ class MaskedArrayConversionMixin(ArrayConversionMixin):
     def _ensure_masked_array(self, k, data):
         if isinstance(data, np.ndarray):
             return self._convert_masked_array(k, data)
-        return self._build_masked_array(self, k, data)
+        return self._build_masked_array(k, data)
 
     def _build_all_arrays(self, info):
         super(MaskedArrayConversionMixin, self)._build_all_arrays(info)

@@ -2,6 +2,7 @@
 -------
 
  - Fix :py:mod:`ms1` and :py:mod:`ms2` to ensure array alignment (`#228 <https://github.com/levitsky/pyteomics/pull/228>`_ by KBS).
+ - Add support for Path-like arguments for all parsers and other small fixes (`234 <https://github.com/levitsky/pyteomics/pull/234>`_ by Chris Arthur).
  - Speed up :py:func:`parser.coverage_mask` (`#229 <https://github.com/levitsky/pyteomics/pull/229>`_ by Bharat Kaurav).
  - Tweak FASTA parsers' behavior to skip `;`-blocks at the start of the file (`#236 <https://github.com/levitsky/pyteomics/pull/236>`_
    by Adam Wright and Lev Levitsky). Motivating use case: `FAIR bioHeaders <https://github.com/FAIR-bioHeaders>`_.
@@ -9,6 +10,9 @@
    comment lines between sequence lines are ignored; empty-sequence entries are returned if the file ends on a comment, etc.
    Subclasses that wish to change comment parsing need to change :attr:`_comments`, :meth:`_is_primary_comment` and :meth:`_is_secondary_comment`,
    however, those are not part of the public API.
+ - Speed up sequence parsing (`#230 <https://github.com/levitsky/pyteomics/pull/230>`_ by Bharat Kaurav).
+ - Docstring fixes (`#237 <https://github.com/levitsky/pyteomics/pull/237>`_ by Dylan Pulver).
+ - Rename the parameter in :py:meth:`MzMLb.get_by_id` to `elem_id`.
 
 
 5.0.2

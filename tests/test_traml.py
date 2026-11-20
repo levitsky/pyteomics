@@ -1,3 +1,4 @@
+import os
 from os import path
 import pyteomics
 pyteomics.__path__ = [path.abspath(path.join(path.dirname(__file__), path.pardir, 'pyteomics'))]
@@ -9,8 +10,13 @@ from data import transitions
 from pyteomics.traml import TraML, read, chain
 
 from psims.controlled_vocabulary.controlled_vocabulary import obo_cache
-obo_cache.cache_path = '.'
-obo_cache.enabled = True
+
+
+CACHE_PATH = os.environ.get('OBO_CACHE_PATH')
+if CACHE_PATH:
+    obo_cache.cache_path = CACHE_PATH
+
+obo_cache.enabled = bool(os.environ.get("OBO_CACHE_ENABLED", True))
 
 
 class TraMLTest(unittest.TestCase):
