@@ -10,6 +10,7 @@
    comment lines between sequence lines are ignored; empty-sequence entries are returned if the file ends on a comment, etc.
    Subclasses that wish to change comment parsing need to change :attr:`_comments`, :meth:`_is_primary_comment` and :meth:`_is_secondary_comment`,
    however, those are not part of the public API.
+ - Fix :py:meth:`ProForma.composition` for peptidoforms with terminal modifications (`#233 <https://github.com/levitsky/pyteomics/pull/233>`_ by Jeroen Van Goey).
  - Speed up sequence parsing (`#230 <https://github.com/levitsky/pyteomics/pull/230>`_ by Bharat Kaurav).
  - Docstring fixes (`#237 <https://github.com/levitsky/pyteomics/pull/237>`_ by Dylan Pulver).
  - Rename the parameter in :py:meth:`MzMLb.get_by_id` to `elem_id`.
