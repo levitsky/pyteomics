@@ -661,7 +661,14 @@ def _default_repr(key, val):
     return '{}={}'.format(key.upper(), val)
 
 
-_default_value_formatters = {'pepmass': _pepmass_repr, 'charge': _charge_repr}
+def _rtinseconds_repr(k, value):
+    if isinstance(value, tuple) and len(value) == 2:
+        value = '{}-{}'.format(*value)
+    return _default_repr(k, value)
+
+
+_default_value_formatters = {'pepmass': _pepmass_repr, 'charge': _charge_repr,
+                             'rtinseconds': _rtinseconds_repr}
 
 
 @aux._file_writer()
