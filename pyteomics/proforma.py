@@ -1851,11 +1851,11 @@ class ModificationTarget(object):
         bool
             True if this target matches the given criteria
         """
-        if (n_term and self.n_term) or (c_term and self.c_term):
-            if (self.aa and aa.upper() == self.aa) or self.aa is None:
-                return True
-            return False
-        return self.aa == aa or self.aa is None
+        if self.n_term or self.c_term:
+            if not ((n_term and self.n_term) or (c_term and self.c_term)):
+                return False
+            aa = aa.upper()
+        return self.aa is None or self.aa == aa
 
     @classmethod
     def from_str(cls, target: str):
@@ -4387,13 +4387,9 @@ class ProForma(object):
         mass += _WATER_MASS
 
         if not reverse:
-            iterator = (iter(range(0, n - 1)))
-            n_term_v = 0
-            c_term_v = n - 1
+            iterator = iter(range(0, n - 1))
         else:
-            iterator = (reversed(range(1, n)))
-            n_term_v = n - 1
-            c_term_v = 0
+            iterator = reversed(range(1, n))
 
         for i in iterator:
             position = self.sequence[i]
@@ -4405,8 +4401,8 @@ class ProForma(object):
                 except KeyError:
                     warnings.warn("%r does not have an exact mass" % (aa, ))
 
-            n_term = i == n_term_v
-            c_term = i == c_term_v
+            n_term = i == 0
+            c_term = i == n - 1
             for rule in fixed_modifications:
                 if rule.is_valid(aa, n_term, c_term):
                     if rule.modification_tag.has_mass():
