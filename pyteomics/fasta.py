@@ -108,7 +108,6 @@ Auxiliary
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import itertools
 import random
 from collections import namedtuple
 import re
@@ -163,8 +162,47 @@ class FASTABase(object):
             self.parser = parser
         super(FASTABase, self).__init__(source, **kwargs)
 
-    def _is_comment(self, line):
-        return line[0] in self._comments
+    @staticmethod
+    def _is_primary_comment(line):
+        return line[0] == '>'
+
+    @staticmethod
+    def _is_secondary_comment(line):
+        return line[0] == ';'
+
+    def _read_protein_lines(self, lines, stripped=False):
+        """Assemble an entry from the given lines. The first non-empty line must be the
+        entry title (``>`` or ``;`` prefixed). Empty lines are skipped. Comment
+        lines before the first sequence line are concatenated to the
+        description (subject to `ignore_comments`); comment lines after
+        sequence lines are dropped.
+
+        Set `stripped` to indicate that the lines are already stripped of
+        surrounding whitespace and none of them is empty, to avoid a second
+        pass over pre-cleaned lines."""
+        if not stripped:
+            lines = filter(None, map(str.strip, lines))
+        description = []
+        sequence = []
+        comments = self._comments
+
+        for stripped_string in lines:
+            if stripped_string[0] in comments:
+                if sequence:
+                    continue
+                if not description or not self._ignore_comments:
+                    description.append(stripped_string[1:])
+            else:
+                sequence.append(stripped_string)
+
+        description = ' '.join(description)
+        sequence = ''.join(sequence)
+        # Drop the translation stop sign.
+        if sequence and sequence[-1] == '*':
+            sequence = sequence[:-1]
+        if self.parser is not None:
+            description = self.parser(description)
+        return Protein(description, sequence)
 
     def get_entry(self, key):
         raise NotImplementedError
@@ -174,10 +212,12 @@ class FASTA(FASTABase, aux.FileReader):
     """Text-mode, sequential FASTA parser.
     Suitable for iteration over the file to obtain all entries in order.
 
-    A block of ``;`` lines that is directly followed by a ``>`` header line,
-    with no sequence lines in between (e.g. a comment block at the top of the file),
-    is skipped regardless of `ignore_comments`. A ``;`` line followed by
-    sequence lines is read as the title of an entry.
+    Entries start at a ``>`` header line. A ``;`` line before any sequence
+    lines starts a Pearson-style title, so a block of ``;`` lines directly
+    followed by a ``>`` header line (e.g. comments at the top of the file)
+    is skipped regardless of `ignore_comments`. ``;`` lines after sequence
+    lines are treated as comments or entry boundaries and are not appended
+    to any description.
     """
     def __init__(self, source, ignore_comments=False, parser=None, encoding=None):
         """Create a new FASTA parser object. Supports iteration,
@@ -207,53 +247,52 @@ class FASTA(FASTABase, aux.FileReader):
             source, mode='r', parser_func=self._read, pass_file=False, args=(), kwargs={},
             encoding=encoding, ignore_comments=ignore_comments, parser=parser)
 
+    def _clean_strings(self):
+        return filter(None, map(str.strip, self._source))
+
     def _read(self):
-        accumulated_strings = []
-        # Whether the current description was started by a ';' line.
-        semicolon_start = False
+        # Lines of the pending entry, including its first title line ('>' or ';').
+        pending = []
+        saw_sequence = False
+        comments = self._comments
 
-        # Iterate through '>' after the file is over to retrieve the last entry.
-        for string in itertools.chain(self._source, '>'):
-            stripped_string = string.strip()
+        def finish():
+            if pending and (self._is_primary_comment(pending[0]) or saw_sequence):
+                return self._read_protein_lines(pending, stripped=True)
+            return None
 
-            # Skip empty lines.
-            if not stripped_string:
-                continue
+        for string in self._clean_strings():
+            # Fast path: dispatch on the first character. Sequence lines are
+            # the most common, so they take the shortest route, and comment
+            # classification methods are only called for comment lines.
 
-            is_comment = self._is_comment(stripped_string)
-            if is_comment:
-                # If it is a continuing comment
-                if len(accumulated_strings) == 1:
-                    if semicolon_start and stripped_string[0] == '>':
-                        # ';' lines directly followed by a '>' header are comments
-                        # (e.g. at the top of the file), not a title: drop them and
-                        # start the entry at the '>' header.
-                        accumulated_strings[0] = stripped_string[1:]
-                        semicolon_start = False
-                    elif not self._ignore_comments:
-                        accumulated_strings[0] += (' ' + stripped_string[1:])
-                    else:
-                        continue
-
-                elif accumulated_strings:
-                    description = accumulated_strings[0]
-                    sequence = ''.join(accumulated_strings[1:])
-
-                    # Drop the translation stop sign.
-                    if sequence and sequence[-1] == '*':
-                        sequence = sequence[:-1]
-                    if self.parser is not None:
-                        description = self.parser(description)
-                    yield Protein(description, sequence)
-                    accumulated_strings = [stripped_string[1:]]
-                    semicolon_start = stripped_string[0] == ';'
+            if string[0] in comments:
+                # A '>' line always starts a new entry; so does a ';' line
+                # after sequence lines of a ';' entry (Pearson-style title of
+                # the next entry). A ';' line before any sequence lines
+                # continues the pending description; a ';' line after sequence
+                # lines of a '>' entry does not belong to any entry and is
+                # dropped. A block of ';' lines with no sequence in between
+                # (e.g. comments at the top of the file) is dropped as well.
+                if self._is_primary_comment(string) or (saw_sequence and
+                                        self._is_secondary_comment(pending[0])):
+                    entry = finish()
+                    pending = [string]
+                    saw_sequence = False
+                    if entry is not None:
+                        yield entry
+                elif saw_sequence:
+                    continue
                 else:
-                    # accumulated_strings is empty; we're probably reading
-                    # the very first line of the file
-                    accumulated_strings.append(stripped_string[1:])
-                    semicolon_start = stripped_string[0] == ';'
-            else:
-                accumulated_strings.append(stripped_string)
+                    pending.append(string)
+            elif pending:
+                pending.append(string)
+                saw_sequence = True
+            # else: sequence line before any header line; not a valid entry.
+
+        entry = finish()
+        if entry is not None:
+            yield entry
 
     def get_entry(self, key):
         raise aux.PyteomicsError('Direct indexing is not supported. '
@@ -313,35 +352,11 @@ class IndexedFASTA(FASTABase, aux.TaskMappingMixin, aux.IndexedTextReader):
             (self.__class__, self._init_args, self._init_kwargs),
             self.__getstate__())
 
-    def _read_protein_lines(self, lines):
-        description = []
-        sequence = []
-
-        for string in lines:
-            stripped_string = string.strip()
-            if not stripped_string:
-                continue
-
-            is_comment = self._is_comment(stripped_string)
-            if is_comment:
-                if not description or not self._ignore_comments:
-                    description.append(stripped_string[1:])
-            else:
-                sequence.append(stripped_string)
-
-        description = ' '.join(description)
-        sequence = ''.join(sequence)
-        # Drop the translation stop sign.
-        if sequence and sequence[-1] == '*':
-            sequence = sequence[:-1]
-        if self.parser is not None:
-            description = self.parser(description)
-        return Protein(description, sequence)
-
     def _item_from_offsets(self, offsets):
         start, end = offsets
-        lines = self._read_lines_from_offsets(start, end)
-        return self._read_protein_lines(lines)
+        # The entry consumer pre-cleans the lines itself (single C-level
+        # chain per entry), so no separate pass is needed here.
+        return self._read_protein_lines(self._read_lines_from_offsets(start, end))
 
     def _read(self, **kwargs):
         for key, offsets in self._offset_index.items():
