@@ -110,6 +110,25 @@ class ParserTest(unittest.TestCase):
             self.assertTrue(any(elem == seq
                 for elem in parser.cleave(seq, parser.expasy_rules['trypsin'], len(seq))))
 
+    def test_cleave_sites_at_termini(self):
+        # Rules that match at the very start or end of the sequence must not
+        # produce duplicate peptides when missed cleavages are allowed.
+        self.assertEqual(parser.xcleave('MPEPKTIDER', 'Trypsin', 1),
+            [(0, 'MPEPK'), (0, 'MPEPKTIDER'), (5, 'TIDER')])
+        self.assertEqual(parser.xcleave('MPEPKTIDER', 'Trypsin', 1),
+            parser.xcleave('MPEPKTIDER', 'trypsin', 1))
+        self.assertEqual(parser.xcleave('AKAK', 'lysc', 2),
+            [(0, 'AK'), (0, 'AKAK'), (2, 'AK')])
+        self.assertEqual(parser.xcleave('DPEPDTIDE', 'Asp-N', 1),
+            [(0, 'DPEP'), (0, 'DPEPDTI'), (4, 'DTI'), (4, 'DTIDE'), (7, 'DE')])
+        for rule in ('Trypsin', 'lysc', 'Asp-N'):
+            for missed in range(4):
+                with self.subTest(rule=rule, missed=missed):
+                    result = parser.xcleave('DPEPKTIDEKAK', rule, missed)
+                    self.assertEqual(len(result), len(set(result)))
+        self.assertEqual(parser.num_sites('PEPTIDEK', 'Trypsin'), 0)
+        self.assertEqual(parser.num_sites('DPEPTIE', 'Asp-N'), 0)
+
     def test_cleave_semi(self):
         self.assertEqual(parser.xcleave('PEPTIDEKS', 'trypsin', semi=True),
             [(0, 'PEPTIDEK'), (0, 'P'), (0, 'PE'), (0, 'PEP'), (0, 'PEPT'), (0, 'PEPTI'), (0, 'PEPTID'), (0, 'PEPTIDE'),
