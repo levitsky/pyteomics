@@ -489,7 +489,7 @@ class MzMLb(TimeOrderedIndexedReaderMixin, TaskMappingMixin):
         return self._mzml_parser.get_by_key_slice(s)
 
     def __contains__(self, key):
-        return key in self.index
+        return key in self._mzml_parser
 
     def __getitem__(self, i):
         return self._mzml_parser[i]
