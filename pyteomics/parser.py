@@ -794,7 +794,11 @@ def icleave(sequence, rule, missed_cleavages=0, min_length=None, max_length=None
     cl = 1
     if exception is not None:
         exceptions = {x.end() for x in re.finditer(exception, sequence)}
-    for end in it.chain([x.end() for x in re.finditer(rule, sequence)], [None]):
+    # Sites at the very start or end of the sequence (zero-width rules like '(?=[BD])'
+    # or lookbehind rules like '(?<=[KR])(?!P)') coincide with the termini, which are
+    # already represented by the initial 0 and the final None.
+    sites = [x.end() for x in re.finditer(rule, sequence) if 0 < x.end() < len(sequence)]
+    for end in it.chain(sites, [None]):
         if exception is not None and end in exceptions:
             continue
         cleavage_sites.append(end)
