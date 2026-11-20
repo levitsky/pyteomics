@@ -4601,7 +4601,9 @@ class ProForma(object):
         for tag in self.c_term or []:
             comp += get_comp(tag)
         comp += Composition({'O': 1, 'H': 1})  # Add -OH for C-terminus
-        if include_charge and self.charge_state:
+        if isinstance(include_charge, ChargeState):
+            comp += include_charge.composition()
+        elif include_charge and self.charge_state:
             comp += self.charge_state.composition()
         return comp
 
