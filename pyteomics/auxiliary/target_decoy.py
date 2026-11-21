@@ -922,7 +922,8 @@ def _make_fdr(is_decoy_prefix, is_decoy_suffix):
         if pep is not None:
             return float(decoy) / total
         tfalse = decoy
-        if correction == 1 or (correction == 2 and total / decoy > 10):
+        # no decoys: the target/decoy ratio is unbounded, so the +1 shortcut applies
+        if correction == 1 or (correction == 2 and (decoy == 0 or total > 10 * decoy)):
             tfalse += 1
         elif correction == 2:
             p = 1. / (1. + ratio)
