@@ -823,6 +823,11 @@ class RegressionTest(unittest.TestCase):
         result = aux.linear_regression_perpendicular(self.x, self.y)
         self._test_linreg(result)
 
+    def test_linear_regression_fixed_b(self):
+        a, b, r, stderr = aux.linear_regression([1, 2, 3, 4], [3, 5, 7, 9.5], b=0.0)
+        self.assertAlmostEqual(a, 2.4)
+        self.assertEqual(b, 0.0)
+
     def test_linear_regression_no_y_list(self):
         x = list(zip(self.x, self.y))
         result = aux.linear_regression(x)
