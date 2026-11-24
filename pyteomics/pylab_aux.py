@@ -62,8 +62,10 @@ This module requires :py:mod:`matplotlib`. Optional dependencies: :py:mod:`adjus
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import re
 import pylab
 import numpy as np
+import matplotlib.scale as mscale
 from .auxiliary import linear_regression, PyteomicsError
 from .version import VersionInfo
 from . import parser, mass, mgf, proforma
@@ -147,23 +149,30 @@ def scatter_trend(x, y=None, **kwargs):
         Function to perform linear regression. Will be given ``x`` and ``y`` as arguments.
         Must return a 4-tuple: (a, b, r, stderr).
         Default is :py:func:`pyteomics.auxiliary.linear_regression`.
+    xscale, yscale : str or :py:class:`matplotlib.scale.ScaleBase`, optional
+        Axis scaling, same as the argument to :py:func:`pylab.xscale` and
+        :py:func:`pylab.yscale`, respectively. The plot will use the given scaling
+        while displaying original values. The data will be transformed with the
+        corresponding scale before the regression, so the parameters in the legend
+        and the trend line correspond to the transformed values.
 
     Returns
     -------
     out : tuple
         A (scatter_plot, trend_line, sigma_lines, legend) tuple.
     """
+    scales = {}
+    for axis, name in zip('xy', ('xscale', 'yscale')):
+        scale = kwargs.get(name)
+        if scale is not None:
+            if not isinstance(scale, mscale.ScaleBase):
+                scale = mscale.scale_factory(scale, None)
+            scales[axis] = scale
+    scales = {axis: (scale, scale.get_transform(),
+                     scale.get_transform().inverted())
+              for axis, scale in scales.items()}
+
     regression = kwargs.get('regression', linear_regression)
-    a, b, r, stderr = regression(x, y)
-    pylab.title(kwargs.get('title', ''))
-    pylab.xlabel(kwargs.get('xlabel', ''))
-    pylab.ylabel(kwargs.get('ylabel', ''))
-
-    equation = (
-        r'$y\,=\,{:.3f}x\,{}\,{:.3f}$, '
-        r'$R^2=\,{:.3f}$ \n$\sigma\,=\,{:.3f}$'.format(
-            a, '-' if b < 0 else '+', abs(b), r*r, stderr))
-
     if y is None:
         x = np.array(x, copy=False)
         y = x[:, 1]
@@ -171,13 +180,45 @@ def scatter_trend(x, y=None, **kwargs):
     else:
         x = np.array(x)
         y = np.array(y)
+    xs, ys = x, y
+    if 'x' in scales:
+        xs = scales['x'][1].transform_non_affine(x)
+    if 'y' in scales:
+        ys = scales['y'][1].transform_non_affine(y)
+    a, b, r, stderr = regression(xs, ys)
+
+    pylab.title(kwargs.get('title', ''))
+    pylab.xlabel(kwargs.get('xlabel', ''))
+    pylab.ylabel(kwargs.get('ylabel', ''))
+
+    equation = re.sub('\n +', '\n',
+        r'''$y\,=\,{:.3f}x\,{}\,{:.3f}$
+        $R^2=\,{:.3f}$, $\sigma\,=\,{:.3f}$'''.format(
+            a, '-' if b < 0 else '+', abs(b), r*r, stderr))
+
     sc = pylab.scatter(x, y, **kwargs.get('scatter_kwargs', {}))
+    for axis, name in zip('xy', ('xscale', 'yscale')):
+        if axis in scales:
+            getattr(pylab, name)(scales[axis][0])
+
+    def plot_scaled_line(a, b, xlim, **plot_kwargs):
+        """Plot a line y = a * x + b given in scaled coordinates."""
+        if 'x' in scales:
+            xlim = scales['x'][1].transform_non_affine(np.array(xlim))
+        xx = np.linspace(xlim[0], xlim[1], 2)
+        yy = a * xx + b
+        if 'x' in scales:
+            xx = scales['x'][2].transform_non_affine(xx)
+        if 'y' in scales:
+            yy = scales['y'][2].transform_non_affine(yy)
+        return pylab.plot(xx, yy, **plot_kwargs)
+
     xlim = (x.min(), x.max())
     plkw = kwargs.get('plot_kwargs', {}).copy()
     plkw.setdefault('xlim', xlim)
     plkw.setdefault('label', equation)
     if kwargs.get('plot_trend', True):
-        line = plot_line(a, b, **plkw)
+        line = plot_scaled_line(a, b, **plkw)
     else:
         line = None
 
@@ -185,7 +226,7 @@ def scatter_trend(x, y=None, **kwargs):
         s_lines = []
         sigma_kwargs = kwargs.get('sigma_kwargs', {'color': 'red', 'linestyle': 'dashed'})
         for i in kwargs.get('sigma_values', range(-3, 4)):
-            s_lines.append(plot_line(a, b + i * stderr, xlim, **sigma_kwargs))
+            s_lines.append(plot_scaled_line(a, b + i * stderr, xlim, **sigma_kwargs))
     else:
         s_lines = None
 

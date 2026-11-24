@@ -1,5 +1,6 @@
 from os import path
 import tempfile
+import io
 import unittest
 import random
 import string
@@ -96,6 +97,51 @@ class ReadWriteTest(unittest.TestCase):
         with fasta.read(self.fasta_file) as f:
             self.assertEqual(list(fasta.decoy_entries(f, decoy_only=True, prefix='PREFIX_', mode='reverse')),
                 [('PREFIX_' + a, b[::-1]) for a, b in self.fasta_entries_long])
+
+
+class CommentLineTest(unittest.TestCase):
+    entries = [('P1 first protein', 'MKVLL'), ('P2 second protein', 'ACDE')]
+    body = '>P1 first protein\nMKV\nLL\n>P2 second protein\nACDE\n'
+
+    def _sequential(self, text, **kwargs):
+        with fasta.FASTA(io.StringIO(text), **kwargs) as f:
+            return list(f)
+
+    def _indexed(self, text, **kwargs):
+        with fasta.IndexedFASTA(io.BytesIO(text.encode('utf-8')), **kwargs) as f:
+            return list(f)
+
+    def test_leading_comment_block(self):
+        for text in [';a comment\n' + self.body,
+                     ';~schema: https://example.org/v1\n;~version: 1\n\n' + self.body,
+                     (';~schema: https://example.org/v1\n' + self.body).replace('\n', '\r\n')]:
+            for ignore_comments in [False, True]:
+                self.assertEqual(self._sequential(text, ignore_comments=ignore_comments), self.entries)
+                self.assertEqual(self._indexed(text, ignore_comments=ignore_comments), self.entries)
+                with fasta.read(io.StringIO(text), use_index=False, ignore_comments=ignore_comments) as f:
+                    self.assertEqual(list(f), self.entries)
+
+    def test_comment_block_before_later_entry(self):
+        text = '>P1 first protein\nMKVLL\n;a comment\n>P2 second protein\nACDE\n'
+        for ignore_comments in [False, True]:
+            self.assertEqual(self._sequential(text, ignore_comments=ignore_comments), self.entries)
+
+    def test_comment_after_header(self):
+        text = '>P1 first protein\n;more\nMKVLL\n>P2 second protein\nACDE\n'
+        self.assertEqual(self._sequential(text), [('P1 first protein more', 'MKVLL'), self.entries[1]])
+        self.assertEqual(self._sequential(text, ignore_comments=True), self.entries)
+
+    def test_comments_only(self):
+        for ignore_comments in [False, True]:
+            self.assertEqual(self._sequential(';a\n;b\n', ignore_comments=ignore_comments), [])
+
+    def test_leading_comment_block_parsed_header(self):
+        text = ';~schema: https://example.org/v1\n>sp|P01308|INS_HUMAN Insulin OS=Homo sapiens OX=9606 GN=INS PE=1 SV=1\nMALW\n'
+        with fasta.read(io.StringIO(text), use_index=False, flavor='uniprot') as f:
+            entries = list(f)
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0].description['id'], 'P01308')
+        self.assertEqual(entries[0].sequence, 'MALW')
 
 
 class DecoyTest(unittest.TestCase):

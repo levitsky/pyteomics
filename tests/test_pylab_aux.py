@@ -98,6 +98,46 @@ class ScatterTrendTest(unittest.TestCase):
         result = pylab_aux.scatter_trend(self.x, self.y, regression=dummy_regression)
         self.assertIsNotNone(result)
 
+    def test_scatter_trend_scale_names(self):
+        """Test scatter_trend with scale names for xscale/yscale"""
+        result = pylab_aux.scatter_trend(self.x, self.y, xscale='log', yscale='log')
+        ax = pylab.gca()
+        self.assertEqual(ax.get_xscale(), 'log')
+        self.assertEqual(ax.get_yscale(), 'log')
+        # scatter data must keep the original values
+        offsets = result[0].get_offsets()
+        self.assertTrue(np.allclose(offsets[0], [self.x[0], self.y[0]]))
+
+    def test_scatter_trend_scale_objects(self):
+        """Test scatter_trend with ScaleBase instances"""
+        from matplotlib.scale import FuncScale
+        scale = FuncScale(None, (np.log2, np.exp2))
+        result = pylab_aux.scatter_trend(self.x, self.y, xscale=scale)
+        ax = pylab.gca()
+        self.assertEqual(ax.get_xscale(), 'function')
+        self.assertIs(ax.xaxis._scale, scale)
+
+    def test_scatter_trend_regression_on_transformed_data(self):
+        """Regression must be performed on scale-transformed values"""
+        from pyteomics.auxiliary import linear_regression
+        result = pylab_aux.scatter_trend(self.x, self.y, yscale='log', show_legend=False)
+        a, b, r, stderr = linear_regression(self.x, np.log10(self.y))
+        lx, ly = result[1][0].get_data()
+        self.assertTrue(np.allclose(ly, 10 ** (a * lx + b)))
+
+    def test_scatter_trend_scale_2d_input(self):
+        """Test scatter_trend with 2-D input and scaling"""
+        data = np.column_stack([self.x, self.y])
+        result = pylab_aux.scatter_trend(data, xscale='log', yscale='log')
+        ax = pylab.gca()
+        self.assertEqual(ax.get_xscale(), 'log')
+        self.assertEqual(ax.get_yscale(), 'log')
+
+    def test_scatter_trend_scale_no_trend(self):
+        """Test scatter_trend with scaling and no trend line"""
+        result = pylab_aux.scatter_trend(self.x, self.y, xscale='log', plot_trend=False)
+        self.assertIsNone(result[1])
+
 
 class PlotFunction3DTest(unittest.TestCase):
     """Tests for plot_function_3d function"""
