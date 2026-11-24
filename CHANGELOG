@@ -15,6 +15,9 @@
  - Docstring fixes (`#237 <https://github.com/levitsky/pyteomics/pull/237>`_ by Dylan Pulver).
  - Rename the parameter in :py:meth:`MzMLb.get_by_id` to `elem_id`.
  - Fix default legend formatting in :py:func:`pylab_aux.scatter_trend`.
+ - Add ``xscale`` and ``yscale`` parameters to :py:func:`pylab_aux.scatter_trend`,
+   applying the corresponding transformations before the regression and plotting
+   with the given axis scaling.
 
 
 5.0.2
