@@ -1,4 +1,4 @@
-5.0.3a6
+5.0.3a7
 -------
 
  - Fix :py:mod:`ms1` and :py:mod:`ms2` to ensure array alignment (`#228 <https://github.com/levitsky/pyteomics/pull/228>`_ by KBS).
