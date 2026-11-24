@@ -62,6 +62,7 @@ This module requires :py:mod:`matplotlib`. Optional dependencies: :py:mod:`adjus
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
+import re
 import pylab
 import numpy as np
 from .auxiliary import linear_regression, PyteomicsError
@@ -159,9 +160,9 @@ def scatter_trend(x, y=None, **kwargs):
     pylab.xlabel(kwargs.get('xlabel', ''))
     pylab.ylabel(kwargs.get('ylabel', ''))
 
-    equation = (
-        r'$y\,=\,{:.3f}x\,{}\,{:.3f}$, '
-        r'$R^2=\,{:.3f}$ \n$\sigma\,=\,{:.3f}$'.format(
+    equation = re.sub('\n +', '\n',
+        r'''$y\,=\,{:.3f}x\,{}\,{:.3f}$
+        $R^2=\,{:.3f}$, $\sigma\,=\,{:.3f}$'''.format(
             a, '-' if b < 0 else '+', abs(b), r*r, stderr))
 
     if y is None:
