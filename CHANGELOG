@@ -7,7 +7,7 @@
  - Speed up sequence parsing (`#230 <https://github.com/levitsky/pyteomics/pull/230>`_ by Bharat Kaurav).
  - Docstring fixes (`#237 <https://github.com/levitsky/pyteomics/pull/237>`_ by Dylan Pulver).
  - Rename the parameter in :py:meth:`MzMLb.get_by_id` to `elem_id`.
- - Use the supplied charge state in :py:meth:`ProForma.composition` (`#241 <https://github.com/levitsky/pyteomics/pull/241>`_).
+ - Use the supplied charge state in :py:meth:`ProForma.composition` (`#241 <https://github.com/levitsky/pyteomics/pull/241>`_ by Ricardo Pinho).
 
 
 5.0.2
