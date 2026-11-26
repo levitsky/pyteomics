@@ -1,4 +1,4 @@
-5.0.3a8
+5.0.3a9
 -------
 
  - Fix :py:mod:`ms1` and :py:mod:`ms2` to ensure array alignment (`#228 <https://github.com/levitsky/pyteomics/pull/228>`_ by KBS).
@@ -19,6 +19,7 @@
  - Add ``xscale`` and ``yscale`` parameters to :py:func:`pylab_aux.scatter_trend`,
    applying the corresponding transformations before the regression and plotting
    with the given axis scaling.
+ - Fix :py:class:`MzMLb` membership tests (`#240 <https://github.com/levitsky/pyteomics/pull/240>`_ by Ricardo Pinho).
 
 
 5.0.2

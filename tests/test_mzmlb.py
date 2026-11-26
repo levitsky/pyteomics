@@ -57,6 +57,14 @@ class MzMLbTest(unittest.TestCase):
             self.assertEqual(
                 spectrum['id'], 'controllerType=0 controllerNumber=1 scan=1')
 
+    def test_spectrum_membership(self):
+        with MzMLb(self.path) as reader:
+            spectrum_id = 'controllerType=0 controllerNumber=1 scan=1'
+            self.assertEqual(reader[spectrum_id]['id'], spectrum_id)
+            self.assertIn(spectrum_id, reader)
+            self.assertNotIn('spectrum', reader)
+            self.assertNotIn('controllerType=0 controllerNumber=1 scan=0', reader)
+
     def test_registered_filereader(self):
         self.assertTrue(issubclass(MzMLb, FileReader))
 
