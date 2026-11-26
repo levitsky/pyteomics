@@ -9,6 +9,7 @@ import unittest
 import pickle
 import shutil
 import json
+from io import BytesIO, StringIO
 from pathlib import Path
 from collections import OrderedDict
 import warnings
@@ -310,6 +311,28 @@ class UtilityTest(unittest.TestCase):
         for s in ['1-', '-1', '-1.0']:
             with self.subTest(s=s):
                 self.assertEqual(mgf.MGFBase.parse_peak_charge(s), -1)
+
+    def test_rtinseconds_range_roundtrip(self):
+        for original, expected in [('95-97', (95.0, 97.0)), ('95.5', 95.5),
+                                   ('95-97,99-101', '95-97,99-101')]:
+            with self.subTest(original=original):
+                source = ('BEGIN IONS\nTITLE=Spectrum 3\nPEPMASS=1244.7\n'
+                          'SCANS=29-34\nRTINSECONDS={}\n100 1\nEND IONS\n').format(original)
+                with mgf.MGF(StringIO(source)) as reader:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore', UserWarning)
+                        spectra = list(reader)
+                self.assertEqual(spectra[0]['params']['rtinseconds'], expected)
+                with tempfile.TemporaryFile(mode='w+') as output:
+                    mgf.write(spectra, output=output)
+                    output.seek(0)
+                    written = output.read()
+                expected_text = '95.0-97.0' if isinstance(expected, tuple) else original
+                self.assertIn('RTINSECONDS=' + expected_text + '\n', written)
+                with mgf.IndexedMGF(BytesIO(written.encode('ascii'))) as reader:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter('ignore', UserWarning)
+                        self.assertEqual(reader[0]['params']['rtinseconds'], expected)
 
     def test_rtinseconds_range(self):
         for s in ['95-97', '95.0-97.0', '95.0-97']:
