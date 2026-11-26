@@ -1,4 +1,4 @@
-5.0.3a7
+5.0.3a8
 -------
 
  - Fix :py:mod:`ms1` and :py:mod:`ms2` to ensure array alignment (`#228 <https://github.com/levitsky/pyteomics/pull/228>`_ by KBS).
@@ -14,7 +14,7 @@
  - Speed up sequence parsing (`#230 <https://github.com/levitsky/pyteomics/pull/230>`_ by Bharat Kaurav).
  - Docstring fixes (`#237 <https://github.com/levitsky/pyteomics/pull/237>`_ by Dylan Pulver).
  - Rename the parameter in :py:meth:`MzMLb.get_by_id` to `elem_id`.
- - Write RTINSECONDS ranges in :py:func:`mgf.write` (`#238 <https://github.com/levitsky/pyteomics/pull/238>`_).
+ - Write RTINSECONDS ranges in :py:func:`mgf.write` (`#238 <https://github.com/levitsky/pyteomics/pull/238>`_ by Ricardo Pinho).
  - Fix default legend formatting in :py:func:`pylab_aux.scatter_trend`.
  - Add ``xscale`` and ``yscale`` parameters to :py:func:`pylab_aux.scatter_trend`,
    applying the corresponding transformations before the regression and plotting
