@@ -351,6 +351,31 @@ class ProFormaTest(unittest.TestCase):
             assert p.names[i] == ''
             assert str(p) == "({})PEPTIDE".format(">" * i)
 
+    def test_fixed_terminal_modification_masses(self):
+        sequence = 'QATPEILTWCNSIGCLKG'
+        neutral = ProForma.parse(sequence)
+        for target, delta, explicit in [
+            ('C-term', 'HNO-1', sequence + '-[Formula:HNO-1]'),
+            ('C-term:G', 'HNO-1', sequence + '-[Formula:HNO-1]'),
+            ('N-term', 'C2H2O', '[Formula:C2H2O]-' + sequence),
+            ('N-term:Q', 'H-3N-1', '[Formula:H-3N-1]-' + sequence),
+        ]:
+            with self.subTest(target=target):
+                fixed = ProForma.parse('<[Formula:{}]@{}>{}'.format(delta, target, sequence))
+                localized = ProForma.parse(explicit)
+                expected = mass.calculate_mass(sequence=sequence) + mass.calculate_mass(formula=delta)
+                self.assertAlmostEqual(fixed.mass, expected, places=7)
+                self.assertAlmostEqual(fixed.composition().mass(), expected, places=7)
+                for ion_type in ('b', 'y'):
+                    self.assertSequenceAlmostEqual(fixed.fragments(ion_type), localized.fragments(ion_type))
+                unaffected = 'b' if target.startswith('C-term') else 'y'
+                self.assertSequenceAlmostEqual(fixed.fragments(unaffected), neutral.fragments(unaffected))
+
+    def assertSequenceAlmostEqual(self, observed, expected):
+        self.assertEqual(len(observed), len(expected))
+        for a, b in zip(observed, expected):
+            self.assertAlmostEqual(a, b, places=7)
+
     def test_chimeric_adduct_separator(self):
         forms = ProForma.parse('PEPTIDE/[Na:z+1,H:z+1]+ELVIS/2', chimeric=True)
         self.assertEqual(len(forms), 2)

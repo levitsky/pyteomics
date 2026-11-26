@@ -1,4 +1,4 @@
-5.0.3a10
+5.0.3a11
 --------
 
  - Fix :py:mod:`ms1` and :py:mod:`ms2` to ensure array alignment (`#228 <https://github.com/levitsky/pyteomics/pull/228>`_ by KBS).
@@ -21,6 +21,7 @@
    with the given axis scaling.
  - Fix :py:class:`MzMLb` membership tests (`#240 <https://github.com/levitsky/pyteomics/pull/240>`_ by Ricardo Pinho).
  - Use the supplied charge state in :py:meth:`ProForma.composition` (`#241 <https://github.com/levitsky/pyteomics/pull/241>`_ by Ricardo Pinho).
+ - Apply ProForma fixed terminal modifications only at the specified terminus (`#239 <https://github.com/levitsky/pyteomics/pull/239>`_ by Ricardo Pinho).
 
 
 5.0.2
