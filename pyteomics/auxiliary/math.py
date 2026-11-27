@@ -40,6 +40,9 @@ def linear_regression_vertical(x, y=None, a=None, b=None):
         b = (y - a * x).mean()
     elif (a is not None and b is not None):
         pass
+    elif b is not None:
+        # least-squares slope with the intercept held at b
+        a = ((y - b) * x).sum() / (x * x).sum()
     else:
         a, b = np.polyfit(x, y, 1)
 
